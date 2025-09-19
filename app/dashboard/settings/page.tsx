@@ -1,6 +1,6 @@
 import { getUserProfile } from "@/auth/actions";
 import { UserProfile } from "./setting";
-import { UserNavbar } from "@/components/user/authNavbar";
+import { AuthNavbar } from "@/components/user/authNavbar";
 
 export default async function SettingsPage() {
   const user = await getUserProfile();
@@ -9,7 +9,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <UserNavbar user={user} />
+      <AuthNavbar user={user} />
       <main className="py-6">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-center space-y-6">
