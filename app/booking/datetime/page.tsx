@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DayPicker } from "react-day-picker";
@@ -42,7 +42,7 @@ const timeSlots = [
   "19:30",
 ];
 
-export default function DateTimeSelectionPage() {
+function DateTimeSelectionPage() {
   const supabase = createClient();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -343,5 +343,34 @@ export default function DateTimeSelectionPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function DatetimeLoading() {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+            <div className="animate-pulse bg-gray-200 h-6 w-48 rounded"></div>
+          </div>
+        </div>
+      </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-6">
+          <div className="animate-pulse bg-white rounded-lg p-6 h-48"></div>
+          <div className="animate-pulse bg-white rounded-lg p-6 h-64"></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function ServicePage() {
+  return (
+    <Suspense fallback={<DatetimeLoading />}>
+      <DateTimeSelectionPage />
+    </Suspense>
   );
 }
