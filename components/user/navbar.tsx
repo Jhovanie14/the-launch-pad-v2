@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
 import {
   NavigationMenu,
@@ -64,12 +63,6 @@ const services: {
     description:
       "Professional paint restoration to remove swirls, scratches, and oxidation.",
   },
-  //   {
-  //     title: "Interior Detailing",
-  //     href: "/services/interior-detail",
-  //     description:
-  //       "Deep cleaning and protection for leather, fabric, and all interior surfaces.",
-  //   },
 ];
 
 function ListItem({
@@ -108,7 +101,7 @@ function ListItem({
 // }
 
 export function UserNavbar() {
-  const {openBookingModal} = useBooking()
+  const { openBookingModal } = useBooking();
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -137,7 +130,7 @@ export function UserNavbar() {
                 </div>
               </Link>
             </div>
-            <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+            <div className="hidden sm:ml-6 sm:flex sm:space-x-6">
               <NavigationMenu className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100">
                 <NavigationMenuList>
                   <NavigationMenuItem>
@@ -201,7 +194,7 @@ export function UserNavbar() {
               </div>
             </div>
           </div> */}
-          <div className="hidden md:flex flex-shrink-0 items-center gap-1">
+          <div className="hidden sm:flex flex-shrink-0 items-center gap-1">
             <Button
               size="sm"
               onClick={openBookingModal}

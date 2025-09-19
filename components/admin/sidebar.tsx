@@ -6,11 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AuthUser } from "@/types";
 import {
-  BarChart3,
   Users,
   Settings,
-  FileText,
-  Shield,
   LogOut,
   Home,
   X,

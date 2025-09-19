@@ -10,12 +10,10 @@ import {
   CheckCircle2,
   PackageCheck,
 } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { createBooking } from "../actions";
 
 export default function ConfirmationPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
 
@@ -88,8 +86,8 @@ export default function ConfirmationPage() {
   };
 
   const calculateTotal = () => {
-    let total = selectedPackages?.price || 0;
-    let addOnsTotal = selectedAddOns?.price || 0;
+    const total = selectedPackages?.price || 0;
+    const addOnsTotal = selectedAddOns?.price || 0;
 
     return total + addOnsTotal;
   };

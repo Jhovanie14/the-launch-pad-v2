@@ -23,28 +23,27 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 
-const cardContent = [
-  {
-    image: Wrench,
-    title: "Self-Service Bays",
-    description: "DIY car wash your way",
-    color: "text-blue-800",
-  },
-  {
-    image: Star,
-    title: "$15 Handwash",
-    description: "Mon-Thu special",
-    color: "text-yellow-700",
-  },
-  {
-    image: ForkKnife,
-    title: "Food Trucks",
-    description: "Eat while you wait",
-    color: "text-red-700",
-  },
-];
+// const cardContent = [
+//   {
+//     image: Wrench,
+//     title: "Self-Service Bays",
+//     description: "DIY car wash your way",
+//     color: "text-blue-800",
+//   },
+//   {
+//     image: Star,
+//     title: "$15 Handwash",
+//     description: "Mon-Thu special",
+//     color: "text-yellow-700",
+//   },
+//   {
+//     image: ForkKnife,
+//     title: "Food Trucks",
+//     description: "Eat while you wait",
+//     color: "text-red-700",
+//   },
+// ];
 
-const serviceContent = [{}, {}, {}];
 
 export default function Home() {
   

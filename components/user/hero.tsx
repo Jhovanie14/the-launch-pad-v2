@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 
-import { Wrench, Star, ForkKnife, Check } from "lucide-react";
+import { Wrench, Star, ForkKnife } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 const cardContent = [
   {

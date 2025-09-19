@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-// import { Label } from '@/components/ui/label'
 import { useState } from "react";
 import { useAuth } from "@/context/auth-context";
 
@@ -49,12 +48,12 @@ export default function LoginPage() {
             Sign in to your account
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            Or{" "}
+            {"Or"}
             <Link
               href="/signup"
               className="font-medium text-blue-900 hover:text-blue-700"
             >
-              create a new account
+              {"create a new account"}
             </Link>
           </p>
         </div>
