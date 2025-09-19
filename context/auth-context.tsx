@@ -24,9 +24,7 @@ interface AuthContextType {
   signIn: (
     formData: FormData
   ) => Promise<{ errors?: Record<string, string[]>; message?: string } | void>;
-  signUp: (
-    formData: FormData
-  ) => Promise<{
+  signUp: (formData: FormData) => Promise<{
     errors?: Record<string, string[]>;
     message?: string;
     success?: boolean;
@@ -143,7 +141,7 @@ export function AuthContextProvider({
         data: {
           full_name: fullName,
         },
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_REDIRECT_URL}/auth/callback`,
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
       },
     });
 

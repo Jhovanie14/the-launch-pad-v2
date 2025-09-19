@@ -363,7 +363,7 @@ export default function BookingsView() {
                             <Button
                               size="sm"
                               variant="outline"
-                              className="bg-yellow-600"
+                              className="text-white bg-yellow-600"
                               onClick={() =>
                                 updateBookingStatus(booking.id, "confirmed")
                               }

@@ -158,7 +158,8 @@ export default function BookingsList() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">
-                  Booking #{booking.payment_intent_id}
+                  Booking #{""}
+                  {booking.payment_intent_id}
                 </CardTitle>
                 <Badge className={getStatusColor(booking.status)}>
                   {booking.status}
