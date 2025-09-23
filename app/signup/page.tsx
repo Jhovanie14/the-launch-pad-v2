@@ -23,7 +23,7 @@ export default function SignUpPage() {
   }>({});
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const {signUp}= useAuth()
+  const { signUp } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -129,10 +129,22 @@ export default function SignUpPage() {
                   </div>
                 )}
               </div>
-              <Button type="submit" className="w-full bg-blue-900 hover:bg-blue-800" disabled={isLoading}>
+              <Button
+                type="submit"
+                className="w-full bg-blue-900 hover:bg-blue-800"
+                disabled={isLoading}
+              >
                 {isLoading ? "Creating an account..." : "Create Account"}
               </Button>
             </form>
+            <div className="mt-4 text-center">
+              <Link
+                href="/"
+                className="text-sm text-blue-900 hover:text-blue-700"
+              >
+                Back to Home
+              </Link>
+            </div>
           </CardContent>
         </Card>
       </div>

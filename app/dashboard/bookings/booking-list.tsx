@@ -140,7 +140,22 @@ export default function BookingsList() {
   };
 
   if (loading) {
-    return <div className="p-6">Loading bookings...</div>;
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+            <div className="animate-pulse bg-gray-200 h-6 w-48 rounded"></div>
+          </div>
+        </div>
+      </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-6">
+          <div className="animate-pulse bg-white rounded-lg p-6 h-48"></div>
+          <div className="animate-pulse bg-white rounded-lg p-6 h-64"></div>
+        </div>
+      </div>
+    </div>;
   }
 
   return (
@@ -155,18 +170,20 @@ export default function BookingsList() {
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         {bookings.map((booking) => (
           <Card key={booking.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">
-                  Booking #{""}
-                  {booking.payment_intent_id}
-                </CardTitle>
+            <CardHeader className="">
+              <div className="flex justify-end mb-2">
                 <Badge className={getStatusColor(booking.status)}>
                   {booking.status}
                 </Badge>
               </div>
+              <div className="flex items-center">
+                <CardTitle className="">
+                  Booking #{""}
+                  {booking.payment_intent_id}
+                </CardTitle>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="flex flex-col h-full space-y-4">
               {/* Vehicle Info */}
               <div className="flex items-center text-sm text-gray-600">
                 <Car className="w-4 h-4 mr-2" />
@@ -219,7 +236,7 @@ export default function BookingsList() {
                   {booking.appointment_time} ({booking.total_duration} min)
                 </div>
               </div>
-
+              <div className="flex-1" />
               {/* Total */}
               <div className="border-t pt-3">
                 <div className="flex items-center justify-between text-lg font-semibold">

@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import Customers from "@/components/user/customers";
 import { Footer } from "@/components/user/footer";
@@ -10,44 +10,11 @@ import {
   CardFooter,
   CardHeader,
 } from "@/components/ui/card";
-import {
-  Wrench,
-  Star,
-  ForkKnife,
-  Check,
-  Award,
-  Clock,
-  DollarSign,
-  Users,
-} from "lucide-react";
+import { Star, Check, Award, Clock, DollarSign, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
-// const cardContent = [
-//   {
-//     image: Wrench,
-//     title: "Self-Service Bays",
-//     description: "DIY car wash your way",
-//     color: "text-blue-800",
-//   },
-//   {
-//     image: Star,
-//     title: "$15 Handwash",
-//     description: "Mon-Thu special",
-//     color: "text-yellow-700",
-//   },
-//   {
-//     image: ForkKnife,
-//     title: "Food Trucks",
-//     description: "Eat while you wait",
-//     color: "text-red-700",
-//   },
-// ];
-
-
 export default function Home() {
-  
-  console.log('Home page is rendering');
   return (
     <div className="min-h-screen bg-gray-50">
       <UserNavbar />

@@ -31,6 +31,7 @@ export async function POST(req: Request) {
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
     console.log("SESSION METADATA:", session.metadata);
+    console.log("RAW BOOKING", session.metadata?.booking);
     const bookingMeta = session.metadata?.booking
       ? JSON.parse(session.metadata.booking)
       : null;
@@ -61,7 +62,6 @@ export async function POST(req: Request) {
       const finalCustomerPhone =
         customer_phone ?? session.customer_details?.phone ?? null;
 
-     
       const dateIso = appointment_date;
       const timeStr = appointment_time;
 
@@ -93,6 +93,47 @@ export async function POST(req: Request) {
       } else {
         console.log("Booking inserted!");
       }
+    }
+
+    // Subscription checkout handling (won't affect booking path)
+    if (
+      session.mode === "subscription" &&
+      session.subscription &&
+      session.customer
+    ) {
+      const appUserId = session.metadata?.app_user_id || null;
+      // planId/billingCycle not stored in current schema
+
+      const subscriptionResp = await stripe.subscriptions.retrieve(
+        session.subscription as string
+      );
+
+      // extract fields we need from Stripe subscription
+      const sub = subscriptionResp as any;
+      const cps = Number(sub?.current_period_start);
+      const cpe = Number(sub?.current_period_end);
+      const currentPeriodStartIso = Number.isFinite(cps)
+        ? new Date(cps * 1000).toISOString()
+        : new Date().toISOString();
+      const currentPeriodEndIso = Number.isFinite(cpe)
+        ? new Date(cpe * 1000).toISOString()
+        : null;
+      const priceId = sub?.items?.data?.[0]?.price?.id ?? null;
+      const cancelAtPeriodEnd = Boolean(sub?.cancel_at_period_end);
+
+      await supabase.from("user_subscription").upsert(
+        {
+          user_id: appUserId,
+          stripe_customer_id: session.customer as string,
+          stripe_subscription_id: sub.id as string,
+          price_id: priceId,
+          status: sub.status as string,
+          current_period_start: currentPeriodStartIso,
+          current_period_end: currentPeriodEndIso,
+          cancel_at_period_end: cancelAtPeriodEnd,
+        },
+        { onConflict: "stripe_customer_id" }
+      );
     }
   }
   return new Response("ok", { status: 200 });

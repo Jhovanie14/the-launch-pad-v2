@@ -12,23 +12,23 @@ export async function ensureVehicle(vehicle: {
   const supabase = await createClient();
 
   // Check if vehicle already exists
-  const { data: existing, error: fetchError } = await supabase
+  const { data: existing, error: selectError } = await supabase
     .from("vehicles")
     .select("id")
     .eq("year", vehicle.year)
     .eq("make", vehicle.make)
     .eq("model", vehicle.model)
     .eq("trim", vehicle.trim)
-    .eq("body_type", vehicle.body_type)
-    .contains("colors", vehicle.colors)
     .maybeSingle();
 
-  if (fetchError) throw fetchError;
-
   if (existing) {
-    return existing.id; // return the existing vehicle id
+    return existing.id;
   }
 
+  if (selectError) {
+    console.error("Error selecting vehicle:", selectError);
+    throw selectError;
+  }
   // Insert new vehicle
   const { data: inserted, error: insertError } = await supabase
     .from("vehicles")

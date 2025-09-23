@@ -28,7 +28,7 @@ const navigation = [
   { name: "Dashboard", href: "/admin/dashboard", icon: Home },
   { name: "Users", href: "/admin/users", icon: Users },
   { name: "Bookings", href: "/admin/booking", icon: Calendar },
-  { name: "Subscriptions", href: "/admin/subscription", icon: CreditCard },
+  { name: "Subscriptions", href: "/admin/subscriptions", icon: CreditCard },
   { name: "Services", href: "/admin/services", icon: Car },
   { name: "Add-ons", href: "/admin/addons", icon: Truck },
   { name: "Settings", href: "/admin/settings", icon: Settings },
@@ -96,6 +96,7 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
         })}
       </nav>
       <div className="flex-1"></div>
+
       {user && (
         <div className="flex flex-shrink-0 border-t border-gray-400 p-4 space-x-2">
           <div className="flex items-center">

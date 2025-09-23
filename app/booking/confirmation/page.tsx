@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/context/auth-context";
 import { createClient } from "@/utils/supabase/client";
 import {
   ArrowLeft,
@@ -12,10 +13,12 @@ import {
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
+import { createBooking } from "../actions";
 
 function ConfirmationContent() {
   const searchParams = useSearchParams();
   const supabase = createClient();
+  const { user } = useAuth();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -28,6 +31,7 @@ function ConfirmationContent() {
     color: searchParams.get("color"),
   });
   const [selectedPackages, setSelectedPackages] = useState<any>(null);
+  const [userSubscribe, setUserSubscribe] = useState<any>(null);
   const [selectedAddOns, setSelectedAddOns] = useState<any>(null);
 
   const serviceId = searchParams.get("service");
@@ -41,6 +45,20 @@ function ConfirmationContent() {
 
   useEffect(() => {
     (async () => {
+      if (!user?.id) return;
+      const { data, error } = await supabase
+        .from("user_subscription")
+        .select("stripe_customer_id,stripe_subscription_id")
+        .eq("user_id", user?.id)
+        .eq("status", "active")
+        .single();
+      if (error) {
+        console.error("❌ Error fetching subscription:", error);
+      } else {
+        console.log("✅ Subscription data:", data);
+        setUserSubscribe(data);
+      }
+
       if (serviceId) {
         const { data } = await supabase
           .from("service_packages")
@@ -68,7 +86,7 @@ function ConfirmationContent() {
         setAppointmentTime(timeParam);
       }
     })();
-  }, [serviceId, addonsParam, dateParam, timeParam, supabase]);
+  }, [serviceId, addonsParam, dateParam, timeParam, supabase, user?.id]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -94,6 +112,27 @@ function ConfirmationContent() {
   const handleConfirmBooking = async () => {
     try {
       setIsSubmitting(true);
+      const isSubscribed = !!userSubscribe?.stripe_subscription_id;
+      if (isSubscribed && !selectedAddOns) {
+        await createBooking({
+          year: parseInt(vehicleSpecs.year || "0"),
+          make: vehicleSpecs.make || "",
+          model: vehicleSpecs.model || "",
+          trim: vehicleSpecs.trim || "",
+          body_type: vehicleSpecs.body_type || "",
+          colors: [vehicleSpecs.color || ""],
+          ...vehicleSpecs,
+          servicePackage: { ...selectedPackages, price: 0 }, // 👈 free
+          addOnsId: selectedAddOns ? selectedAddOns.id : null,
+          appointmentDate: new Date(appointmentDate!),
+          appointmentTime: appointmentTime!.toString(),
+          totalPrice: 0,
+          totalDuration: calculateDuration(),
+        });
+        window.location.href = "/dashboard?booking=success";
+        return;
+      }
+      // If subscription + add-ons OR no subscription → pay with Stripe
       const payload = {
         year: parseInt(vehicleSpecs.year || "0"),
         make: vehicleSpecs.make || "",
@@ -102,17 +141,36 @@ function ConfirmationContent() {
         body_type: vehicleSpecs.body_type || "",
         colors: [vehicleSpecs.color || ""],
         vehicleSpecs,
-        // Instead of passing the whole object:
         servicePackageId: selectedPackages!.id,
         servicePackageName: selectedPackages!.name,
-        servicePackagePrice: selectedPackages!.price,
-
+        servicePackagePrice: isSubscribed ? 0 : selectedPackages!.price, // 👈 zero if subscribed
         addOnsId: selectedAddOns ? selectedAddOns.id : null,
         appointmentDate: appointmentDate,
         appointmentTime: appointmentTime!.toString(),
-        totalPrice: calculateTotal(),
+        totalPrice: isSubscribed
+          ? selectedAddOns?.price || 0
+          : calculateTotal(),
         totalDuration: calculateDuration(),
       };
+      // const payload = {
+      //   year: parseInt(vehicleSpecs.year || "0"),
+      //   make: vehicleSpecs.make || "",
+      //   model: vehicleSpecs.model || "",
+      //   trim: vehicleSpecs.trim || "",
+      //   body_type: vehicleSpecs.body_type || "",
+      //   colors: [vehicleSpecs.color || ""],
+      //   vehicleSpecs,
+      //   // Instead of passing the whole object:
+      //   servicePackageId: selectedPackages!.id,
+      //   servicePackageName: selectedPackages!.name,
+      //   servicePackagePrice: selectedPackages!.price,
+
+      //   addOnsId: selectedAddOns ? selectedAddOns.id : null,
+      //   appointmentDate: appointmentDate,
+      //   appointmentTime: appointmentTime!.toString(),
+      //   totalPrice: calculateTotal(),
+      //   totalDuration: calculateDuration(),
+      // };
       const res = await fetch("/api/checkout_sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -146,6 +204,17 @@ function ConfirmationContent() {
           </div>
         </div>
       </div>
+      {userSubscribe && (
+        <Card>
+          <CardHeader>
+            <CardTitle>User Subscription</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>Customer ID: {userSubscribe.stripe_customer_id}</p>
+            <p>Subscription ID: {userSubscribe.stripe_subscription_id}</p>
+          </CardContent>
+        </Card>
+      )}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className=" space-y-6">

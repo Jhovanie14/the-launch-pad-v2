@@ -8,16 +8,128 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useBooking } from "@/context/bookingContext";
-import { AuthUser } from "@/types";
+import { AuthUser, UserProfile } from "@/types";
 import SubscriptionStatus from "./subscription-status";
 import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
+import { createClient } from "@/utils/supabase/client";
+import { startOfMonth, endOfMonth, subMonths } from "date-fns";
 
 interface DashboardContentProps {
-  user: AuthUser;
+  user: UserProfile;
 }
 
 export default function DashboardContent({ user }: DashboardContentProps) {
   const { openBookingModal } = useBooking();
+  const [loading, setLoading] = useState(false);
+  const [totalBooking, setTotalBooking] = useState<number>(0);
+  const [totalBookingCompleted, setTotalBookingCompleted] = useState<number>(0);
+  const [recentBookings, setRecentBookings] = useState<any[]>([]);
+  const [diffFromLastMonth, setDiffFromLastMonth] = useState<number>(0);
+  const supabase = createClient();
+
+  const fetchTotalBooking = async () => {
+    setLoading(true);
+    try {
+      const now = new Date();
+
+      // Current month range
+      const thisMonthStart = startOfMonth(now).toISOString();
+      const thisMonthEnd = endOfMonth(now).toISOString();
+
+      // Last month range
+      const lastMonth = subMonths(now, 1);
+      const lastMonthStart = startOfMonth(lastMonth).toISOString();
+      const lastMonthEnd = endOfMonth(lastMonth).toISOString();
+
+      const { count: thisMonthCount, error: thisMonthError } = await supabase
+        .from("bookings")
+        .select("*", { count: "exact", head: true }) // only count, no rows
+        .eq("user_id", user.id)
+        .gte("created_at", thisMonthStart)
+        .lte("created_at", thisMonthEnd);
+
+      if (thisMonthError) throw thisMonthError;
+
+      // Get last month bookings
+      const { count: lastMonthCount, error: lastMonthError } = await supabase
+        .from("bookings")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .gte("created_at", lastMonthStart)
+        .lte("created_at", lastMonthEnd);
+
+      if (lastMonthError) throw lastMonthError;
+
+      setTotalBooking(thisMonthCount ?? 0);
+      setDiffFromLastMonth((thisMonthCount ?? 0) - (lastMonthCount ?? 0));
+    } catch (error) {
+      console.error("Error fetching total bookings:", error);
+      setTotalBooking(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const fetchTotalBookingCompleted = async () => {
+    setLoading(true);
+    try {
+      const { count, error } = await supabase
+        .from("bookings")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("status", "completed");
+
+      if (error) throw error;
+      setTotalBookingCompleted(count ?? 0);
+    } catch (error) {
+      console.error("Error fetching total bookings:", error);
+      setTotalBookingCompleted(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchRecentBookings = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("bookings")
+        .select("id,status,created_at") // or specific fields you need
+        .eq("user_id", user.id) // 👈 if you only want current user's bookings
+        .order("created_at", { ascending: false }) // newest first
+        .limit(3); // only latest 5 bookings
+
+      if (error) throw error;
+
+      setRecentBookings(data || []);
+    } catch (error) {
+      console.error("Error fetching recent bookings:", error);
+      setRecentBookings([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "confirmed":
+        return "bg-blue-800";
+      case "completed":
+        return "bg-green-800";
+      case "pending":
+        return "bg-orange-800";
+      default:
+        return "bg-gray-800";
+    }
+  };
+
+  useEffect(() => {
+    if (!user?.id) return;
+    fetchRecentBookings();
+    fetchTotalBooking();
+    fetchTotalBookingCompleted();
+  }, [user?.id]);
+
   return (
     <main className="py-6">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -36,7 +148,7 @@ export default function DashboardContent({ user }: DashboardContentProps) {
               Book Online
             </Button>
           </div>
-          <SubscriptionStatus user={user} />
+          <SubscriptionStatus />
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -59,9 +171,10 @@ export default function DashboardContent({ user }: DashboardContentProps) {
                 </svg>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">12</div>
+                <div className="text-2xl font-bold">{totalBooking}</div>
                 <p className="text-xs text-muted-foreground">
-                  +2 from last month
+                  {diffFromLastMonth >= 0 ? "+" : "-"}
+                  {diffFromLastMonth} from last month
                 </p>
               </CardContent>
             </Card>
@@ -110,7 +223,9 @@ export default function DashboardContent({ user }: DashboardContentProps) {
                 </svg>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">24</div>
+                <div className="text-2xl font-bold">
+                  {totalBookingCompleted}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   +4 from last week
                 </p>
@@ -127,17 +242,22 @@ export default function DashboardContent({ user }: DashboardContentProps) {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-4">
-                    <div className="h-2 w-2 rounded-full bg-blue-600" />
-                    <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium">Booking completed</p>
-                      <p className="text-xs text-muted-foreground">
-                        2 hours ago
-                      </p>
+                {recentBookings.map((booking) => (
+                  <div key={booking.id} className="space-y-4">
+                    <div className="flex items-center space-x-4">
+                      <div
+                        className={`h-2 w-2 rounded-full ${getStatusColor(
+                          booking.status
+                        )}`}
+                      />
+                      <div className="flex-1 space-y-1">
+                        <p className="text-sm font-medium">{booking.status}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(booking.created_at).toLocaleString()}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center space-x-4">
+                    {/* <div className="flex items-center space-x-4">
                     <div className="h-2 w-2 rounded-full bg-green-600" />
                     <div className="flex-1 space-y-1">
                       <p className="text-sm font-medium">Booking confirmed</p>
@@ -152,8 +272,9 @@ export default function DashboardContent({ user }: DashboardContentProps) {
                       <p className="text-sm font-medium">Booking pending</p>
                       <p className="text-xs text-muted-foreground">1 day ago</p>
                     </div>
+                  </div> */}
                   </div>
-                </div>
+                ))}
               </CardContent>
             </Card>
             {/* Quick Actions */}

@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
-import { ServicePackage, AddOn } from "@/lib/data/services";
+import { ServicePackage } from "@/lib/data/services";
 
 type CarData = {
   year: number;
@@ -13,7 +13,7 @@ type CarData = {
   colors: string[];
   price?: number;
   servicePackage?: ServicePackage;
-  addOns?: any[];
+  addOnsId?: any[] | null;
   appointmentDate?: Date;
   appointmentTime?: string;
   totalPrice?: number;
@@ -94,13 +94,7 @@ export async function createBooking(car: CarData) {
       service_package_id: car.servicePackage?.id,
       service_package_name: car.servicePackage?.name,
       service_package_price: car.servicePackage?.price,
-      add_ons:
-        car.addOns?.map((addon) => ({
-          id: addon.id,
-          name: addon.name,
-          price: addon.price,
-          duration: addon.duration,
-        })) || [],
+      add_ons_id: car.addOnsId?? null,
       appointment_date: car.appointmentDate?.toISOString().split("T")[0], // Store as date only
       appointment_time: car.appointmentTime,
       total_price: car.totalPrice,

@@ -108,6 +108,14 @@ export default function LoginPage() {
                 {isLoading ? "Signing in..." : "Sign In"}
               </Button>
             </form>
+            <div className="mt-4 text-center">
+              <Link
+                href="/"
+                className="text-sm text-blue-900 hover:text-blue-700"
+              >
+                Back to Home
+              </Link>
+            </div>
           </CardContent>
         </Card>
       </div>

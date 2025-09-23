@@ -1,48 +1,8 @@
-"use client";
+import { useSubscription } from "@/hooks/useSubscription";
 
-import { AuthUser } from "@/types";
-import { useState, useEffect } from "react";
-
-interface SubscriptionStatusProps {
-  user: AuthUser;
-}
-
-interface Subscription {
-  id: string;
-  plan_id: string;
-  status: "active" | "canceled" | "past_due" | "incomplete";
-  current_period_start: string;
-  current_period_end: string;
-  plan_name?: string;
-  plan_price?: number;
-}
-
-export default function SubscriptionStatus({ user }: SubscriptionStatusProps) {
-  const [subscription, setSubscription] = useState<Subscription | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Simulate fetching subscription data
-    // In a real app, you'd fetch this from your database
-    const fetchSubscription = async () => {
-      try {
-        // Mock data - replace with actual API call
-        // const response = await fetch(`/api/subscriptions/${user.id}`)
-        // const data = await response.json()
-
-        // For now, simulate no subscription
-        setSubscription(null);
-      } catch (error) {
-        console.error("Error fetching subscription:", error);
-        setSubscription(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSubscription();
-  }, [user.id]);
-
+export default function SubscriptionStatus() {
+  const { loading, subscription } = useSubscription();
+  
   if (loading) {
     return (
       <div className="bg-white overflow-hidden shadow rounded-lg mb-8">
@@ -224,14 +184,19 @@ export default function SubscriptionStatus({ user }: SubscriptionStatusProps) {
               <div>
                 <p className="text-sm font-medium text-gray-500">Plan</p>
                 <p className="text-sm text-gray-900">
-                  {subscription.plan_name || subscription.plan_id}
+                  {subscription.subscription_plans?.name ||
+                    subscription.plan_id}
                 </p>
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-500">Price</p>
                 <p className="text-sm text-gray-900">
-                  {subscription.plan_price
-                    ? `$${subscription.plan_price}/month`
+                  {subscription.subscription_plans
+                    ? `${
+                        subscription.billing_cycle === "monthly"
+                          ? subscription.subscription_plans.monthly_price
+                          : subscription.subscription_plans.yearly_price
+                      } / ${subscription.billing_cycle}`
                     : "N/A"}
                 </p>
               </div>

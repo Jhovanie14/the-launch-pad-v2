@@ -8,9 +8,10 @@ export default async function ServicesPage() {
   return (
     <div className="flex h-screen bg-background">
       <AdminSidebar user={profile} />
-      <div className="container mx-auto py-8 px-4 md:px-6">
+      <div className="flex-1 flex flex-col overflow-hidden mx-auto py-8 px-4 md:px-6">
         <BookingsView />
       </div>
     </div>
   );
+
 }

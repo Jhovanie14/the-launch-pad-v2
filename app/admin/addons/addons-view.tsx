@@ -126,7 +126,7 @@ export default function AddOnsView() {
   }, [fetchAddOns]);
 
   return (
-    <div className="space-y-6">
+    <div className="flex-1 overflow-y-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Add Ons </h1>

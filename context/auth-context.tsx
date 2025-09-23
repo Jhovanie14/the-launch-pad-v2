@@ -1,6 +1,7 @@
 "use client";
 
 import { getUserProfile } from "@/auth/actions";
+import { UserProfile } from "@/types";
 import { createClient } from "@/utils/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
@@ -21,6 +22,7 @@ const signUpSchema = z.object({
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
+  userProfile: UserProfile | null;
   signIn: (
     formData: FormData
   ) => Promise<{ errors?: Record<string, string[]>; message?: string } | void>;
@@ -41,7 +43,8 @@ export function AuthContextProvider({
 }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  // const [loading, setLoading] = useState(false);
   const supabase = createClient();
 
   useEffect(() => {
@@ -49,7 +52,13 @@ export function AuthContextProvider({
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      setUser(user);
+      if (user) {
+        const profile = await fetchUserProfile(user.id);
+        setUserProfile(profile);
+      } else {
+        setUserProfile(null);
+        setUser(null);
+      }
       setIsLoading(false);
     };
     getUser();
@@ -157,6 +166,15 @@ export function AuthContextProvider({
     };
   };
 
+  const fetchUserProfile = async (userId: string) => {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
+      .single();
+    return profile;
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
     // revalidatePath("/", "layout");
@@ -165,6 +183,7 @@ export function AuthContextProvider({
 
   const value = {
     user,
+    userProfile,
     isLoading,
     signIn,
     signUp,
