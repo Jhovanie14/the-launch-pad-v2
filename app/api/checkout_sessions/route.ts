@@ -14,6 +14,7 @@ export async function POST(req: Request) {
   //Inser or fetch vehicle first
   const vehicleId = body.vehicleSpecs
     ? await ensureVehicle({
+        user_id: user?.id ?? null,
         year: Number(body.vehicleSpecs.year),
         make: body.vehicleSpecs.make,
         model: body.vehicleSpecs.model,

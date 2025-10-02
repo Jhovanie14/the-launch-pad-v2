@@ -1,3 +1,4 @@
+import { sendBookingConfirmationEmail } from "@/lib/email/sendConfirmation";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
@@ -65,50 +66,73 @@ export async function POST(req: Request) {
       const dateIso = appointment_date;
       const timeStr = appointment_time;
 
-      const { error } = await supabase.from("bookings").insert([
-        {
-          user_id,
-          service_package_id,
-          vehicle_id,
-          service_package_name,
-          service_package_price,
-          add_ons_id,
-          appointment_date: dateIso,
-          appointment_time: timeStr,
-          total_price,
-          total_duration,
-          status: "pending",
-          customer_name: finalCustomerName,
-          customer_email: finalCustomerEmail,
-          customer_phone,
-          notes,
-          special_instructions,
-          // optionally store Stripe refs
-          payment_intent_id: session.payment_intent,
-          // checkout_session_id: session.id,
-        },
-      ]);
+      const { data: bookingRows, error } = await supabase
+        .from("bookings")
+        .insert([
+          {
+            user_id,
+            service_package_id,
+            vehicle_id,
+            service_package_name,
+            service_package_price,
+            add_ons_id,
+            appointment_date: dateIso,
+            appointment_time: timeStr,
+            total_price,
+            total_duration,
+            status: "pending",
+            customer_name: finalCustomerName,
+            customer_email: finalCustomerEmail,
+            customer_phone,
+            notes,
+            special_instructions,
+            // optionally store Stripe refs
+            payment_intent_id: session.payment_intent,
+            // checkout_session_id: session.id,
+          },
+        ])
+        .select() // 👈 ensures we get the row back
+        .single(); // 👈 ensures we only get one row
+
       if (error) {
         console.error("Supabase insert error:", error);
       } else {
         console.log("Booking inserted!");
+        // ✅ Send confirmation email
+        if (bookingRows?.customer_email) {
+          await sendBookingConfirmationEmail({
+            to: bookingRows.customer_email,
+            customerName: bookingRows.customer_name ?? "Customer",
+            bookingId: bookingRows.id,
+            servicePackage: bookingRows.service_package_name ?? "Service",
+            appointmentDate: bookingRows.appointment_date,
+            appointmentTime: bookingRows.appointment_time,
+          });
+        }
       }
     }
 
     // Subscription checkout handling (won't affect booking path)
+    // Subscription checkout handling
     if (
       session.mode === "subscription" &&
       session.subscription &&
       session.customer
     ) {
       const appUserId = session.metadata?.app_user_id || null;
-      // planId/billingCycle not stored in current schema
+      const planId = session.metadata?.plan_id || null;
+      const billingCycleRaw = session.metadata?.billing_cycle || null;
+      const billingCycle =
+        billingCycleRaw === "monthly"
+          ? "month"
+          : billingCycleRaw === "yearly"
+            ? "year"
+            : null;
 
       const subscriptionResp = await stripe.subscriptions.retrieve(
         session.subscription as string
       );
 
-      // extract fields we need from Stripe subscription
       const sub = subscriptionResp as any;
       const cps = Number(sub?.current_period_start);
       const cpe = Number(sub?.current_period_end);
@@ -120,20 +144,62 @@ export async function POST(req: Request) {
         : null;
       const priceId = sub?.items?.data?.[0]?.price?.id ?? null;
       const cancelAtPeriodEnd = Boolean(sub?.cancel_at_period_end);
+      const vehicleId = session.metadata?.vehicle_id || null;
 
-      await supabase.from("user_subscription").upsert(
-        {
-          user_id: appUserId,
-          stripe_customer_id: session.customer as string,
-          stripe_subscription_id: sub.id as string,
-          price_id: priceId,
-          status: sub.status as string,
-          current_period_start: currentPeriodStartIso,
-          current_period_end: currentPeriodEndIso,
-          cancel_at_period_end: cancelAtPeriodEnd,
-        },
-        { onConflict: "stripe_customer_id" }
-      );
+      // Debug log before saving
+      console.log("🔍 Saving subscription with payload:", {
+        user_id: appUserId,
+        subscription_plan_id: planId,
+        billing_cycle: billingCycle,
+        stripe_customer_id: session.customer,
+        stripe_subscription_id: sub.id,
+        price_id: priceId,
+        status: sub.status,
+        current_period_start: currentPeriodStartIso,
+        current_period_end: currentPeriodEndIso,
+        cancel_at_period_end: cancelAtPeriodEnd,
+        vehicle_id: vehicleId, // 👈 include this
+      });
+
+      // 1️⃣ Insert subscription
+      const { data: subscriptionRow, error: subError } = await supabase
+        .from("user_subscription")
+        .upsert(
+          {
+            user_id: appUserId,
+            subscription_plan_id: planId,
+            billing_cycle: billingCycle,
+            stripe_customer_id: session.customer as string,
+            stripe_subscription_id: sub.id as string,
+            price_id: priceId,
+            status: sub.status as string,
+            current_period_start: currentPeriodStartIso,
+            current_period_end: currentPeriodEndIso,
+            cancel_at_period_end: cancelAtPeriodEnd,
+          },
+          { onConflict: "stripe_customer_id" }
+        )
+        .select()
+        .single();
+
+      if (subError) {
+        console.error("Error saving subscription:", subError);
+        return new Response("fail", { status: 500 });
+      }
+
+      // 2️⃣ Optional: link vehicle if vehicle_id is passed in metadata
+      if (vehicleId) {
+        const { error: linkError } = await supabase
+          .from("subscription_vehicles")
+          .upsert({
+            subscription_id: subscriptionRow.id,
+            vehicle_id: vehicleId,
+          });
+
+        if (linkError) {
+          console.error("Error linking subscription to vehicle:", linkError);
+        }
+      }
     }
   }
   return new Response("ok", { status: 200 });

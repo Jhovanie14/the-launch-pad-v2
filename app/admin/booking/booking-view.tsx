@@ -22,6 +22,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Pagination } from "@/components/ui/pagination";
+import { useBookingRealtime } from "@/hooks/useBookingRealtime";
 
 type UserSubscription = {
   user_id: string;
@@ -31,6 +33,10 @@ type UserSubscription = {
 export default function BookingsView() {
   const [loading, setLoading] = useState(false);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [totalRevenue, setTotalRevenue] = useState(0);
   const [userSubscribe, setUserSubscribe] = useState<UserSubscription[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | Booking["status"]>(
@@ -44,90 +50,54 @@ export default function BookingsView() {
   );
   const supabase = createClient();
 
-  const fetchBookings = useCallback(async () => {
-    setLoading(true);
+  useEffect(() => {
+    const fetchBookings = async (page: number = 1, pageSize: number = 10) => {
+      setLoading(true);
 
-    const { data, error } = await supabase
-      .from("bookings")
-      .select(
-        `
-        *,
+      let query = supabase.from("bookings").select(
+        `*,
         vehicle:vehicles ( year, make, model, trim, body_type, colors ),
-        add_ons ( name, price )
-      `
-      )
-      .order("created_at", { ascending: true });
+        add_ons ( name, price )`,
+        { count: "exact" }
+      );
 
-    setLoading(false);
+      if (pageSize !== 0) {
+        const from = (page - 1) * pageSize;
+        const to = from + pageSize - 1;
+        query = query.range(from, to);
+      }
 
-    if (error) console.error(error);
-    setBookings(data || []);
+      const { data, error, count } = await query;
 
-    console.log("all bookings", bookings);
-    console.log("data", data);
-  }, [supabase]);
+      setLoading(false);
 
-  useEffect(() => {
-    fetchBookings();
-    console.log(bookings);
-  }, [fetchBookings]);
-
-  // Fetch subscriptions
-  const fetchUserSubscribe = useCallback(async () => {
-    setLoading(true);
-
-    const { data, error } = await supabase
-      .from("user_subscription")
-      .select("user_id, status");
-
-    if (error) console.error(error);
-    setUserSubscribe(data || []);
-
-    console.log("all subscriber", userSubscribe);
-    console.log("data subs", data);
-  }, [supabase]);
+      if (error) console.error(error);
+      setBookings(data || []);
+      setTotal(count || 0);
+    };
+    fetchBookings(page, pageSize);
+  }, [supabase, page, pageSize]);
 
   useEffect(() => {
-    fetchBookings();
+    // Fetch subscriptions
+    const fetchUserSubscribe = async () => {
+      setLoading(true);
+
+      const { data, error } = await supabase
+        .from("user_subscription")
+        .select("user_id, status");
+
+      if (error) console.error(error);
+      setUserSubscribe(data || []);
+
+      console.log("all subscriber", userSubscribe);
+    };
+
     fetchUserSubscribe();
-    console.log(bookings);
-  }, [fetchBookings, fetchUserSubscribe]);
+  }, [supabase]);
 
   // Realtime updates for bookings table
-  useEffect(() => {
-    const channel = supabase
-      .channel("bookings-changes")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "bookings" },
-        (payload: any) => {
-          setBookings((current) => {
-            console.log(payload);
-            const newRow = payload.new as any;
-            const oldRow = payload.old as any;
-            switch (payload.eventType) {
-              case "INSERT":
-                return [newRow, ...current];
-              case "UPDATE":
-                return current.map((b) =>
-                  b.id === newRow.id ? { ...b, ...newRow } : b
-                );
-              case "DELETE":
-                return current.filter(
-                  (b) => b.id !== (oldRow?.id ?? newRow?.id)
-                );
-              default:
-                return current;
-            }
-          });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [supabase]);
+  useBookingRealtime(setBookings);
 
   const getBookingsForDate = (date: string) => {
     return bookings.filter((booking) => booking.appointment_date === date);
@@ -164,6 +134,29 @@ export default function BookingsView() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const fetchTotalRevenue = async () => {
+      const { data, error } = await supabase
+        .from("bookings")
+        .select("total_price")
+        .eq("status", "completed"); // only completed bookings
+
+      if (error) {
+        console.error("Error fetching total revenue:", error);
+        return;
+      }
+
+      const revenue = data?.reduce(
+        (sum, b) => sum + Number(b.total_price ?? 0),
+        0
+      );
+
+      setTotalRevenue(revenue ?? 0);
+    };
+
+    fetchTotalRevenue();
+  }, [supabase]);
 
   const filteredBookings = bookings.filter((booking) => {
     const serviceName = booking.service_package_name?.toLowerCase() ?? "";
@@ -208,10 +201,6 @@ export default function BookingsView() {
     return matchesSearch && matchesStatus && matchesDate;
   });
 
-  const totalRevenue = bookings
-    .filter((b) => b.status === "completed")
-    .reduce((sum, b) => sum + Number(b.total_price ?? 0), 0);
-
   const todayBookings = bookings.filter(
     (b) =>
       format(new Date(b.appointment_date), "yyyy-MM-dd") ===
@@ -219,22 +208,24 @@ export default function BookingsView() {
   );
 
   if (loading) {
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
-            <div className="animate-pulse bg-gray-200 h-6 w-48 rounded"></div>
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-white shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-16">
+              <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+              <div className="animate-pulse bg-gray-200 h-6 w-48 rounded"></div>
+            </div>
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="space-y-6">
+            <div className="animate-pulse bg-white rounded-lg p-6 h-48"></div>
+            <div className="animate-pulse bg-white rounded-lg p-6 h-64"></div>
           </div>
         </div>
       </div>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-6">
-          <div className="animate-pulse bg-white rounded-lg p-6 h-48"></div>
-          <div className="animate-pulse bg-white rounded-lg p-6 h-64"></div>
-        </div>
-      </div>
-    </div>;
+    );
   }
 
   return (
@@ -248,7 +239,7 @@ export default function BookingsView() {
                 <p className="text-sm font-medium text-muted-foreground">
                   Total Bookings
                 </p>
-                <p className="text-2xl font-bold">{bookings.length}</p>
+                <p className="text-2xl font-bold">{total}</p>
               </div>
               <Car className="h-8 w-8 text-accent-foreground" />
             </div>
@@ -341,6 +332,12 @@ export default function BookingsView() {
             bookings={filteredBookings}
             onUpdateStatus={updateBookingStatus}
             user_subscription={userSubscribe}
+          />
+          <Pagination
+            page={page}
+            total={total}
+            pageSize={pageSize}
+            onPageChange={setPage}
           />
         </CardContent>
       </Card>

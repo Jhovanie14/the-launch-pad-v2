@@ -1,19 +1,40 @@
 import { stripe } from "@/lib/stripe/stripe";
 import { createClient } from "@/utils/supabase/server";
+import { ensureVehicle } from "@/utils/vehicle";
 
 export async function POST(req: Request) {
   const supabase = await createClient();
   const body = await req.json();
-  const { planId, billingCycle, userId } = body as {
+  const { planId, billingCycle, userId, vehicle } = body as {
     planId: string;
     billingCycle: "monthly" | "yearly";
     userId?: string | null;
+    vehicle?: {
+      year: number;
+      make: string;
+      model: string;
+      trim: string;
+      body_type?: string;
+      color?: string;
+    };
   };
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
   const email = user?.email;
+
+  const vehicleId = vehicle
+    ? await ensureVehicle({
+        user_id: user?.id ?? userId ?? null,
+        year: Number(vehicle.year),
+        make: vehicle.make,
+        model: vehicle.model,
+        trim: vehicle.trim,
+        body_type: vehicle.body_type,
+        colors: [vehicle.color ?? ""],
+      })
+    : null;
 
   const { data: plan, error: planError } = await supabase
     .from("subscription_plans")
@@ -48,11 +69,20 @@ export async function POST(req: Request) {
   }
 
   if (!priceId || !priceId.startsWith("price_")) {
-    return new Response(JSON.stringify({ error: "Plan missing Stripe price" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: "Plan missing Stripe price" }),
+      {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   }
+  console.log("Creating checkout session with metadata:", {
+    app_user_id: user?.id ?? userId ?? "",
+    plan_id: planId,
+    billing_cycle: billingCycle,
+    vehicle_id: vehicleId,
+  });
 
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
@@ -65,6 +95,7 @@ export async function POST(req: Request) {
       app_user_id: user?.id ?? userId ?? "",
       plan_id: planId,
       billing_cycle: billingCycle,
+      vehicle_id: vehicleId ?? "",
     },
   });
 

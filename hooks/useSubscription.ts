@@ -43,7 +43,8 @@ export function useSubscription() {
             ...subs,
             plan_id: subs.subscription_plan_id,
             subscription_plans: plan,
-            billing_cycle: subs.billing_cycle || "monthly", // default to monthly
+            billing_cycle: subs.billing_cycle || "month", // default to monthly
+            
           });
         } else {
           setSubscription(null);

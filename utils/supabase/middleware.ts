@@ -30,8 +30,10 @@ export async function updateSession(request: NextRequest) {
   );
 
   // Get user and role
-  const { data: { user } } = await supabase.auth.getUser();
-  
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   let userRole = "user";
   if (user) {
     try {
@@ -40,7 +42,7 @@ export async function updateSession(request: NextRequest) {
         .select("role")
         .eq("id", user.id)
         .single();
-      
+
       userRole = profile?.role || "user";
     } catch (err) {
       console.error("Middleware - Error fetching user role:", err);
@@ -48,18 +50,20 @@ export async function updateSession(request: NextRequest) {
   }
 
   const { pathname } = request.nextUrl;
-  
+
   // Define route patterns
   const isAdminRoute = pathname.startsWith("/admin");
-  const isUserRoute = pathname.startsWith("/dashboard") || 
-                     pathname.startsWith("/profile") || 
-                     pathname.startsWith("/settings");
-  const isPublicRoute = pathname === "/" || 
-                       pathname.startsWith("/login") || 
-                       pathname.startsWith("/signup") || 
-                       pathname.startsWith("/about") || 
-                       pathname.startsWith("/blog") || 
-                       pathname.startsWith("/contact");
+  const isUserRoute =
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/profile") ||
+    pathname.startsWith("/settings");
+  const isPublicRoute =
+    pathname === "/" ||
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/signup") ||
+    pathname.startsWith("/about") ||
+    pathname.startsWith("/blog") ||
+    pathname.startsWith("/contact");
 
   // Handle authenticated users
   if (user) {
@@ -67,15 +71,16 @@ export async function updateSession(request: NextRequest) {
     if (userRole === "admin" && (isUserRoute || pathname === "/admin")) {
       return NextResponse.redirect(new URL("/admin/dashboard", request.url));
     }
-    
+
     // User accessing admin routes
     if (userRole === "user" && isAdminRoute) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
-    
+
     // Authenticated user accessing public routes
     if (isPublicRoute) {
-      const redirectPath = userRole === "admin" ? "/admin/dashboard" : "/dashboard";
+      const redirectPath =
+        userRole === "admin" ? "/admin/dashboard" : "/dashboard";
       return NextResponse.redirect(new URL(redirectPath, request.url));
     }
   }

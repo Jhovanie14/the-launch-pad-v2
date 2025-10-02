@@ -21,8 +21,8 @@ export interface UserNavbarProps {
   user: AuthUser;
 }
 
-export function AuthNavbar({ user }: UserNavbarProps) {
-  const { signOut } = useAuth();
+export function AuthNavbar() {
+  const { signOut, user, userProfile } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -45,7 +45,7 @@ export function AuthNavbar({ user }: UserNavbarProps) {
                   Bookings
                 </Link>
                 <Link
-                  href="/pricing"
+                  href="/dashboard/pricing"
                   className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
                 >
                   Subscription
@@ -57,12 +57,12 @@ export function AuthNavbar({ user }: UserNavbarProps) {
                 <DropdownMenuTrigger asChild>
                   <Avatar className="border border-blue-800 h-8 w-8">
                     <AvatarImage
-                      src={user.avatar_url || ""}
-                      alt={user.full_name || "User"}
+                      src={userProfile?.avatar_url || ""}
+                      alt={userProfile?.full_name || "User"}
                     />
                     <AvatarFallback>
-                      {user.full_name?.charAt(0) ||
-                        user.email.charAt(0).toUpperCase()}
+                      {userProfile?.full_name?.charAt(0) ||
+                        userProfile?.email.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                 </DropdownMenuTrigger>
@@ -72,16 +72,16 @@ export function AuthNavbar({ user }: UserNavbarProps) {
                       <div className="flex items-center space-x-4">
                         <Avatar className="h-8 w-8">
                           <AvatarImage
-                            src={user.avatar_url || ""}
-                            alt={user.full_name || "User"}
+                            src={userProfile?.avatar_url || ""}
+                            alt={userProfile?.full_name || "User"}
                           />
                           <AvatarFallback>
-                            {user.full_name?.charAt(0) ||
-                              user.email.charAt(0).toUpperCase()}
+                            {userProfile?.full_name?.charAt(0) ||
+                              userProfile?.email.charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                         <span className="text-sm text-gray-700 dark:text-gray-300">
-                          {user.full_name || user.email}
+                          {userProfile?.full_name || userProfile?.email}
                         </span>
                       </div>
                     </div>
@@ -184,21 +184,21 @@ export function AuthNavbar({ user }: UserNavbarProps) {
                 <div className="flex-shrink-0">
                   <Avatar className="h-10 w-10">
                     <AvatarImage
-                      src={user.avatar_url || ""}
-                      alt={user.full_name || "User"}
+                      src={userProfile?.avatar_url || ""}
+                      alt={userProfile?.full_name || "User"}
                     />
                     <AvatarFallback>
-                      {user.full_name?.charAt(0) ||
-                        user.email.charAt(0).toUpperCase()}
+                      {userProfile?.full_name?.charAt(0) ||
+                        userProfile?.email.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                 </div>
                 <div className="ml-3">
                   <div className="text-base font-medium text-gray-800 dark:text-gray-200">
-                    {user.full_name || user.email}
+                    {userProfile?.full_name || userProfile?.email}
                   </div>
                   <div className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                    {user.email}
+                    {userProfile?.email}
                   </div>
                 </div>
               </div>

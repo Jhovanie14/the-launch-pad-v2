@@ -89,3 +89,33 @@ export interface PricingPlan {
   yearly_price: number;
   features: string[];
 }
+
+export interface OrderItem {
+  name: string;
+  price: number;
+  quantity: number;
+}
+
+export interface OrderData {
+  type: "checkout" | "subscription"; // which flow
+  date: string; // human-readable date
+  orderNumber: string; // Stripe PI id or booking id
+  paymentMethod: string; // "Card" | "Subscription"
+  items: OrderItem[]; // normalized list of items
+  subtotal: number; // sum of items
+  tax: number; // Stripe only (0 for subscription)
+  total: number; // subtotal + tax
+}
+
+export interface Review {
+  id: string;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+  bookings: {
+    service_package_name: string;
+  };
+  profiles: {
+    full_name: string;
+  };
+}

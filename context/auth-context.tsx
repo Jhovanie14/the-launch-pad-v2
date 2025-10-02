@@ -49,15 +49,14 @@ export function AuthContextProvider({
 
   useEffect(() => {
     const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        const profile = await fetchUserProfile(user.id);
+      const { data } = await supabase.auth.getUser();
+      const currentUser = data.user;
+      setUser(currentUser);
+      if (currentUser) {
+        const profile = await fetchUserProfile(currentUser.id);
         setUserProfile(profile);
       } else {
         setUserProfile(null);
-        setUser(null);
       }
       setIsLoading(false);
     };
@@ -66,7 +65,15 @@ export function AuthContextProvider({
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setUser(session?.user || null);
+      const newUser = session?.user ?? null;
+      setUser(newUser);
+
+      if (newUser) {
+        const profile = await fetchUserProfile(newUser.id);
+        setUserProfile(profile);
+      } else {
+        setUserProfile(null);
+      }
       setIsLoading(false);
     });
 

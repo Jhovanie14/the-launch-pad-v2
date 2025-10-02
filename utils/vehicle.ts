@@ -2,6 +2,7 @@
 import { createClient } from "@/utils/supabase/server";
 
 export async function ensureVehicle(vehicle: {
+  user_id: string | null;
   year: number;
   make: string;
   model: string;
@@ -15,6 +16,7 @@ export async function ensureVehicle(vehicle: {
   const { data: existing, error: selectError } = await supabase
     .from("vehicles")
     .select("id")
+    .eq("user_id", vehicle.user_id)
     .eq("year", vehicle.year)
     .eq("make", vehicle.make)
     .eq("model", vehicle.model)
@@ -33,6 +35,7 @@ export async function ensureVehicle(vehicle: {
   const { data: inserted, error: insertError } = await supabase
     .from("vehicles")
     .insert({
+      user_id: vehicle.user_id,
       year: vehicle.year,
       make: vehicle.make,
       model: vehicle.model,
