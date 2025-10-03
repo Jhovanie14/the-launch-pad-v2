@@ -4,8 +4,8 @@ import { getUserProfile } from "@/auth/actions";
 import { UserProfile } from "@/types";
 import { createClient } from "@/utils/supabase/client";
 import { User } from "@supabase/supabase-js";
-import { redirect } from "next/navigation";
-import { createContext, useContext, useEffect, useState } from "react";
+import { redirect, useRouter } from "next/navigation";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { success, z } from "zod";
 
 const signInSchema = z.object({
@@ -42,10 +42,11 @@ export function AuthContextProvider({
   children: React.ReactNode;
 }) {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   // const [loading, setLoading] = useState(false);
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     const getUser = async () => {
@@ -65,20 +66,32 @@ export function AuthContextProvider({
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      const newUser = session?.user ?? null;
-      setUser(newUser);
-
-      if (newUser) {
-        const profile = await fetchUserProfile(newUser.id);
-        setUserProfile(profile);
-      } else {
-        setUserProfile(null);
+      // ✅ Ignore token refresh events to prevent re-renders
+      if (event === "TOKEN_REFRESHED") {
+        return;
       }
-      setIsLoading(false);
+
+      // ✅ Only update on meaningful auth changes
+      if (
+        event === "SIGNED_IN" ||
+        event === "SIGNED_OUT" ||
+        event === "USER_UPDATED"
+      ) {
+        const newUser = session?.user ?? null;
+        setUser(newUser);
+
+        if (newUser) {
+          const profile = await fetchUserProfile(newUser.id);
+          setUserProfile(profile);
+        } else {
+          setUserProfile(null);
+        }
+        setIsLoading(false);
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, [supabase.auth]);
+  }, []);
 
   const signIn = async (formData: FormData) => {
     const validatedFields = signInSchema.safeParse({
@@ -110,10 +123,10 @@ export function AuthContextProvider({
 
     if (role === "admin") {
       // revalidatePath("/admin", "layout");
-      redirect("/admin/dashboard");
+      router.push("/admin/dashboard");
     }
     // revalidatePath("/", "layout");
-    redirect("/dashboard");
+    router.push("/dashboard");
   };
 
   const signUp = async (formData: FormData) => {
@@ -185,17 +198,20 @@ export function AuthContextProvider({
   const signOut = async () => {
     await supabase.auth.signOut();
     // revalidatePath("/", "layout");
-    redirect("/");
+    router.push("/");
   };
 
-  const value = {
-    user,
-    userProfile,
-    isLoading,
-    signIn,
-    signUp,
-    signOut,
-  };
+  const value = useMemo(
+    () => ({
+      user,
+      userProfile,
+      isLoading,
+      signIn,
+      signUp,
+      signOut,
+    }),
+    [user, userProfile, isLoading]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

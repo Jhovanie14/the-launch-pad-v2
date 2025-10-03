@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/auth-context";
 import { Subscription } from "@/types";
@@ -9,7 +9,8 @@ export function useSubscription() {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
-  const supabase = createClient();
+  
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     if (!user) {
@@ -19,6 +20,7 @@ export function useSubscription() {
     }
 
     const fetchSubscription = async () => {
+      setLoading(true);
       try {
         const { data: subs, error: subError } = await supabase
           .from("user_subscription")
@@ -44,7 +46,6 @@ export function useSubscription() {
             plan_id: subs.subscription_plan_id,
             subscription_plans: plan,
             billing_cycle: subs.billing_cycle || "month", // default to monthly
-            
           });
         } else {
           setSubscription(null);
@@ -58,7 +59,7 @@ export function useSubscription() {
     };
 
     fetchSubscription();
-  }, [user, supabase]);
+  }, [user?.id,]);
 
   return { subscription, loading };
 }

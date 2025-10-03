@@ -39,6 +39,7 @@ export async function createBooking(car: CarData) {
   const { data: existing } = await supabase
     .from("vehicles")
     .select("id")
+    .eq("user_id", user?.id)
     .eq("year", car.year)
     .eq("make", car.make)
     .eq("model", car.model)
@@ -50,6 +51,7 @@ export async function createBooking(car: CarData) {
   let vehicleId = existing?.id;
   if (!vehicleId) {
     console.log("Inserting vehicle:", {
+      user_id: user?.id || null,
       year: car.year,
       make: car.make,
       model: car.model,
@@ -60,6 +62,7 @@ export async function createBooking(car: CarData) {
     const { data: inserted } = await supabase
       .from("vehicles")
       .insert({
+        user_id: user?.id || null,
         year: car.year,
         make: car.make,
         model: car.model,

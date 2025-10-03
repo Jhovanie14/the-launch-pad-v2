@@ -163,12 +163,14 @@ export default function BookingsView() {
     const make = (booking as any).vehicles?.make?.toLowerCase() ?? "";
     const model = (booking as any).vehicles?.model?.toLowerCase() ?? "";
     const custormerName = booking.customer_name?.toLowerCase() ?? "";
+    const customerBookingId = booking?.id.toLowerCase() ?? "";
 
     const matchesSearch =
       serviceName.includes(searchTerm.toLowerCase()) ||
       make.includes(searchTerm.toLowerCase()) ||
       model.includes(searchTerm.toLowerCase()) ||
-      custormerName.includes(searchTerm.toLowerCase());
+      custormerName.includes(searchTerm.toLowerCase()) ||
+      customerBookingId.includes(searchTerm.toLowerCase());
 
     const matchesStatus =
       statusFilter === "all" || booking.status === statusFilter;

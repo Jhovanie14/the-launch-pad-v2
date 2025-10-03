@@ -121,6 +121,7 @@ function ServiceSelectionPage() {
   };
 
   const fetchPackages = useCallback(async () => {
+    setLoading(true);
     const { data, error } = await supabase
       .from("service_packages")
       .select("*")
@@ -130,8 +131,10 @@ function ServiceSelectionPage() {
     if (error) console.error(error);
 
     setServices(data ?? []);
+    setLoading(false);
   }, [supabase]);
   const fetchAddOns = useCallback(async () => {
+    setLoading(true);
     const { data, error } = await supabase
       .from("add_ons")
       .select("*")
@@ -141,6 +144,7 @@ function ServiceSelectionPage() {
     if (error) console.error(error);
 
     setAddOns(data ?? []);
+    setLoading(false);
   }, [supabase]);
 
   useEffect(() => {

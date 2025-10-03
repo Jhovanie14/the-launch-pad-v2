@@ -1,111 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, Car, DollarSign, User } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
+import { Calendar, Clock, Car, DollarSign, Crown } from "lucide-react";
 import { useBookingRealtime } from "@/hooks/useBookingRealtime";
 import { ReviewForm } from "@/components/user/review-form";
-
-interface Booking {
-  id: string;
-  vehicle_id: string;
-  service_package_name: string;
-  service_package_price: number;
-  payment_intent_id: string;
-  add_ons: {
-    name: string;
-    price: number;
-  };
-  appointment_date: string;
-  appointment_time: string;
-  total_price: number;
-  total_duration: number;
-  status: string;
-  created_at: string;
-  vehicles: {
-    year: number;
-    make: string;
-    model: string;
-    trim: string;
-    colors: string[];
-  };
-}
+import { useAuth } from "@/context/auth-context";
+import { useBookingDetails } from "@/hooks/useBookingDetails";
+import { redirect } from "next/navigation";
 
 export default function BookingsList() {
-  const supabase = createClient();
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [uid, setUid] = useState<string | null>(null);
+  const { user, isLoading: authLoading } = useAuth();
+  const { bookings, loading, reviewedBookings, setBookings } =
+    useBookingDetails();
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(
     null
   );
-  const [reviewedBookings, setReviewedBookings] = useState<
-    Record<string, boolean>
-  >({});
-
-  // Get user id + initial fetch
-  useEffect(() => {
-    (async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      const userId = user?.id ?? null;
-      setUid(userId);
-      if (!userId) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const { data, error } = await supabase
-          .from("bookings")
-          .select(
-            `
-            *,
-            vehicles ( year, make, model, trim, body_type, colors ),
-            add_ons ( name, price )
-          `
-          )
-          .eq("user_id", userId)
-          .order("created_at", { ascending: false });
-
-        if (error) throw error;
-        setBookings(data || []);
-        console.log(data);
-      } catch (e) {
-        console.error("Error fetching bookings:", e);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [supabase]);
-
-  useEffect(() => {
-    async function checkReviews() {
-      if (!uid || bookings.length === 0) return;
-
-      const results: Record<string, boolean> = {};
-
-      for (const booking of bookings) {
-        const { data: existingReview } = await supabase
-          .from("reviews")
-          .select("id")
-          .eq("booking_id", booking.id)
-          .eq("user_id", uid)
-          .maybeSingle();
-
-        results[booking.id] = !!existingReview;
-      }
-
-      setReviewedBookings(results);
-    }
-
-    checkReviews();
-  }, [bookings, uid, supabase]);
-
   // Realtime channel (only this user's bookings)
   useBookingRealtime(setBookings);
 
@@ -132,6 +44,10 @@ export default function BookingsList() {
         return "bg-gray-100 text-gray-800";
     }
   };
+
+  if (!user) {
+    redirect("/login");
+  }
 
   if (loading) {
     return (
@@ -166,39 +82,42 @@ export default function BookingsList() {
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         {bookings.map((booking) => (
           <Card key={booking.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader className="">
+            <CardHeader>
               <div className="flex justify-end mb-2">
                 <Badge className={getStatusColor(booking.status)}>
                   {booking.status}
                 </Badge>
               </div>
               <div className="flex items-center">
-                <CardTitle className="">
-                  Booking #{""}
-                  {booking.id}
-                </CardTitle>
+                <CardTitle>Booking #{booking.id}</CardTitle>
               </div>
             </CardHeader>
+
             <CardContent className="flex flex-col h-full space-y-4">
               {/* Vehicle Info */}
               <div className="flex items-center text-sm text-gray-600">
                 <Car className="w-4 h-4 mr-2" />
                 <span>
-                  {booking.vehicles.year} {booking.vehicles.make}{" "}
-                  {booking.vehicles.model}
+                  {booking.vehicle?.year} {booking.vehicle?.make}{" "}
+                  {booking.vehicle?.model}
                 </span>
               </div>
               <div className="text-sm text-gray-600 ml-6">
-                {booking.vehicles.trim} • {booking.vehicles.colors.join(", ")}
+                {booking.vehicle?.trim} • {booking.vehicle?.colors}
               </div>
 
               {/* Service Info */}
               <div className="bg-blue-50 rounded-lg p-3">
-                <div className="font-medium text-blue-900">
+                <div className="font-medium text-blue-900 mb-2">
                   {booking.service_package_name}
                 </div>
-                <div className="text-sm text-blue-700">
-                  ${booking.service_package_price}
+                <div className="flex justify-between items-center">
+                  <p className="text-sm text-blue-700">
+                    {Number(booking.service_package_price) === 0
+                      ? "Free"
+                      : `$${booking.service_package_price}`}
+                  </p>
+                  <Crown className="w-4 h-4 text-amber-400" />
                 </div>
               </div>
 
@@ -208,15 +127,13 @@ export default function BookingsList() {
                   <div className="text-sm font-medium text-gray-700 mb-2">
                     Add-ons:
                   </div>
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">
-                        + {booking.add_ons.name}
-                      </span>
-                      <span className="font-medium">
-                        +${booking.add_ons.price}
-                      </span>
-                    </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">
+                      + {booking.add_ons.name}
+                    </span>
+                    <span className="font-medium">
+                      +${booking.add_ons.price}
+                    </span>
                   </div>
                 </div>
               )}
@@ -232,14 +149,16 @@ export default function BookingsList() {
                   {booking.appointment_time} ({booking.total_duration} min)
                 </div>
               </div>
+
               <div className="flex-1" />
+
               {/* Total */}
               <div className="border-t pt-3">
                 <div className="flex items-center justify-between text-lg font-semibold">
                   <span>Total</span>
                   <div className="flex items-center text-green-600">
                     <DollarSign className="w-4 h-4 mr-1" />
-                    {booking.total_price}
+                    {Number(booking.total_price).toLocaleString()}
                   </div>
                 </div>
               </div>
@@ -248,16 +167,14 @@ export default function BookingsList() {
               <div className="flex gap-2 pt-2">
                 {booking.status === "completed" &&
                 !reviewedBookings[booking.id] ? (
-                  <>
-                    <Button
-                      size="sm"
-                      variant="default"
-                      className="flex-1"
-                      onClick={() => setSelectedBookingId(booking.id)}
-                    >
-                      Submit Review
-                    </Button>
-                  </>
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="flex-1"
+                    onClick={() => setSelectedBookingId(booking.id)}
+                  >
+                    Submit Review
+                  </Button>
                 ) : reviewedBookings[booking.id] ? (
                   <span className="w-full text-center text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
                     Reviewed ✅
@@ -266,7 +183,11 @@ export default function BookingsList() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className={`flex-1 ${booking.status === "confirmed" ? "text-blue-900 border-blue-900" : ""}`}
+                    className={`flex-1 ${
+                      booking.status === "confirmed"
+                        ? "text-blue-900 border-blue-900"
+                        : ""
+                    }`}
                   >
                     {booking.status === "pending"
                       ? "Waiting for confirmation"
@@ -292,11 +213,12 @@ export default function BookingsList() {
           </p>
         </div>
       )}
+
       {/* Review Modal */}
-      {uid && selectedBookingId && (
+      {user && selectedBookingId && (
         <ReviewForm
           bookingId={selectedBookingId}
-          userId={uid}
+          userId={user.id}
           open={!!selectedBookingId}
           onOpenChange={() => setSelectedBookingId(null)}
           onSubmitted={() => setSelectedBookingId(null)}

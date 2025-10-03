@@ -16,16 +16,12 @@ import { createClient } from "@/utils/supabase/client";
 import { startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { useAuth } from "@/context/auth-context";
 import { redirect, useRouter } from "next/navigation";
+import { useBookingStats } from "@/hooks/useBooking";
 
 export default function DashboardPage() {
-  const supabase = createClient();
   const { user, userProfile, isLoading } = useAuth();
   const { openBookingModal } = useBooking();
-  const [loading, setLoading] = useState(false);
-  const [totalBooking, setTotalBooking] = useState<number>(0);
-  const [totalBookingCompleted, setTotalBookingCompleted] = useState<number>(0);
-  const [recentBookings, setRecentBookings] = useState<any[]>([]);
-  const [diffFromLastMonth, setDiffFromLastMonth] = useState<number>(0);
+  const { stats, recentBookings, loading } = useBookingStats();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -40,89 +36,28 @@ export default function DashboardPage() {
     }
   };
 
-  // Redirect if not authenticated
-
-  useEffect(() => {
-    if (!user?.id) return;
-
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const now = new Date();
-        const thisMonthStart = startOfMonth(now).toISOString();
-        const thisMonthEnd = endOfMonth(now).toISOString();
-        const lastMonth = subMonths(now, 1);
-        const lastMonthStart = startOfMonth(lastMonth).toISOString();
-        const lastMonthEnd = endOfMonth(lastMonth).toISOString();
-
-        // Total bookings this month
-        const { count: thisMonthCount } = await supabase
-          .from("bookings")
-          .select("*", { count: "exact", head: true })
-          .eq("user_id", user.id)
-          .gte("created_at", thisMonthStart)
-          .lte("created_at", thisMonthEnd);
-
-        // Total bookings last month
-        const { count: lastMonthCount } = await supabase
-          .from("bookings")
-          .select("*", { count: "exact", head: true })
-          .eq("user_id", user.id)
-          .gte("created_at", lastMonthStart)
-          .lte("created_at", lastMonthEnd);
-
-        setTotalBooking(thisMonthCount ?? 0);
-        setDiffFromLastMonth((thisMonthCount ?? 0) - (lastMonthCount ?? 0));
-
-        // Completed bookings
-        const { count: completedCount } = await supabase
-          .from("bookings")
-          .select("*", { count: "exact", head: true })
-          .eq("user_id", user.id)
-          .eq("status", "completed");
-
-        setTotalBookingCompleted(completedCount ?? 0);
-
-        // Recent bookings
-        const { data: recent } = await supabase
-          .from("bookings")
-          .select("id,status,created_at")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(3);
-
-        setRecentBookings(recent || []);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [user, supabase]);
-
-  if (isLoading) {
-    if (loading) {
-      return (
-        <div className="min-h-screen bg-gray-50">
-          <div className="bg-white shadow-sm border-b">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex items-center justify-between h-16">
-                <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
-                <div className="animate-pulse bg-gray-200 h-6 w-48 rounded"></div>
-              </div>
-            </div>
-          </div>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="space-y-6">
-              <div className="animate-pulse bg-white rounded-lg p-6 h-48"></div>
-              <div className="animate-pulse bg-white rounded-lg p-6 h-64"></div>
+  if (isLoading || loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-white shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-16">
+              <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+              <div className="animate-pulse bg-gray-200 h-6 w-48 rounded"></div>
             </div>
           </div>
         </div>
-      );
-    }
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="space-y-6">
+            <div className="animate-pulse bg-white rounded-lg p-6 h-48"></div>
+            <div className="animate-pulse bg-white rounded-lg p-6 h-64"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (!user) {
+    redirect("/login");
   }
 
   return (
@@ -165,10 +100,10 @@ export default function DashboardPage() {
               </svg>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalBooking}</div>
+              <div className="text-2xl font-bold">{stats.thisMonth}</div>
               <p className="text-xs text-muted-foreground">
-                {diffFromLastMonth >= 0 ? "+" : "-"}
-                {diffFromLastMonth} from last month
+                {stats.difference >= 0 ? "+" : ""}
+                {stats.difference} from last month
               </p>
             </CardContent>
           </Card>
@@ -215,7 +150,7 @@ export default function DashboardPage() {
               </svg>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalBookingCompleted}</div>
+              <div className="text-2xl font-bold">{stats.completed}</div>
               <p className="text-xs text-muted-foreground">+4 from last week</p>
             </CardContent>
           </Card>

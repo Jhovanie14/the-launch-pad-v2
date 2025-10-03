@@ -37,8 +37,8 @@ export default function RootLayout({
       >
         <AuthContextProvider>
           <BookingProvider>
-            <BookingModal />
             {children}
+            <BookingModal />
           </BookingProvider>
         </AuthContextProvider>
       </body>
