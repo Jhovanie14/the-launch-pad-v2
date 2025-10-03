@@ -36,26 +36,26 @@ export default function DashboardPage() {
     }
   };
 
-  if (isLoading || loading) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="bg-white shadow-sm border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
-              <div className="animate-pulse bg-gray-200 h-6 w-48 rounded"></div>
-            </div>
-          </div>
-        </div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="space-y-6">
-            <div className="animate-pulse bg-white rounded-lg p-6 h-48"></div>
-            <div className="animate-pulse bg-white rounded-lg p-6 h-64"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // if (isLoading || loading) {
+  //   return (
+  //     <div className="min-h-screen bg-gray-50">
+  //       <div className="bg-white shadow-sm border-b">
+  //         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+  //           <div className="flex items-center justify-between h-16">
+  //             <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
+  //             <div className="animate-pulse bg-gray-200 h-6 w-48 rounded"></div>
+  //           </div>
+  //         </div>
+  //       </div>
+  //       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  //         <div className="space-y-6">
+  //           <div className="animate-pulse bg-white rounded-lg p-6 h-48"></div>
+  //           <div className="animate-pulse bg-white rounded-lg p-6 h-64"></div>
+  //         </div>
+  //       </div>
+  //     </div>
+  //   );
+  // }
   if (!user) {
     redirect("/login");
   }
@@ -178,22 +178,6 @@ export default function DashboardPage() {
                       </p>
                     </div>
                   </div>
-                  {/* <div className="flex items-center space-x-4">
-                    <div className="h-2 w-2 rounded-full bg-green-600" />
-                    <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium">Booking confirmed</p>
-                      <p className="text-xs text-muted-foreground">
-                        4 hours ago
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    <div className="h-2 w-2 rounded-full bg-yellow-600" />
-                    <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium">Booking pending</p>
-                      <p className="text-xs text-muted-foreground">1 day ago</p>
-                    </div>
-                  </div> */}
                 </div>
               ))}
             </CardContent>

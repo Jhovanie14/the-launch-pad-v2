@@ -1,65 +1,45 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/auth-context";
+import { getActiveSubscription } from "@/lib/services/subscriptionService";
 import { Subscription } from "@/types";
+import { createClient } from "@/utils/supabase/client";
+import { useEffect, useMemo, useState } from "react";
 
 export function useSubscription() {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
-  
-  const supabase = useMemo(() => createClient(), []);
+  const [error, setError] = useState<string | null>(null);
 
+  const { user } = useAuth();
+  const supabase = createClient();
   useEffect(() => {
-    if (!user) {
+    if (!user?.id) {
       setSubscription(null);
       setLoading(false);
       return;
     }
+    loadSubscrption();
+  }, [user?.id, supabase]);
 
-    const fetchSubscription = async () => {
+  async function loadSubscrption() {
+    if (!user?.id) return;
+    try {
       setLoading(true);
-      try {
-        const { data: subs, error: subError } = await supabase
-          .from("user_subscription")
-          .select("*")
-          .eq("user_id", user.id)
-          .eq("status", "active")
-          .maybeSingle();
+      setError(null);
 
-        if (subError) throw subError;
+      const sub = await getActiveSubscription(supabase, user?.id);
+      setSubscription(sub);
+    } catch (err) {
+      console.error("Error fetching subscription:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to load subscription"
+      );
+      setSubscription(null);
+    } finally {
+      setLoading(false);
+    }
+  }
 
-        if (subs) {
-          // fetch related plan manually since auto join is failing
-          const { data: plan, error: planError } = await supabase
-            .from("subscription_plans")
-            .select("name, description, monthly_price, yearly_price")
-            .eq("id", subs.subscription_plan_id) // use your FK column name here
-            .maybeSingle();
-
-          if (planError) throw planError;
-
-          setSubscription({
-            ...subs,
-            plan_id: subs.subscription_plan_id,
-            subscription_plans: plan,
-            billing_cycle: subs.billing_cycle || "month", // default to monthly
-          });
-        } else {
-          setSubscription(null);
-        }
-      } catch (error) {
-        console.error("Error fetching subscription:", error);
-        setSubscription(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSubscription();
-  }, [user?.id,]);
-
-  return { subscription, loading };
+  return { subscription, loading, error };
 }

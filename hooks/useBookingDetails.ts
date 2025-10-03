@@ -15,7 +15,7 @@ export function useBookingDetails() {
   >({});
 
   const { user } = useAuth();
-  const supabase = useMemo(() => createClient(), []);
+  const supabase = createClient();
 
   useEffect(() => {
     if (!user?.id) {

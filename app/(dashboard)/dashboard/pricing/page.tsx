@@ -3,9 +3,9 @@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/auth-context";
 import { useSubscription } from "@/hooks/useSubscription";
-import { useState, useEffect } from "react";
+import { usePricingPlans } from "@/hooks/usePricingPlans";
+import { useState } from "react";
 import { CheckCircle2, Crown } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
 import { UserNavbar } from "@/components/user/navbar";
 import {
   Card,
@@ -17,107 +17,24 @@ import {
 import AuthPromptModal from "@/components/user/authPromptModal";
 import { useRouter } from "next/navigation";
 
-interface PricingPlan {
-  id: string;
-  name: string;
-  monthly_price: number;
-  yearly_price: number;
-  features: string[];
-}
-
-export default function PricingContent() {
+export default function PricingPage() {
   const router = useRouter();
-  const supabase = createClient();
-  const [pricing, setPricing] = useState<"monthly" | "yearly">("monthly");
-  const [pricingPlans, setPricingPlans] = useState<PricingPlan[]>([]);
-  const [authOpen, setAuthOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
   const { user, userProfile } = useAuth();
   const { subscription } = useSubscription();
+  const { plans, loading } = usePricingPlans();
 
-  // Fetch pricing plans
-  useEffect(() => {
-    const fetchPricingPlans = async () => {
-      try {
-        const { data } = await supabase
-          .from("subscription_plans")
-          .select("*")
-          .order("monthly_price", { ascending: true });
+  const [pricing, setPricing] = useState<"monthly" | "yearly">("monthly");
+  const [authOpen, setAuthOpen] = useState(false);
 
-        setPricingPlans(data ?? []);
-      } catch (error) {
-        console.error("Error fetching pricing plans:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPricingPlans();
-  }, []);
-
-  const handleCheckout = async (planId: string) => {
-    try {
-      if (!user) {
-        setAuthOpen(true);
-        return;
-      }
-      console.log("➡️ Checkout planId (from frontend):", planId);
-
-      // const response = await fetch("/api/create-checkout-session", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({
-      //     planId,
-      //     billingCycle: pricing,
-      //     userId: user?.id,
-      //   }),
-      // });
-
-      // const { url } = await response.json();
-      // if (url) {
-      //   window.location.href = url;
-      // }
-      const params = new URLSearchParams({ plan: planId, billing: pricing });
-      router.push(`/dashboard/pricing/subscription?${params.toString()}`);
-    } catch (error) {
-      console.error("Error creating checkout session:", error);
+  const handleCheckout = (planId: string) => {
+    if (!user) {
+      setAuthOpen(true);
+      return;
     }
+    const params = new URLSearchParams({ plan: planId, billing: pricing });
+    router.push(`/dashboard/pricing/subscription?${params.toString()}`);
   };
 
-  // const handleManageSubscription = async () => {
-  //   try {
-  //     const response = await fetch("/api/create-customer-portal", {
-  //       method: "POST",
-  //     });
-  //     const { url } = await response.json();
-  //     if (url) {
-  //       window.location.href = url;
-  //     }
-  //   } catch (error) {
-  //     console.error("Error creating customer portal session:", error);
-  //   }
-  // };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="bg-white shadow-sm border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
-              <div className="animate-pulse bg-gray-200 h-6 w-48 rounded"></div>
-            </div>
-          </div>
-        </div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="space-y-6">
-            <div className="animate-pulse bg-white rounded-lg p-6 h-48"></div>
-            <div className="animate-pulse bg-white rounded-lg p-6 h-64"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
   return (
     <>
       <div className="py-20">
@@ -138,15 +55,6 @@ export default function PricingContent() {
                   </span>
                 )}
               </p>
-              {/* <div className="flex items-center justify-center gap-4 mt-6">
-                  <Button
-                    // onClick={handleManageSubscription}
-                    className="bg-blue-900 text-white hover:bg-blue-800"
-                  >
-                    <Settings className="w-4 h-4 mr-2" />
-                    Manage Subscription
-                  </Button>
-                </div> */}
             </>
           ) : (
             <>
@@ -188,7 +96,7 @@ export default function PricingContent() {
 
         {/* Pricing Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {pricingPlans.map((plan) => (
+          {plans.map((plan) => (
             <Card
               key={plan.id}
               className="flex flex-col h-full border-2 hover:border-blue-200 transition-colors"
