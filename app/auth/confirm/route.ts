@@ -5,40 +5,59 @@ import { createClient } from "@/utils/supabase/server";
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
 
-  // Accept token or token_hash — Supabase is using token
+  // Supabase email links use different parameter names depending on the email provider:
+  // - Resend/custom SMTP: 'token_hash'
+  // - Some configurations: 'code'
   const token_hash =
-    searchParams.get("token") || searchParams.get("token_hash");
-  const type = (searchParams.get("type") as EmailOtpType) || "signup";
+    searchParams.get("token_hash") ||
+    searchParams.get("code") ||
+    searchParams.get("token");
+
+  const type = searchParams.get("type") as EmailOtpType | null;
   const next = "/dashboard";
 
-  console.log("[confirm] Received:", { token_hash, type });
-
+  // Create clean redirect URL
   const redirectTo = request.nextUrl.clone();
   redirectTo.pathname = next;
-  redirectTo.searchParams.delete("token");
   redirectTo.searchParams.delete("token_hash");
+  redirectTo.searchParams.delete("code");
+  redirectTo.searchParams.delete("token");
   redirectTo.searchParams.delete("type");
+  redirectTo.searchParams.delete("next");
 
-  if (token_hash) {
+  // Verify we have required parameters
+  if (token_hash && type) {
     const supabase = await createClient();
+
     const { error } = await supabase.auth.verifyOtp({
       type,
       token_hash,
     });
 
     if (!error) {
-      console.log("[confirm] Success");
+      // Successfully verified - redirect to dashboard
       return NextResponse.redirect(redirectTo);
     }
 
-    console.error("[confirm] verifyOtp error:", error.message);
+    // Verification failed - show error
+    console.error("[auth/confirm] Verification error:", error.message);
     redirectTo.pathname = "/error";
-    redirectTo.searchParams.set("reason", error.message);
+    redirectTo.searchParams.set(
+      "message",
+      "Email verification failed. Please try again."
+    );
     return NextResponse.redirect(redirectTo);
   }
 
-  console.error("[confirm] No token in URL");
+  // Missing required parameters
+  console.error("[auth/confirm] Missing token or type:", {
+    hasToken: !!token_hash,
+    hasType: !!type,
+  });
   redirectTo.pathname = "/error";
-  redirectTo.searchParams.set("reason", "Missing verification token");
+  redirectTo.searchParams.set(
+    "message",
+    "Invalid verification link. Please request a new one."
+  );
   return NextResponse.redirect(redirectTo);
 }
