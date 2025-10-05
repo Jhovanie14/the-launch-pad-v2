@@ -78,11 +78,11 @@ export async function updateSession(request: NextRequest) {
     }
 
     // Authenticated user accessing public routes
-    // if (isPublicRoute) {
-    //   const redirectPath =
-    //     userRole === "admin" ? "/admin/dashboard" : "/dashboard";
-    //   return NextResponse.redirect(new URL(redirectPath, request.url));
-    // }
+    if (isPublicRoute) {
+      const redirectPath =
+        userRole === "admin" ? "/admin/dashboard" : "/dashboard";
+      return NextResponse.redirect(new URL(redirectPath, request.url));
+    }
   }
 
   // Handle unauthenticated users accessing protected routes
