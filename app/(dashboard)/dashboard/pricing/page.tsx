@@ -114,6 +114,9 @@ export default function PricingPage() {
                     /{pricing === "monthly" ? "month" : "year"}
                   </span>
                 </CardDescription>
+                <span className="text-start text-sm text-gray-500">
+                  {plan.description}
+                </span>
               </CardHeader>
               <CardContent className="flex flex-col flex-1">
                 <ul className="space-y-3 mb-8 flex-1 text-left">

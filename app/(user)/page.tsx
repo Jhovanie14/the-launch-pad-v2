@@ -17,6 +17,7 @@ import Link from "next/link";
 export default function Home() {
   return (
     <>
+    
       {/* Hero Section */}
       <Hero />
       {/* Service, One Location */}

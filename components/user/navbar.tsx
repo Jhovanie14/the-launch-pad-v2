@@ -24,7 +24,7 @@ import {
   Users,
 } from "lucide-react";
 import { useBooking } from "@/context/bookingContext";
-import { useAuth } from "@/context/auth-context";
+import { ThemeToggle } from "../theme-toggle";
 
 const services: {
   title: string;
@@ -109,7 +109,7 @@ export function UserNavbar() {
     <nav
       className={`sticky top-0 w-full z-50 transition-all duration-300 ${
         isScrolled
-          ? "bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm"
+          ? "bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm dark:bg-transparent"
           : "bg-transparent"
       }`}
     >
@@ -221,6 +221,7 @@ export function UserNavbar() {
             {/* Mobile Menu Button */}
 
             {/* onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} */}
+            <ThemeToggle />
           </div>
           <div className="-mr-2 flex items-center sm:hidden gap-1">
             <Button

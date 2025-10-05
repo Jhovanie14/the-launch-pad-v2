@@ -83,9 +83,9 @@ export default function BookingModal() {
       setAuthOpen(true);
       return;
     }
-    console.log("user:", user);
-    console.log("subscriptionVehicles:", subscriptionVehicles);
-    console.log("selectedVehicleId:", selectedVehicleId);
+    // console.log("user:", user);
+    // console.log("subscriptionVehicles:", subscriptionVehicles);
+    // console.log("selectedVehicleId:", selectedVehicleId);
 
     let params: URLSearchParams;
 

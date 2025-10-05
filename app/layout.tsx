@@ -18,11 +18,6 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "The Launch Pad",
   description: "Houston's Premier Car Care & Food Hub",
-  icons: {
-    icon: [{ url: "/thelaunchpad.png", sizes: "32x32", type: "image/png" }],
-    shortcut: "/favicon.ico",
-    apple: "/launch-pad-icon.png",
-  },
 };
 
 export default function RootLayout({

@@ -46,7 +46,7 @@ export function AuthContextProvider({
   const [isLoading, setIsLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   // const [loading, setLoading] = useState(false);
-  const supabase = useMemo(() => createClient(), []);
+  const supabase = createClient();
 
   useEffect(() => {
     const getUser = async () => {
@@ -65,29 +65,41 @@ export function AuthContextProvider({
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // ✅ Ignore token refresh events to prevent re-renders
+    } = supabase.auth.onAuthStateChange(async (event: any, session) => {
+      console.log("🔑 Auth event:", event);
+
       if (event === "TOKEN_REFRESHED") {
+        // session still valid
         return;
       }
 
-      // ✅ Only update on meaningful auth changes
-      if (
-        event === "SIGNED_IN" ||
-        event === "SIGNED_OUT" ||
-        event === "USER_UPDATED"
-      ) {
+      if (event === "TOKEN_REFRESH_FAILED") {
+        // refresh failed → force logout
+        console.warn("❌ Session expired. Logging out.");
+        await supabase.auth.signOut();
+        setUser(null);
+        setUserProfile(null);
+        router.push("/login");
+        return;
+      }
+
+      if (event === "SIGNED_IN" || event === "USER_UPDATED") {
         const newUser = session?.user ?? null;
         setUser(newUser);
 
         if (newUser) {
           const profile = await fetchUserProfile(newUser.id);
           setUserProfile(profile);
-        } else {
-          setUserProfile(null);
         }
-        setIsLoading(false);
       }
+
+      if (event === "SIGNED_OUT") {
+        setUser(null);
+        setUserProfile(null);
+        router.push("/login"); // or "/" depending on your UX
+      }
+
+      setIsLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -170,7 +182,7 @@ export function AuthContextProvider({
         data: {
           full_name: fullName,
         },
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/confirm`,
       },
     });
 
@@ -196,9 +208,15 @@ export function AuthContextProvider({
   };
 
   const signOut = async () => {
+    const user = await getUserProfile();
+    const role = user?.role || "user";
+    // reset first
+    setUser(null);
+    setUserProfile(null);
+
     await supabase.auth.signOut();
-    // revalidatePath("/", "layout");
-    router.push("/");
+
+    router.push(role === "admin" ? "/admin" : "/");
   };
 
   const value = useMemo(

@@ -3,10 +3,8 @@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/auth-context";
 import { useSubscription } from "@/hooks/useSubscription";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { CheckCircle2, Crown } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
-import { UserNavbar } from "@/components/user/navbar";
 import {
   Card,
   CardContent,
@@ -15,45 +13,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import AuthPromptModal from "@/components/user/authPromptModal";
-import { useRouter } from "next/navigation";
-
-interface PricingPlan {
-  id: string;
-  name: string;
-  monthly_price: number;
-  yearly_price: number;
-  features: string[];
-}
+import { usePricingPlans } from "@/hooks/usePricingPlans";
 
 export default function PricingContent() {
-  const router = useRouter();
-  const supabase = createClient();
   const [pricing, setPricing] = useState<"monthly" | "yearly">("monthly");
-  const [pricingPlans, setPricingPlans] = useState<PricingPlan[]>([]);
   const [authOpen, setAuthOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
   const { user, userProfile } = useAuth();
   const { subscription } = useSubscription();
-
-  // Fetch pricing plans
-  useEffect(() => {
-    const fetchPricingPlans = async () => {
-      try {
-        const { data } = await supabase
-          .from("subscription_plans")
-          .select("*")
-          .order("monthly_price", { ascending: true });
-
-        setPricingPlans(data ?? []);
-      } catch (error) {
-        console.error("Error fetching pricing plans:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPricingPlans();
-  }, []);
+  const { plans, loading } = usePricingPlans();
 
   const handleCheckout = async (planId: string) => {
     try {
@@ -170,7 +137,7 @@ export default function PricingContent() {
 
         {/* Pricing Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {pricingPlans.map((plan) => (
+          {plans.map((plan) => (
             <Card
               key={plan.id}
               className="flex flex-col h-full border-2 hover:border-blue-200 transition-colors"
@@ -188,6 +155,9 @@ export default function PricingContent() {
                     /{pricing === "monthly" ? "month" : "year"}
                   </span>
                 </CardDescription>
+                <span className="text-start text-sm text-gray-500">
+                  {plan.description}
+                </span>
               </CardHeader>
               <CardContent className="flex flex-col flex-1">
                 <ul className="space-y-3 mb-8 flex-1 text-left">

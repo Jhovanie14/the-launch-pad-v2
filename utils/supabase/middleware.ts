@@ -86,9 +86,9 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Handle unauthenticated users accessing protected routes
-  // if (!user && (isUserRoute || isAdminRoute)) {
-  //   return NextResponse.redirect(new URL("/login", request.url));
-  // }
+  if (!user && (isUserRoute || isAdminRoute)) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
 
   return supabaseResponse;
 }

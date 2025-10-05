@@ -47,7 +47,7 @@ export function Hero() {
           <h1 className="text-center md:text-start text-4xl md:text-6xl text-blue-900 font-semibold leading-tight ">
             Car Care Done Right. Finally.
           </h1>
-          <p className="text-center md:text-start text-base md:text-lg text-muted-foreground">
+          <p className="text-center md:text-start text-base md:text-lg text-muted-foreground dark:text-white">
             Self-service car wash bays, professional detailing, and Houston's
             best food trucks all in one convenient location. Plus our famous $15
             handwash special!

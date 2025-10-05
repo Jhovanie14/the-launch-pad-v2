@@ -17,8 +17,9 @@ export function Footer() {
                 height={40}
               />
               <p className="text-sm text-muted-foreground">
-                Panda Hub brings professional car detailing right to your home.
-                Confidently book the best car detailers in your area today!
+                The Launch Pad brings professional car detailing right to your
+                home. Confidently book the best car detailers in your area
+                today!
               </p>
             </div>
             <div>
@@ -37,7 +38,7 @@ export function Footer() {
           </div>
 
           {/* Right block: link columns */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-8 border-b border-gray-300 py-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-b border-gray-300 py-6">
             <div className="space-y-1">
               <div className="text-sm font-semibold text-foreground">
                 The Launch Pad
@@ -49,10 +50,10 @@ export function Footer() {
                 About
               </Link>
               <Link
-                href="/press"
+                href="/products"
                 className="block text-sm text-muted-foreground hover:text-foreground"
               >
-                Press
+                Products
               </Link>
               <Link
                 href="/blog"
@@ -102,73 +103,11 @@ export function Footer() {
                 Exterior Car Detailing
               </Link>
             </div>
-            <div className="space-y-1">
-              <div className="block text-sm font-semibold text-foreground">
-                Monthly Memberships
-              </div>
-              <Link
-                href="/foodtruck"
-                className="block text-sm text-muted-foreground hover:text-foreground"
-              >
-                Food Truck Park
-              </Link>
-            </div>
           </div>
         </div>
 
         {/* Right Content */}
-        <div className="grid grid-cols-1 md:grid-cols-[400px_1fr] gap-8 py-5">
-          {/* left block */}
-          <div></div>
-          {/* Right block - Regions */}
-          <div className="grid grid-cols-2 gap-8">
-            <div className="space-y-1">
-              <div className="text-sm font-semibold text-foreground">
-                United States
-              </div>
-              {[
-                ["/state/california", "California"],
-                ["/state/florida", "Florida"],
-                ["/state/texas", "Texas"],
-                ["/state/north-carolina", "North Carolina"],
-                ["/state/south-carolina", "South Carolina"],
-                ["/state/tennessee", "Tennessee"],
-                ["/state/georgia", "Georgia"],
-                ["/state/arizona", "Arizona"],
-                ["/state/oregon", "Oregon"],
-                ["/state/maryland", "Maryland"],
-                ["/state/colorado", "Colorado"],
-                ["/state/washington", "Washington"],
-              ].map(([href, label]) => (
-                <Link
-                  key={href}
-                  href={`https://www.pandahub.com${href}`}
-                  className="block text-sm text-muted-foreground hover:text-foreground"
-                >
-                  {label}
-                </Link>
-              ))}
-            </div>
-
-            <div className="space-y-1">
-              <div className="text-sm font-semibold text-foreground">
-                Canada
-              </div>
-              <Link
-                href="https://www.pandahub.com/ca/state/british-columbia"
-                className="block text-sm text-muted-foreground hover:text-foreground"
-              >
-                British Columbia
-              </Link>
-              <Link
-                href="https://www.pandahub.com/ca/state/ontario"
-                className="block text-sm text-muted-foreground hover:text-foreground"
-              >
-                Ontario
-              </Link>
-            </div>
-          </div>
-        </div>
+      
 
         {/* legal + socials */}
         <div className="flex flex-col md:items-center justify-between gap-4 border-t border-gray-300 py-5">
