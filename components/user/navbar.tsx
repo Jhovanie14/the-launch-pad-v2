@@ -175,35 +175,11 @@ export function UserNavbar() {
               </Link>
             </div>
           </div>
-          {/* <div className="hidden sm:ml-6 sm:flex sm:items-center">
-                <div className="relative ml-3">
-                  <div className="flex items-center space-x-4">
-                    <span className="text-sm text-gray-700 dark:text-gray-300">
-                      {user.full_name || user.email}
-                    </span>
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage
-                        src={user.avatar_url || ""}
-                        alt={user.full_name || "User"}
-                      />
-                      <AvatarFallback>
-                        {user.full_name?.charAt(0) ||
-                          user.email.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <form action={signOut}>
-                      <Button variant="outline" size="sm" type="submit">
-                        Sign Out
-                      </Button>
-                    </form>
-                  </div>
-                </div>
-              </div> */}
           <div className="hidden sm:flex flex-shrink-0 items-center gap-1">
             <Button
               size="sm"
               onClick={openBookingModal}
-              className="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 rounded-md transition-all duration-200 shadow-md hover:shadow-lg uppercase tracking-wide"
+              className="bg-blue-900 hover:bg-blue-800 text-white font-semibold px-6 rounded-md transition-all duration-200 shadow-md hover:shadow-lg uppercase tracking-wide"
             >
               {/* onClick={openBookingModal} */}
               Book Online
@@ -227,7 +203,7 @@ export function UserNavbar() {
             <Button
               size="sm"
               onClick={openBookingModal}
-              className="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 rounded-md transition-all duration-200 shadow-md hover:shadow-lg uppercase tracking-wide"
+              className="bg-blue-900 hover:bg-blue-800 text-white font-semibold px-6 rounded-md transition-all duration-200 shadow-md hover:shadow-lg uppercase tracking-wide"
             >
               {/* onClick={openBookingModal} */}
               Book Online
@@ -269,6 +245,7 @@ export function UserNavbar() {
                 />
               </svg>
             </button>
+            <ThemeToggle />
           </div>
         </div>
       </div>

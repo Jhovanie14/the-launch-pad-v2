@@ -4,9 +4,16 @@ import { getUserProfile } from "@/auth/actions";
 import { UserProfile } from "@/types";
 import { createClient } from "@/utils/supabase/client";
 import { User } from "@supabase/supabase-js";
-import { redirect, useRouter } from "next/navigation";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { success, z } from "zod";
+import { useRouter } from "next/navigation";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  useRef,
+} from "react";
+import { z } from "zod";
 
 const signInSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -45,8 +52,26 @@ export function AuthContextProvider({
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  // const [loading, setLoading] = useState(false);
   const supabase = createClient();
+
+  // Prevent multiple simultaneous profile fetches
+  const fetchingProfile = useRef(false);
+
+  const fetchUserProfile = async (userId: string) => {
+    if (fetchingProfile.current) return userProfile;
+
+    fetchingProfile.current = true;
+    try {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .single();
+      return profile;
+    } finally {
+      fetchingProfile.current = false;
+    }
+  };
 
   useEffect(() => {
     const getUser = async () => {
@@ -62,47 +87,6 @@ export function AuthContextProvider({
       setIsLoading(false);
     };
     getUser();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event: any, session) => {
-      console.log("🔑 Auth event:", event);
-
-      if (event === "TOKEN_REFRESHED") {
-        // session still valid
-        return;
-      }
-
-      if (event === "TOKEN_REFRESH_FAILED") {
-        // refresh failed → force logout
-        console.warn("❌ Session expired. Logging out.");
-        await supabase.auth.signOut();
-        setUser(null);
-        setUserProfile(null);
-        router.push("/login");
-        return;
-      }
-
-      if (event === "SIGNED_IN" || event === "USER_UPDATED") {
-        const newUser = session?.user ?? null;
-        setUser(newUser);
-
-        if (newUser) {
-          const profile = await fetchUserProfile(newUser.id);
-          setUserProfile(profile);
-        }
-      }
-
-      if (event === "SIGNED_OUT") {
-        setUser(null);
-        setUserProfile(null);
-        router.push("/login"); // or "/" depending on your UX
-      }
-
-      setIsLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
   }, []);
 
   const signIn = async (formData: FormData) => {
@@ -134,11 +118,10 @@ export function AuthContextProvider({
     const role = user?.role || "user";
 
     if (role === "admin") {
-      // revalidatePath("/admin", "layout");
       router.push("/admin/dashboard");
+    } else {
+      router.push("/dashboard");
     }
-    // revalidatePath("/", "layout");
-    router.push("/dashboard");
   };
 
   const signUp = async (formData: FormData) => {
@@ -156,7 +139,7 @@ export function AuthContextProvider({
 
     const { email, password, fullName } = validatedFields.data;
 
-    //   check if user already exists
+    // Check if user already exists
     const { data: userExists, error: checkError } = await supabase.rpc(
       "check_user_exists",
       { email_to_check: email }
@@ -175,6 +158,12 @@ export function AuthContextProvider({
       };
     }
 
+    const siteUrl =
+      typeof window !== "undefined"
+        ? window.location.origin
+        : process.env.NEXT_PUBLIC_SITE_URL ||
+          "https://www.thelaunchpadwash.com";
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -182,7 +171,7 @@ export function AuthContextProvider({
         data: {
           full_name: fullName,
         },
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/confirm`,
+        emailRedirectTo: `${siteUrl}/auth/confirm`,
       },
     });
 
@@ -198,25 +187,21 @@ export function AuthContextProvider({
     };
   };
 
-  const fetchUserProfile = async (userId: string) => {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .single();
-    return profile;
-  };
-
   const signOut = async () => {
-    const user = await getUserProfile();
-    const role = user?.role || "user";
-    // reset first
-    setUser(null);
-    setUserProfile(null);
+    try {
+      const user = await getUserProfile();
+      const role = user?.role || "user";
 
-    await supabase.auth.signOut();
+      // Reset state first
+      setUser(null);
+      setUserProfile(null);
 
-    router.push(role === "admin" ? "/admin" : "/");
+      await supabase.auth.signOut();
+
+      router.push(role === "admin" ? "/admin" : "/");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
   };
 
   const value = useMemo(

@@ -59,7 +59,7 @@ export const bookingService = {
       59
     ).toISOString();
 
-    const [thisMonth, lastMonth, completed] = await Promise.all([
+    const [thisMonth, lastMonth, completed, active] = await Promise.all([
       supabase
         .from("bookings")
         .select("*", { count: "exact", head: true })
@@ -77,6 +77,11 @@ export const bookingService = {
         .select("*", { count: "exact", head: true })
         .eq("user_id", userId)
         .eq("status", "completed"),
+      supabase
+        .from("bookings")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .eq("status", "confirmed"),
     ]);
 
     if (thisMonth.error || lastMonth.error || completed.error) {
@@ -87,6 +92,7 @@ export const bookingService = {
       thisMonth: thisMonth.count ?? 0,
       lastMonth: lastMonth.count ?? 0,
       completed: completed.count ?? 0,
+      active: active.count ?? 0,
       difference: (thisMonth.count ?? 0) - (lastMonth.count ?? 0),
     };
   },

@@ -35,7 +35,7 @@ export function usePricingPlans() {
     };
 
     fetchPlans();
-  }, [supabase]);
+  }, []);
 
   return { plans, loading, error };
 }

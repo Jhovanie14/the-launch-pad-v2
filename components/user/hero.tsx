@@ -56,7 +56,7 @@ export function Hero() {
           <div className="flex flex-col md:flex-row items-stretch gap-3">
             <Link
               href="#"
-              className="inline-flex justify-center items-center rounded-md bg-red-600 text-white px-5 py-3 hover:bg-red-700"
+              className="inline-flex justify-center items-center rounded-md bg-blue-900 text-white px-5 py-3 hover:bg-blue-800"
             >
               See my price
             </Link>

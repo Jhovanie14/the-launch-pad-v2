@@ -29,6 +29,13 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
+  const { pathname } = request.nextUrl;
+
+  // Allow auth routes to pass through without checks
+  if (pathname.startsWith("/auth/")) {
+    return supabaseResponse;
+  }
+
   // Get user and role
   const {
     data: { user },
@@ -49,46 +56,51 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
-  const { pathname } = request.nextUrl;
-
   // Define route patterns
   const isAdminRoute = pathname.startsWith("/admin");
   const isUserRoute =
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/profile") ||
     pathname.startsWith("/settings");
-  const isPublicRoute =
-    pathname === "/" ||
-    pathname.startsWith("/login") ||
-    pathname.startsWith("/signup") ||
-    pathname.startsWith("/about") ||
-    pathname.startsWith("/blog") ||
-    pathname.startsWith("/contact");
+  const publicRoutes = [
+    "/",
+    "/login",
+    "/signup",
+    "/about",
+    "/blog",
+    "/contact",
+  ];
 
   // Handle authenticated users
   if (user) {
-    // Admin accessing user routes or admin root
-    if (userRole === "admin" && (isUserRoute || pathname === "/admin")) {
-      return NextResponse.redirect(new URL("/admin/dashboard", request.url));
-    }
-
-    // User accessing admin routes
-    if (userRole === "user" && isAdminRoute) {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
-    }
-
-    // Authenticated user accessing public routes
-    if (isPublicRoute) {
-      const redirectPath =
-        userRole === "admin" ? "/admin/dashboard" : "/dashboard";
-      return NextResponse.redirect(new URL(redirectPath, request.url));
+    if (userRole === "admin") {
+      // Admin accessing admin root
+      if (pathname === "/admin")
+        return NextResponse.redirect(new URL("/admin/dashboard", request.url));
+      // Admin accessing user routes
+      if (isUserRoute)
+        return NextResponse.redirect(new URL("/admin/dashboard", request.url));
+      // Admin accessing login/signup
+      if (pathname === "/login" || pathname === "/signup")
+        return NextResponse.redirect(new URL("/admin/dashboard", request.url));
+    } else {
+      // Regular user accessing admin routes
+      if (isAdminRoute)
+        return NextResponse.redirect(new URL("/dashboard", request.url));
+      // Regular user accessing login/signup
+      if (pathname === "/login" || pathname === "/signup")
+        return NextResponse.redirect(new URL("/dashboard", request.url));
     }
   }
 
+  // Unauthenticated users
+  if (!user && (isAdminRoute || isUserRoute)) {
+    return NextResponse.redirect(new URL("/", request.url));
+  }
   // Handle unauthenticated users accessing protected routes
-  if (!user && (isUserRoute || isAdminRoute)) {
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
+  // if (!user && (isUserRoute || isAdminRoute)) {
+  //   return NextResponse.redirect(new URL("/login", request.url));
+  // }
 
   return supabaseResponse;
 }

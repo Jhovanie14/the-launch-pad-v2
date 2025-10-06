@@ -87,19 +87,21 @@ export function AuthNavbar() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuGroup>
-                    <DropdownMenuItem>
-                      <Link href="/dashboard/settings">Profile</Link>
-                      <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
+                    <DropdownMenuItem asChild>
+                      <Link className="w-full" href="/dashboard/settings">
+                        Profile
+                      </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      Billing
-                      <DropdownMenuShortcut>⌘B</DropdownMenuShortcut>
+                    <DropdownMenuItem asChild>
+                      <Link className="w-full" href="/dashboard/billing">
+                        Billing
+                      </Link>
                     </DropdownMenuItem>
                   </DropdownMenuGroup>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={signOut}>
                     Sign Out
-                    <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
+                    <DropdownMenuShortcut>Q</DropdownMenuShortcut>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

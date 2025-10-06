@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/card";
 import AuthPromptModal from "@/components/user/authPromptModal";
 import { usePricingPlans } from "@/hooks/usePricingPlans";
+import PricingCard from "@/components/pricing-plan";
 
 export default function PricingContent() {
   const [pricing, setPricing] = useState<"monthly" | "yearly">("monthly");
@@ -136,59 +137,17 @@ export default function PricingContent() {
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-8 px-4 md:px-0">
           {plans.map((plan) => (
-            <Card
+            <PricingCard
               key={plan.id}
-              className="flex flex-col h-full border-2 hover:border-blue-200 transition-colors"
-            >
-              <CardHeader className="text-center flex flex-col">
-                <CardTitle className="text-2xl font-bold text-gray-900 mb-2">
-                  {plan.name}
-                </CardTitle>
-                <CardDescription className=" text-blue-900 text-4xl font-bold">
-                  $
-                  {pricing === "monthly"
-                    ? plan.monthly_price
-                    : plan.yearly_price}{" "}
-                  <span className="text-gray-600 text-base">
-                    /{pricing === "monthly" ? "month" : "year"}
-                  </span>
-                </CardDescription>
-                <span className="text-start text-sm text-gray-500">
-                  {plan.description}
-                </span>
-              </CardHeader>
-              <CardContent className="flex flex-col flex-1">
-                <ul className="space-y-3 mb-8 flex-1 text-left">
-                  {plan.features.map((feature, index) => (
-                    <li key={index} className="flex items-center">
-                      <div className="w-5 h-5 text-green-500 rounded-full flex items-center justify-center mr-3">
-                        <CheckCircle2 />
-                      </div>
-                      <span className="text-gray-700">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Button
-                  onClick={() => handleCheckout(plan.id)}
-                  className="w-full bg-blue-900 text-white hover:bg-blue-800 py-3 mt-auto"
-                  disabled={
-                    subscription?.plan_id === plan.id &&
-                    subscription.billing_cycle === pricing
-                  }
-                >
-                  {!subscription
-                    ? "Get Started"
-                    : subscription.plan_id === plan.id &&
-                        subscription.billing_cycle === pricing
-                      ? "Current Plan"
-                      : "Upgrade"}
-                </Button>
-              </CardContent>
-            </Card>
+              plan={plan}
+              pricing={pricing}
+              subscription={subscription}
+              handleCheckout={handleCheckout}
+            />
           ))}
-        </div>
+        </section>
       </div>
       <AuthPromptModal open={authOpen} onClose={() => setAuthOpen(false)} />
     </>

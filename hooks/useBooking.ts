@@ -85,11 +85,13 @@ export function useBookingStats() {
     thisMonth: 0,
     completed: 0,
     difference: 0,
+    active: 0,
   });
   const [recentBookings, setRecentBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
+
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {

@@ -20,10 +20,10 @@ export function useSubscription() {
       return;
     }
     loadSubscrption();
-  }, [user?.id, supabase]);
+  }, [user?.id]);
 
   async function loadSubscrption() {
-    if (!user?.id) return;
+    if (!user) return;
     try {
       setLoading(true);
       setError(null);

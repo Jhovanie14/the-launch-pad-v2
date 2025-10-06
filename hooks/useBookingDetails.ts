@@ -73,5 +73,6 @@ export function useBookingDetails() {
     reviewedBookings,
     setBookings, // For realtime updates
     refetch: loadBookings,
+    checkReviews,
   };
 }

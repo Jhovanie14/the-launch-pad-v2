@@ -3,12 +3,12 @@ import Link from "next/link";
 
 export function Footer() {
   return (
-    <footer className="bg-gray-100">
+    <footer className="bg-blue-100 dark:bg-blue-900">
       <div className="container mx-auto px-4 py-12">
         {/* left Content */}
         <div className="grid grid-cols-1 md:grid-cols-[400px_1fr] gap-10">
           {/* Left block: Logo + blurb + badges */}
-          <div className="">
+          <div className="space-y-4">
             <div className="mb-8">
               <Image
                 src="/thelaunchpad.png"
@@ -21,19 +21,6 @@ export function Footer() {
                 home. Confidently book the best car detailers in your area
                 today!
               </p>
-            </div>
-            <div>
-              <Link
-                href="https://www.bbb.org/ca/on/etobicoke/profile/auto-detailing/panda-hub-0107-1395635"
-                target="_blank"
-                className="block"
-              >
-                <img
-                  src="https://cdn.prod.website-files.com/655391a7777dd2b60016fdf2/66140228f643911dbaeed0c4_Panda_Hub_BBB.webp"
-                  alt="Panda Hub Accredited Business Badge"
-                  className="h-10 w-auto rounded"
-                />
-              </Link>
             </div>
           </div>
 
@@ -107,7 +94,6 @@ export function Footer() {
         </div>
 
         {/* Right Content */}
-      
 
         {/* legal + socials */}
         <div className="flex flex-col md:items-center justify-between gap-4 border-t border-gray-300 py-5">
@@ -145,7 +131,7 @@ export function Footer() {
             {/* Social icons */}
             <Link
               aria-label="TikTok"
-              href="https://www.tiktok.com/@pandahubinc?lang=en"
+              href="/"
               target="_blank"
               className="text-muted-foreground hover:text-foreground"
             >
@@ -164,7 +150,7 @@ export function Footer() {
             </Link>
             <Link
               aria-label="Facebook"
-              href="https://www.facebook.com/Pandahubinc/"
+              href="/"
               target="_blank"
               className="text-muted-foreground hover:text-foreground"
             >
@@ -183,7 +169,7 @@ export function Footer() {
             </Link>
             <Link
               aria-label="X (Twitter)"
-              href="https://x.com/pandahubinc"
+              href="/"
               target="_blank"
               className="text-muted-foreground hover:text-foreground"
             >
@@ -202,7 +188,7 @@ export function Footer() {
             </Link>
             <Link
               aria-label="Instagram"
-              href="https://www.instagram.com/pandahubinc/"
+              href="/"
               target="_blank"
               className="text-muted-foreground hover:text-foreground"
             >
@@ -221,7 +207,7 @@ export function Footer() {
             </Link>
             <Link
               aria-label="LinkedIn"
-              href="https://linkedin.com/company/pandahub"
+              href="/"
               target="_blank"
               className="text-muted-foreground hover:text-foreground"
             >
@@ -248,7 +234,7 @@ export function Footer() {
             </Link>
             <Link
               aria-label="YouTube"
-              href="https://www.youtube.com/@pandahubinc"
+              href="/"
               target="_blank"
               className="text-muted-foreground hover:text-foreground"
             >

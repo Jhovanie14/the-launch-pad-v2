@@ -6,11 +6,8 @@ export default async function ServicesPage() {
   const profile = await getUserProfile();
 
   return (
-    <div className="flex h-screen bg-background">
-      <AdminSidebar user={profile} />
-      <div className="w-full mx-auto py-8 px-4 md:px-6">
-        <ServicesView />
-      </div>
+    <div className="w-full mx-auto py-8 px-4 md:px-6">
+      <ServicesView />
     </div>
   );
 }
