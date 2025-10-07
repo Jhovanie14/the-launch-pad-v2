@@ -16,6 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import { ThemeToggle } from "../theme-toggle";
 
 export interface UserNavbarProps {
   user: AuthUser;
@@ -83,6 +84,7 @@ export function AuthNavbar() {
                         <span className="text-sm text-gray-700 dark:text-gray-300">
                           {userProfile?.full_name || userProfile?.email}
                         </span>
+                        <ThemeToggle />
                       </div>
                     </div>
                   </DropdownMenuLabel>

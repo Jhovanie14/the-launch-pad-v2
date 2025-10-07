@@ -8,8 +8,22 @@ export default function BillingPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full p-6">
-        <p className="text-gray-500">Loading billing info...</p>
+      <div className="p-6 space-y-6 animate-pulse">
+        {/* Header */}
+        <div className="h-8 w-56 bg-gray-200 rounded"></div>
+
+        {/* Subscription status */}
+        <div className="h-20 bg-gray-200 rounded-lg"></div>
+
+        {/* Manage subscription skeleton */}
+        <div className="bg-white overflow-hidden shadow rounded-lg p-6 space-y-4">
+          <div className="h-6 w-48 bg-gray-200 rounded"></div>
+          <div className="flex space-x-3">
+            <div className="h-10 w-40 bg-gray-200 rounded-md"></div>
+            <div className="h-10 w-32 bg-gray-200 rounded-md"></div>
+            <div className="h-10 w-36 bg-gray-200 rounded-md"></div>
+          </div>
+        </div>
       </div>
     );
   }

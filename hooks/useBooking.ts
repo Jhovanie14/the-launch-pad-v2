@@ -21,7 +21,7 @@ export function useBookings() {
     }
 
     loadBookings();
-  }, [user?.id, supabase]);
+  }, [user?.id]);
 
   async function loadBookings() {
     if (!user?.id) return;

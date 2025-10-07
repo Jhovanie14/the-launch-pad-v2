@@ -57,6 +57,40 @@ export function AuthContextProvider({
   // Prevent multiple simultaneous profile fetches
   const fetchingProfile = useRef(false);
 
+  useEffect(() => {
+    const getUserAndProfile = async (user: User | null) => {
+      setIsLoading(true);
+
+      if (user) {
+        setUser(user);
+        const profile = await fetchUserProfile(user.id);
+        setUserProfile(profile);
+      } else {
+        setUser(null);
+        setUserProfile(null);
+      }
+
+      setIsLoading(false);
+    };
+
+    // Check current session immediately
+    supabase.auth.getUser().then(({ data }) => {
+      getUserAndProfile(data.user);
+    });
+
+    // Listen to session changes
+    const { data: subscription } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        getUserAndProfile(session?.user ?? null);
+      }
+    );
+
+    // Cleanup
+    return () => {
+      subscription?.subscription.unsubscribe();
+    };
+  }, []);
+
   const fetchUserProfile = async (userId: string) => {
     if (fetchingProfile.current) return userProfile;
 
@@ -72,22 +106,6 @@ export function AuthContextProvider({
       fetchingProfile.current = false;
     }
   };
-
-  useEffect(() => {
-    const getUser = async () => {
-      const { data } = await supabase.auth.getUser();
-      const currentUser = data.user;
-      setUser(currentUser);
-      if (currentUser) {
-        const profile = await fetchUserProfile(currentUser.id);
-        setUserProfile(profile);
-      } else {
-        setUserProfile(null);
-      }
-      setIsLoading(false);
-    };
-    getUser();
-  }, []);
 
   const signIn = async (formData: FormData) => {
     const validatedFields = signInSchema.safeParse({

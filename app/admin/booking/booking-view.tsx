@@ -34,7 +34,7 @@ export default function BookingsView() {
   const [loading, setLoading] = useState(false);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(10);
+  const [pageSize] = useState(5);
   const [total, setTotal] = useState(0);
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [userSubscribe, setUserSubscribe] = useState<UserSubscription[]>([]);
@@ -51,15 +51,18 @@ export default function BookingsView() {
   const supabase = createClient();
 
   useEffect(() => {
-    const fetchBookings = async (page: number = 1, pageSize: number = 10) => {
+    const fetchBookings = async (page: number = 1, pageSize: number = 5) => {
       setLoading(true);
 
-      let query = supabase.from("bookings").select(
-        `*,
+      let query = supabase
+        .from("bookings")
+        .select(
+          `*,
         vehicle:vehicles ( year, make, model, trim, body_type, colors ),
         add_ons ( name, price )`,
-        { count: "exact" }
-      );
+          { count: "exact" }
+        )
+        .order("created_at", { ascending: false });
 
       if (pageSize !== 0) {
         const from = (page - 1) * pageSize;

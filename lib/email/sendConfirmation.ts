@@ -19,7 +19,7 @@ export async function sendBookingConfirmationEmail({
   appointmentTime: string;
 }) {
   const { data, error } = await resend.emails.send({
-    from: "The Launch Pad <no-reply@resend.dev>",
+    from: "The Launch Pad Wash <noreply@thelaunchpadwash.com>",
     to,
     subject: "Your Booking Confirmation",
     // ✅ function-call style (works in .ts without JSX)

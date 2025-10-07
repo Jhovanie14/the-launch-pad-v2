@@ -13,7 +13,14 @@ function Pagination({
 }) {
   const totalPages = Math.ceil(total / pageSize);
 
-  if (totalPages <= 1) return null;
+  // New (always render)
+  if (totalPages <= 1) {
+    return (
+      <div className="flex justify-center mt-6 text-sm text-gray-500">
+        Page {page} of {totalPages}
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center justify-center gap-2 mt-6">

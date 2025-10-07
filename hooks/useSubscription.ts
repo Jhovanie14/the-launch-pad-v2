@@ -13,6 +13,7 @@ export function useSubscription() {
 
   const { user } = useAuth();
   const supabase = createClient();
+
   useEffect(() => {
     if (!user?.id) {
       setSubscription(null);
@@ -23,11 +24,11 @@ export function useSubscription() {
   }, [user?.id]);
 
   async function loadSubscrption() {
-    if (!user) return;
+    if (!user?.id) return;
     try {
       setLoading(true);
       setError(null);
-
+      console.log("abot dri")
       const sub = await getActiveSubscription(supabase, user?.id);
       setSubscription(sub);
     } catch (err) {

@@ -25,7 +25,8 @@ export function useBookingDetails() {
     }
 
     loadBookings();
-  }, [user?.id, supabase]);
+    
+  }, [user?.id]);
 
   async function loadBookings() {
     if (!user?.id) return;
@@ -50,7 +51,7 @@ export function useBookingDetails() {
     if (!user?.id || bookings.length === 0) return;
 
     const results: Record<string, boolean> = {};
-
+    console.log("boo");
     // Check all bookings in parallel
     await Promise.all(
       bookings.map(async (booking) => {
@@ -63,14 +64,22 @@ export function useBookingDetails() {
       })
     );
 
+    console.log(results);
+
     setReviewedBookings(results);
   }
+  useEffect(() => {
+    if (user?.id && bookings.length > 0) {
+      checkReviews(); // runs automatically when bookings are loaded
+    }
+  }, [user?.id, bookings]);
 
   return {
     bookings,
     loading,
     error,
     reviewedBookings,
+    setReviewedBookings,
     setBookings, // For realtime updates
     refetch: loadBookings,
     checkReviews,

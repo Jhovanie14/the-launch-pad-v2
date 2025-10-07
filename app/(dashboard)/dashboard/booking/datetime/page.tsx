@@ -77,6 +77,20 @@ function DateTimeSelectionPage() {
         setSelectedPackages(data);
       }
       if (addonsParam) {
+        // const ids = addonsParam.split(",").filter(Boolean);
+
+        // if (ids.length > 0) {
+        //   const { data, error } = await supabase
+        //     .from("add_ons")
+        //     .select("*")
+        //     .in("id", ids); // ✅ handles multiple IDs safely
+
+        //   if (error) {
+        //     console.error("Error fetching add-ons:", error);
+        //   } else {
+        //     setSelectedAddOns(data);
+        //   }
+        // }
         const { data } = await supabase
           .from("add_ons")
           .select("*")

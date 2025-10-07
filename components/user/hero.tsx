@@ -62,7 +62,7 @@ export function Hero() {
             </Link>
             <Link
               href="/how-it-works"
-              className="inline-flex justify-center items-center rounded-md bg-gray-200 px-5 py-3 text-foreground hover:bg-gray-300"
+              className="inline-flex justify-center items-center rounded-md bg-gray-200 px-5 py-3 text-foreground hover:bg-gray-300 dark:text-black"
             >
               How it works
             </Link>
