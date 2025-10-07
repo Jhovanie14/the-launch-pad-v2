@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -25,9 +25,29 @@ export interface UserNavbarProps {
 export function AuthNavbar() {
   const { signOut, user, userProfile } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 0);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
-    <nav className="bg-white shadow-sm dark:bg-gray-800">
+    <nav
+      className={`sticky top-0 w-full z-50 transition-all duration-300 ${
+        isMounted && isScrolled
+          ? "bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm dark:bg-gray-900/95"
+          : "bg-transparent"
+      }`}
+    >
       <>
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 justify-between">
@@ -155,30 +175,38 @@ export function AuthNavbar() {
         </div>
 
         {/* Mobile menu */}
-        {isOpen && (
-          <div className="sm:hidden">
+        {isMounted && (
+          <div
+            className={`sm:hidden transition-all duration-300 ease-in-out overflow-hidden ${
+              isOpen ? "max-h-screen opacity-100" : "max-h-0 opacity-0"
+            }`}
+          >
             <div className="space-y-1 pb-3 pt-2">
               <Link
                 href="/dashboard"
                 className="block border-l-4 border-transparent py-2 pl-3 pr-4 text-base font-medium text-gray-500 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+                onClick={() => setIsOpen(false)}
               >
                 Dashboard
               </Link>
               <Link
                 href="/dashboard/bookings"
                 className="block border-l-4 border-transparent py-2 pl-3 pr-4 text-base font-medium text-gray-500 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+                onClick={() => setIsOpen(false)}
               >
                 Bookings
               </Link>
               <Link
-                href="/dashboard/subscription"
+                href="/dashboard/pricing"
                 className="block border-l-4 border-transparent py-2 pl-3 pr-4 text-base font-medium text-gray-500 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+                onClick={() => setIsOpen(false)}
               >
                 Subscription
               </Link>
               <Link
                 href="/dashboard/billing"
                 className="block border-l-4 border-transparent py-2 pl-3 pr-4 text-base font-medium text-gray-500 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+                onClick={() => setIsOpen(false)}
               >
                 Billing
               </Link>

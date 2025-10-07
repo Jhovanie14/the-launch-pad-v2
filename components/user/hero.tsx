@@ -116,13 +116,13 @@ export function Hero() {
         </div>
 
         {/* Right: image */}
-        <div className="order-1 md:order-2 flex items-center justify-center">
+        <div className="order-1 sm:order-2 flex items-center justify-center">
           <div className="relative w-full max-w-xl aspect-[842/652]">
             <Image
               src="/thelaunchpad.png"
               alt="A Panda Hub detailer standing in front of a freshly detailed black SUV"
               height={450}
-              width={450}
+              width={650}
               className="object-contain"
             />
           </div>

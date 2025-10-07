@@ -58,28 +58,28 @@ export default function DashboardPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="space-y-2">
+            {subscription && (
+              <div className="flex items-center space-x-2 text-sm font-medium">
+                <Crown className="w-5 h-5 text-yellow-500" />
+                <div>
+                  <p className="text-sm font-medium text-gray-500">
+                    Current Period -{" "}
+                    {new Date(
+                      subscription.current_period_start
+                    ).toLocaleDateString()}
+                  </p>
+                  <p className="text-sm text-gray-900"></p>
+                  <p className="text-sm font-medium text-gray-500">
+                    Next Billing - {""}
+                    {new Date(
+                      subscription.current_period_end
+                    ).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+            )}
             <div className="flex items-center space-x-3">
               <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-              {subscription && (
-                <>
-                  <Crown className="w-5 h-5 text-yellow-500" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">
-                      Current Period -{" "}
-                      {new Date(
-                        subscription.current_period_start
-                      ).toLocaleDateString()}
-                    </p>
-                    <p className="text-sm text-gray-900"></p>
-                    <p className="text-sm font-medium text-gray-500">
-                      Next Billing - {""}
-                      {new Date(
-                        subscription.current_period_end
-                      ).toLocaleDateString()}
-                    </p>
-                  </div>
-                </>
-              )}
             </div>
             <p className="text-muted-foreground">
               Welcome back, {userProfile?.full_name || user?.email}!
@@ -87,7 +87,7 @@ export default function DashboardPage() {
           </div>
           <Button
             onClick={openBookingModal}
-            className="bg-blue-900 hover:bg-blue-800 text-white font-semibold px-6 rounded-md transition-all duration-200 shadow-md hover:shadow-lg uppercase tracking-wide"
+            className="bg-blue-900 self-start hover:bg-blue-800 text-white font-semibold px-6 rounded-md transition-all duration-200 shadow-md hover:shadow-lg uppercase tracking-wide"
           >
             Book Online
           </Button>

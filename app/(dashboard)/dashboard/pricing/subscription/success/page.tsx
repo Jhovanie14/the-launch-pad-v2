@@ -237,7 +237,7 @@ export default async function SubscriptionSuccessPage({
         {/* Action Buttons */}
         <div className="space-y-4">
           <Button asChild className="w-full bg-blue-900" size="lg">
-            <Link href="/dashboard/subscription">Manage Subscription</Link>
+            <Link href="/dashboard/billing">Manage Subscription</Link>
           </Button>
 
           <div className="flex gap-4">

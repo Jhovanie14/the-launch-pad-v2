@@ -26,15 +26,9 @@ export default async function AdminLayout({
   const profile = await getUserProfile();
 
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <div className="flex h-screen bg-background">
-          <AdminSidebar user={profile} />
-          {children}
-        </div>
-      </body>
-    </html>
+    <div className="flex h-screen bg-background">
+      <AdminSidebar user={profile} />
+      {children}
+    </div>
   );
 }

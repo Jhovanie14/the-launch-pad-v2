@@ -15,6 +15,7 @@ import {
   CreditCard,
   Car,
   Truck,
+  Notebook,
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/context/auth-context";
@@ -31,6 +32,7 @@ const navigation = [
   { name: "Subscriptions", href: "/admin/subscriptions", icon: CreditCard },
   { name: "Services", href: "/admin/services", icon: Car },
   { name: "Add-ons", href: "/admin/addons", icon: Truck },
+  { name: "Blog", href: "/admin/blog", icon: Notebook },
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 

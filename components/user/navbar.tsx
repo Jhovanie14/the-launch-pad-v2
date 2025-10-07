@@ -22,6 +22,8 @@ import {
   ShoppingBag,
   User,
   Users,
+  Menu,
+  X,
 } from "lucide-react";
 import { useBooking } from "@/context/bookingContext";
 import { ThemeToggle } from "../theme-toggle";
@@ -96,6 +98,12 @@ export function UserNavbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isAboutDropdownOpen, setIsAboutDropdownOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Fix hydration mismatch
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -108,8 +116,8 @@ export function UserNavbar() {
   return (
     <nav
       className={`sticky top-0 w-full z-50 transition-all duration-300 ${
-        isScrolled
-          ? "bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm dark:bg-transparent"
+        isMounted && isScrolled
+          ? "bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm dark:bg-gray-900/95"
           : "bg-transparent"
       }`}
     >
@@ -144,8 +152,8 @@ export function UserNavbar() {
                     <NavigationMenuTrigger>
                       About Launch Pad
                     </NavigationMenuTrigger>
-                    <NavigationMenuContent className="">
-                      <ul className="grid w-[500px] gap-2 md:w-[600px] md:grid-cols-2 lg:w-[700px]">
+                    <NavigationMenuContent>
+                      <ul className="grid w-[500px] gap-2 md:w-[600px] md:grid-cols-2 lg:w-[700px] p-4">
                         {services.map((service) => (
                           <ListItem
                             icon={service.icon}
@@ -162,7 +170,7 @@ export function UserNavbar() {
                 </NavigationMenuList>
               </NavigationMenu>
               <Link
-                href="/dashboard"
+                href="/products"
                 className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
               >
                 Products
@@ -181,7 +189,6 @@ export function UserNavbar() {
               onClick={openBookingModal}
               className="bg-blue-900 hover:bg-blue-800 text-white font-semibold px-6 rounded-md transition-all duration-200 shadow-md hover:shadow-lg uppercase tracking-wide"
             >
-              {/* onClick={openBookingModal} */}
               Book Online
             </Button>
             <Link href="/login">
@@ -191,146 +198,151 @@ export function UserNavbar() {
                 className="hover:text-blue-800 font-semibold transition-all duration-200 uppercase tracking-wide"
               >
                 <User className="w-4 h-4" />
-                <span className="hidden md:inline">Login</span>
+                <span className="hidden md:inline ml-2">Login</span>
               </Button>
             </Link>
-            {/* Mobile Menu Button */}
-
-            {/* onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} */}
             <ThemeToggle />
           </div>
           <div className="-mr-2 flex items-center sm:hidden gap-1">
             <Button
               size="sm"
               onClick={openBookingModal}
-              className="bg-blue-900 hover:bg-blue-800 text-white font-semibold px-6 rounded-md transition-all duration-200 shadow-md hover:shadow-lg uppercase tracking-wide"
+              className="bg-blue-900 hover:bg-blue-800 text-white font-semibold px-4 rounded-md transition-all duration-200 shadow-md hover:shadow-lg text-xs"
             >
-              {/* onClick={openBookingModal} */}
-              Book Online
+              Book
             </Button>
-            <button
-              type="button"
-              className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 dark:hover:bg-gray-700"
+            <Button
+              variant="ghost"
+              size="sm"
+              className="p-2"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
               <span className="sr-only">Open main menu</span>
-              <svg
-                className={`${isMobileMenuOpen ? "hidden" : "block"} h-6 w-6`}
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
-              <svg
-                className={`${isMobileMenuOpen ? "block" : "hidden"} h-6 w-6`}
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
+              {isMobileMenuOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
+            </Button>
             <ThemeToggle />
           </div>
         </div>
       </div>
 
       {/* Mobile menu */}
-      {isMobileMenuOpen && (
+      {isMounted && (
         <div
-          className={`sticky inset-0 top-16 w-full z-10 bg-white md:hidden transition-transform duration-5000 ease-in-out ${
-            isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
+          className={`sm:hidden transition-all duration-300 ease-in-out overflow-hidden ${
+            isMobileMenuOpen ? "max-h-screen opacity-100" : "max-h-0 opacity-0"
           }`}
         >
-          {/* Menu Items */}
-          <div className="flex flex-col p-4 space-y-4">
-            <Link
-              href="/login"
-              className="flex items-center space-x-2 py-2 border-b font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
-            >
-              <User className="w-4 h-4" />
-              <span className="">Login</span>
-            </Link>
-
-            <Link
-              href="/"
-              className="inline-flex items-center px-1 pt-1 space-x-2 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
-            >
-              <Home className="w-4 h-4" />
-              <span>Home</span>
-            </Link>
-            <Link
-              href="/products"
-              className="inline-flex items-center px-1 pt-1 space-x-2 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
-            >
-              <ShoppingBag className="w-4 h-4" />
-              <span>Products</span>
-            </Link>
-            <Link
-              href="/pricing"
-              className="inline-flex items-center px-1 pt-1 space-x-2 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
-            >
-              <BellPlus className="w-4 h-4" />
-              <span>Subscription</span>
-            </Link>
-            <div className="border-b">
-              <div
-                className="flex items-center justify-between  space-x-2 py-2 cursor-pointer"
-                onClick={() => setIsAboutDropdownOpen(!isAboutDropdownOpen)}
+          <div className="bg-white dark:bg-gray-900 border-t dark:border-gray-800">
+            <div className="flex flex-col p-4 space-y-4">
+              <Link
+                href="/login"
+                className="flex items-center space-x-2 py-2 border-b font-medium text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                onClick={() => setIsMobileMenuOpen(false)}
               >
-                <span className="text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100">
-                  About Launch Pad
-                </span>
-                <ChevronDown
-                  className={`w-4 h-4 transition-transform duration-300 ${
-                    isAboutDropdownOpen ? "rotate-180" : ""
+                <User className="w-4 h-4" />
+                <span>Login</span>
+              </Link>
+
+              <Link
+                href="/"
+                className="flex items-center space-x-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <Home className="w-4 h-4" />
+                <span>Home</span>
+              </Link>
+
+              <Link
+                href="/products"
+                className="flex items-center space-x-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <ShoppingBag className="w-4 h-4" />
+                <span>Products</span>
+              </Link>
+
+              <Link
+                href="/pricing"
+                className="flex items-center space-x-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <BellPlus className="w-4 h-4" />
+                <span>Subscription</span>
+              </Link>
+
+              <div className="border-b pb-4">
+                <button
+                  className="flex items-center justify-between w-full py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                  onClick={() => setIsAboutDropdownOpen(!isAboutDropdownOpen)}
+                >
+                  <span>About Launch Pad</span>
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform duration-300 ${
+                      isAboutDropdownOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                <div
+                  className={`ml-4 space-y-2 transition-all duration-300 overflow-hidden ${
+                    isAboutDropdownOpen
+                      ? "mt-2 max-h-screen opacity-100"
+                      : "max-h-0 opacity-0"
                   }`}
-                />
-              </div>
-              {/* Dropdown Menu */}
-              {isAboutDropdownOpen && (
-                <div className="ml-4 mt-2 space-y-2">
+                >
                   <Link
                     href="/blog"
-                    className="block items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                    className="flex items-center space-x-2 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      setIsAboutDropdownOpen(false);
+                    }}
                   >
-                    Blog
+                    <NotebookPen className="w-4 h-4" />
+                    <span>Blog</span>
                   </Link>
+
                   <Link
                     href="/contact"
-                    className="block items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                    className="flex items-center space-x-2 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      setIsAboutDropdownOpen(false);
+                    }}
                   >
-                    Contact
+                    <Phone className="w-4 h-4" />
+                    <span>Contact</span>
                   </Link>
+
                   <Link
                     href="/about"
-                    className="block items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                    className="flex items-center space-x-2 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      setIsAboutDropdownOpen(false);
+                    }}
                   >
-                    About Us
+                    <Users className="w-4 h-4" />
+                    <span>About Us</span>
                   </Link>
+
                   <Link
                     href="/faq"
-                    className="block items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                    className="flex items-center space-x-2 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      setIsAboutDropdownOpen(false);
+                    }}
                   >
-                    FAQ
+                    <CircleQuestionMark className="w-4 h-4" />
+                    <span>FAQ</span>
                   </Link>
                 </div>
-              )}
+              </div>
             </div>
           </div>
         </div>
