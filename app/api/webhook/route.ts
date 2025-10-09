@@ -68,85 +68,65 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event) {
 }
 
 async function processBooking(session: Stripe.Checkout.Session) {
-  console.log("SESSION METADATA:", session.metadata);
-  console.log("RAW BOOKING", session.metadata?.booking);
-
   const bookingMeta = session.metadata?.booking
     ? JSON.parse(session.metadata.booking)
     : null;
 
-  if (!bookingMeta) {
-    console.log("No booking metadata found");
-    return;
-  }
+  if (!bookingMeta) return;
 
-  const {
-    user_id,
-    service_package_id,
-    service_package_name,
-    service_package_price,
-    add_ons_id,
-    appointment_date,
-    appointment_time,
-    total_price,
-    total_duration,
-    vehicle_id,
-    customer_name,
-    customer_email,
-    customer_phone,
-    notes,
-    special_instructions,
-  } = bookingMeta;
-
-  const finalCustomerName =
-    customer_name ?? session.customer_details?.name ?? null;
-  const finalCustomerEmail = customer_email ?? session.customer_email ?? null;
-  const finalCustomerPhone =
-    customer_phone ?? session.customer_details?.phone ?? null;
-
-  const { data: bookingRows, error } = await supabase
+  // Check for existing booking by payment_intent_id
+  const { data: existingBooking } = await supabase
     .from("bookings")
-    .insert([
-      {
-        user_id,
-        service_package_id,
-        vehicle_id,
-        service_package_name,
-        service_package_price,
-        add_ons_id,
-        appointment_date,
-        appointment_time,
-        total_price,
-        total_duration,
-        status: "pending",
-        customer_name: finalCustomerName,
-        customer_email: finalCustomerEmail,
-        customer_phone: finalCustomerPhone,
-        notes,
-        special_instructions,
-        payment_intent_id: session.payment_intent,
-      },
-    ])
-    .select()
-    .single();
+    .select("id")
+    .eq("payment_intent_id", session.payment_intent)
+    .maybeSingle();
 
-  if (error) {
-    console.error("Supabase insert error:", error);
+  if (existingBooking) {
+    console.log(
+      "✅ Duplicate prevented: Booking already exists for payment_intent:",
+      session.payment_intent
+    );
     return;
   }
 
-  console.log("Booking inserted!");
+  try {
+    const { data: bookingRows, error } = await supabase
+      .from("bookings")
+      .insert([
+        {
+          ...bookingMeta,
+          payment_intent_id: session.payment_intent,
+          status: "pending",
+        },
+      ])
+      .select()
+      .single();
 
-  // Send confirmation email
-  if (bookingRows?.customer_email) {
-    await sendBookingConfirmationEmail({
-      to: bookingRows.customer_email,
-      customerName: bookingRows.customer_name ?? "Customer",
-      bookingId: bookingRows.id,
-      servicePackage: bookingRows.service_package_name ?? "Service",
-      appointmentDate: bookingRows.appointment_date,
-      appointmentTime: bookingRows.appointment_time,
-    });
+    if (error) {
+      // If error is unique constraint violation, ignore
+      if (error.code === "23505") {
+        console.log("Duplicate booking insert prevented by DB constraint.");
+        return;
+      }
+      console.error("Supabase insert error:", error);
+      return;
+    }
+
+    console.log("Booking inserted!");
+
+    // Send confirmation email
+    if (bookingRows?.customer_email) {
+      await sendBookingConfirmationEmail({
+        to: bookingRows.customer_email,
+        customerName: bookingRows.customer_name ?? "Customer",
+        bookingId: bookingRows.id,
+        servicePackage: bookingRows.service_package_name ?? "Service",
+        appointmentDate: bookingRows.appointment_date,
+        appointmentTime: bookingRows.appointment_time,
+      });
+    }
+  } catch (err) {
+    console.error("Booking insert exception:", err);
   }
 }
 

@@ -56,7 +56,7 @@ export default function Blog() {
           </h1>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {posts.map((post) => (
-              <Card className="rounded-xl hover:scale-103 transition-transform duration-200 p-0">
+              <Card key={post.id} className="rounded-xl hover:scale-103 transition-transform duration-200 p-0">
                 <div className="relative aspect-video overflow-hidden rounded-t-lg bg-muted">
                   {post.cover_image ? (
                     <Image

@@ -116,6 +116,7 @@ function ConfirmationContent() {
       const isSubscribed = !!userSubscribe?.stripe_subscription_id;
 
       if (isSubscribed && !selectedAddOns) {
+        // Free/subscription booking: create immediately
         const booking = await createBooking({
           year: parseInt(vehicleSpecs.year || "0"),
           make: vehicleSpecs.make || "",
@@ -131,11 +132,11 @@ function ConfirmationContent() {
           totalPrice: 0,
           totalDuration: calculateDuration(),
         });
-
         window.location.href = `/dashboard/bookings/success?booking_id=${booking.id}`;
         return;
       }
-      // If subscription + add-ons OR no subscription → pay with Stripe
+
+      // Paid booking: let Stripe webhook create the booking
       const payload = {
         year: parseInt(vehicleSpecs.year || "0"),
         make: vehicleSpecs.make || "",
@@ -155,25 +156,6 @@ function ConfirmationContent() {
           : calculateTotal(),
         totalDuration: calculateDuration(),
       };
-      // const payload = {
-      //   year: parseInt(vehicleSpecs.year || "0"),
-      //   make: vehicleSpecs.make || "",
-      //   model: vehicleSpecs.model || "",
-      //   trim: vehicleSpecs.trim || "",
-      //   body_type: vehicleSpecs.body_type || "",
-      //   colors: [vehicleSpecs.color || ""],
-      //   vehicleSpecs,
-      //   // Instead of passing the whole object:
-      //   servicePackageId: selectedPackages!.id,
-      //   servicePackageName: selectedPackages!.name,
-      //   servicePackagePrice: selectedPackages!.price,
-
-      //   addOnsId: selectedAddOns ? selectedAddOns.id : null,
-      //   appointmentDate: appointmentDate,
-      //   appointmentTime: appointmentTime!.toString(),
-      //   totalPrice: calculateTotal(),
-      //   totalDuration: calculateDuration(),
-      // };
       const res = await fetch("/api/checkout_sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

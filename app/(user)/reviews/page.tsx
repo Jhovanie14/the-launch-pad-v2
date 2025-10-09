@@ -20,50 +20,6 @@ interface Review {
 export default function ReviewsPage() {
   const supabase = createClient();
   const [reviews, setReviews] = useState<Review[]>([]);
-  //   const reviews = [
-  //     {
-  //       name: "Sarah Johnson",
-  //       rating: 5,
-  //       text: "Absolutely incredible service! My car has never looked better. The Launch Pad team went above and beyond my expectations.",
-  //       service: "Premium Detail Package",
-  //       date: "2 weeks ago",
-  //     },
-  //     {
-  //       name: "Mike Chen",
-  //       rating: 5,
-  //       text: "Fast, efficient, and thorough. I've been coming here for months and they consistently deliver outstanding results.",
-  //       service: "Express Wash",
-  //       date: "1 month ago",
-  //     },
-  //     {
-  //       name: "Emily Rodriguez",
-  //       rating: 5,
-  //       text: "The staff is incredibly professional and the attention to detail is remarkable. Worth every penny!",
-  //       service: "Full Service Wash",
-  //       date: "3 weeks ago",
-  //     },
-  //     {
-  //       name: "David Thompson",
-  //       rating: 5,
-  //       text: "My go-to car wash! They treat every vehicle like it's their own. Highly recommend The Launch Pad.",
-  //       service: "Interior & Exterior Detail",
-  //       date: "1 week ago",
-  //     },
-  //     {
-  //       name: "Lisa Park",
-  //       rating: 5,
-  //       text: "Exceptional quality and customer service. My car looks showroom ready every time I visit.",
-  //       service: "Premium Wash",
-  //       date: "2 months ago",
-  //     },
-  //     {
-  //       name: "James Wilson",
-  //       rating: 5,
-  //       text: "The best car wash experience I've ever had. Professional, quick, and the results speak for themselves.",
-  //       service: "Express Detail",
-  //       date: "3 weeks ago",
-  //     },
-  //   ];
 
   const stats = [
     { label: "Happy Customers", value: "2,500+", icon: Users },
@@ -189,7 +145,7 @@ export default function ReviewsPage() {
 
                   <div className="space-y-1 pt-2 border-t border-border">
                     <div className="font-semibold text-foreground">
-                      {review.profiles?.full_name ?? "Anonymous"}
+                      {review.profiles?.full_name}
                     </div>
                     <div className="text-sm text-muted-foreground">
                       {review.bookings?.service_package_name ?? "Service"}

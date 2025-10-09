@@ -119,11 +119,11 @@ export function Hero() {
         <div className="order-1 sm:order-2 flex items-center justify-center">
           <div className="relative w-full max-w-xl aspect-[842/652]">
             <Image
-              src="/thelaunchpad.png"
+              src="/launchpad-wash.jpg"
               alt="A Panda Hub detailer standing in front of a freshly detailed black SUV"
               height={450}
               width={650}
-              className="object-contain"
+              className="object-contain rounded-xl"
             />
           </div>
         </div>
