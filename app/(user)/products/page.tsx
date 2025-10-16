@@ -35,7 +35,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const products = [
   {
@@ -127,6 +127,7 @@ const products = [
 function Products() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 100]);
   const [sortBy, setSortBy] = useState<string>("latest");
@@ -139,13 +140,31 @@ function Products() {
 
   const categories = ["all", ...new Set(products.map((p) => p.category))];
 
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      // Debounced search/filter logic can go here if needed
+      setDebouncedSearchQuery(searchQuery.trim());
+      console.log("Filtering products...", {
+        searchQuery,
+        selectedCategory,
+        priceRange,
+        sortBy,
+        minRating,
+      });
+    }, 500);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchQuery, selectedCategory, priceRange, sortBy, minRating]);
+
   const filteredProducts = products
     .filter((product) => {
       const matchesCategory =
         selectedCategory === "all" || product.category === selectedCategory;
       const matchesSearch = product.title
         .toLowerCase()
-        .includes(searchQuery.toLowerCase());
+        .includes(debouncedSearchQuery.toLowerCase());
 
       const actualPrice = product.discountedPrice || product.price;
       const matchPrice =
@@ -190,7 +209,7 @@ function Products() {
   };
 
   return (
-    <div className="container mx-auto px-4 sm:px-8 py-20">
+    <div className="py-20">
       <div className="max-w-3xl mx-auto text-center mb-16">
         <div className="text-center space-y-3">
           <h1 className="text-5xl font-bold my-4 text-blue-900">
@@ -438,7 +457,7 @@ function Products() {
                 </CardContent>
                 <CardFooter className="p-3">
                   <Button className="w-full bg-blue-800 hover:bg-blue-900">
-                    <span className="text-lg">Add to cart</span>
+                    <span className="text-lg dark:text-white">Add to cart</span>
                   </Button>
                 </CardFooter>
               </Card>

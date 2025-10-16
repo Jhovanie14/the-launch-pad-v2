@@ -21,7 +21,7 @@ import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 
 export default function BookingModal() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
   const { isBookingModalOpen, closeBookingModal } = useBooking();
   const [authOpen, setAuthOpen] = useState(false);
@@ -35,7 +35,12 @@ export default function BookingModal() {
 
   useEffect(() => {
     async function fetchSubscriptionVehicle() {
-      if (!user) return;
+      if (!user) {
+        console.log("No user, clearing subscription vehicles");
+        setSubscriptionVehicles([]);
+        setSelectedVehicleId(null);
+        return;
+      }
 
       const supabase = createClient();
 
@@ -72,8 +77,6 @@ export default function BookingModal() {
     }
     fetchSubscriptionVehicle();
   }, [user]);
-
-  if (!isBookingModalOpen) return null;
 
   const handleBooking = () => {
     console.log("handleBooking clicked");
@@ -125,6 +128,12 @@ export default function BookingModal() {
     // Redirect to service selection page
     router.push(`/dashboard/booking/service?${params.toString()}`);
   };
+
+  if (isLoading) {
+    return <div>loading....</div>;
+  }
+
+  if (!isBookingModalOpen) return null;
 
   return (
     <>
@@ -225,6 +234,7 @@ export default function BookingModal() {
 
               <div>
                 <Label>Color</Label>
+
                 <Input
                   value={vehicleInfo.color}
                   onChange={(e) =>
@@ -233,8 +243,11 @@ export default function BookingModal() {
                       color: e.target.value,
                     }))
                   }
-                  placeholder="e.g., Silver"
+                  placeholder="e.g., Black,Red"
                 />
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  If car has two colors separate it with comma ","
+                </p>
                 {errors.color && (
                   <p className="text-red-500 text-sm">{errors.color}</p>
                 )}
@@ -250,7 +263,7 @@ export default function BookingModal() {
                       trim: e.target.value,
                     }))
                   }
-                  placeholder="e.g., XLE"
+                  placeholder="e.g., XLE or leave it blank"
                 />
                 {errors.trim && (
                   <p className="text-red-500 text-sm">{errors.trim}</p>
@@ -290,7 +303,7 @@ export default function BookingModal() {
                       licensePlate: e.target.value,
                     }))
                   }
-                  placeholder="e.g., ABC123"
+                  placeholder="e.g., ABC123 or leave it blank"
                 />
                 {errors.licensePlate && (
                   <p className="text-red-500 text-sm">{errors.licensePlate}</p>

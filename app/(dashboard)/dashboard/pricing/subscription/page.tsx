@@ -40,9 +40,9 @@ function SubscriptionCartContent() {
   const { vehicleInfo, setVehicleInfo, errors, validate } = useVehicleForm();
 
   const bodyTypeOptions: Record<string, string[]> = {
-    Orbital: ["Sedan", "Coupe", "Convertible"],
-    Interstellar: ["Small SUV", "SUV"],
-    Galactic: ["Small Pickup Truck", "Big Pickup Truck"],
+    Sedans: ["Sedan", "Coupe", "Convertible"],
+    Suvs: ["Small SUV", "SUV"],
+    Trucks: ["Small Pickup Truck", "Big Pickup Truck"],
   };
 
   const handleBodyTypeChange = (val: string) => {
@@ -228,7 +228,7 @@ function SubscriptionCartContent() {
                   <p className="text-red-500 text-sm">{errors.color}</p>
                 )}
               </div>
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label htmlFor="trim">Trim</Label>
                 <Input
                   id="trim"
@@ -245,7 +245,7 @@ function SubscriptionCartContent() {
                 {errors.color && (
                   <p className="text-red-500 text-sm">{errors.color}</p>
                 )}
-              </div>
+              </div> */}
               <div className="space-y-2">
                 <Label>Body Type</Label>
                 {plan?.name && (
@@ -254,7 +254,11 @@ function SubscriptionCartContent() {
                     onValueChange={handleBodyTypeChange}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select Body Type" />
+                      <SelectValue
+                        placeholder={
+                          plan ? "Select Body Type" : "Loading plan..."
+                        }
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       {bodyTypeOptions[plan.name]?.map((option) => (

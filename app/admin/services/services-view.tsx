@@ -15,13 +15,16 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import {
+  BarChart3,
   Car,
   CheckCircle,
   Clock,
   Droplets,
   Edit,
+  Loader2,
   Plus,
   Sparkles,
+  Trash2,
   Wrench,
 } from "lucide-react";
 import {
@@ -33,6 +36,15 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type ServicePackage = {
   id: string;
@@ -47,20 +59,36 @@ type ServicePackage = {
   updated_at: string | null;
 };
 
+type FormState = {
+  name: string;
+  category: string;
+  price: string;
+  duration: string;
+  description: string;
+  features: string;
+  is_active: boolean;
+};
+
+const initialFormState: FormState = {
+  name: "",
+  category: "",
+  price: "",
+  duration: "",
+  description: "",
+  features: "",
+  is_active: true,
+};
+
 export default function ServicesView() {
   const supabase = createClient();
-  const [form, setForm] = useState({
-    name: "",
-    category: "",
-    price: "",
-    duration: "",
-    description: "",
-    features: "",
-    is_active: true,
-  });
+  const [form, setForm] = useState<FormState>(initialFormState);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [services, setServices] = useState<ServicePackage[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [submitLoading, setSubmitLoading] = useState(false);
 
   //
   const getServiceIcon = (category: string) => {
@@ -106,22 +134,26 @@ export default function ServicesView() {
     setForm((s) => ({ ...s, [id]: checked }));
   };
 
-  const fetchPackages = useCallback(async () => {
+  const fetchPackages = async () => {
     setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("service_packages")
+        .select("*")
+        .order("created_at", { ascending: true });
 
-    const { data, error } = await supabase
-      .from("service_packages")
-      .select("*")
-      .order("created_at", { ascending: true });
-    setLoading(false);
-    if (error) console.error(error);
-
-    setServices(data ?? []);
-  }, [supabase]);
+      if (error) throw error;
+      setServices(data ?? []);
+    } catch (error) {
+      console.error("Error fetching packages:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchPackages();
-  }, [fetchPackages]);
+  }, []);
 
   const toggleAddOnStatus = async (id: string, newStatus: boolean) => {
     const { error } = await supabase
@@ -140,37 +172,93 @@ export default function ServicesView() {
     }
   };
 
-  // define this outside
-  const handleCreate = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      console.log(form);
-      const priceNum = Number(form.price);
-      const durationNum = Number(form.duration);
-      const featuresArr = form.features
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
-      const { error } = await supabase.from("service_packages").insert([
-        {
-          name: form.name,
-          description: form.description || null,
-          price: priceNum,
-          duration: durationNum,
-          features: featuresArr,
-          category: form.category,
-          is_active: form.is_active,
-        },
-      ]);
+  const handleEdit = (service: ServicePackage) => {
+    setForm({
+      name: service.name,
+      category: service.category,
+      price: service.price.toString(),
+      duration: service.duration.toString(),
+      description: service.description || "",
+      features: service.features?.join(", ") || "",
+      is_active: service.is_active,
+    });
+    setEditingId(service.id);
+    setOpen(true);
+  };
 
-      if (error) console.error(error);
+  // define this outside
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitLoading(true);
+
+    const priceNum = Number(form.price);
+    const durationNum = Number(form.duration);
+    const featuresArr = form.features
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const payload = {
+      name: form.name,
+      description: form.description || null,
+      price: priceNum,
+      duration: durationNum,
+      features: featuresArr,
+      category: form.category,
+      is_active: form.is_active,
+    };
+
+    try {
+      if (editingId) {
+        // Update
+        const { error } = await supabase
+          .from("service_packages")
+          .update(payload)
+          .eq("id", editingId);
+
+        if (error) throw error;
+      } else {
+        // Create
+        const { error } = await supabase
+          .from("service_packages")
+          .insert([payload]);
+
+        if (error) throw error;
+      }
 
       setOpen(false);
       resetForm();
-      setSuccess("Created successfuly.");
-    },
-    [form]
-  );
+      await fetchPackages();
+    } catch (error) {
+      console.error("Error:", error);
+    } finally {
+      setSubmitLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+
+    setSubmitLoading(true);
+    try {
+      const { error } = await supabase
+        .from("service_packages")
+        .delete()
+        .eq("id", deleteId);
+
+      if (error) throw error;
+
+      console.log("Deleted service with ID:", deleteId);
+
+      setServices((prev) => prev.filter((s) => s.id !== deleteId));
+      setDeleteDialogOpen(false);
+      setDeleteId(null);
+    } catch (error) {
+      console.error("Error deleting service:", error);
+    } finally {
+      setSubmitLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -202,18 +290,36 @@ export default function ServicesView() {
             Create and manage your service offerings.
           </p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog
+          open={open}
+          onOpenChange={(isOpen) => {
+            setOpen(isOpen);
+            if (!isOpen) {
+              resetForm();
+              setEditingId(null);
+            }
+          }}
+        >
           <DialogTrigger asChild>
-            <Button className="bg-blue-900 hover:bg-blue-800">
+            <Button
+              className="bg-blue-900 hover:bg-blue-800"
+              onClick={() => {
+                resetForm();
+                setEditingId(null);
+                setOpen(true);
+              }}
+            >
               <Plus />
               Add Package
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Create Service Package</DialogTitle>
+              <DialogTitle>
+                {editingId ? "Edit Service Package" : "Create Service Package"}
+              </DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleCreate} className="grid gap-4 md:grid-cols-2">
+            <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="name">Name</Label>
                 <Input
@@ -327,58 +433,6 @@ export default function ServicesView() {
         </div>
       </div>
 
-      {/* <div className="rounded-md border overflow-x-auto">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-accent">
-            <tr>
-              <th className="px-4 py-2">Name</th>
-              <th className="px-4 py-2">Category</th>
-              <th className="px-4 py-2">Price</th>
-              <th className="px-4 py-2">Duration</th>
-              <th className="px-4 py-2">Active</th>
-              <th className="px-4 py-2">Features</th>
-              <th className="px-4 py-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="">
-            {services.map((service) => (
-              <tr key={service.id}>
-                <td className="text-sm text-gray-500 px-4 py-2">
-                  {service.name}
-                </td>
-                <td className="text-sm text-gray-500 px-4 py-2">
-                  {service.category}
-                </td>
-                <td className="text-sm text-gray-500 px-4 py-2">
-                  ${Number(service.price).toFixed(2)}
-                </td>
-                <td className="text-sm text-gray-500 px-4 py-2">
-                  {service.duration} min
-                </td>
-                <td className="text-sm text-gray-500 px-4 py-2">
-                  {service.is_active ? "Yes" : "No"}
-                </td>
-                <td className="text-sm text-gray-500 px-4 py-2">
-                  {service.features?.map((feature, i) => (
-                    <span
-                      key={i}
-                      className="flex items-center space-x-2 text-nowrap"
-                    >
-                      <CheckCircle className="w-3 h-3 text-green-500" />{" "}
-                      <i> {feature}</i>
-                    </span>
-                  ))}
-                </td>
-                <td className="text-sm text-gray-500 px-4 py-2">
-                  {service.created_at
-                    ? new Date(service.created_at).toLocaleString()
-                    : "-"}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div> */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {services.map((service) => {
           const ServiceIcon = getServiceIcon(service.category);
@@ -425,9 +479,17 @@ export default function ServicesView() {
                         {service.duration} minutes
                       </p>
                     </div>
-                    <Button size="sm" variant="outline">
-                      <Edit className="h-3 w-3 mr-1" />
-                      Edit Price
+
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => {
+                        setDeleteId(service.id);
+                        setDeleteDialogOpen(true);
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      Delete
                     </Button>
                   </div>
 
@@ -515,11 +577,12 @@ export default function ServicesView() {
                   </div> */}
 
                   {/* Actions */}
-                  {/* <div className="flex space-x-2 pt-2">
+                  <div className="flex space-x-2 pt-2">
                     <Button
                       size="sm"
                       variant="outline"
                       className="flex-1 bg-transparent"
+                      onClick={() => handleEdit(service)}
                     >
                       <Edit className="h-3 w-3 mr-1" />
                       Edit Service
@@ -532,13 +595,37 @@ export default function ServicesView() {
                       <BarChart3 className="h-3 w-3 mr-1" />
                       View Analytics
                     </Button>
-                  </div> */}
+                  </div>
                 </div>
               </CardContent>
             </Card>
           );
         })}
       </div>
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Service Package</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this service package? This action
+              cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-2">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={submitLoading}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {submitLoading && (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              )}
+              Delete
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

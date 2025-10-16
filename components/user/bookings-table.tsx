@@ -48,6 +48,13 @@ export function BookingsTable({
     }
   };
 
+  const formatTime = (time: string) => {
+    const [hours, minutes] = time.split(":").map(Number);
+    const period = hours >= 12 ? "PM" : "AM";
+    const formattedHours = hours % 12 || 12;
+    return `${formattedHours}:${minutes.toString().padStart(2, "0")} ${period}`;
+  };
+
   const isSubscribed = (userId: string | null) => {
     if (!userId) return false; // no user_id → not subscribed
     return user_subscription?.some(
@@ -96,7 +103,7 @@ export function BookingsTable({
                       <Crown className="h-4 w-4 text-yellow-500" />
                     )}
                     <div className="text-muted-foreground">
-                      • {booking.customer_name}
+                      • {booking.customer_name ?? "Guest"}
                     </div>
                     <div className="text-muted-foreground">
                       • {booking.customer_email}
@@ -124,7 +131,7 @@ export function BookingsTable({
                   </div>
                   <div className="flex items-center text-muted-foreground">
                     <Clock className="h-4 w-4 mr-1" />
-                    {booking.appointment_time}
+                    {formatTime(booking.appointment_time)}
                   </div>
                 </div>
               </TableCell>

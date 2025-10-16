@@ -17,16 +17,24 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { ThemeToggle } from "../theme-toggle";
+import { usePathname } from "next/navigation";
 
 export interface UserNavbarProps {
   user: AuthUser;
 }
+
+const navLinks = [
+  { name: "Dashboard", href: "/dashboard" },
+  { name: "Bookings", href: "/dashboard/bookings" },
+  { name: "Subscription", href: "/dashboard/pricing" },
+];
 
 export function AuthNavbar() {
   const { signOut, user, userProfile } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const pathName = usePathname();
 
   useEffect(() => {
     setIsMounted(true);
@@ -53,7 +61,24 @@ export function AuthNavbar() {
           <div className="flex h-16 justify-between">
             <div className="flex">
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                <Link
+                {navLinks.map((link) => {
+                  const isActive = pathName === link.href;
+
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
+                        isActive
+                          ? "border-gray-600 text-gray-900 dark:text-gray-100"
+                          : "text-gray-500 border-transparent hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                      }`}
+                    >
+                      {link.name}
+                    </Link>
+                  );
+                })}
+                {/* <Link
                   href="/dashboard"
                   className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
                 >
@@ -70,7 +95,7 @@ export function AuthNavbar() {
                   className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
                 >
                   Subscription
-                </Link>
+                </Link> */}
               </div>
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:items-center">
@@ -241,6 +266,7 @@ export function AuthNavbar() {
                     size="sm"
                     type="submit"
                     className="w-full"
+                    disabled={!user}
                   >
                     Sign Out
                   </Button>

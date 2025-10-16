@@ -44,7 +44,7 @@ export default function Contact() {
                 href="tel:+1-555-123-4567"
                 className="text-muted-foreground hover:text-blue-900 transition-colors font-medium"
               >
-                +1-555-123-4567
+                832-219-8320
               </a>
             </div>
 
@@ -53,7 +53,7 @@ export default function Contact() {
               <div className="flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center">
                 <MapPin className="w-6 h-6 text-muted-foreground" />
               </div>
-              <span className="text-foreground font-medium">Houston, TX</span>
+              <span className="text-foreground font-medium">10410 S Main St, Houston, TX 77025</span>
             </div>
           </div>
         </div>

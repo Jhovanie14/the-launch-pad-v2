@@ -22,7 +22,8 @@ const faqData = [
     id: 3,
     question: "Do you offer membership or subscription plans?",
     answer:
-      "Yes! We offer monthly unlimited wash memberships starting at $29.99/month for basic wash, $49.99/month for premium wash, and $79.99/month for our complete care package. Members also receive priority service and exclusive discounts.",
+      "Yes! We offer monthly unlimited wash memberships starting at $49.99/month for sedan's premium wash, $89.99/month for Suv's premium wash, and $149.99/month for our small trucks premium package. Members also receive priority service and exclusive discounts.",
+    //  "Yes! We offer monthly unlimited wash memberships starting at $49.99/month for sedan's premium wash, $89.99/month for Suv's premium wash, and $149.99/month for our complete care package. Members also receive priority service and exclusive discounts.",
   },
   {
     id: 4,
@@ -66,7 +67,8 @@ const faqData = [
     question:
       "I have additional questions not covered here, who can I contact?",
     answer:
-      "Our friendly team is here to help! You can reach us at (555) 123-WASH, email us at info@thelaunchpadwash.com, or visit us at 123 Clean Street. You can also use our live chat feature on our website or mobile app.",
+      "Our friendly team is here to help! You can reach us at (832) 219-8320, email us at info@thelaunchpadwash.com, or visit us at 10410 Main St, Houston, TX, United States, Texas. ",
+      // You can also use our live chat feature on our website or mobile app.
   },
 ];
 

@@ -60,6 +60,13 @@ function ServiceSelectionPage() {
 
   const selectserv = services.find((s) => s.id === selectedService);
 
+  const bodyType = (vehicleSpecs.body_type || "").toLowerCase();
+
+  // Filter services by category matching body type
+  const filteredServices = services.filter((s) =>
+    bodyType ? s.category?.toLowerCase() === bodyType : true
+  );
+
   const handlePackageSelect = (serviceId: string) => {
     setSelectedService(serviceId);
   };
@@ -185,6 +192,7 @@ function ServiceSelectionPage() {
               variant="ghost"
               size="sm"
               className="text-gray-600 hover:text-gray-900"
+              onClick={() => router.back()}
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
@@ -200,7 +208,12 @@ function ServiceSelectionPage() {
       <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-[800px_1fr] gap-8">
           <div className="space-y-6">
-            {services.map((service) => (
+            {filteredServices.length === 0 && (
+              <div className="text-center text-gray-500 py-10">
+                No services found for your vehicle type.
+              </div>
+            )}
+            {filteredServices.map((service) => (
               <Card
                 key={service.id}
                 onClick={() => handlePackageSelect(service.id)}

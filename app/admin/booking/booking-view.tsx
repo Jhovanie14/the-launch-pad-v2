@@ -31,10 +31,11 @@ type UserSubscription = {
 };
 
 export default function BookingsView() {
+  const supabase = createClient();
   const [loading, setLoading] = useState(false);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(5);
+  const [pageSize] = useState(10);
   const [total, setTotal] = useState(0);
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [userSubscribe, setUserSubscribe] = useState<UserSubscription[]>([]);
@@ -45,13 +46,12 @@ export default function BookingsView() {
   const [dateFilter, setDateFilter] = useState<
     "all" | "today" | "week" | "month"
   >("all");
-  const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split("T")[0]
-  );
-  const supabase = createClient();
+  // const [selectedDate, setSelectedDate] = useState(
+  //   new Date().toISOString().split("T")[0]
+  // );
 
   useEffect(() => {
-    const fetchBookings = async (page: number = 1, pageSize: number = 5) => {
+    const fetchBookings = async (page: number = 1, pageSize: number = 10) => {
       setLoading(true);
 
       let query = supabase
@@ -156,6 +156,7 @@ export default function BookingsView() {
       );
 
       setTotalRevenue(revenue ?? 0);
+      console.log("total revenue", revenue);
     };
 
     fetchTotalRevenue();

@@ -2,11 +2,11 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Footer } from "@/components/user/footer";
-import { UserNavbar } from "@/components/user/navbar";
+import { useBooking } from "@/context/bookingContext";
 // import { Review } from "@/types";
 import { createClient } from "@/utils/supabase/client";
 import { Star, Quote, TrendingUp, Users, Award } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 interface Review {
@@ -14,11 +14,12 @@ interface Review {
   rating: number;
   comment: string | null;
   created_at: string;
-  bookings: { service_package_name: string }; // array
+  bookings: { service_package_name: string };
   profiles: { full_name: string };
 }
 export default function ReviewsPage() {
   const supabase = createClient();
+  const { openBookingModal } = useBooking();
   const [reviews, setReviews] = useState<Review[]>([]);
 
   const stats = [
@@ -50,14 +51,14 @@ export default function ReviewsPage() {
     fetchReview();
   }, [supabase]);
 
-  const companies = [
-    "AutoZone",
-    "Jiffy Lube",
-    "Valvoline",
-    "Midas",
-    "Firestone",
-    "Goodyear",
-  ];
+  // const companies = [
+  //   "AutoZone",
+  //   "Jiffy Lube",
+  //   "Valvoline",
+  //   "Midas",
+  //   "Firestone",
+  //   "Goodyear",
+  // ];
 
   return (
     <>
@@ -109,7 +110,7 @@ export default function ReviewsPage() {
       </section>
 
       {/* Reviews Grid */}
-      <section className="py-16 bg-muted/30">
+      <section className="py-16 mb-8 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
@@ -162,7 +163,7 @@ export default function ReviewsPage() {
       </section>
 
       {/* Social Proof */}
-      <section className="py-16">
+      {/* <section className="py-16">
         <div className="container mx-auto px-4 text-center">
           <p className="text-lg text-muted-foreground mb-8">
             Trusted by customers who also choose
@@ -178,10 +179,10 @@ export default function ReviewsPage() {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* CTA Section */}
-      <section className="py-16 bg-primary text-primary-foreground">
+      <section className="py-16 bg-primary/5">
         <div className="container mx-auto px-4 text-center space-y-6">
           <h2 className="text-3xl md:text-4xl font-bold text-balance">
             Ready to experience The Launch Pad difference?
@@ -190,21 +191,19 @@ export default function ReviewsPage() {
             Join thousands of satisfied customers who trust us with their
             vehicles. Book your appointment today.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
             <Button
-              size="lg"
-              variant="secondary"
-              className="text-lg px-8 py-6 rounded-full"
+              onClick={openBookingModal}
+              className="inline-flex justify-center items-center rounded-xl bg-blue-900 text-white px-5 py-6 hover:bg-blue-800"
             >
               Schedule Service
             </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="text-lg px-8 py-6 rounded-full border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary bg-transparent"
+            <Link
+              href="/services"
+              className="inline-flex justify-center items-center rounded-xl bg-gray-200 px-5 py-3 text-foreground hover:bg-gray-300 dark:text-black"
             >
               View Services
-            </Button>
+            </Link>
           </div>
         </div>
       </section>

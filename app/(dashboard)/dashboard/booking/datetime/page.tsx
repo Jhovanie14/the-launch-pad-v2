@@ -16,10 +16,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 
 const timeSlots = [
-  "08:00",
-  "08:30",
-  "09:00",
-  "09:30",
   "10:00",
   "10:30",
   "11:00",
@@ -38,8 +34,12 @@ const timeSlots = [
   "17:30",
   "18:00",
   "18:30",
-  "19:00",
-  "19:30",
+  // "17:00",
+  // "17:30",
+  // "18:00",
+  // "18:30",
+  // "19:00",
+  // "19:30",
 ];
 
 function DateTimeSelectionPage() {
@@ -124,6 +124,20 @@ function DateTimeSelectionPage() {
     });
   };
 
+  const formatTime = (time: string) => {
+    const [hours, minutes] = time.split(":").map(Number);
+    const period = hours >= 12 ? "PM" : "AM";
+    const formattedHours = hours % 12 || 12;
+    return `${formattedHours}:${minutes.toString().padStart(2, "0")} ${period}`;
+  };
+
+  const formateLocaleDate = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   const isToday = (date: Date) => {
     const today = new Date();
     return date.toDateString() === today.toDateString();
@@ -151,7 +165,7 @@ function DateTimeSelectionPage() {
         const params = new URLSearchParams(vehicleSpecs);
         params.set("service", serviceId || "");
         params.set("addons", addonsParam || "");
-        params.set("date", selectedDate.toISOString().split("T")[0]);
+        params.set("date", formateLocaleDate(selectedDate));
         params.set("time", selectedTime);
         setLoading(true);
         router.push(`/dashboard/booking/confirmation?${params.toString()}`);
@@ -196,6 +210,7 @@ function DateTimeSelectionPage() {
               variant="ghost"
               size="sm"
               className="text-muted-foreground hover:text-foreground"
+              onClick={() => router.back()}
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
@@ -277,7 +292,7 @@ function DateTimeSelectionPage() {
                                 : "hover:bg-blue-900 hover:text-primary-foreground hover:border-primary/50"
                           }`}
                         >
-                          {time}
+                          {formatTime(time)}
                         </Button>
                       );
                     })}

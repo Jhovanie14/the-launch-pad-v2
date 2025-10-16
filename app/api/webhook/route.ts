@@ -83,7 +83,7 @@ async function processBooking(session: Stripe.Checkout.Session) {
 
   if (existingBooking) {
     console.log(
-      "✅ Duplicate prevented: Booking already exists for payment_intent:",
+      "Duplicate prevented: Booking already exists for payment_intent:",
       session.payment_intent
     );
     return;
@@ -112,7 +112,7 @@ async function processBooking(session: Stripe.Checkout.Session) {
       return;
     }
 
-    console.log("Booking inserted!");
+    console.log("Booking inserted!", bookingRows);
 
     // Send confirmation email
     if (bookingRows?.customer_email) {
@@ -162,7 +162,7 @@ async function processSubscription(session: Stripe.Checkout.Session) {
   const cps = Number(subscriptionItem?.current_period_start);
   const cpe = Number(subscriptionItem?.current_period_end);
 
-  console.log("🔍 Raw billing data from subscription item:", {
+  console.log("Raw billing data from subscription item:", {
     current_period_start: subscriptionItem?.current_period_start,
     current_period_end: subscriptionItem?.current_period_end,
     cps_number: cps,
@@ -181,7 +181,7 @@ async function processSubscription(session: Stripe.Checkout.Session) {
   const priceId = sub?.items?.data?.[0]?.price?.id ?? null;
   const cancelAtPeriodEnd = Boolean(sub?.cancel_at_period_end);
 
-  console.log("🔍 Saving subscription with payload:", {
+  console.log("Saving subscription with payload:", {
     user_id: appUserId,
     subscription_plan_id: planId,
     billing_cycle: billingCycle,
@@ -239,7 +239,7 @@ async function processSubscription(session: Stripe.Checkout.Session) {
 async function handleSubscriptionUpdated(event: Stripe.Event) {
   const subscription = event.data.object as Stripe.Subscription;
 
-  console.log("🔄 Subscription updated:", subscription.id);
+  console.log("Subscription updated:", subscription.id);
 
   const sub = subscription as any;
 
@@ -248,7 +248,7 @@ async function handleSubscriptionUpdated(event: Stripe.Event) {
   const cps = Number(subscriptionItem?.current_period_start);
   const cpe = Number(subscriptionItem?.current_period_end);
 
-  console.log("🔍 Raw billing data from subscription item:", {
+  console.log("Raw billing data from subscription item:", {
     current_period_start: subscriptionItem?.current_period_start,
     current_period_end: subscriptionItem?.current_period_end,
     cps_number: cps,
@@ -285,7 +285,7 @@ async function handleSubscriptionUpdated(event: Stripe.Event) {
 async function handleSubscriptionDeleted(event: Stripe.Event) {
   const subscription = event.data.object as Stripe.Subscription;
 
-  console.log("❌ Subscription deleted:", subscription.id);
+  console.log("Subscription deleted:", subscription.id);
 
   const { error } = await supabase
     .from("user_subscription")

@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { BlogPostForm, BlogPostFormData } from "@/components/blog-post.form";
+import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -19,96 +18,76 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Plus, Trash2 } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
-
-type BlogPost = {
-  id: string;
-  title: string;
-  slug: string;
-  excerpt: string;
-  content: string;
-  author: string;
-  cover_image: string; // Changed to snake_case to match DB
-  published: boolean;
-  created_at: string; // Changed to snake_case to match DB
-};
+import { useBlog } from "@/hooks/useBlog";
+import { BlogPost } from "@/types";
+import { BlogPostForm } from "@/components/blog-post.form";
 
 export default function BlogManagement() {
-  const [posts, setPosts] = useState<BlogPost[]>([]);
+  // const [posts, setPosts] = useState<BlogPost[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const supabase = createClient();
+  const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
 
-  const fetchPosts = async () => {
-    const { data, error } = await supabase
-      .from("blog_posts")
-      .select("*")
-      .order("created_at", { ascending: false });
+  const {
+    posts,
+    loading,
+    error,
+    handleCreatePost,
+    handleUpdatePost,
+    handleDeletePost,
+  } = useBlog();
 
-    if (error) {
-      console.error("Error fetching posts:", error);
-    } else {
-      console.log("Fetched posts:", data);
-      setPosts(data as BlogPost[]);
-    }
-  };
+  if (loading) {
+    return (
+      <main className="flex-1 overflow-y-auto p-6">
+        {/* Header Skeleton */}
+        <div className="mb-6 flex items-center justify-between animate-pulse">
+          <div className="h-8 w-48 bg-gray-200 rounded"></div>
+          <div className="h-10 w-28 bg-gray-200 rounded"></div>
+        </div>
 
-  useEffect(() => {
-    fetchPosts();
-  }, []);
+        {/* Grid Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i}
+              className="flex flex-col rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden"
+            >
+              {/* Image placeholder */}
+              <div className="aspect-video bg-gray-200" />
 
-  const handleCreatePost = async (data: BlogPostFormData) => {
-    try {
-      const { data: insertedPost, error } = await supabase
-        .from("blog_posts")
-        .insert({
-          title: data.title,
-          slug: data.slug,
-          excerpt: data.excerpt,
-          content: data.content,
-          author: data.author,
-          cover_image: data.cover_image,
-          published: data.published,
-        })
-        .select()
-        .single();
+              {/* Card Header */}
+              <div className="p-4 space-y-3">
+                <div className="h-6 w-3/4 bg-gray-200 rounded"></div>
+                <div className="h-4 w-full bg-gray-200 rounded"></div>
+                <div className="h-4 w-5/6 bg-gray-200 rounded"></div>
+              </div>
 
-      if (error) throw error;
+              {/* Card Content */}
+              <div className="px-4 pb-3 space-y-2">
+                <div className="h-3 w-1/3 bg-gray-200 rounded"></div>
+                <div className="h-3 w-1/2 bg-gray-200 rounded"></div>
+                <div className="h-3 w-1/4 bg-gray-200 rounded"></div>
+              </div>
 
-      setPosts([insertedPost as BlogPost, ...posts]);
-      setDialogOpen(false);
-      console.log("Post created:", insertedPost);
-    } catch (err) {
-      console.error("Failed to create post:", err);
-    }
-  };
+              {/* Footer Buttons */}
+              <div className="flex space-x-3 p-3">
+                <div className="h-8 w-full bg-gray-200 rounded"></div>
+                <div className="h-8 w-full bg-gray-200 rounded"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </main>
+    );
+  }
 
-  const handleDeletePost = async (post: BlogPost) => {
-    try {
-      const { error } = await supabase
-        .from("blog_posts")
-        .delete()
-        .eq("id", post.id);
-
-      if (error) throw error;
-
-      // Delete image from storage if exists
-      if (post.cover_image) {
-        const filePath = post.cover_image.split("/blog-images/")[1];
-        if (filePath) {
-          const { error: storageError } = await supabase.storage
-            .from("blog-images")
-            .remove([`blog-images/${filePath}`]);
-          if (storageError)
-            console.error("Image deletion error:", storageError);
-        }
-      }
-
-      setPosts(posts.filter((p) => p.id !== post.id));
-      console.log("Post deleted:", post.id);
-    } catch (err) {
-      console.error("Failed to delete post:", err);
-    }
-  };
+  if (error) {
+    return (
+      <div className="flex-1 overflow-y-auto p-6">
+        <div className="text-red-600">Error loading posts: {error}</div>
+      </div>
+    );
+  }
 
   return (
     <main className="flex-1 overflow-y-auto p-6">
@@ -116,18 +95,27 @@ export default function BlogManagement() {
         <h1 className="text-3xl font-bold">Blog Management</h1>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2">
+            <Button
+              className="gap-2"
+              onClick={() => {
+                setEditingPost(null);
+                setDialogOpen(true);
+              }}
+            >
               <Plus className="w-4 h-4" />
               New Post
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
             <DialogHeader>
-              <DialogTitle>Create New Blog Post</DialogTitle>
+              <DialogTitle>
+                {editingPost ? "Edit Blog Post" : "Create New Blog Post"}
+              </DialogTitle>
             </DialogHeader>
             <BlogPostForm
-              onSubmit={handleCreatePost}
+              onSubmit={editingPost ? handleUpdatePost : handleCreatePost}
               onClose={() => setDialogOpen(false)}
+              defaultValues={editingPost || undefined}
             />
           </DialogContent>
         </Dialog>
@@ -137,7 +125,7 @@ export default function BlogManagement() {
         {posts.map((post) => (
           <Card
             key={post.id}
-            className="flex flex-col hover:shadow-lg transition-shadow"
+            className="flex flex-col hover:shadow-lg transition-shadow p-0"
           >
             <div className="relative aspect-video overflow-hidden rounded-t-lg bg-muted">
               {post.cover_image ? (
@@ -171,12 +159,15 @@ export default function BlogManagement() {
                 {new Date(post.created_at).toLocaleDateString()}
               </p>
             </CardContent>
-            <CardFooter className="space-x-3">
+            <CardFooter className="space-x-3 p-3">
               <Button
                 variant="outline"
                 size="sm"
-                className="gap-2"
-                onClick={() => handleDeletePost(post)}
+                className="flex-1"
+                onClick={() => {
+                  setEditingPost(post);
+                  setDialogOpen(true);
+                }}
               >
                 <Trash2 className="w-4 h-4" />
                 Update
@@ -184,7 +175,7 @@ export default function BlogManagement() {
               <Button
                 variant="outline"
                 size="sm"
-                className="gap-2 text-destructive"
+                className="flex-1 text-destructive"
                 onClick={() => handleDeletePost(post)}
               >
                 <Trash2 className="w-4 h-4" />

@@ -12,6 +12,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import { useEffect, useState } from "react";
+import { useBlog } from "@/hooks/useBlog";
 
 type BlogPost = {
   id: string;
@@ -26,27 +27,49 @@ type BlogPost = {
 };
 
 export default function Blog() {
-  const supabase = createClient();
-  const [posts, setPosts] = useState<BlogPost[]>([]);
+  const { posts, loading, error } = useBlog();
 
-  const fetchPosts = async () => {
-    const { data, error } = await supabase
-      .from("blog_posts")
-      .select("*")
-      .order("created_at", { ascending: false });
+  if (loading) {
+    return (
+      <div className="py-20">
+        <div className="container mx-auto px-4">
+          <div className="max-w-7xl mx-auto">
+            {/* Title Placeholder */}
+            <div className="animate-pulse">
+              <div className="h-10 w-64 bg-gray-200 mx-auto rounded mb-16"></div>
+            </div>
 
-    if (error) {
-      console.error("Error fetching posts:", error);
-    } else {
-      console.log("Fetched posts:", data);
-      setPosts(data as BlogPost[]);
-    }
-  };
+            {/* Blog Card Skeleton Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-pulse">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="rounded-xl overflow-hidden bg-white shadow-sm border border-gray-200"
+                >
+                  {/* Image placeholder */}
+                  <div className="aspect-video bg-gray-200"></div>
 
-  useEffect(() => {
-    fetchPosts();
-  }, []);
+                  {/* Content placeholder */}
+                  <div className="p-4 space-y-3">
+                    <div className="h-6 w-3/4 bg-gray-200 rounded"></div>
+                    <div className="h-4 w-full bg-gray-200 rounded"></div>
+                    <div className="h-4 w-5/6 bg-gray-200 rounded"></div>
 
+                    <div className="flex items-center justify-between mt-4">
+                      <div className="h-3 w-16 bg-gray-200 rounded"></div>
+                      <div className="h-3 w-16 bg-gray-200 rounded"></div>
+                    </div>
+
+                    <div className="h-5 w-24 bg-gray-200 rounded mt-4"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="py-20">
       <div className="container mx-auto px-4 ">
@@ -56,7 +79,10 @@ export default function Blog() {
           </h1>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {posts.map((post) => (
-              <Card key={post.id} className="rounded-xl hover:scale-103 transition-transform duration-200 p-0">
+              <Card
+                key={post.id}
+                className="rounded-xl hover:scale-103 transition-transform duration-200 p-0"
+              >
                 <div className="relative aspect-video overflow-hidden rounded-t-lg bg-muted">
                   {post.cover_image ? (
                     <Image
@@ -103,7 +129,7 @@ export default function Blog() {
                 </CardContent>
                 <CardFooter>
                   <Link
-                    href="/"
+                    href={`/blog/${post.slug}`}
                     className="flex items-center space-x-2 mb-3 text-accent-foreground underline hover:text-gray-700 "
                   >
                     <span className="text-lg">Read More</span>

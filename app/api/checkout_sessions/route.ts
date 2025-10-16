@@ -6,7 +6,7 @@ export async function POST(req: Request) {
   const supabase = await createClient();
   const body = await req.json();
 
-  // ✅ Get current logged in user (if any)
+  // Get current logged in user
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -61,7 +61,8 @@ export async function POST(req: Request) {
         appointment_time: body.appointmentTime,
         total_price: Number(body.totalPrice),
         total_duration: Number(body.totalDuration),
-        customer_name: body.customerName ?? null,
+        customer_name:
+          body.customerName ?? user?.user_metadata?.full_name ?? null,
         customer_email: user?.email ?? body.customerEmail ?? undefined,
         customer_phone: body.customerPhone ?? null,
         // notes: body.notes ?? null,

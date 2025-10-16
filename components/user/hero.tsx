@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 
-import { Wrench, Star, ForkKnife } from "lucide-react";
+import { Wrench, Star, CheckCheck } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 const cardContent = [
   {
@@ -15,14 +15,14 @@ const cardContent = [
   },
   {
     image: Star,
-    title: "$15 Handwash",
-    description: "Mon-Thu special",
+    title: "Express Detail",
+    description: "Professional express detailing",
     color: "text-yellow-700",
   },
   {
-    image: ForkKnife,
-    title: "Food Trucks",
-    description: "Eat while you wait",
+    image: CheckCheck,
+    title: "Service Rating",
+    description: "Customer service satisfaction",
     color: "text-red-700",
   },
 ];
@@ -38,7 +38,7 @@ export function Hero() {
               variant="outline"
               className="px-3 py-2 text-base bg-blue-50 rounded-xl"
             >
-              <span className="text-sm text-muted-foreground">
+              <span className="text-sm text-muted-foreground dark:text-black">
                 🚀 Houston's Premier Car Care & Food Hub
               </span>
             </Badge>
@@ -55,7 +55,7 @@ export function Hero() {
 
           <div className="flex flex-col md:flex-row items-stretch gap-3">
             <Link
-              href="#"
+              href="/services"
               className="inline-flex justify-center items-center rounded-md bg-blue-900 text-white px-5 py-3 hover:bg-blue-800"
             >
               See my price

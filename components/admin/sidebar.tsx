@@ -27,7 +27,7 @@ interface AdminSidebarProps {
 
 const navigation = [
   { name: "Dashboard", href: "/admin/dashboard", icon: Home },
-  { name: "Users", href: "/admin/users", icon: Users },
+  // { name: "Users", href: "/admin/users", icon: Users },
   { name: "Bookings", href: "/admin/booking", icon: Calendar },
   { name: "Subscriptions", href: "/admin/subscriptions", icon: CreditCard },
   { name: "Services", href: "/admin/services", icon: Car },

@@ -98,7 +98,7 @@ function Header({ user, userProfile }: { user: any; userProfile: any }) {
   if (user) {
     return (
       <div className="space-y-3 mb-8">
-        <div className="flex items-center justify-center gap-3 mb-4">
+        <div className="flex flex-col items-center justify-center gap-2 mb-4">
           <Crown className="w-8 h-8 text-blue-900" />
           <h1 className="text-4xl md:text-6xl font-semibold text-blue-900">
             Manage Your Subscription

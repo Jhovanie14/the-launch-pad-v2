@@ -68,7 +68,7 @@ const diffContent: {
   {
     icon: ForkKnife,
     color: "text-red-800",
-    title: "Food Truck Paradise",
+    title: "DIY Carwash",
     description: [
       "Rotating selection of local food trucks",
       "Diverse cuisine options daily",
@@ -95,24 +95,26 @@ export default function About() {
           {/* Left content */}
           <div>
             <div className="space-y-8">
-              <h3>Our Story</h3>
-              <p>
-                Founded in 2018, The Launch Pad emerged from a simple
-                observation: why should car care be a mundane chore? We
-                envisioned a space where vehicle maintenance transforms into an
-                enjoyable experience, complemented by Houston's renowned
-                culinary diversity.
+              <h3 className="text-xl text-accent-foreground">Our Story</h3>
+              <p className="text-muted-foreground">
+                Founded in 2024, The Launch Pad was born from a simple yet
+                powerful idea: car care shouldn’t feel like a chore, it should
+                be an experience. We set out to redefine what a car wash could
+                be by blending premium vehicle care with Houston’s vibrant
+                culinary culture.
               </p>
-              <p>
-                Our facility combines state-of-the-art car wash technology with
-                a carefully curated selection of local food trucks, creating a
-                unique destination where customers can maintain their vehicles
-                while enjoying exceptional dining options.
+              <p className="text-muted-foreground">
+                At The Launch Pad, state-of-the-art detailing and wash systems
+                work hand in hand with a customer-focused approach, turning
+                every visit into something more than routine maintenance. It’s a
+                place where quality, convenience, and care come together
+                seamlessly.
               </p>
-              <p>
-                Today, we're proud to be Houston's premier hybrid destination,
-                serving thousands of satisfied customers with both their
-                automotive and culinary needs.
+              <p className="text-muted-foreground">
+                Today, we’re proud to stand as Houston’s first hybrid car care
+                and culinary destination, serving a growing community of
+                customers who value quality, innovation, and enjoyment in every
+                visit.
               </p>
             </div>
           </div>
@@ -151,7 +153,7 @@ export default function About() {
               </CardHeader>
               <CardContent>
                 <div className="text-start space-y-1">
-                  <h4 className="text-lg font-medium text-foreground">
+                  <h4 className="text-lg font-medium text-accent-foreground">
                     {core.title}
                   </h4>
                   <p className="text-muted-foreground">{core.description}</p>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,24 +14,21 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { BlogPostFormData } from "@/types";
 
-export type BlogPostFormData = {
-  title: string;
-  slug: string;
-  excerpt: string;
-  content: string;
-  author: string;
-  cover_image: string;
-  //   tags: string[];
-  published: boolean;
-};
+
 
 interface BlogPostFormProps {
   onSubmit: (data: BlogPostFormData) => void;
   onClose: () => void;
+  defaultValues?: Partial<BlogPostFormData>;
 }
 
-export function BlogPostForm({ onSubmit, onClose }: BlogPostFormProps) {
+export function BlogPostForm({
+  onSubmit,
+  onClose,
+  defaultValues,
+}: BlogPostFormProps) {
   const [formData, setFormData] = useState<BlogPostFormData>({
     title: "",
     slug: "",
@@ -85,6 +82,16 @@ export function BlogPostForm({ onSubmit, onClose }: BlogPostFormProps) {
   //   };
 
   // 🧾 Simple validation
+
+  useEffect(() => {
+    if (defaultValues) {
+      setFormData((prev) => ({
+        ...prev,
+        ...defaultValues,
+      }));
+    }
+  }, [defaultValues]);
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     if (!formData.title) newErrors.title = "Title is required";

@@ -1,9 +1,7 @@
 "use client";
 
 import Customers from "@/components/user/customers";
-import { Footer } from "@/components/user/footer";
 import { Hero } from "@/components/user/hero";
-import { UserNavbar } from "@/components/user/navbar";
 import {
   Card,
   CardContent,
@@ -14,10 +12,54 @@ import { Star, Check, Award, Clock, DollarSign, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
+const services = [
+  {
+    id: 1,
+    title: "Self-Service Car Wash",
+    description:
+      "Easy-to-use self-service car wash bays for those who prefer a hands-on clean. Wash your car your way with professional-grade equipment, including high-pressure hoses, foam brushes, and powerful vacuums — all available at your convenience.",
+    features: [
+      "Professional-grade equipment",
+      "High-pressure hoses & foam brushes",
+      "Powerful vacuum stations",
+      "Perfect for DIY car lovers",
+    ],
+    image: "/thelaunchpad.png",
+    link: "/",
+  },
+  {
+    id: 2,
+    title: "Professional Express Car Detailing",
+    description:
+      "Give your vehicle the ultimate refresh with our professional detailing services. We go beyond a basic wash — deep interior cleaning, premium waxing, and polishing to bring back your car's showroom shine.",
+    features: [
+      "Premium cleaning products",
+      "Interior & exterior detailing",
+      "Waxing and polishing",
+      "Professional-grade finish",
+    ],
+    image: "/thelaunchpad.png",
+    link: "/",
+  },
+  {
+    id: 3,
+    title: "Express Detailing Subscription",
+    description:
+      "Experience ultimate control over your vehicle's shine with our Express Detailing Subscription. Designed for those who take pride in a hands-on clean, our self-service bays feature top-tier tools and technology to deliver a professional finish anytime.",
+    features: [
+      "Commercial-grade equipment",
+      "High-pressure hoses & foam brushes",
+      "Powerful vacuum & interior care stations",
+      "Tailored for enthusiasts",
+    ],
+    image: "/thelaunchpad.png",
+    link: "/",
+  },
+];
+
 export default function Home() {
   return (
     <>
-    
       {/* Hero Section */}
       <Hero />
       {/* Service, One Location */}
@@ -33,144 +75,41 @@ export default function Home() {
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
-          <Card className="p-6">
-            <CardHeader className="border rounded-lg">
-              <img
-                src="/thelaunchpad.png"
-                alt=""
-                className="w-full h-40 object-contain"
-              />
-            </CardHeader>
-            <CardContent>
-              <h3 className="text-2xl text-accent-foreground mb-4">
-                Self-Service Car Wash
-              </h3>
-              <p className="text-sm mb-8 text-muted-foreground">
-                Easy-to-use self-service car wash bays for those who prefer a
-                hands-on clean! Wash your car your way with professional-grade
-                equipment, including high-pressure hoses, foam brushes, and
-                powerful vacuums — all available at your convenience.
-              </p>
-              <div className="space-y-3">
-                <span className="flex text-sm gap-2">
-                  <Check className="w-4 h-4 text-muted-foreground" />
-                  Professional-grade equipment
-                </span>
-                <span className="flex text-sm gap-2">
-                  <Check className="w-4 h-4 text-muted-foreground" />
-                  High-pressure hoses & foam brushes
-                </span>
-                <span className="flex text-sm gap-2">
-                  <Check className="w-4 h-4 text-muted-foreground" />
-                  Powerful vacuum stations
-                </span>
-                <span className="flex text-sm gap-2">
-                  <Check className="w-4 h-4 text-muted-foreground" />
-                  Perfect for DIY car lovers!
-                </span>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Link
-                href="/"
-                className="texl-base font-light text-blue-400 underline"
-              >
-                See Details
-              </Link>
-            </CardFooter>
-          </Card>
-          <Card className="p-6">
-            <CardHeader className="border rounded-lg">
-              <img
-                src="/thelaunchpad.png"
-                alt=""
-                className="w-full h-40 object-contain"
-              />
-            </CardHeader>
-            <CardContent>
-              <h3 className="text-2xl text-accent-foreground mb-4 text-nowrap">
-                Professional Car Detailing
-              </h3>
-              <p className="text-sm mb-8 text-muted-foreground">
-                Give your vehicle the ultimate refresh with our professional car
-                detailing services! We go beyond a basic wash — our detailing
-                packages include deep interior cleaning, premium waxing, and
-                polishing to bring back your car's showroom shine.
-              </p>
-              <div className="space-y-3">
-                <span className="flex text-sm gap-2">
-                  <Check className="w-4 h-4 text-muted-foreground" />
-                  Professional-grade equipment
-                </span>
-                <span className="flex text-sm gap-2">
-                  <Check className="w-4 h-4 text-muted-foreground" />
-                  High-pressure hoses & foam brushes
-                </span>
-                <span className="flex text-sm gap-2">
-                  <Check className="w-4 h-4 text-muted-foreground" />
-                  Powerful vacuum stations
-                </span>
-                <span className="flex text-sm gap-2">
-                  <Check className="w-4 h-4 text-muted-foreground" />
-                  Perfect for DIY car lovers!
-                </span>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Link
-                href="/"
-                className="texl-base font-light text-blue-400 underline"
-              >
-                See Details
-              </Link>
-            </CardFooter>
-          </Card>
-          <Card className="p-6">
-            <CardHeader className="border rounded-lg">
-              <img
-                src="/thelaunchpad.png"
-                alt=""
-                className="w-full h-40 object-contain"
-              />
-            </CardHeader>
-            <CardContent>
-              <h3 className="text-2xl text-accent-foreground mb-4">
-                Self-Service Car Wash
-              </h3>
-              <p className="text-sm mb-8 text-muted-foreground">
-                Easy-to-use self-service car wash bays for those who prefer a
-                hands-on clean! Wash your car your way with professional-grade
-                equipment, including high-pressure hoses, foam brushes, and
-                powerful vacuums — all available at your convenience.
-              </p>
-              <div className="space-y-3">
-                <span className="flex text-sm gap-2">
-                  <Check className="w-4 h-4 text-muted-foreground" />
-                  Professional-grade equipment
-                </span>
-                <span className="flex text-sm gap-2">
-                  <Check className="w-4 h-4 text-muted-foreground" />
-                  High-pressure hoses & foam brushes
-                </span>
-                <span className="flex text-sm gap-2">
-                  <Check className="w-4 h-4 text-muted-foreground" />
-                  Powerful vacuum stations
-                </span>
-                <span className="flex text-sm gap-2">
-                  <Check className="w-4 h-4 text-muted-foreground" />
-                  Perfect for DIY car lovers!
-                </span>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Link
-                href="/"
-                className="texl-base font-light text-blue-400 underline"
-              >
-                See Details
-              </Link>
-            </CardFooter>
-          </Card>
+          {services.map((service) => (
+            <Card key={service.id} className="p-6">
+              <CardHeader className="border rounded-lg">
+                <img
+                  src="/thelaunchpad.png"
+                  alt=""
+                  className="w-full h-40 object-contain"
+                />
+              </CardHeader>
+              <CardContent className="flex-1">
+                <h3 className="text-2xl text-accent-foreground mb-4">
+                  {service.title}
+                </h3>
+                <p className="text-sm mb-8 text-muted-foreground">
+                  {service.description}
+                </p>
+                <div className="space-y-3">
+                  {service.features.map((feature, i) => (
+                    <span key={i} className="flex text-sm gap-2">
+                      <Check className="w-4 h-4 text-muted-foreground" />
+                      {feature}
+                    </span>
+                  ))}
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Link
+                  href={service.link}
+                  className="texl-base font-light text-blue-400 underline"
+                >
+                  See Details
+                </Link>
+              </CardFooter>
+            </Card>
+          ))}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Left Block */}
@@ -198,10 +137,10 @@ export default function Home() {
               Why Choose The Launch Pad?
             </h1>
             <p>
-              Founded in 2018, The Launch Pad revolutionized the car care
+              Founded in 2024, The Launch Pad revolutionized the car care
               experience by combining multiple services under one roof. Whether
               you want to wash your car yourself, get professional detailing, or
-              grab a quick $15 handwash, we've got you covered.
+              grab a quick handwash, we've got you covered.
             </p>
             <p>
               Plus, while you wait, enjoy Houston's finest food trucks! It's the
@@ -244,7 +183,7 @@ export default function Home() {
                       <span className="block font-medium text-foreground">
                         Great Value
                       </span>
-                      <span className="text-sm">$15 handwash special</span>
+                      <span className="text-sm">Best price in town</span>
                     </div>
                   </div>
                 </CardContent>
@@ -255,7 +194,8 @@ export default function Home() {
                     <Users className="w-8 h-8 bg-green-100 text-green-400 p-1 rounded-md" />
                     <div>
                       <span className="block font-medium text-foreground">
-                        Food & Community
+                        {/* customer  */}
+                        Satisfaction guarantee
                       </span>
                       <span className="text-sm">Where car lovers gather</span>
                     </div>

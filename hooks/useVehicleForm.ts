@@ -5,13 +5,13 @@ import { z } from "zod";
 
 // Vehicle schema
 export const vehicleSchema = z.object({
+  make: z.string().min(4, "Make is required"),
+  model: z.string().min(4, "Model is required"),
   year: z.string().regex(/^\d{4}$/, "Year must be a 4-digit number"),
-  make: z.string().min(2, "Make is required"),
-  model: z.string().min(1, "Model is required"),
   trim: z.string().optional(),
   body_type: z.string().nonempty("Please select a body type"),
   color: z.string().min(1, "Color is required"),
-  licensePlate: z.string().min(2, "License plate is required"),
+  licensePlate: z.string().optional(),
 });
 
 export type VehicleFormData = z.infer<typeof vehicleSchema>;

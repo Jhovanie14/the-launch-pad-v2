@@ -11,11 +11,12 @@ import {
   CheckCircle2,
   PackageCheck,
 } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { createBooking } from "../action";
 
 function ConfirmationContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
   const { user } = useAuth();
@@ -179,7 +180,12 @@ function ConfirmationContent() {
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Button variant="ghost">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-gray-600 hover:text-gray-900"
+              onClick={() => router.back()}
+            >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
             </Button>
