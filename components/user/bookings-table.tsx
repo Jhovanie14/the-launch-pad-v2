@@ -15,7 +15,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calendar, Car, Clock, Crown, DollarSign } from "lucide-react";
+import {
+  Banknote,
+  Calendar,
+  Car,
+  Clock,
+  CreditCard,
+  Crown,
+  DollarSign,
+  Repeat,
+} from "lucide-react";
 import { format } from "date-fns";
 import type { Booking } from "@/types";
 
@@ -139,6 +148,20 @@ export function BookingsTable({
                 <div className="flex items-center font-medium">
                   <DollarSign className="h-4 w-4 mr-1" />
                   {booking.total_price}
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center font-medium">
+                  {booking.payment_method === "card" && (
+                    <CreditCard className="h-4 w-4 mr-1 text-blue-500" />
+                  )}
+                  {booking.payment_method === "cash" && (
+                    <Banknote className="h-4 w-4 mr-1 text-green-500" />
+                  )}
+                  {booking.payment_method === "subscription" && (
+                    <Repeat className="h-4 w-4 mr-1 text-purple-500" />
+                  )}
+                  {booking.payment_method}
                 </div>
               </TableCell>
               <TableCell>

@@ -41,14 +41,44 @@ export function Footer() {
               plus amazing food trucks!
             </p>
             <div className="flex gap-4 pt-2">
-              <Link href="#" className="hover:text-white transition-colors">
+              <Link
+                href="https://instagram.com/thelaunchpadhtx"
+                target="_blank"
+                rel="noopener"
+                aria-label="Instagram"
+                className="hover:text-white transition-colors"
+              >
                 <Instagram className="w-5 h-5" />
               </Link>
-              <Link href="#" className="hover:text-white transition-colors">
+              <Link
+                href="https://www.facebook.com/profile.php?id=61566883617151"
+                target="_blank"
+                rel="noopener"
+                aria-label="Facebook"
+                className="hover:text-white transition-colors"
+              >
                 <Facebook className="w-5 h-5" />
               </Link>
-              <Link href="#" className="hover:text-white transition-colors">
-                <Twitter className="w-5 h-5" />
+              <Link
+                href="https://tiktok.com/@thelaunchpadhtx%3Flang%3Den"
+                target="_blank"
+                rel="noopener"
+                aria-label="Tiktok"
+                className="hover:text-white transition-colors"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="w-6 h-6"
+                >
+                  <path d="M12 3v12a3 3 0 1 1-3-3" />
+                  <path d="M12 3a5 5 0 0 0 5 5h1.5" />
+                </svg>
               </Link>
               {/* <Link href="#" className="hover:text-white transition-colors">
                 <!-- tiktok-monochrome.svg -->
@@ -82,10 +112,10 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/testimonials"
+                  href="/how-it-works"
                   className="hover:text-white transition-colors text-sm"
                 >
-                  Testimonials
+                  how-it-works
                 </Link>
               </li>
               <li>
@@ -93,15 +123,15 @@ export function Footer() {
                   href="/blog"
                   className="hover:text-white transition-colors text-sm"
                 >
-                  Blog
+                  Blogs
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/subscriptions"
+                  href="/faq"
                   className="hover:text-white transition-colors text-sm"
                 >
-                  Subscriptions
+                  FAQ
                 </Link>
               </li>
               <li>
@@ -109,7 +139,15 @@ export function Footer() {
                   href="/contact"
                   className="hover:text-white transition-colors text-sm"
                 >
-                  Contact
+                  Contact Us
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/reviews"
+                  className="hover:text-white transition-colors text-sm"
+                >
+                  Reviews
                 </Link>
               </li>
             </ul>
@@ -127,7 +165,7 @@ export function Footer() {
               </li>
               <li className="flex items-center gap-2 text-sm">
                 <Sparkles className="w-4 h-4" />
-                Professional Detailing
+                Professional Express Detailing
               </li>
               {/* <li className="flex items-center gap-2 text-sm">
                 <DollarSign className="w-4 h-4" />
@@ -167,9 +205,11 @@ export function Footer() {
               {/* <p className="text-white font-semibold text-sm mb-1">
                 $10 Handwash Special
               </p> */}
-              <p className="text-xs text-gray-400">Monday - Thursday only</p>
               <p className="text-xs text-gray-400">
-                Sedans only (larger vehicles may vary)
+                Monday - Friday 10am - 6pm only
+              </p>
+              <p className="text-xs text-gray-400">
+                Sedans, Suvs, Trucks (larger vehicles may vary)
               </p>
             </div>
           </div>

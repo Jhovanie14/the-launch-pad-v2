@@ -138,7 +138,7 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Package className="h-5 w-5" />
-              {"Order Details"}
+              {"Booking Details"}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -146,13 +146,13 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
             <div className="flex justify-between items-center text-sm">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Calendar className="h-4 w-4" />
-                {"Order Date"}
+                {"Booking Date"}
               </div>
               <span className="font-medium">{orderData.date}</span>
             </div>
 
             <div className="flex justify-between items-center text-sm">
-              <span className="text-muted-foreground">{"Order Number"}</span>
+              <span className="text-muted-foreground">{"Booking Number"}</span>
               <span className="font-medium">{orderData.orderNumber}</span>
             </div>
 
@@ -164,7 +164,7 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
               <span className="font-medium">{orderData.paymentMethod}</span>
             </div>
 
-            <Separator />
+            <Separator id="separator 1" />
 
             {/* Items */}
             <div className="space-y-3">
@@ -177,7 +177,7 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
               ))}
             </div>
 
-            <Separator />
+            <Separator id="separator 2" />
 
             {/* Totals */}
             <div className="space-y-2">

@@ -24,7 +24,7 @@ export default function DashboardPage() {
   // console.log("Recent Bookings:", recentBookings);
 
   useEffect(() => {
-    console.log("Auth state changed:", { user, isLoading });
+    // console.log("Auth state changed:", { user, isLoading });
   }, [user, isLoading]);
 
   if (isLoading) {

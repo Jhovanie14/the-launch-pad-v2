@@ -51,7 +51,7 @@ export function useBookingDetails() {
     if (!user?.id || bookings.length === 0) return;
 
     const results: Record<string, boolean> = {};
-    console.log("boo");
+    // console.log("boo");
     // Check all bookings in parallel
     await Promise.all(
       bookings.map(async (booking) => {
@@ -64,7 +64,7 @@ export function useBookingDetails() {
       })
     );
 
-    console.log(results);
+    // console.log(results);
 
     setReviewedBookings(results);
   }

@@ -11,6 +11,7 @@ import {
 import { Star, Check, Award, Clock, DollarSign, Users } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 const services = [
   {
@@ -25,7 +26,6 @@ const services = [
       "Perfect for DIY car lovers",
     ],
     image: "/thelaunchpad.png",
-    link: "/",
   },
   {
     id: 2,
@@ -39,7 +39,6 @@ const services = [
       "Professional-grade finish",
     ],
     image: "/thelaunchpad.png",
-    link: "/",
   },
   {
     id: 3,
@@ -53,7 +52,6 @@ const services = [
       "Tailored for enthusiasts",
     ],
     image: "/thelaunchpad.png",
-    link: "/",
   },
 ];
 
@@ -101,12 +99,9 @@ export default function Home() {
                 </div>
               </CardContent>
               <CardFooter>
-                <Link
-                  href={service.link}
-                  className="texl-base font-light text-blue-400 underline"
-                >
+                <Button className="texl-base font-light text-blue-400 underline hover:text-blue-600 bg-white hover:bg-white">
                   See Details
-                </Link>
+                </Button>
               </CardFooter>
             </Card>
           ))}

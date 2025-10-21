@@ -24,6 +24,13 @@ export async function POST(req: Request) {
       })
     : null;
 
+  // if (Number(body.totalPrice) <= 0) {
+  //   return new Response(
+  //     JSON.stringify({ error: "Total price must be greater than 0" }),
+  //     { status: 400 }
+  //   );
+  // }
+
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     payment_method_types: ["card"],
@@ -61,6 +68,7 @@ export async function POST(req: Request) {
         appointment_time: body.appointmentTime,
         total_price: Number(body.totalPrice),
         total_duration: Number(body.totalDuration),
+        payment_method: body.paymentMethod,
         customer_name:
           body.customerName ?? user?.user_metadata?.full_name ?? null,
         customer_email: user?.email ?? body.customerEmail ?? undefined,

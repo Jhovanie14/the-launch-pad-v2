@@ -31,6 +31,7 @@ export interface Booking {
   appointment_time: string; // e.g. "14:30:00"
   total_price: string; // numeric comes as string
   total_duration: number;
+  payment_method: string;
   customer_name: string | null;
   customer_email: string | null;
   customer_phone: string | null;

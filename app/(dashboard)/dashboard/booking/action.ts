@@ -19,6 +19,7 @@ type CarData = {
   appointmentTime?: string;
   totalPrice?: number;
   totalDuration?: number;
+  payment_method: string;
   // Customer info for non-authenticated users
   customerName?: string;
   customerEmail?: string;
@@ -103,6 +104,7 @@ export async function createBooking(car: CarData) {
       appointment_time: car.appointmentTime,
       total_price: car.totalPrice,
       total_duration: car.totalDuration,
+      payment_method: car.payment_method,
       status: "pending",
       customer_name: car.customerName || user?.user_metadata?.full_name || null,
       customer_email: car.customerEmail || user?.email || null,

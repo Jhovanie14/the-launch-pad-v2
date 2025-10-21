@@ -143,60 +143,37 @@ export function AuthContextProvider({
   };
 
   const signUp = async (formData: FormData) => {
-    const validatedFields = signUpSchema.safeParse({
+    const validated = signUpSchema.safeParse({
       email: formData.get("email"),
       password: formData.get("password"),
       fullName: formData.get("fullName"),
     });
 
-    if (!validatedFields.success) {
-      return {
-        errors: validatedFields.error.flatten().fieldErrors,
-      };
+    if (!validated.success) {
+      return { errors: validated.error.flatten().fieldErrors };
     }
 
-    const { email, password, fullName } = validatedFields.data;
-
-    // Check if user already exists
-    const { data: userExists, error: checkError } = await supabase.rpc(
-      "check_user_exists",
-      { email_to_check: email }
-    );
-
-    if (checkError) {
-      console.error("Error checking user:", checkError);
-      return {
-        message: "Failed to check user existence",
-      };
-    }
-
-    if (userExists) {
-      return {
-        message: "User with this email already exists",
-      };
-    }
+    const { email, password, fullName } = validated.data;
 
     const siteUrl =
       typeof window !== "undefined"
         ? window.location.origin
-        : process.env.NEXT_PUBLIC_SITE_URL ||
-          "https://www.thelaunchpadwash.com";
+        : process.env.NEXT_PUBLIC_SITE_URL;
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: {
-          full_name: fullName,
-        },
         emailRedirectTo: `${siteUrl}/auth/confirm`,
+        data: { full_name: fullName },
       },
     });
 
+    console.log("Redirect URL:", `${window.location.origin}/auth/confirm`);
+
     if (error) {
-      return {
-        message: "Failed to create account",
-      };
+      console.error("Signup error:", error);
+      return { message: error.message };
     }
 
     return {

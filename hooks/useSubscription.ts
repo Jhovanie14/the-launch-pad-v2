@@ -28,7 +28,7 @@ export function useSubscription() {
     try {
       setLoading(true);
       setError(null);
-      console.log("abot dri")
+      // console.log("abot dri")
       const sub = await getActiveSubscription(supabase, user?.id);
       setSubscription(sub);
     } catch (err) {

@@ -6,11 +6,26 @@ import { useAuth } from "@/context/auth-context";
 import { createClient } from "@/utils/supabase/client";
 import {
   ArrowLeft,
+  Banknote,
   Calendar,
   Car,
   CheckCircle2,
+  CreditCard,
+  Crown,
   PackageCheck,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { createBooking } from "../action";
@@ -34,6 +49,8 @@ function ConfirmationContent() {
   const [selectedPackages, setSelectedPackages] = useState<any>(null);
   const [userSubscribe, setUserSubscribe] = useState<any>(null);
   const [selectedAddOns, setSelectedAddOns] = useState<any>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "cash">("card");
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   const serviceId = searchParams.get("service");
   const addonsParam = searchParams.get("addons");
@@ -43,6 +60,8 @@ function ConfirmationContent() {
 
   const dateParam = searchParams.get("date");
   const timeParam = searchParams.get("time");
+
+  const isSubscribed = !!userSubscribe?.stripe_subscription_id;
 
   useEffect(() => {
     (async () => {
@@ -106,18 +125,33 @@ function ConfirmationContent() {
   };
 
   const calculateTotal = () => {
-    const total = selectedPackages?.price || 0;
-    const addOnsTotal = selectedAddOns?.price || 0;
+    const addOnsTotal = Array.isArray(selectedAddOns)
+      ? selectedAddOns.reduce((sum, addon) => sum + (addon.price || 0), 0)
+      : selectedAddOns?.price || 0;
 
-    return total + addOnsTotal;
+    if (isSubscribed) {
+      // Subscribers get base package free — only pay for add-ons
+      return addOnsTotal;
+    }
+
+    const basePrice = selectedPackages?.price || 0;
+    return basePrice + addOnsTotal;
   };
-  const handleConfirmBooking = async () => {
-    try {
-      setIsSubmitting(true);
-      const isSubscribed = !!userSubscribe?.stripe_subscription_id;
 
-      if (isSubscribed && !selectedAddOns) {
-        // Free/subscription booking: create immediately
+  const formatTime = (time: string) => {
+    const [hours, minutes] = time.split(":").map(Number);
+    const period = hours >= 12 ? "PM" : "AM";
+    const formattedHours = hours % 12 || 12;
+    return `${formattedHours}:${minutes.toString().padStart(2, "0")} ${period}`;
+  };
+
+  const handleConfirmBooking = async () => {
+    const isSubscribed = !!userSubscribe?.stripe_subscription_id;
+
+    // If subscribed and no add-ons → book directly (free)
+    if (isSubscribed && !selectedAddOns) {
+      setIsSubmitting(true);
+      try {
         const booking = await createBooking({
           year: parseInt(vehicleSpecs.year || "0"),
           make: vehicleSpecs.make || "",
@@ -125,19 +159,53 @@ function ConfirmationContent() {
           trim: vehicleSpecs.trim || "",
           body_type: vehicleSpecs.body_type || "",
           colors: [vehicleSpecs.color || ""],
-          ...vehicleSpecs,
-          servicePackage: { ...selectedPackages, price: 0 }, // 👈 free
-          addOnsId: selectedAddOns ? selectedAddOns.id : null,
+          servicePackage: { ...selectedPackages, price: 0 },
+          addOnsId: null,
           appointmentDate: new Date(appointmentDate!),
           appointmentTime: appointmentTime!.toString(),
           totalPrice: 0,
           totalDuration: calculateDuration(),
+          payment_method: "subscription",
+        });
+        window.location.href = `/dashboard/bookings/success?booking_id=${booking.id}`;
+      } catch (error) {
+        console.error("Booking failed:", error);
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
+    // Otherwise → show payment choice modal
+    setShowPaymentModal(true);
+  };
+
+  const confirmPaymentChoice = async () => {
+    try {
+      setIsSubmitting(true);
+      setShowPaymentModal(false);
+
+      if (paymentMethod === "cash") {
+        const booking = await createBooking({
+          year: parseInt(vehicleSpecs.year || "0"),
+          make: vehicleSpecs.make || "",
+          model: vehicleSpecs.model || "",
+          trim: vehicleSpecs.trim || "",
+          body_type: vehicleSpecs.body_type || "",
+          colors: [vehicleSpecs.color || ""],
+          servicePackage: { ...selectedPackages },
+          addOnsId: selectedAddOns ? selectedAddOns.id : null,
+          appointmentDate: new Date(appointmentDate!),
+          appointmentTime: appointmentTime!.toString(),
+          totalPrice: calculateTotal(),
+          totalDuration: calculateDuration(),
+          payment_method: "cash",
         });
         window.location.href = `/dashboard/bookings/success?booking_id=${booking.id}`;
         return;
       }
 
-      // Paid booking: let Stripe webhook create the booking
+      // Card payment (via Stripe)
       const payload = {
         year: parseInt(vehicleSpecs.year || "0"),
         make: vehicleSpecs.make || "",
@@ -156,7 +224,9 @@ function ConfirmationContent() {
           ? selectedAddOns?.price || 0
           : calculateTotal(),
         totalDuration: calculateDuration(),
+        payment_method: "card",
       };
+
       const res = await fetch("/api/checkout_sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -164,11 +234,9 @@ function ConfirmationContent() {
       });
 
       const { url } = await res.json();
-      if (url) {
-        window.location.href = url; // redirect to Stripe Checkout
-      }
+      if (url) window.location.href = url;
     } catch (error) {
-      console.log(error);
+      console.error("Payment error:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -261,7 +329,11 @@ function ConfirmationContent() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Time:</span>
-                    <span className="font-medium">{appointmentTime}</span>
+                    {appointmentTime && (
+                      <span className="font-medium">
+                        {formatTime(appointmentTime)}
+                      </span>
+                    )}
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Service:</span>
@@ -302,18 +374,25 @@ function ConfirmationContent() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Total Price:</span>
-                    <span className="font-medium">
-                      ${calculateTotal()} price
-                    </span>
+                    <span className="font-medium">${calculateTotal()}</span>
                   </div>
                 </div>
               </CardContent>
             </Card>
+            {isSubscribed && (
+              <div className="flex items-center gap-1">
+                <Crown className="w-4 h-4 text-yellow-500" />
+                <p className=" text-sm text-green-600">
+                  You’re subscribed — base wash is free! You only pay for
+                  add-ons.
+                </p>
+              </div>
+            )}
             {/* Action Buttons */}
             <div className="w-full md:flex space-y-3 md:space-y-0  md:justify-between">
-              <Button variant="outline" className=" px-8 py-3">
+              {/* <Button variant="outline" className=" px-8 py-3">
                 Back to Date & Time
-              </Button>
+              </Button> */}
               <Button
                 onClick={handleConfirmBooking}
                 disabled={isSubmitting}
@@ -353,6 +432,87 @@ function ConfirmationContent() {
           </div>
         </div>
       </div>
+      <AlertDialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Choose Payment Method</AlertDialogTitle>
+            <AlertDialogDescription>
+              Please select how you’d like to pay for your booking.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="grid grid-cols-2 gap-4 mt-4">
+            {/* Pay with Card */}
+            <label
+              className={`flex items-center justify-center gap-1 p-2 border rounded-2xl cursor-pointer transition-all ${
+                paymentMethod === "card"
+                  ? "border-blue-600 bg-blue-50 shadow-sm"
+                  : "border-gray-200 hover:border-gray-400"
+              }`}
+            >
+              <input
+                type="radio"
+                name="payment"
+                value="card"
+                checked={paymentMethod === "card"}
+                onChange={() => setPaymentMethod("card")}
+                className="hidden"
+              />
+              <CreditCard
+                className={`w-6 h-6 ${
+                  paymentMethod === "card" ? "text-blue-600" : "text-gray-500"
+                }`}
+              />
+              <span
+                className={`text-sm font-medium ${
+                  paymentMethod === "card" ? "text-blue-700" : "text-gray-700"
+                }`}
+              >
+                Pay with Card
+              </span>
+            </label>
+
+            {/* Pay with Cash */}
+            <label
+              className={`flex items-center justify-center gap-1 p-2 border rounded-2xl cursor-pointer transition-all ${
+                paymentMethod === "cash"
+                  ? "border-green-600 bg-green-50 shadow-sm"
+                  : "border-gray-200 hover:border-gray-400"
+              }`}
+            >
+              <input
+                type="radio"
+                name="payment"
+                value="cash"
+                checked={paymentMethod === "cash"}
+                onChange={() => setPaymentMethod("cash")}
+                className="hidden"
+              />
+              <Banknote
+                className={`w-6 h-6 ${
+                  paymentMethod === "cash" ? "text-green-600" : "text-gray-500"
+                }`}
+              />
+              <span
+                className={`text-sm font-medium ${
+                  paymentMethod === "cash" ? "text-green-700" : "text-gray-700"
+                }`}
+              >
+                Pay with Cash
+              </span>
+            </label>
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-blue-900 hover:bg-blue-800"
+              onClick={confirmPaymentChoice}
+            >
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

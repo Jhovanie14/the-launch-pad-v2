@@ -16,7 +16,7 @@ export default function BookingProvider({ children }: { children: ReactNode }) {
   const openBookingModal = () => setIsBookingModalOpen(true);
   const closeBookingModal = () => setIsBookingModalOpen(false);
 
-  console.log("BookingProvider is rendering");
+  // console.log("BookingProvider is rendering");
 
   return (
     <BookingContext.Provider

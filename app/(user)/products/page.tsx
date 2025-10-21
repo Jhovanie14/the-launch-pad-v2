@@ -34,7 +34,6 @@ import {
   Star,
 } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 
 const products = [
@@ -144,13 +143,13 @@ function Products() {
     const handler = setTimeout(() => {
       // Debounced search/filter logic can go here if needed
       setDebouncedSearchQuery(searchQuery.trim());
-      console.log("Filtering products...", {
-        searchQuery,
-        selectedCategory,
-        priceRange,
-        sortBy,
-        minRating,
-      });
+      // console.log("Filtering products...", {
+      //   searchQuery,
+      //   selectedCategory,
+      //   priceRange,
+      //   sortBy,
+      //   minRating,
+      // });
     }, 500);
 
     return () => {
@@ -234,7 +233,7 @@ function Products() {
               className="pl-10"
             />
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center justify-end space-x-2">
             <div className="flex items-center space-x-2 bg-white border p-1 rounded-md">
               <Button
                 variant={viewMode === "grid" ? "default" : "ghost"}
@@ -254,7 +253,7 @@ function Products() {
             {/* Filter Popover */}
             <Popover open={filterOpen} onOpenChange={setFilterOpen}>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="relative">
+                <Button variant="outline" size="sm" className="relative py-5">
                   <Filter className="w-4 h-4 mr-2" />
                   Filters
                   {activeFiltersCount > 0 && (
@@ -399,8 +398,8 @@ function Products() {
                   )}
                   {product.image ? (
                     <Image
-                      height={192}
-                      width={300}
+                      height={292}
+                      width={450}
                       src={product.image}
                       alt={product.title}
                       className="w-full h-full object-cover"
@@ -487,7 +486,7 @@ function Products() {
                         width={450}
                         src={product.image}
                         alt={product.title}
-                        className="w-72 h-auto object-cover rounded-lg p-1"
+                        className="hidden sm:block w-72 h-auto object-cover rounded-lg p-1"
                       />
                     ) : (
                       <div className="w-full h-auto flex items-center justify-center text-muted-foreground">

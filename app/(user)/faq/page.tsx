@@ -68,7 +68,7 @@ const faqData = [
       "I have additional questions not covered here, who can I contact?",
     answer:
       "Our friendly team is here to help! You can reach us at (832) 219-8320, email us at info@thelaunchpadwash.com, or visit us at 10410 Main St, Houston, TX, United States, Texas. ",
-      // You can also use our live chat feature on our website or mobile app.
+    // You can also use our live chat feature on our website or mobile app.
   },
 ];
 
@@ -81,7 +81,7 @@ export default function FAQ() {
 
   return (
     <div className="py-20">
-      <div className="flex items-start gap-8 lg:gap-16">
+      <div className="flex flex-col sm:flex-row lg:flex-row items-start gap-8 lg:gap-16">
         {/* FAQ Title */}
         <div className="flex-shrink-0">
           <h2 className="text-6xl lg:text-8xl font-bold text-blue-900 tracking-tight">

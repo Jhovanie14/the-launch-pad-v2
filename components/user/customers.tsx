@@ -73,7 +73,7 @@ export default function Customers() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      console.log(data);
+      // console.log(data);
       setReviews(data || []);
     }
     fetchReview();

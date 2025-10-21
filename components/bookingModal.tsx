@@ -36,7 +36,7 @@ export default function BookingModal() {
   useEffect(() => {
     async function fetchSubscriptionVehicle() {
       if (!user) {
-        console.log("No user, clearing subscription vehicles");
+        // console.log("No user, clearing subscription vehicles");
         setSubscriptionVehicles([]);
         setSelectedVehicleId(null);
         return;
@@ -71,7 +71,7 @@ export default function BookingModal() {
         )
         .eq("subscription_id", subscription.id);
 
-      console.log("subs", subscription, "vechiles", vechiles);
+      // console.log("subs", subscription, "vechiles", vechiles);
 
       if (vechiles) setSubscriptionVehicles(vechiles.map((v) => v.vehicle));
     }
@@ -82,7 +82,7 @@ export default function BookingModal() {
     console.log("handleBooking clicked");
 
     if (!user) {
-      console.log("No user → opening auth modal");
+      // console.log("No user → opening auth modal");
       setAuthOpen(true);
       return;
     }
@@ -95,7 +95,7 @@ export default function BookingModal() {
     // ✅ Only run validate() if no subscribed vehicle is selected
     if (subscriptionVehicles.length === 0) {
       if (!validate()) {
-        console.log("Validation failed for manual vehicle input");
+        // console.log("Validation failed for manual vehicle input");
         return;
       }
     }
@@ -105,7 +105,7 @@ export default function BookingModal() {
         (v) => v.id === selectedVehicleId
       );
       if (!selected) {
-        console.log("No selected vehicle");
+        // console.log("No selected vehicle");
         return;
       }
       params = new URLSearchParams({
@@ -122,7 +122,7 @@ export default function BookingModal() {
         ...vehicleInfo,
       });
     }
-    console.log("Redirecting with:", params.toString());
+    // console.log("Redirecting with:", params.toString());
     closeBookingModal();
 
     // Redirect to service selection page

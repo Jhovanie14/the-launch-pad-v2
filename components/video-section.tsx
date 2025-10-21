@@ -32,13 +32,13 @@ export function VideoSection() {
                 <source src="/how-it-work.mp4" type="video/mp4" />
               </video>
               <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                <button
+                {/* <button
                   onClick={() => setIsPlaying(true)}
                   className="bg-white text-blue-900 w-20 h-20 rounded-full flex items-center justify-center hover:scale-110 transition-transform duration-300 shadow-xl"
                   aria-label="Play video"
                 >
                   <Play className="w-10 h-10 ml-1" fill="currentColor" />
-                </button>
+                </button> */}
               </div>
             </div>
           ) : (

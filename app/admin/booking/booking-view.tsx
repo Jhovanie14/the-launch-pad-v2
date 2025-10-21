@@ -22,8 +22,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { Pagination } from "@/components/ui/pagination";
 import { useBookingRealtime } from "@/hooks/useBookingRealtime";
+import { FileDown, FileSpreadsheet, FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ExportModal } from "@/components/export-modal";
+import { useBooking } from "@/context/bookingContext";
 
 type UserSubscription = {
   user_id: string;
@@ -32,6 +44,7 @@ type UserSubscription = {
 
 export default function BookingsView() {
   const supabase = createClient();
+  const { openBookingModal } = useBooking();
   const [loading, setLoading] = useState(false);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [page, setPage] = useState(1);
@@ -46,6 +59,7 @@ export default function BookingsView() {
   const [dateFilter, setDateFilter] = useState<
     "all" | "today" | "week" | "month"
   >("all");
+  const [exportModalOpen, setExportModalOpen] = useState(false);
   // const [selectedDate, setSelectedDate] = useState(
   //   new Date().toISOString().split("T")[0]
   // );
@@ -161,6 +175,35 @@ export default function BookingsView() {
 
     fetchTotalRevenue();
   }, [supabase]);
+
+  const handleDownload = async (
+    type: "pdf" | "excel",
+    statusFilter: string,
+    dateFilter: string
+  ) => {
+    try {
+      const queryParams = new URLSearchParams();
+      if (dateFilter !== "all") queryParams.append("date", dateFilter);
+      if (statusFilter !== "all") queryParams.append("status", statusFilter);
+
+      const res = await fetch(
+        `/api/bookings/export?type=${type}&${queryParams.toString()}`
+      );
+      if (!res.ok) throw new Error("Failed to generate file");
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `bookings.${type === "pdf" ? "pdf" : "xlsx"}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Download error:", error);
+    }
+  };
 
   const filteredBookings = bookings.filter((booking) => {
     const serviceName = booking.service_package_name?.toLowerCase() ?? "";
@@ -280,12 +323,23 @@ export default function BookingsView() {
       </div>
       {/* Bookings for Selected Date */}
       <Card className="bg-card border-border">
-        <CardHeader>
-          <CardTitle>Booking Management</CardTitle>
-          <CardDescription>
-            View and manage all customer bookings
-          </CardDescription>
+        <CardHeader className="flex items-center justify-between ">
+          <div className="space-y-3">
+            <CardTitle>Booking Management</CardTitle>
+            <CardDescription>
+              View and manage all customer bookings
+            </CardDescription>
+          </div>
+          <div className="">
+            <Button
+              onClick={openBookingModal}
+              className="bg-blue-900 self-start hover:bg-blue-800 text-white font-semibold px-6 rounded-md transition-all duration-200 shadow-md hover:shadow-lg uppercase tracking-wide"
+            >
+              Book Online
+            </Button>
+          </div>
         </CardHeader>
+
         <CardContent>
           <div className="flex flex-col md:flex-row gap-4 mb-6">
             <div className="flex-1">
@@ -332,6 +386,14 @@ export default function BookingsView() {
                 <SelectItem value="month">This Month</SelectItem>
               </SelectContent>
             </Select>
+            <Button
+              onClick={() => setExportModalOpen(true)}
+              variant="outline"
+              className="w-24"
+            >
+              <FileDown className="h-4 w-4" />
+              Export
+            </Button>
           </div>
 
           <BookingsTable
@@ -347,7 +409,11 @@ export default function BookingsView() {
           />
         </CardContent>
       </Card>
-
+      <ExportModal
+        open={exportModalOpen}
+        onOpenChange={setExportModalOpen}
+        onExport={handleDownload}
+      />
       {/* All Bookings Overview */}
       {/* <Card className="mt-6 bg-card border-border">
         <CardHeader>

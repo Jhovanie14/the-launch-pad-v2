@@ -51,6 +51,13 @@ export default function BookingsList() {
     }
   };
 
+  const formatTime = (time: string) => {
+    const [hours, minutes] = time.split(":").map(Number);
+    const period = hours >= 12 ? "PM" : "AM";
+    const formattedHours = hours % 12 || 12;
+    return `${formattedHours}:${minutes.toString().padStart(2, "0")} ${period}`;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -72,7 +79,6 @@ export default function BookingsList() {
     );
   }
 
-  console.log("this is review", reviewedBookings);
   return (
     <div className="py-6">
       <div className="mb-6">
@@ -141,6 +147,13 @@ export default function BookingsList() {
                 </div>
               )}
 
+              <div className="space-y-2 flex justify-between text-sm">
+                <span className="text-sm font-medium text-gray-700 mb-2">
+                  Payment Type
+                </span>
+                <span className="text-gray-600">{booking.payment_method}</span>
+              </div>
+
               {/* Appointment Details */}
               <div className="space-y-2">
                 <div className="flex items-center text-sm text-gray-600">
@@ -149,7 +162,8 @@ export default function BookingsList() {
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <Clock className="w-4 h-4 mr-2" />
-                  {booking.appointment_time} ({booking.total_duration} min)
+                  {formatTime(booking.appointment_time)} (
+                  {booking.total_duration} min)
                 </div>
               </div>
 

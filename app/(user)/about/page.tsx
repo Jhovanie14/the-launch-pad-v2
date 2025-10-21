@@ -1,16 +1,6 @@
-import { Footer } from "@/components/user/footer";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import {
-  Car,
-  Clock,
-  ForkKnife,
-  Shield,
-  Sparkles,
-  Star,
-  Users,
-} from "lucide-react";
+import { Car, Clock, Shield, Sparkles, Star, Truck, Users } from "lucide-react";
 import Image from "next/image";
-import { UserNavbar } from "@/components/user/navbar";
 
 const coreContent: {
   icon: React.ComponentType<any>;
@@ -66,14 +56,13 @@ const diffContent: {
     ],
   },
   {
-    icon: ForkKnife,
+    icon: Truck,
     color: "text-red-800",
     title: "DIY Carwash",
     description: [
       "Rotating selection of local food trucks",
       "Diverse cuisine options daily",
       "Comfortable seating areas",
-      "Regular food festivals and events",
     ],
   },
 ];
