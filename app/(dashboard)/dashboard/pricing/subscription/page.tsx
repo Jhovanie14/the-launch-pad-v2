@@ -20,6 +20,7 @@ import { Check } from "lucide-react";
 import { useVehicleForm } from "@/hooks/useVehicleForm";
 import { UserNavbar } from "@/components/user/navbar";
 import { ensureVehicle } from "@/utils/vehicle";
+import { Checkbox } from "@/components/ui/checkbox";
 
 function SubscriptionCartContent() {
   const searchParams = useSearchParams();
@@ -296,7 +297,7 @@ function SubscriptionCartContent() {
         </div>
 
         {/* How Many Vehicles */}
-        <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
+        {/* <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold text-foreground">
               How many vehicles
@@ -337,7 +338,7 @@ function SubscriptionCartContent() {
               anytime.
             </p>
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* Right Column - Cart Summary */}
@@ -366,13 +367,13 @@ function SubscriptionCartContent() {
                   </p>
                 )}
 
-                <p className="text-lg mt-2 font-bold">
+                {/* <p className="text-lg mt-2 font-bold">
                   Total: $
                   {billingCycle === "monthly"
                     ? (plan?.monthly_price || 0) + extraFee
                     : (plan?.yearly_price || 0) + extraFee * 12}
                   {billingCycle === "monthly" ? "/month" : "/year"}
-                </p>
+                </p> */}
               </CardContent>
             </Card>
           </div>
@@ -405,40 +406,25 @@ function SubscriptionCartContent() {
                       setEmailUpdates(checked as boolean)
                     }
                   /> */}
-              <label
-                htmlFor="email-updates"
-                className="text-sm text-muted-foreground cursor-pointer"
-              >
-                Opt in for email updates
-              </label>
-            </div>
-            <div className="flex items-center gap-2">
-              {/* <Checkbox
-                    id="sms-updates"
-                    checked={smsUpdates}
-                    onCheckedChange={(checked) =>
-                      setSmsUpdates(checked as boolean)
-                    }
-                  /> */}
-              <label
-                htmlFor="sms-updates"
-                className="text-sm text-muted-foreground cursor-pointer"
-              >
-                Opt in for SMS updates
-              </label>
             </div>
           </div>
 
           {/* Terms */}
-          <div className="mb-6">
+          <div className=" flex mb-6">
+            <Checkbox className="mr-3" id="authorized" />
             <p className="text-xs text-muted-foreground leading-relaxed">
-              By purchasing, you agree to Quick Quack's{" "}
+              I authorized The Launch Pad to automatically charge the selected
+              paymenth method{" "}
+              {billingCycle === "monthly"
+                ? `$${plan?.monthly_price}/month`
+                : `$${plan?.yearly_price}/year`}{" "}
+              each month on the same date of subscripion until my membership is
+              cancelled or terminated.{" "}
               <a href="#" className="text-primary hover:underline">
                 Terms of Service Agreement
               </a>
-              , including the disclaimer of warranties (Section 6), the
-              Limitation of Liabilities (Section 7), and the arbitration
-              provision (Section 8).
+              , including the disclaimer of warranties, limitation of liability,
+              and arbitration agreement.
             </p>
           </div>
           <Button className="w-full" onClick={handleCheckout}>

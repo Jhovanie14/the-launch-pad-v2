@@ -96,6 +96,7 @@ export async function POST(req: Request) {
       plan_id: planId,
       billing_cycle: billingCycle,
       vehicle_id: vehicleId ?? "",
+      
     },
   });
 

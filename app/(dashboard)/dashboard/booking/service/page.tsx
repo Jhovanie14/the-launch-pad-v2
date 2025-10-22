@@ -315,6 +315,9 @@ function ServiceSelectionPage() {
                                     <p className="text-lg font-semibold text-gray-700">
                                       ${a.price.toFixed(2)}
                                     </p>
+                                    <p className="text-sm font-semibold text-gray-700">
+                                      {a.duration} (min) 
+                                    </p>
                                   </div>
                                   <input
                                     type="checkbox"
