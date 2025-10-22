@@ -28,10 +28,13 @@ function SubscriptionCartContent() {
   const supabase = createClient();
   const { user } = useAuth();
 
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [error, setError] = useState("");
+
   const planId = searchParams.get("plan");
   const billingCycle = searchParams.get("billing") as "monthly" | "yearly";
   const [plan, setPlan] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [loadingCheckout, setLoadingCheckout] = useState(false); // for button
   const [extraFee, setExtraFee] = useState(0);
   const upgradeFees: Record<string, number> = {
     SUV: 10,
@@ -43,10 +46,10 @@ function SubscriptionCartContent() {
   const bodyTypeOptions: Record<string, string[]> = {
     Sedans: ["Sedan", "Coupe", "Convertible"],
     Suvs: ["SUV"],
-    Van: ["Van"],
     "Compact SUV": ["Compact SUV"],
-    Trucks: [ "Big Pickup Truck"],
-    "Small Truck": [ "Small Pickup Truck"],
+    "Small Truck": ["Small Pickup Truck"],
+    Van: ["Van"],
+    "Big Trucks": ["Big Pickup Truck"],
   };
 
   const handleBodyTypeChange = (val: string) => {
@@ -59,7 +62,16 @@ function SubscriptionCartContent() {
   const handleCheckout = async () => {
     try {
       // ✅ Validate vehicle form
-      if (!validate()) return;
+      if (!validate()) return "Check the box";
+
+      if (!isAuthorized) {
+        setError("You must agree to the Terms of Service before checking out.");
+        return;
+      }
+
+      setError("");
+
+      setLoadingCheckout(true);
 
       // ✅ 1. Insert vehicle first (or return existing if same year/make/model/trim for user)
       // const vehicle_Id = vehicleInfo
@@ -119,31 +131,9 @@ function SubscriptionCartContent() {
         .single();
 
       if (!error) setPlan(data);
-      setLoading(false);
     };
     fetchPlan();
   }, [planId, supabase]);
-
-  if (loading) {
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
-            <div className="animate-pulse bg-gray-200 h-6 w-48 rounded"></div>
-          </div>
-        </div>
-      </div>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-6">
-          <div className="animate-pulse bg-white rounded-lg p-6 h-48"></div>
-          <div className="animate-pulse bg-white rounded-lg p-6 h-64"></div>
-        </div>
-      </div>
-    </div>;
-  }
-
-  console.log("Billing cycle param:", billingCycle, "Plan:", plan);
 
   return (
     <div className="grid lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
@@ -199,6 +189,7 @@ function SubscriptionCartContent() {
                 <Label htmlFor="year">Year</Label>
                 <Input
                   id="year"
+                  type="number"
                   placeholder="e.g., 2020"
                   value={vehicleInfo.year}
                   onChange={(e) =>
@@ -413,7 +404,15 @@ function SubscriptionCartContent() {
 
           {/* Terms */}
           <div className=" flex mb-6">
-            <Checkbox className="mr-3" id="authorized" />
+            <Checkbox
+              className="mr-3"
+              id="authorized"
+              checked={isAuthorized}
+              onCheckedChange={(checked) => {
+                setIsAuthorized(!!checked);
+                if (checked) setError(""); // clear error when checked
+              }}
+            />
             <p className="text-xs text-muted-foreground leading-relaxed">
               I authorized The Launch Pad to automatically charge the selected
               paymenth method{" "}
@@ -429,8 +428,13 @@ function SubscriptionCartContent() {
               and arbitration agreement.
             </p>
           </div>
-          <Button className="w-full" onClick={handleCheckout}>
-            {loading ? "Redirecting..." : "Checkout"}
+          {error && <p className="text-red-600 text-sm mb-2">{error}</p>}
+          <Button
+            className="w-full"
+            onClick={handleCheckout}
+            disabled={loadingCheckout}
+          >
+            {loadingCheckout ? "Redirecting..." : "Checkout"}
           </Button>
         </div>
       </div>

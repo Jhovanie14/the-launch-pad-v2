@@ -63,7 +63,6 @@ export default function BookingModal() {
           year,
           make,
           model,
-          trim,
           body_type,
           colors
           )
@@ -180,7 +179,7 @@ export default function BookingModal() {
             </div>
           ) : (
             <div className="grid md:grid-cols-2 gap-4">
-              <div>
+              <div className="space-y-2">
                 <Label>Make</Label>
                 <Input
                   value={vehicleInfo.make}
@@ -197,7 +196,7 @@ export default function BookingModal() {
                 )}
               </div>
 
-              <div>
+              <div className="space-y-2">
                 <Label>Model</Label>
                 <Input
                   value={vehicleInfo.model}
@@ -214,7 +213,7 @@ export default function BookingModal() {
                 )}
               </div>
 
-              <div>
+              <div className="space-y-2">
                 <Label>Year</Label>
                 <Input
                   type="number"
@@ -232,7 +231,7 @@ export default function BookingModal() {
                 )}
               </div>
 
-              <div>
+              <div className="space-y-2">
                 <Label>Color</Label>
 
                 <Input
@@ -253,7 +252,7 @@ export default function BookingModal() {
                 )}
               </div>
 
-              <div>
+              {/* <div>
                 <Label>Trim</Label>
                 <Input
                   value={vehicleInfo.trim}
@@ -268,9 +267,9 @@ export default function BookingModal() {
                 {errors.trim && (
                   <p className="text-red-500 text-sm">{errors.trim}</p>
                 )}
-              </div>
+              </div> */}
 
-              <div>
+              <div className="space-y-2">
                 <Label>Body Type</Label>
                 <Select
                   value={vehicleInfo.body_type}
@@ -283,9 +282,13 @@ export default function BookingModal() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Sedan">Sedan</SelectItem>
-                    <SelectItem value="SUV">SUV</SelectItem>
-                    <SelectItem value="Truck">Truck</SelectItem>
                     <SelectItem value="Coupe">Coupe</SelectItem>
+                    <SelectItem value="Compact Suv">Compact Suv</SelectItem>
+                    <SelectItem value="SUV">SUV</SelectItem>
+                    <SelectItem value="Small Truck">Small truck</SelectItem>
+                    <SelectItem value="Van">Van</SelectItem>
+                    <SelectItem value="Truck">Truck</SelectItem>
+                    <SelectItem value="Convertible">Convertible</SelectItem>
                   </SelectContent>
                 </Select>
                 {errors.body_type && (
@@ -293,7 +296,7 @@ export default function BookingModal() {
                 )}
               </div>
 
-              <div className="md:col-span-2">
+              <div className="space-y-2">
                 <Label>License Plate</Label>
                 <Input
                   value={vehicleInfo.licensePlate}

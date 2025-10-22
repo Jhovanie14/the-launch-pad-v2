@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { ReviewForm } from "@/components/user/review-form";
 import { useAuth } from "@/context/auth-context";
 import { useBookingDetails } from "@/hooks/useBookingDetails";
 import { redirect } from "next/navigation";
+import { Pagination } from "@/components/ui/pagination";
 
 export default function BookingsList() {
   const { user, isLoading: authLoading } = useAuth();
@@ -20,10 +21,18 @@ export default function BookingsList() {
     setReviewedBookings,
     setBookings,
     checkReviews,
+    loadBookings,
+    totalBookings,
+    pageSize,
   } = useBookingDetails();
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(
     null
   );
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    if (user) loadBookings(currentPage, user.id);
+  }, [currentPage, user]);
   // Realtime channel (only this user's bookings)
   useBookingRealtime(setBookings);
 
@@ -112,7 +121,7 @@ export default function BookingsList() {
                 </span>
               </div>
               <div className="text-sm text-gray-600 ml-6">
-                {booking.vehicle?.trim} • {booking.vehicle?.colors}
+                {booking.vehicle?.body_type} • {booking.vehicle?.colors}
               </div>
 
               {/* Service Info */}
@@ -218,7 +227,13 @@ export default function BookingsList() {
           </Card>
         ))}
       </div>
-
+      <Pagination
+        page={currentPage} // <--- was currentPage
+        total={totalBookings} // <--- was totalPages
+        pageSize={pageSize} // page size
+        onPageChange={(page) => setCurrentPage(page)}
+      />
+      <div className="mt-6 flex justify-center"></div>
       {bookings.length === 0 && (
         <div className="text-center py-12">
           <Car className="w-12 h-12 text-gray-400 mx-auto mb-4" />

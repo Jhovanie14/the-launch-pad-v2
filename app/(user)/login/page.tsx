@@ -22,7 +22,7 @@ export default function LoginPage() {
     message?: string;
   }>({});
 
-  const { signIn } = useAuth();
+  const { signIn, forgotPassword } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -108,6 +108,7 @@ export default function LoginPage() {
                 {isLoading ? "Signing in..." : "Sign In"}
               </Button>
             </form>
+            <Link href="/forgot-password" className="text-sm text-blue-500 hover:text-blue-700">{"Forgot password?"}</Link>
             <div className="mt-4 text-center">
               <Link
                 href="/"

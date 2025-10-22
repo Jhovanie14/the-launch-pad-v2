@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/auth-context";
 import { bookingService } from "@/lib/services/bookingService";
@@ -13,6 +13,8 @@ export function useBookingDetails() {
   const [reviewedBookings, setReviewedBookings] = useState<
     Record<string, boolean>
   >({});
+  const [totalBookings, setTotalBookings] = useState(0);
+  const pageSize = 6;
 
   const { user } = useAuth();
   const supabase = createClient();
@@ -25,28 +27,47 @@ export function useBookingDetails() {
     }
 
     loadBookings();
-    
   }, [user?.id]);
 
-  async function loadBookings() {
-    if (!user?.id) return;
+  const loadBookings = useCallback(
+    async (page: number = 1, userId?: string) => {
+      if (!userId) return;
 
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await bookingService.getBookingsWithDetails(
-        supabase,
-        user.id,
-        20
-      );
-      setBookings(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load bookings");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }
+      try {
+        setLoading(true);
+        setError(null);
+        setBookings([]);
+
+        const offset = (page - 1) * pageSize;
+
+        // Fetch paginated bookings
+        const data = await bookingService.getBookingsWithDetails(
+          supabase,
+          userId,
+          pageSize,
+          offset
+        );
+
+        setBookings(data);
+
+        // Fetch total bookings count for pagination
+        const { count } = await supabase
+          .from("bookings")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", userId);
+
+        setTotalBookings(count || 0);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to load bookings"
+        );
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
   async function checkReviews() {
     if (!user?.id || bookings.length === 0) return;
 
@@ -76,12 +97,14 @@ export function useBookingDetails() {
 
   return {
     bookings,
+    reviewedBookings,
+    setBookings,
+    setReviewedBookings,
+    loadBookings,
+    checkReviews,
     loading,
     error,
-    reviewedBookings,
-    setReviewedBookings,
-    setBookings, // For realtime updates
-    refetch: loadBookings,
-    checkReviews,
+    totalBookings,
+    pageSize,
   };
 }

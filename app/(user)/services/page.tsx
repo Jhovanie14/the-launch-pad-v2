@@ -20,6 +20,9 @@ import {
   Sun,
   Check,
   Wrench,
+  Truck,
+  CarFront,
+  TruckElectric,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 type ServicePackage = {
@@ -64,13 +67,17 @@ export default function ServicePage() {
   const getServiceIcon = (category: string) => {
     switch (category) {
       case "sedan":
-        return Wind;
+        return Car;
+      case "compact suv":
+        return CarFront;
       case "suv":
-        return Droplets;
+        return CarFront;
       case "truck":
-        return Sparkles;
+        return TruckElectric;
+      case "small truck":
+        return Truck;
       default:
-        return Wrench;
+        return Sparkles;
     }
   };
 
@@ -130,8 +137,10 @@ export default function ServicePage() {
                     <CardHeader>
                       <div className="flex items-start gap-4 mb-2">
                         <div className="bg-secondary/10 p-3 rounded-lg">
-                          <Car className="h-6 w-6 text-accent-foreground" />
-                          {/* <ServiceIcon className="h-6 w-6 text-accent-foreground" /> */}
+                          {(() => {
+                            const Icon = getServiceIcon(category);
+                            return <Icon className="h-6 w-6 text-primary" />;
+                          })()}
                         </div>
                         <div className="flex-1">
                           <CardTitle className="text-xl font-semibold">

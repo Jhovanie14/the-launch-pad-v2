@@ -208,7 +208,7 @@ export function UserNavbar() {
                 <span className="hidden md:inline ml-2">Login</span>
               </Button>
             </Link>
-            <ThemeToggle />
+            {/* <ThemeToggle /> */}
           </div>
           <div className="-mr-2 flex items-center lg:hidden gap-1">
             <Button

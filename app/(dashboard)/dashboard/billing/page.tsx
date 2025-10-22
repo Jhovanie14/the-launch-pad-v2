@@ -66,7 +66,7 @@ export default function BillingPage() {
       )}
 
       {/* If no subscription, prompt to choose plan */}
-      {!subscription && (
+      {/* {!subscription && (
         <div className="bg-white overflow-hidden shadow rounded-lg p-6">
           <h2 className="text-lg font-medium text-gray-900 mb-4">
             Get Started
@@ -76,13 +76,13 @@ export default function BillingPage() {
             premium features.
           </p>
           <a
-            href="/pricing"
+            href="/dashboard/pricing"
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-900 hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
             View Plans
           </a>
         </div>
-      )}
+      )} */}
     </div>
   );
 }

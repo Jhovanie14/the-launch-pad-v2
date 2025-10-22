@@ -105,7 +105,7 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
             <div className="flex-shrink-0">
               <Avatar className="h-8 w-8">
                 <AvatarImage
-                  src={user.avatar_url || ""}
+                  src={user.avatar_url || undefined }
                   alt={user.full_name || "Admin"}
                 />
                 <AvatarFallback>

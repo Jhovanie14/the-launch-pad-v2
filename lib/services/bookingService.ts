@@ -146,7 +146,8 @@ export const bookingService = {
   async getBookingsWithDetails(
     supabase: SupabaseClient,
     userId: string,
-    limit: number = 20
+    limit: number = 20,
+    offset: number = 0
   ) {
     const { data, error } = await supabase
       .from("bookings")
@@ -158,7 +159,7 @@ export const bookingService = {
       )
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
-      .limit(limit);
+      .range(offset, offset + limit - 1);
 
     if (error) throw error;
     return data || [];

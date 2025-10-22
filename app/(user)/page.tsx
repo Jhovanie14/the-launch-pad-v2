@@ -59,6 +59,7 @@ export default function Home() {
   return (
     <>
       {/* Hero Section */}
+      
       <Hero />
       {/* Service, One Location */}
       <div className=" py-16 md:py-20">
@@ -165,7 +166,9 @@ export default function Home() {
                       <span className="block font-medium text-foreground">
                         Convenient Hours
                       </span>
-                      <span className="text-sm">Open when you need us</span>
+                      <span className="text-sm">
+                        Open 24/7 for self service bay
+                      </span>
                     </div>
                   </div>
                 </CardContent>

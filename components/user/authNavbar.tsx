@@ -102,14 +102,17 @@ export function AuthNavbar() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Avatar className="border border-blue-800 h-8 w-8">
-                    <AvatarImage
-                      src={userProfile?.avatar_url || ""}
-                      alt={userProfile?.full_name || "User"}
-                    />
-                    <AvatarFallback>
-                      {userProfile?.full_name?.charAt(0) ||
-                        userProfile?.email.charAt(0).toUpperCase()}
-                    </AvatarFallback>
+                    {userProfile?.avatar_url ? (
+                      <AvatarImage
+                        src={userProfile.avatar_url || undefined}
+                        alt={userProfile.full_name || "User"}
+                      />
+                    ) : (
+                      <AvatarFallback>
+                        {userProfile?.full_name?.charAt(0) ||
+                          userProfile?.email?.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    )}
                   </Avatar>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="start">
@@ -118,7 +121,7 @@ export function AuthNavbar() {
                       <div className="flex items-center space-x-4">
                         <Avatar className="h-8 w-8">
                           <AvatarImage
-                            src={userProfile?.avatar_url || ""}
+                            src={userProfile?.avatar_url || undefined}
                             alt={userProfile?.full_name || "User"}
                           />
                           <AvatarFallback>
@@ -129,7 +132,7 @@ export function AuthNavbar() {
                         <span className="text-sm text-gray-700 dark:text-gray-300">
                           {userProfile?.full_name || userProfile?.email}
                         </span>
-                        <ThemeToggle />
+                        {/* <ThemeToggle /> */}
                       </div>
                     </div>
                   </DropdownMenuLabel>
@@ -241,7 +244,7 @@ export function AuthNavbar() {
                 <div className="flex-shrink-0">
                   <Avatar className="h-10 w-10">
                     <AvatarImage
-                      src={userProfile?.avatar_url || ""}
+                      src={userProfile?.avatar_url || undefined}
                       alt={userProfile?.full_name || "User"}
                     />
                     <AvatarFallback>

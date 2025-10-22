@@ -32,6 +32,7 @@ export default function SignUpPage() {
     setIsSuccess(false);
 
     const formData = new FormData(e.currentTarget);
+    const form = e.currentTarget;
     const result = await signUp(formData);
 
     if (result?.errors) {
@@ -39,6 +40,7 @@ export default function SignUpPage() {
     } else if (result?.message) {
       if (result?.success) {
         setIsSuccess(true);
+        form.reset();
       }
       setErrors({ message: result.message });
     }

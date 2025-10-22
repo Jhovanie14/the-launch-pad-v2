@@ -39,6 +39,16 @@ interface AuthContextType {
     success?: boolean;
   } | void>;
   signOut: () => Promise<void>;
+  forgotPassword: (formData: FormData) => Promise<{
+    errors?: Record<string, string[]>;
+    message?: string;
+    success?: boolean;
+  }>;
+  resetPassword: (formData: FormData) => Promise<{
+    errors?: Record<string, string[]>;
+    message?: string;
+    success?: boolean;
+  }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -160,6 +170,21 @@ export function AuthContextProvider({
         ? window.location.origin
         : process.env.NEXT_PUBLIC_SITE_URL;
 
+    // First, check if user already exists
+    const { data: existingUsers, error: checkError } = await supabase
+      .from("profiles") // or your users table
+      .select("email")
+      .eq("email", email)
+      .single();
+
+    if (existingUsers) {
+      return {
+        message:
+          "This email is already registered. Please sign in or check your inbox to confirm your account.",
+      };
+    }
+
+    // If no existing user, proceed with signup
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -169,7 +194,7 @@ export function AuthContextProvider({
       },
     });
 
-    console.log("Redirect URL:", `${window.location.origin}/auth/confirm`);
+    // console.log("Redirect URL:", `${siteUrl}/auth/confirm`);
 
     if (error) {
       console.error("Signup error:", error);
@@ -198,6 +223,82 @@ export function AuthContextProvider({
       console.error("Error signing out:", error);
     }
   };
+  const forgotPassword = async (formData: FormData) => {
+    const email = formData.get("email") as string;
+
+    // Validate email
+    if (!email || !email.includes("@")) {
+      return {
+        errors: { email: ["Please enter a valid email address"] } as Record<
+          string,
+          string[]
+        >,
+      };
+    }
+
+    const siteUrl =
+      typeof window !== "undefined"
+        ? window.location.origin
+        : process.env.NEXT_PUBLIC_SITE_URL;
+
+    console.log("🌐 Current origin:", window.location.origin);
+    console.log("📍 Site URL being used:", siteUrl);
+    console.log("🔗 Full redirect URL:", `${siteUrl}/auth/reset-callback`);
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${siteUrl}/auth/reset-callback`,
+    });
+
+    if (error) {
+      console.error("Password reset error:", error);
+      return { message: error.message };
+    }
+
+    // Always return success message to prevent email enumeration
+    return {
+      success: true,
+      message:
+        "If an account exists with this email, you will receive a password reset link shortly.",
+    };
+  };
+
+  const resetPassword = async (formData: FormData) => {
+    const password = formData.get("password") as string;
+    const confirmPassword = formData.get("confirmPassword") as string;
+
+    // Validate passwords
+    if (!password || password.length < 8) {
+      return {
+        errors: {
+          password: ["Password must be at least 8 characters"],
+        } as Record<string, string[]>,
+      };
+    }
+
+    if (password !== confirmPassword) {
+      return {
+        errors: { confirmPassword: ["Passwords do not match"] } as Record<
+          string,
+          string[]
+        >,
+      };
+    }
+
+    const { error } = await supabase.auth.updateUser({
+      password: password,
+    });
+
+    if (error) {
+      console.error("Password update error:", error);
+      return { message: error.message };
+    }
+
+    return {
+      success: true,
+      message:
+        "Password updated successfully! You can now sign in with your new password.",
+    };
+  };
 
   const value = useMemo(
     () => ({
@@ -207,6 +308,8 @@ export function AuthContextProvider({
       signIn,
       signUp,
       signOut,
+      forgotPassword,
+      resetPassword,
     }),
     [user, userProfile, isLoading]
   );

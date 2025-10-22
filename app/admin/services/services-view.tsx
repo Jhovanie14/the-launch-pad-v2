@@ -13,6 +13,7 @@ import {
   DialogFooter,
   DialogTrigger,
   DialogClose,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   BarChart3,
@@ -140,7 +141,7 @@ export default function ServicesView() {
       const { data, error } = await supabase
         .from("service_packages")
         .select("*")
-        .order("created_at", { ascending: true });
+        .order("name", { ascending: true });
 
       if (error) throw error;
       setServices(data ?? []);
@@ -318,6 +319,11 @@ export default function ServicesView() {
               <DialogTitle>
                 {editingId ? "Edit Service Package" : "Create Service Package"}
               </DialogTitle>
+              <DialogDescription>
+                {editingId
+                  ? "Update the details of your service package."
+                  : "Fill out the form to create a new service package."}
+              </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">

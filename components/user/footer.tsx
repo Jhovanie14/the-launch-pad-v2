@@ -206,10 +206,10 @@ export function Footer() {
                 $10 Handwash Special
               </p> */}
               <p className="text-xs text-gray-400">
-                Monday - Friday 10am - 6pm only
+                Monday - Friday 9am - 6:30 pm only
               </p>
               <p className="text-xs text-gray-400">
-                Sedans, Suvs, Trucks (larger vehicles may vary)
+                Sedans, Suvs, Trucks
               </p>
             </div>
           </div>
