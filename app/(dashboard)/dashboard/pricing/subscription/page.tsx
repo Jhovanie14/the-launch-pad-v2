@@ -42,8 +42,11 @@ function SubscriptionCartContent() {
 
   const bodyTypeOptions: Record<string, string[]> = {
     Sedans: ["Sedan", "Coupe", "Convertible"],
-    Suvs: ["Small SUV", "SUV"],
-    Trucks: ["Small Pickup Truck", "Big Pickup Truck"],
+    Suvs: ["SUV"],
+    Van: ["Van"],
+    "Compact SUV": ["Compact SUV"],
+    Trucks: [ "Big Pickup Truck"],
+    "Small Truck": [ "Small Pickup Truck"],
   };
 
   const handleBodyTypeChange = (val: string) => {
@@ -83,7 +86,6 @@ function SubscriptionCartContent() {
             year: Number(vehicleInfo.year),
             make: vehicleInfo.make,
             model: vehicleInfo.model,
-            trim: vehicleInfo.trim,
             body_type: vehicleInfo.body_type,
             color: vehicleInfo.color,
           },

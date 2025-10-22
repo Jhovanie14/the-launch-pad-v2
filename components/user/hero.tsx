@@ -49,8 +49,7 @@ export function Hero() {
           </h1>
           <p className="text-center md:text-start text-base md:text-lg text-muted-foreground dark:text-white">
             Self-service car wash bays, professional detailing, and Houston's
-            best food trucks all in one convenient location. Plus our famous $15
-            handwash special!
+            best food trucks all in one convenient location.
           </p>
 
           <div className="flex flex-col md:flex-row items-stretch gap-3">
