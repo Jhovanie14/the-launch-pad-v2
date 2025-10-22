@@ -77,6 +77,9 @@ export function BookingConfirmationEmail({
               alignItems: "center",
               justifyContent: "center",
               marginRight: "12px",
+              fontSize: "14px", // slightly smaller if needed
+              fontWeight: "bold",
+              color: "#ffffff",
             }}
           >
             <span
