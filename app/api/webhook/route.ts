@@ -72,6 +72,8 @@ async function processBooking(session: Stripe.Checkout.Session) {
     ? JSON.parse(session.metadata.booking)
     : null;
 
+  console.log("Parsed booking metadata:", bookingMeta);
+
   if (!bookingMeta) return;
 
   // Check for existing booking by payment_intent_id
@@ -94,9 +96,24 @@ async function processBooking(session: Stripe.Checkout.Session) {
       .from("bookings")
       .insert([
         {
-          ...bookingMeta,
+          user_id: bookingMeta.uid || null,
+          vehicle_id: bookingMeta.vid || null,
+          service_package_id: bookingMeta.spid || null,
+          service_package_name: bookingMeta.spn || null,
+          service_package_price: bookingMeta.spp || null,
+          appointment_date: bookingMeta.ad || null,
+          appointment_time: bookingMeta.at || null,
+          total_price: bookingMeta.tp || 0,
+          total_duration: bookingMeta.td || 0,
+          payment_method: "card",
           payment_intent_id: session.payment_intent,
           status: "pending",
+          customer_name: bookingMeta.nm || null,
+          customer_email: bookingMeta.em || null,
+          customer_phone: bookingMeta.ph || null,
+          notes: null,
+          special_instructions: bookingMeta.si || null,
+          created_at: new Date().toISOString(),
         },
       ])
       .select()
@@ -114,23 +131,28 @@ async function processBooking(session: Stripe.Checkout.Session) {
 
     console.log("Booking inserted!", bookingRows);
 
-    if (bookingRows && bookingMeta.add_on_ids?.length) {
-      const addOnInserts = bookingMeta.add_on_ids.map((addOnId: string) => ({
-        booking_id: bookingRows.id,
-        add_on_id: addOnId,
-      }));
+    if (bookingRows && bookingMeta.aids) {
+      const addOnIds = bookingMeta.aids
+        .split(",")
+        .filter((id: string) => id.trim());
 
-      const { error: addOnError } = await supabase
-        .from("booking_add_ons")
-        .insert(addOnInserts);
+      if (addOnIds.length > 0) {
+        const addOnInserts = addOnIds.map((addOnId: string) => ({
+          booking_id: bookingRows.id,
+          add_on_id: addOnId.trim(),
+        }));
 
-      if (addOnError) {
-        console.error("Failed to insert booking add-ons:", addOnError);
-      } else {
-        console.log("Booking add-ons inserted!");
+        const { error: addOnError } = await supabase
+          .from("booking_add_ons")
+          .insert(addOnInserts);
+
+        if (addOnError) {
+          console.error("Failed to insert booking add-ons:", addOnError);
+        } else {
+          console.log("Booking add-ons inserted!", addOnInserts);
+        }
       }
     }
-
     // Send confirmation email
     // if (bookingRows?.customer_email) {
     //   await sendBookingConfirmationEmail({

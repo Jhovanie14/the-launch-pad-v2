@@ -191,6 +191,10 @@ function ConfirmationContent() {
       setIsSubmitting(true);
       setShowPaymentModal(false);
 
+      const addOnsTotal = Array.isArray(selectedAddOns)
+        ? selectedAddOns.reduce((sum, a) => sum + Number(a.price), 0)
+        : 0;
+
       if (paymentMethod === "cash") {
         const booking = await createBooking({
           year: parseInt(vehicleSpecs.year || "0"),
@@ -229,9 +233,7 @@ function ConfirmationContent() {
           : [],
         appointmentDate: appointmentDate,
         appointmentTime: appointmentTime!.toString(),
-        totalPrice: isSubscribed
-          ? selectedAddOns?.price || 0
-          : calculateTotal(),
+        totalPrice: isSubscribed ? addOnsTotal : calculateTotal(),
         totalDuration: calculateDuration(),
         payment_method: "card",
       };

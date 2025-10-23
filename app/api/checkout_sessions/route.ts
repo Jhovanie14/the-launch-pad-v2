@@ -43,15 +43,37 @@ export async function POST(req: Request) {
     })) || []),
   ];
 
-  // Minimal metadata to avoid 500-char limit
+  // Prepare booking data for webhook
+  const bookingData = {
+    uid: user?.id ?? "",
+    vid: vehicleId ?? "",
+    spid: body.servicePackageId ?? "",
+    spn: body.servicePackageName ?? "",
+    spp: body.servicePackagePrice ?? 0,
+    aids: body.addOnsId?.join(",") ?? "", // Comma-separated is smaller than array
+    ad: body.appointmentDate ?? "",
+    at: body.appointmentTime ?? "",
+    tp: Math.round(Number(body.totalPrice)),
+    td: body.totalDuration ?? 0,
+    em: user?.email ?? body.customerEmail ?? "",
+    nm: body.customerName ?? "",
+    ph: body.customerPhone ?? "",
+    si: body.specialInstructions ?? "",
+  };
+
+  // Stringify and check size
+  const bookingJson = JSON.stringify(bookingData);
+
+  if (bookingJson.length > 500) {
+    console.error("Booking metadata too large:", bookingJson.length, "chars");
+    return new Response(
+      JSON.stringify({ error: "Booking data too large for processing" }),
+      { status: 400 }
+    );
+  }
+
   const metadata = {
-    user_id: user?.id ?? null,
-    vehicle_id: vehicleId ?? "",
-    service_package_id: body.servicePackageId ?? "",
-    add_ons_ids: body.addOnsId?.join(",") ?? "", // comma-separated IDs
-    appointment_date: body.appointmentDate ?? "",
-    appointment_time: body.appointmentTime ?? "",
-    total_price: Math.round(Number(body.totalPrice)).toString(),
+    booking: bookingJson, // Wrap in 'booking' key for webhook
   };
 
   try {
