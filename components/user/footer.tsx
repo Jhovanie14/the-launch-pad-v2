@@ -40,7 +40,7 @@ export function Footer() {
               bays, professional detailing, and our famous handwash special,
               plus amazing food trucks!
             </p>
-            <div className="flex gap-4 pt-2">
+            <div className="flex gap-4">
               <Link
                 href="https://instagram.com/thelaunchpadhtx"
                 target="_blank"
@@ -48,7 +48,13 @@ export function Footer() {
                 aria-label="Instagram"
                 className="hover:text-white transition-colors"
               >
-                <Instagram className="w-5 h-5" />
+                <Image
+                  src="/social/instagram.png"
+                  alt="The Launch Pad Logo"
+                  width={31}
+                  height={31}
+                  className="object-contain"
+                />
               </Link>
               <Link
                 href="https://www.facebook.com/profile.php?id=61566883617151"
@@ -57,7 +63,13 @@ export function Footer() {
                 aria-label="Facebook"
                 className="hover:text-white transition-colors"
               >
-                <Facebook className="w-5 h-5" />
+                <Image
+                  src="/social/facebook.png"
+                  alt="Facebook Logo"
+                  width={31}
+                  height={31}
+                  className="object-contain"
+                />
               </Link>
               <Link
                 href="https://tiktok.com/@thelaunchpadhtx%3Flang%3Den"
@@ -66,19 +78,13 @@ export function Footer() {
                 aria-label="Tiktok"
                 className="hover:text-white transition-colors"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="w-6 h-6"
-                >
-                  <path d="M12 3v12a3 3 0 1 1-3-3" />
-                  <path d="M12 3a5 5 0 0 0 5 5h1.5" />
-                </svg>
+                <Image
+                  src="/social/tiktok.png"
+                  alt="Facebook Logo"
+                  width={35}
+                  height={35}
+                  className="object-contain"
+                />
               </Link>
               {/* <Link href="#" className="hover:text-white transition-colors">
                 <!-- tiktok-monochrome.svg -->
@@ -206,11 +212,9 @@ export function Footer() {
                 $10 Handwash Special
               </p> */}
               <p className="text-xs text-gray-400">
-                Monday - Friday 9am - 6:30 pm only
+                Monday - Friday 9:00 AM - 6:30 PM only
               </p>
-              <p className="text-xs text-gray-400">
-                Sedans, Suvs, Trucks
-              </p>
+              <p className="text-xs text-gray-400">Sedans, Suvs, Trucks</p>
             </div>
           </div>
         </div>

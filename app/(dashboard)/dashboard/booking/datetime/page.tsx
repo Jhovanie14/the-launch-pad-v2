@@ -14,8 +14,10 @@ import {
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
+import { AddOn } from "@/types";
 
 const timeSlots = [
+  "9:30",
   "10:00",
   "10:30",
   "11:00",
@@ -34,12 +36,6 @@ const timeSlots = [
   "17:30",
   "18:00",
   "18:30",
-  // "17:00",
-  // "17:30",
-  // "18:00",
-  // "18:30",
-  // "19:00",
-  // "19:30",
 ];
 
 function DateTimeSelectionPage() {
@@ -57,7 +53,6 @@ function DateTimeSelectionPage() {
     year: searchParams.get("year"),
     make: searchParams.get("make"),
     model: searchParams.get("model"),
-    trim: searchParams.get("trim"),
     body_type: searchParams.get("body_type"),
     color: searchParams.get("color"),
   });
@@ -77,27 +72,27 @@ function DateTimeSelectionPage() {
         setSelectedPackages(data);
       }
       if (addonsParam) {
-        // const ids = addonsParam.split(",").filter(Boolean);
+        const ids = addonsParam.split(",").filter(Boolean);
 
-        // if (ids.length > 0) {
-        //   const { data, error } = await supabase
-        //     .from("add_ons")
-        //     .select("*")
-        //     .in("id", ids); // ✅ handles multiple IDs safely
+        if (ids.length > 0) {
+          const { data, error } = await supabase
+            .from("add_ons")
+            .select("*")
+            .in("id", ids); // ✅ handles multiple IDs safely
 
-        //   if (error) {
-        //     console.error("Error fetching add-ons:", error);
-        //   } else {
-        //     setSelectedAddOns(data);
-        //   }
-        // }
-        const { data } = await supabase
-          .from("add_ons")
-          .select("*")
-          .eq("id", addonsParam)
-          .single();
+          if (error) {
+            console.error("Error fetching add-ons:", error);
+          } else {
+            setSelectedAddOns(data);
+          }
+        }
+        // const { data } = await supabase
+        //   .from("add_ons")
+        //   .select("*")
+        //   .eq("id", addonsParam)
+        //   .single();
 
-        setSelectedAddOns(data);
+        // setSelectedAddOns(data);
       }
     })();
   }, [serviceId, addonsParam, supabase]);
@@ -177,7 +172,10 @@ function DateTimeSelectionPage() {
 
   const calculateDuration = () => {
     const base = Number(selectedPackages?.duration) || 0;
-    const addOnsTotal = Number(selectedAddOns?.duration) || 0;
+    const addOnsTotal = ((selectedAddOns as AddOn[]) || []).reduce(
+      (sum: number, addOn: AddOn) => sum + Number(addOn.duration),
+      0
+    );
 
     return base + addOnsTotal;
   };

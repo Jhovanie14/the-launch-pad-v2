@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AuthUser } from "@/types";
 import { useAuth } from "@/context/auth-context";
+import { useBooking } from "@/context/bookingContext";
 import {
   DropdownMenu,
   DropdownMenuShortcut,
@@ -31,6 +32,7 @@ const navLinks = [
 
 export function AuthNavbar() {
   const { signOut, user, userProfile } = useAuth();
+  const { openBookingModal } = useBooking();
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -58,7 +60,7 @@ export function AuthNavbar() {
     >
       <>
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 justify-between">
+          <div className="flex h-16 justify-between items-center">
             <div className="flex">
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                 {navLinks.map((link) => {
@@ -98,7 +100,16 @@ export function AuthNavbar() {
                 </Link> */}
               </div>
             </div>
-            <div className="hidden sm:ml-6 sm:flex sm:items-center">
+
+            <div className="hidden sm:ml-6 sm:flex sm:items-center space-x-3">
+              <div>
+                <Button
+                  onClick={openBookingModal}
+                  className="bg-blue-900 self-start hover:bg-blue-800 text-white font-semibold px-6 rounded-md transition-all duration-200 shadow-md hover:shadow-lg uppercase tracking-wide"
+                >
+                  Book Online
+                </Button>
+              </div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Avatar className="border border-blue-800 h-8 w-8">
@@ -157,10 +168,14 @@ export function AuthNavbar() {
               </DropdownMenu>
             </div>
             <div className="-mr-2 flex items-center sm:hidden gap-1">
-              {/* <button className="inline-flex bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-2 rounded-md transition-all duration-200 shadow-md hover:shadow-lg uppercase tracking-wide">
-            
-              Book Online
-            </button> */}
+              <div>
+                <Button
+                  onClick={openBookingModal}
+                  className="bg-blue-900 self-start hover:bg-blue-800 text-white font-semibold px-6 rounded-md transition-all duration-200 shadow-md hover:shadow-lg uppercase tracking-wide"
+                >
+                  Book Online
+                </Button>
+              </div>
               <button
                 type="button"
                 className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 dark:hover:bg-gray-700"

@@ -53,7 +53,6 @@ function ServiceSelectionPage() {
     year: searchParams.get("year"),
     make: searchParams.get("make"),
     model: searchParams.get("model"),
-    trim: searchParams.get("trim"),
     body_type: searchParams.get("body_type"),
     color: searchParams.get("color"),
   });
@@ -224,18 +223,18 @@ function ServiceSelectionPage() {
                 }`}
               >
                 <CardHeader className="pb-4">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <h3 className="text-lg font-semibold text-gray-900">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between w-full gap-2">
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <h3 className="text-lg sm:text-base font-semibold text-gray-900 truncate">
                         {service.name}
                       </h3>
-                      <div className="flex items-center space-x-2 text-gray-500">
-                        <Hourglass className="w-4 h-4" />
-                        <span className="text-sm">{service.duration} mins</span>
+                      <div className="flex items-center space-x-2 text-gray-500 text-sm">
+                        <Hourglass className="w-4 h-4 flex-shrink-0" />
+                        <span>{service.duration} mins</span>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <span className="text-2xl font-bold text-gray-900">
+                    <div className="text-right flex-shrink-0">
+                      <span className="text-xl sm:text-lg font-bold text-gray-900">
                         ${service.price}
                       </span>
                     </div>
@@ -243,20 +242,22 @@ function ServiceSelectionPage() {
                 </CardHeader>
                 <CardContent className="pt-0">
                   <div className="space-y-3">
-                    <div className="grid gap-2">
+                    <div className="grid gap-1">
                       {service.features?.map((feature, index) => (
                         <div
                           key={index}
-                          className="flex items-center text-sm text-gray-600"
+                          className="flex items-center text-sm text-gray-600 min-w-0"
                         >
-                          <Check className="h-4 w-4 mr-3 text-green-500 flex-shrink-0" />
-                          <span>{feature}</span>
+                          <Check className="h-4 w-4 mr-2 text-green-500 flex-shrink-0" />
+                          <span className="truncate">{feature}</span>
                         </div>
                       ))}
                     </div>
-                    <p className="text-sm text-gray-500 pt-2 border-t border-gray-100">
-                      {service.description}
-                    </p>
+                    {service.description && (
+                      <p className="text-sm text-gray-500 pt-2 border-t border-gray-100 truncate">
+                        {service.description}
+                      </p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -316,7 +317,7 @@ function ServiceSelectionPage() {
                                       ${a.price.toFixed(2)}
                                     </p>
                                     <p className="text-sm font-semibold text-gray-700">
-                                      {a.duration} (min) 
+                                      {a.duration} (min)
                                     </p>
                                   </div>
                                   <input

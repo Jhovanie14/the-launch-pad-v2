@@ -42,7 +42,6 @@ function ConfirmationContent() {
     year: searchParams.get("year"),
     make: searchParams.get("make"),
     model: searchParams.get("model"),
-    trim: searchParams.get("trim"),
     body_type: searchParams.get("body_type"),
     color: searchParams.get("color"),
   });
@@ -91,13 +90,15 @@ function ConfirmationContent() {
       }
 
       if (addonsParam) {
-        const { data } = await supabase
-          .from("add_ons")
-          .select("*")
-          .eq("id", addonsParam)
-          .single();
-
-        setSelectedAddOns(data);
+        const addonIds = addonsParam.split(",").filter(Boolean);
+        if (addonIds.length > 0) {
+          const { data, error } = await supabase
+            .from("add_ons")
+            .select("*")
+            .in("id", addonIds); // ✅ handle multiple add-ons
+          if (error) console.error(error);
+          else setSelectedAddOns(data);
+        }
       }
       if (dateParam) {
         setAppointmentDate(dateParam);
@@ -120,21 +121,27 @@ function ConfirmationContent() {
 
   const calculateDuration = () => {
     const base = Number(selectedPackages?.duration) || 0;
-    const addOnsTotal = Number(selectedAddOns?.duration) || 0;
+    const addOnsTotal = Array.isArray(selectedAddOns)
+      ? selectedAddOns.reduce(
+          (sum: number, addOn: any) => sum + Number(addOn.duration),
+          0
+        )
+      : 0;
+
     return base + addOnsTotal;
   };
 
   const calculateTotal = () => {
     const addOnsTotal = Array.isArray(selectedAddOns)
-      ? selectedAddOns.reduce((sum, addon) => sum + (addon.price || 0), 0)
-      : selectedAddOns?.price || 0;
+      ? selectedAddOns.reduce(
+          (sum: number, addOn: any) => sum + Number(addOn.price),
+          0
+        )
+      : 0;
 
-    if (isSubscribed) {
-      // Subscribers get base package free — only pay for add-ons
-      return addOnsTotal;
-    }
+    if (isSubscribed) return addOnsTotal;
 
-    const basePrice = selectedPackages?.price || 0;
+    const basePrice = Number(selectedPackages?.price) || 0;
     return basePrice + addOnsTotal;
   };
 
@@ -156,11 +163,10 @@ function ConfirmationContent() {
           year: parseInt(vehicleSpecs.year || "0"),
           make: vehicleSpecs.make || "",
           model: vehicleSpecs.model || "",
-          trim: vehicleSpecs.trim || "",
           body_type: vehicleSpecs.body_type || "",
           colors: [vehicleSpecs.color || ""],
           servicePackage: { ...selectedPackages, price: 0 },
-          addOnsId: null,
+          addOnsId: [],
           appointmentDate: new Date(appointmentDate!),
           appointmentTime: appointmentTime!.toString(),
           totalPrice: 0,
@@ -190,11 +196,13 @@ function ConfirmationContent() {
           year: parseInt(vehicleSpecs.year || "0"),
           make: vehicleSpecs.make || "",
           model: vehicleSpecs.model || "",
-          trim: vehicleSpecs.trim || "",
           body_type: vehicleSpecs.body_type || "",
           colors: [vehicleSpecs.color || ""],
           servicePackage: { ...selectedPackages },
-          addOnsId: selectedAddOns ? selectedAddOns.id : null,
+          addOnsId: selectedAddOns
+            ? selectedAddOns.map((a: { id: string }) => a.id)
+            : [],
+
           appointmentDate: new Date(appointmentDate!),
           appointmentTime: appointmentTime!.toString(),
           totalPrice: calculateTotal(),
@@ -210,14 +218,15 @@ function ConfirmationContent() {
         year: parseInt(vehicleSpecs.year || "0"),
         make: vehicleSpecs.make || "",
         model: vehicleSpecs.model || "",
-        trim: vehicleSpecs.trim || "",
         body_type: vehicleSpecs.body_type || "",
         colors: [vehicleSpecs.color || ""],
         vehicleSpecs,
         servicePackageId: selectedPackages!.id,
         servicePackageName: selectedPackages!.name,
         servicePackagePrice: isSubscribed ? 0 : selectedPackages!.price, // 👈 zero if subscribed
-        addOnsId: selectedAddOns ? selectedAddOns.id : null,
+        addOnsId: selectedAddOns
+          ? selectedAddOns.map((a: { id: string }) => a.id)
+          : [],
         appointmentDate: appointmentDate,
         appointmentTime: appointmentTime!.toString(),
         totalPrice: isSubscribed
@@ -299,10 +308,10 @@ function ConfirmationContent() {
                     <span className="text-gray-600">Model:</span>
                     <span className="font-medium">{vehicleSpecs.model}</span>
                   </div>
-                  <div className="flex justify-between">
+                  {/* <div className="flex justify-between">
                     <span className="text-gray-600">Trim:</span>
                     <span className="font-medium">{vehicleSpecs.trim}</span>
-                  </div>
+                  </div> */}
                   <div className="flex justify-between">
                     <span className="text-gray-600">Color:</span>
                     <span className="font-medium">{vehicleSpecs.color}</span>
@@ -349,23 +358,26 @@ function ConfirmationContent() {
                       {Number(selectedPackages?.duration)} mins
                     </span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex flex-col">
                     <span className="text-gray-600">Add Ons:</span>
-                    <span className="font-medium">
-                      {selectedAddOns?.name ? selectedAddOns?.name : "none"}
-                    </span>
+                    {Array.isArray(selectedAddOns) &&
+                    selectedAddOns.length > 0 ? (
+                      selectedAddOns.map((addon: any) => (
+                        <div
+                          key={addon.id}
+                          className="flex justify-between pl-4 text-sm text-gray-600"
+                        >
+                          <span>{addon.name}</span>
+                          <span>{addon.duration} mins</span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="flex justify-between pl-4 text-sm text-gray-500">
+                        <span className="font-medium">None</span>
+                        <span className="font-medium">0</span>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex justify-between">
-                    <span className="pl-4 text-xs text-gray-600">
-                      - Duration:
-                    </span>
-                    <span className="font-medium">
-                      {selectedAddOns?.duration
-                        ? selectedAddOns?.duration
-                        : "0"}
-                    </span>
-                  </div>
-
                   <div className="flex justify-between">
                     <span className="text-gray-600">Whole Duration:</span>
                     <span className="font-medium">

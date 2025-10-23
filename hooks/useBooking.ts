@@ -78,6 +78,7 @@ export function useBookings() {
     cancelBooking,
     refetch: loadBookings,
   };
+  
 }
 
 export function useBookingStats() {

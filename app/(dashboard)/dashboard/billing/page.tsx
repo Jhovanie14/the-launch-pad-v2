@@ -2,9 +2,41 @@
 
 import { useSubscription } from "@/hooks/useSubscription";
 import SubscriptionStatus from "@/components/subscription-status";
+import Link from "next/link";
+import { useState } from "react";
+import SubscriptionCancelInfo from "@/components/user/subscription-cancel-info";
 
 export default function BillingPage() {
   const { subscription, loading, error } = useSubscription();
+  const [canceling, setCanceling] = useState(false);
+
+  async function handleCancelSubscription() {
+    if (!confirm("Are you sure you want to cancel your subscription?")) return;
+
+    try {
+      setCanceling(true);
+      const res = await fetch("/api/cancel-subscription", { method: "POST" });
+
+      if (!res.ok) {
+        const data = await res.json();
+        alert(
+          `Failed to cancel subscription: ${data.error || "Unknown error"}`
+        );
+        return;
+      }
+
+      const result = await res.json();
+      alert(
+        "Your subscription will be canceled at the end of the billing period."
+      );
+      window.location.reload(); // refresh UI to reflect new status
+    } catch (error) {
+      console.error("Error canceling subscription:", error);
+      alert("An unexpected error occurred.");
+    } finally {
+      setCanceling(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -45,6 +77,9 @@ export default function BillingPage() {
       {/* Subscription status */}
       <SubscriptionStatus subscription={subscription} />
 
+      {/* Show cancellation info if scheduled */}
+      {subscription && <SubscriptionCancelInfo subscription={subscription} />}
+
       {/* Billing management section */}
       {subscription && (
         <div className="bg-white overflow-hidden shadow rounded-lg p-6">
@@ -52,14 +87,19 @@ export default function BillingPage() {
             Manage Subscription
           </h2>
           <div className="flex space-x-3">
-            <button className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-              Update Payment Method
-            </button>
-            <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-900 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-              Change Plan
-            </button>
-            <button className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
-              Cancel Subscription
+            <Link
+              href="/dashboard/pricing"
+              className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              Upgrade Plan
+            </Link>
+
+            <button
+              onClick={handleCancelSubscription}
+              disabled={canceling}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+            >
+              {canceling ? "Canceling..." : "Cancel Subscription"}
             </button>
           </div>
         </div>

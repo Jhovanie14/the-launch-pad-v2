@@ -140,21 +140,13 @@ export default function BookingsList() {
               </div>
 
               {/* Add-ons */}
-              {booking.add_ons && (
-                <div>
-                  <div className="text-sm font-medium text-gray-700 mb-2">
-                    Add-ons:
+              {booking.add_ons?.length > 0 &&
+                booking.add_ons?.map((addon) => (
+                  <div key={addon.id} className="flex justify-between text-sm">
+                    <span className="text-gray-600">+ {addon.name}</span>
+                    <span className="font-medium">+${addon.price}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">
-                      + {booking.add_ons.name}
-                    </span>
-                    <span className="font-medium">
-                      +${booking.add_ons.price}
-                    </span>
-                  </div>
-                </div>
-              )}
+                ))}
 
               <div className="space-y-2 flex justify-between text-sm">
                 <span className="text-sm font-medium text-gray-700 mb-2">

@@ -21,9 +21,11 @@ export default function PricingCard({
   handleCheckout: (planId: string) => void;
 }) {
   const normalizedBillingCycle =
-    subscription?.billing_cycle === "month"
-      ? "monthly"
-      : subscription?.billing_cycle;
+    subscription?.billing_cycle === "year"
+      ? "yearly"
+      : subscription?.billing_cycle === "month"
+        ? "monthly"
+        : subscription?.billing_cycle;
 
   const isCurrentPlan =
     subscription?.plan_id === plan.id && normalizedBillingCycle === pricing;

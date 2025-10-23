@@ -21,12 +21,14 @@ import { useVehicleForm } from "@/hooks/useVehicleForm";
 import { UserNavbar } from "@/components/user/navbar";
 import { ensureVehicle } from "@/utils/vehicle";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useSubscription } from "@/hooks/useSubscription";
 
 function SubscriptionCartContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const supabase = createClient();
   const { user } = useAuth();
+  const { subscription } = useSubscription();
 
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [error, setError] = useState("");
@@ -36,6 +38,7 @@ function SubscriptionCartContent() {
   const [plan, setPlan] = useState<any>(null);
   const [loadingCheckout, setLoadingCheckout] = useState(false); // for button
   const [extraFee, setExtraFee] = useState(0);
+
   const upgradeFees: Record<string, number> = {
     SUV: 10,
     "Big Pickup Truck": 10,
@@ -62,7 +65,7 @@ function SubscriptionCartContent() {
   const handleCheckout = async () => {
     try {
       // ✅ Validate vehicle form
-      if (!validate()) return "Check the box";
+      if (!validate()) return alert("Please fill all required vehicle fields");
 
       if (!isAuthorized) {
         setError("You must agree to the Terms of Service before checking out.");
@@ -70,54 +73,68 @@ function SubscriptionCartContent() {
       }
 
       setError("");
-
       setLoadingCheckout(true);
 
-      // ✅ 1. Insert vehicle first (or return existing if same year/make/model/trim for user)
-      // const vehicle_Id = vehicleInfo
-      //   ? await ensureVehicle({
-      //       user_id: user?.id ?? null,
-      //       year: Number(vehicleInfo.year),
-      //       make: vehicleInfo.make,
-      //       model: vehicleInfo.model,
-      //       trim: vehicleInfo.trim,
-      //       body_type: vehicleInfo.body_type,
-      //       colors: [vehicleInfo.color],
-      //     })
-      //   : null;
-
-      // ✅ 2. Call create-checkout-session with subscription + vehicle
-      const response = await fetch("/api/create-checkout-session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          planId,
-          billingCycle,
-          userId: user?.id,
-          vehicle: {
+      // Prepare vehicle payload
+      const vehiclePayload = vehicleInfo
+        ? {
             year: Number(vehicleInfo.year),
             make: vehicleInfo.make,
             model: vehicleInfo.model,
             body_type: vehicleInfo.body_type,
             color: vehicleInfo.color,
-          },
-        }),
-      });
+          }
+        : null;
 
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || "Checkout session failed");
-      }
+      if (subscription?.stripe_subscription_id) {
+        // ✅ Upgrade existing subscription
+        const res = await fetch("/api/update-subscription", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            stripeSubscriptionId: subscription.stripe_subscription_id,
+            newPlanId: planId,
+            billingCycle,
+            vehicle: vehiclePayload,
+            userId: subscription.user_id,
+            successUrl: `${window.location.origin}/dashboard/pricing/subscription/success`,
+            cancelUrl: `${window.location.origin}/dashboard/pricing`,
+          }),
+        });
 
-      const { url } = await response.json();
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Upgrade failed");
 
-      // ✅ 3. Redirect to Stripe Checkout
-      if (url) {
-        window.location.href = url;
+        // alert("Subscription upgrade successful! Payment will be prorated.");
+        alert(
+          "Subscription upgraded successfully! Payment will be prorated automatically."
+        );
+        router.push("/dashboard/pricing/subscription/upgrade-success");
+
+        setLoadingCheckout(false);
+      } else {
+        // ✅ New subscription
+        const res = await fetch("/api/create-checkout-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            planId,
+            billingCycle,
+            userId: user?.id,
+            vehicle: vehiclePayload,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Checkout session failed");
+
+        // Redirect to Stripe Checkout
+        if (data.url) window.location.href = data.url;
       }
     } catch (err: any) {
-      console.error("Checkout error:", err.message);
-      alert("Something went wrong starting checkout.");
+      console.error("Checkout/Upgrade error:", err);
+      alert(err.message || "Something went wrong.");
+      setLoadingCheckout(false);
     }
   };
 
@@ -164,7 +181,7 @@ function SubscriptionCartContent() {
                   required
                 />
                 {errors.make && (
-                  <p className="text-red-500 text-sm">{errors.year}</p>
+                  <p className="text-red-500 text-sm">{errors.make}</p>
                 )}
               </div>
               <div className="space-y-2">

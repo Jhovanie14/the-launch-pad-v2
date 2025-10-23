@@ -80,46 +80,50 @@ export default function FAQ() {
   };
 
   return (
-    <div className="py-20">
-      <div className="flex flex-col sm:flex-row lg:flex-row items-start gap-8 lg:gap-16">
-        {/* FAQ Title */}
-        <div className="flex-shrink-0">
-          <h2 className="text-6xl lg:text-8xl font-bold text-blue-900 tracking-tight">
-            FAQ
-          </h2>
-        </div>
+    <main className="flex-1 container mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="py-20">
+          <div className="flex flex-col sm:flex-row lg:flex-row items-start gap-8 lg:gap-16">
+            {/* FAQ Title */}
+            <div className="flex-shrink-0">
+              <h2 className="text-6xl lg:text-8xl font-bold text-blue-900 tracking-tight">
+                FAQ
+              </h2>
+            </div>
 
-        {/* FAQ Items */}
-        <div className="flex-1 space-y-1">
-          {faqData.map((item) => (
-            <div key={item.id} className="border-b border-border">
-              <button
-                onClick={() => toggleItem(item.id)}
-                className="w-full py-6 flex items-center justify-between text-left hover:bg-muted/50 transition-colors group"
-              >
-                <h3 className="text-lg lg:text-xl font-medium text-foreground pr-4 text-balance">
-                  {item.question}
-                </h3>
-                <div className="flex-shrink-0">
-                  {openItem === item.id ? (
-                    <X className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
-                  ) : (
-                    <Plus className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+            {/* FAQ Items */}
+            <div className="flex-1 space-y-1">
+              {faqData.map((item) => (
+                <div key={item.id} className="border-b border-border">
+                  <button
+                    onClick={() => toggleItem(item.id)}
+                    className="w-full py-6 flex items-center justify-between text-left hover:bg-muted/50 transition-colors group"
+                  >
+                    <h3 className="text-lg lg:text-xl font-medium text-foreground pr-4 text-balance">
+                      {item.question}
+                    </h3>
+                    <div className="flex-shrink-0">
+                      {openItem === item.id ? (
+                        <X className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                      ) : (
+                        <Plus className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                      )}
+                    </div>
+                  </button>
+
+                  {openItem === item.id && (
+                    <div className="pb-6 pr-8">
+                      <p className="text-muted-foreground leading-relaxed">
+                        {item.answer}
+                      </p>
+                    </div>
                   )}
                 </div>
-              </button>
-
-              {openItem === item.id && (
-                <div className="pb-6 pr-8">
-                  <p className="text-muted-foreground leading-relaxed">
-                    {item.answer}
-                  </p>
-                </div>
-              )}
+              ))}
             </div>
-          ))}
+          </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

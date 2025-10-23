@@ -61,109 +61,110 @@ export default function ReviewsPage() {
   // ];
 
   return (
-    <>
-      {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div className="container mx-auto px-4 py-16 lg:py-24">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Left Side - Content */}
-            <div className="space-y-8">
-              <div className="space-y-4">
-                <h1 className="text-4xl md:text-6xl font-bold text-foreground text-balance">
-                  Hear what our customers say about
-                  <span className="text-primary"> The Launch Pad</span>
-                </h1>
-                <p className="text-xl text-muted-foreground text-pretty">
-                  Don't just take our word for it. See why thousands of
-                  customers trust us with their vehicles every month.
-                </p>
+    <main className="flex-1 container mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Hero Section */}
+        <section className="relative overflow-hidden">
+          <div className="container mx-auto px-4 py-16 lg:py-24">
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+              {/* Left Side - Content */}
+              <div className="space-y-8">
+                <div className="space-y-4">
+                  <h1 className="text-4xl md:text-6xl font-bold text-foreground text-balance">
+                    Hear what our customers say about
+                    <span className="text-primary"> The Launch Pad</span>
+                  </h1>
+                  <p className="text-xl text-muted-foreground text-pretty">
+                    Don't just take our word for it. See why thousands of
+                    customers trust us with their vehicles every month.
+                  </p>
+                </div>
+                <Button
+                  size="lg"
+                  className="bg-blue-900 text-white hover:bg-blue-900/90 text-lg px-8 py-6 rounded-full"
+                >
+                  Book Your Service Today
+                </Button>
               </div>
-              <Button
-                size="lg"
-                className="bg-blue-900 text-white hover:bg-blue-900/90 text-lg px-8 py-6 rounded-full"
-              >
-                Book Your Service Today
-              </Button>
+
+              {/* Right Side - Stats Cards */}
+              <div className="grid grid-cols-2 gap-4">
+                {stats.map((stat, index) => (
+                  <Card
+                    key={index}
+                    className="border-border bg-card hover:shadow-lg transition-shadow"
+                  >
+                    <CardContent className="p-6 text-center space-y-2">
+                      <stat.icon className="h-8 w-8 text-primary mx-auto" />
+                      <div className="text-2xl font-bold text-foreground">
+                        {stat.value}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {stat.label}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Reviews Grid */}
+        <section className="py-16 mb-8 bg-muted/30">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+                Customer Reviews
+              </h2>
+              <p className="text-lg text-muted-foreground">
+                Real feedback from real customers
+              </p>
             </div>
 
-            {/* Right Side - Stats Cards */}
-            <div className="grid grid-cols-2 gap-4">
-              {stats.map((stat, index) => (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+              {reviews.map((review, index) => (
                 <Card
                   key={index}
-                  className="border-border bg-card hover:shadow-lg transition-shadow"
+                  className="border-border bg-card hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
                 >
-                  <CardContent className="p-6 text-center space-y-2">
-                    <stat.icon className="h-8 w-8 text-primary mx-auto" />
-                    <div className="text-2xl font-bold text-foreground">
-                      {stat.value}
+                  <CardContent className="p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-1">
+                        {[...Array(review.rating)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className="h-4 w-4 fill-yellow-400 text-yellow-400"
+                          />
+                        ))}
+                      </div>
+                      <Quote className="h-5 w-5 text-muted-foreground" />
                     </div>
-                    <div className="text-sm text-muted-foreground">
-                      {stat.label}
+
+                    <p className="text-foreground text-pretty leading-relaxed">
+                      "{review.comment}"
+                    </p>
+
+                    <div className="space-y-1 pt-2 border-t border-border">
+                      <div className="font-semibold text-foreground">
+                        {review.profiles?.full_name}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {review.bookings?.service_package_name ?? "Service"}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {new Date(review.created_at).toDateString()}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Reviews Grid */}
-      <section className="py-16 mb-8 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Customer Reviews
-            </h2>
-            <p className="text-lg text-muted-foreground">
-              Real feedback from real customers
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
-            {reviews.map((review, index) => (
-              <Card
-                key={index}
-                className="border-border bg-card hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-              >
-                <CardContent className="p-6 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-1">
-                      {[...Array(review.rating)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className="h-4 w-4 fill-yellow-400 text-yellow-400"
-                        />
-                      ))}
-                    </div>
-                    <Quote className="h-5 w-5 text-muted-foreground" />
-                  </div>
-
-                  <p className="text-foreground text-pretty leading-relaxed">
-                    "{review.comment}"
-                  </p>
-
-                  <div className="space-y-1 pt-2 border-t border-border">
-                    <div className="font-semibold text-foreground">
-                      {review.profiles?.full_name}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {review.bookings?.service_package_name ?? "Service"}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {new Date(review.created_at).toDateString()}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Social Proof */}
-      {/* <section className="py-16">
+        {/* Social Proof */}
+        {/* <section className="py-16">
         <div className="container mx-auto px-4 text-center">
           <p className="text-lg text-muted-foreground mb-8">
             Trusted by customers who also choose
@@ -181,32 +182,33 @@ export default function ReviewsPage() {
         </div>
       </section> */}
 
-      {/* CTA Section */}
-      <section className="py-16 bg-primary/5">
-        <div className="container mx-auto px-4 text-center space-y-6">
-          <h2 className="text-3xl md:text-4xl font-bold text-balance">
-            Ready to experience The Launch Pad difference?
-          </h2>
-          <p className="text-lg opacity-90 max-w-2xl mx-auto text-pretty">
-            Join thousands of satisfied customers who trust us with their
-            vehicles. Book your appointment today.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
-            <Button
-              onClick={openBookingModal}
-              className="inline-flex justify-center items-center rounded-xl bg-blue-900 text-white px-5 py-6 hover:bg-blue-800"
-            >
-              Schedule Service
-            </Button>
-            <Link
-              href="/services"
-              className="inline-flex justify-center items-center rounded-xl bg-gray-200 px-5 py-3 text-foreground hover:bg-gray-300 dark:text-black"
-            >
-              View Services
-            </Link>
+        {/* CTA Section */}
+        <section className="py-16 bg-primary/5">
+          <div className="container mx-auto px-4 text-center space-y-6">
+            <h2 className="text-3xl md:text-4xl font-bold text-balance">
+              Ready to experience The Launch Pad difference?
+            </h2>
+            <p className="text-lg opacity-90 max-w-2xl mx-auto text-pretty">
+              Join thousands of satisfied customers who trust us with their
+              vehicles. Book your appointment today.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
+              <Button
+                onClick={openBookingModal}
+                className="inline-flex justify-center items-center rounded-xl bg-blue-900 text-white px-5 py-6 hover:bg-blue-800"
+              >
+                Schedule Service
+              </Button>
+              <Link
+                href="/services"
+                className="inline-flex justify-center items-center rounded-xl bg-gray-200 px-5 py-3 text-foreground hover:bg-gray-300 dark:text-black"
+              >
+                View Services
+              </Link>
+            </div>
           </div>
-        </div>
-      </section>
-    </>
+        </section>
+      </div>
+    </main>
   );
 }

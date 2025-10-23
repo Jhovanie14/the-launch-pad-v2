@@ -14,7 +14,6 @@ export interface Vehicle {
   year: string | null;
   make: string | null;
   model: string | null;
-  trim: string | null;
   body_type: string | null;
   colors: string | null;
 }
@@ -27,7 +26,7 @@ export interface Booking {
   add_ons_id: string | null;
   service_package_name: string | null;
   service_package_price: string | null; // numeric comes as string from Supabase
-  add_ons: AddOn | null;
+  add_ons: AddOn[];
   appointment_date: string; // ISO string from DB
   appointment_time: string; // e.g. "14:30:00"
   total_price: string; // numeric comes as string
@@ -76,6 +75,7 @@ export interface Subscription {
   status: string;
   billing_cycle: string;
   current_period_start: string;
+  cancel_at_period_end: boolean;
   current_period_end: string;
   subscription_plans?: {
     name: string;
@@ -122,10 +122,14 @@ export interface Review {
     full_name: string;
   };
 }
-interface AddOn {
+export type AddOn = {
+  id: string;
   name: string;
   price: number;
-}
+  duration: number;
+  is_active: boolean;
+  created_at: string | null;
+};
 
 export type BlogPost = {
   id: string;

@@ -6,7 +6,6 @@ export async function ensureVehicle(vehicle: {
   year: number;
   make: string;
   model: string;
-  trim?: string;
   body_type?: string;
   colors: string[];
 }) {
@@ -20,7 +19,6 @@ export async function ensureVehicle(vehicle: {
     .eq("year", vehicle.year)
     .eq("make", vehicle.make)
     .eq("model", vehicle.model)
-    .eq("trim", vehicle.trim)
     .maybeSingle();
 
   if (existing) {
@@ -39,7 +37,6 @@ export async function ensureVehicle(vehicle: {
       year: vehicle.year,
       make: vehicle.make,
       model: vehicle.model,
-      trim: vehicle.trim,
       body_type: vehicle.body_type || "",
       colors: vehicle.colors || [],
     })

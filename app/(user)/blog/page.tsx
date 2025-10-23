@@ -71,75 +71,81 @@ export default function Blog() {
     );
   }
   return (
-    <div className="py-20">
-      <div className="container mx-auto px-4 ">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-center text-4xl md:text-6xl font-semibold text-blue-900 mb-16">
-            Latest Article
-          </h1>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {posts.map((post) => (
-              <Card
-                key={post.id}
-                className="rounded-xl hover:scale-103 transition-transform duration-200 p-0"
-              >
-                <div className="relative aspect-video overflow-hidden rounded-t-lg bg-muted">
-                  {post.cover_image ? (
-                    <Image
-                      height={40}
-                      width={40}
-                      src={post.cover_image}
-                      alt={post.title}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        console.error(
-                          "Image failed to load:",
-                          post.cover_image
-                        );
-                        e.currentTarget.style.display = "none";
-                      }}
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                      No image
-                    </div>
-                  )}
-                </div>
-                <CardHeader className="flex-1">
-                  <CardTitle className="line-clamp-2">{post.title}</CardTitle>
-                </CardHeader>
-                <CardContent className="flex-1">
-                  <CardDescription className="line-clamp-2">
-                    {post.excerpt}
-                  </CardDescription>
-                  <div className="flex items-center justify-between mt-4">
-                    <div className="flex items-center space-x-2">
-                      <Calendar className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(post.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <User className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">
-                        {post.author}
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Link
-                    href={`/blog/${post.slug}`}
-                    className="flex items-center space-x-2 mb-3 text-accent-foreground underline hover:text-gray-700 "
+    <main className="flex-1 container mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="py-20">
+          <div className="container mx-auto px-4 ">
+            <div className="max-w-7xl mx-auto">
+              <h1 className="text-center text-4xl md:text-6xl font-semibold text-blue-900 mb-16">
+                Latest Article
+              </h1>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {posts.map((post) => (
+                  <Card
+                    key={post.id}
+                    className="rounded-xl hover:scale-103 transition-transform duration-200 p-0"
                   >
-                    <span className="text-lg">Read More</span>
-                  </Link>
-                </CardFooter>
-              </Card>
-            ))}
+                    <div className="relative aspect-video overflow-hidden rounded-t-lg bg-muted">
+                      {post.cover_image ? (
+                        <Image
+                          height={40}
+                          width={40}
+                          src={post.cover_image}
+                          alt={post.title}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            console.error(
+                              "Image failed to load:",
+                              post.cover_image
+                            );
+                            e.currentTarget.style.display = "none";
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                          No image
+                        </div>
+                      )}
+                    </div>
+                    <CardHeader className="flex-1">
+                      <CardTitle className="line-clamp-2">
+                        {post.title}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex-1">
+                      <CardDescription className="line-clamp-2">
+                        {post.excerpt}
+                      </CardDescription>
+                      <div className="flex items-center justify-between mt-4">
+                        <div className="flex items-center space-x-2">
+                          <Calendar className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(post.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <User className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-sm text-muted-foreground">
+                            {post.author}
+                          </span>
+                        </div>
+                      </div>
+                    </CardContent>
+                    <CardFooter>
+                      <Link
+                        href={`/blog/${post.slug}`}
+                        className="flex items-center space-x-2 mb-3 text-accent-foreground underline hover:text-gray-700 "
+                      >
+                        <span className="text-lg">Read More</span>
+                      </Link>
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

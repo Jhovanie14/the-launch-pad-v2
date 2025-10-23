@@ -9,18 +9,16 @@ type CarData = {
   make: string;
   model: string;
   series?: string;
-  trim: string;
   body_type?: string;
   colors: string[];
   price?: number;
   servicePackage?: ServicePackage;
-  addOnsId?: any[] | null;
+  addOnsId?: string[] | null; // array of add-on UUIDs
   appointmentDate?: Date;
   appointmentTime?: string;
   totalPrice?: number;
   totalDuration?: number;
   payment_method: string;
-  // Customer info for non-authenticated users
   customerName?: string;
   customerEmail?: string;
   customerPhone?: string;
@@ -44,22 +42,12 @@ export async function createBooking(car: CarData) {
     .eq("year", car.year)
     .eq("make", car.make)
     .eq("model", car.model)
-    .eq("trim", car.trim)
     .eq("body_type", car.body_type)
     .contains("colors", car.colors)
     .maybeSingle();
 
   let vehicleId = existing?.id;
   if (!vehicleId) {
-    console.log("Inserting vehicle:", {
-      user_id: user?.id || null,
-      year: car.year,
-      make: car.make,
-      model: car.model,
-      trim: car.trim,
-      body_type: car.body_type,
-      colors: car.colors,
-    });
     const { data: inserted } = await supabase
       .from("vehicles")
       .insert({
@@ -67,7 +55,6 @@ export async function createBooking(car: CarData) {
         year: car.year,
         make: car.make,
         model: car.model,
-        trim: car.trim,
         body_type: car.body_type || "",
         colors: car.colors || [],
       })
@@ -77,20 +64,16 @@ export async function createBooking(car: CarData) {
     vehicleId = inserted?.id;
   }
 
-  // Create or update user profile if user is authenticated
+  // Update user profile if authenticated
   if (user) {
-    const { error: profileError } = await supabase.from("profiles").upsert({
+    await supabase.from("profiles").upsert({
       id: user.id,
       full_name: car.customerName || user.user_metadata?.full_name,
       updated_at: new Date().toISOString(),
     });
-
-    if (profileError) {
-      console.error("Error updating profile:", profileError);
-    }
   }
 
-  // Create booking with service details
+  // Insert booking
   const { data: booking, error } = await supabase
     .from("bookings")
     .insert({
@@ -99,8 +82,7 @@ export async function createBooking(car: CarData) {
       service_package_id: car.servicePackage?.id,
       service_package_name: car.servicePackage?.name,
       service_package_price: car.servicePackage?.price,
-      add_ons_id: car.addOnsId ?? null,
-      appointment_date: car.appointmentDate?.toISOString().split("T")[0], // Store as date only
+      appointment_date: car.appointmentDate?.toISOString().split("T")[0],
       appointment_time: car.appointmentTime,
       total_price: car.totalPrice,
       total_duration: car.totalDuration,
@@ -113,46 +95,45 @@ export async function createBooking(car: CarData) {
       special_instructions: car.specialInstructions || null,
       created_at: new Date().toISOString(),
     })
-    .select(
-      `
-        *,
-        vehicles (
-          year,
-          make,
-          model,
-          trim,
-          body_type,
-          colors
-        )
-      `
-    )
+    .select("*")
     .single();
 
-  if (error) {
+  if (error || !booking) {
     console.error("Booking creation error:", error);
     throw error;
   }
 
-  // Create status history entry
-  // if (booking) {
-  //   await supabase.from("booking_status_history").insert({
-  //     booking_id: booking.id,
-  //     status: "pending",
-  //     notes: "Booking created",
-  //   });
-  // }
+  // Insert selected add-ons into join table
+  if (car.addOnsId && car.addOnsId.length > 0) {
+    const addOnRows = car.addOnsId.map((addOnId) => ({
+      booking_id: booking.id,
+      add_on_id: addOnId,
+    }));
+
+    console.log("Inserting booking add-ons:", addOnRows);
+
+    const { data, error: addOnError } = await supabase
+      .from("booking_add_ons")
+      .insert(addOnRows);
+
+    if (addOnError) {
+      console.error("Error inserting booking add-ons:", addOnError);
+    } else {
+      console.log("Successfully inserted booking add-ons:", data);
+    }
+  }
 
   // Send confirmation email
-  if (booking.customer_email) {
-    await sendBookingConfirmationEmail({
-      to: booking.customer_email,
-      customerName: booking.customer_name ?? "Customer",
-      bookingId: booking.id,
-      servicePackage: booking.service_package_name ?? "Service",
-      appointmentDate: booking.appointment_date,
-      appointmentTime: booking.appointment_time,
-    });
-  }
+  // if (booking.customer_email) {
+  //   await sendBookingConfirmationEmail({
+  //     to: booking.customer_email,
+  //     customerName: booking.customer_name ?? "Customer",
+  //     bookingId: booking.id,
+  //     servicePackage: booking.service_package_name ?? "Service",
+  //     appointmentDate: booking.appointment_date,
+  //     appointmentTime: booking.appointment_time,
+  //   });
+  // }
 
   return booking;
 }

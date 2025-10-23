@@ -11,6 +11,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { Crown } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import SubscriptionCancelInfo from "@/components/user/subscription-cancel-info";
 
 export default function DashboardPage() {
   const { user, userProfile, isLoading } = useAuth();
@@ -59,25 +60,28 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between">
           <div className="space-y-2">
             {subscription && (
-              <div className="flex items-center space-x-2 text-sm font-medium">
-                <Crown className="w-5 h-5 text-yellow-500" />
-                <div>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 text-sm font-medium w-full">
+                <Crown className="w-5 h-5 text-yellow-500 flex-shrink-0" />
+                <div className="flex flex-col w-full sm:w-auto">
                   <p className="text-sm font-medium text-gray-500">
                     Current Period -{" "}
                     {new Date(
                       subscription.current_period_start
                     ).toLocaleDateString()}
                   </p>
-                  <p className="text-sm text-gray-900"></p>
                   <p className="text-sm font-medium text-gray-500">
-                    Next Billing - {""}
+                    Next Billing -{" "}
                     {new Date(
                       subscription.current_period_end
                     ).toLocaleDateString()}
                   </p>
+                  <div className="mt-2 sm:mt-0">
+                    <SubscriptionCancelInfo subscription={subscription} />
+                  </div>
                 </div>
               </div>
             )}
+
             <div className="flex items-center space-x-3">
               <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
             </div>
@@ -85,12 +89,7 @@ export default function DashboardPage() {
               Welcome back, {userProfile?.full_name || user?.email}!
             </p>
           </div>
-          <Button
-            onClick={openBookingModal}
-            className="bg-blue-900 self-start hover:bg-blue-800 text-white font-semibold px-6 rounded-md transition-all duration-200 shadow-md hover:shadow-lg uppercase tracking-wide"
-          >
-            Book Online
-          </Button>
+        
         </div>
 
         {/* Subscription */}

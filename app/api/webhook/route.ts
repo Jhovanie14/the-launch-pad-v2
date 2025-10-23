@@ -114,17 +114,34 @@ async function processBooking(session: Stripe.Checkout.Session) {
 
     console.log("Booking inserted!", bookingRows);
 
-    // Send confirmation email
-    if (bookingRows?.customer_email) {
-      await sendBookingConfirmationEmail({
-        to: bookingRows.customer_email,
-        customerName: bookingRows.customer_name ?? "Customer",
-        bookingId: bookingRows.id,
-        servicePackage: bookingRows.service_package_name ?? "Service",
-        appointmentDate: bookingRows.appointment_date,
-        appointmentTime: bookingRows.appointment_time,
-      });
+    if (bookingRows && bookingMeta.add_on_ids?.length) {
+      const addOnInserts = bookingMeta.add_on_ids.map((addOnId: string) => ({
+        booking_id: bookingRows.id,
+        add_on_id: addOnId,
+      }));
+
+      const { error: addOnError } = await supabase
+        .from("booking_add_ons")
+        .insert(addOnInserts);
+
+      if (addOnError) {
+        console.error("Failed to insert booking add-ons:", addOnError);
+      } else {
+        console.log("Booking add-ons inserted!");
+      }
     }
+
+    // Send confirmation email
+    // if (bookingRows?.customer_email) {
+    //   await sendBookingConfirmationEmail({
+    //     to: bookingRows.customer_email,
+    //     customerName: bookingRows.customer_name ?? "Customer",
+    //     bookingId: bookingRows.id,
+    //     servicePackage: bookingRows.service_package_name ?? "Service",
+    //     appointmentDate: bookingRows.appointment_date,
+    //     appointmentTime: bookingRows.appointment_time,
+    //   });
+    // }
   } catch (err) {
     console.error("Booking insert exception:", err);
   }
@@ -239,23 +256,11 @@ async function processSubscription(session: Stripe.Checkout.Session) {
 async function handleSubscriptionUpdated(event: Stripe.Event) {
   const subscription = event.data.object as Stripe.Subscription;
 
-  console.log("Subscription updated:", subscription.id);
-
   const sub = subscription as any;
-
   const subscriptionItem = sub?.items?.data?.[0];
 
   const cps = Number(subscriptionItem?.current_period_start);
   const cpe = Number(subscriptionItem?.current_period_end);
-
-  console.log("Raw billing data from subscription item:", {
-    current_period_start: subscriptionItem?.current_period_start,
-    current_period_end: subscriptionItem?.current_period_end,
-    cps_number: cps,
-    cpe_number: cpe,
-    is_cps_finite: Number.isFinite(cps),
-    is_cpe_finite: Number.isFinite(cpe),
-  });
 
   const currentPeriodStartIso = Number.isFinite(cps)
     ? new Date(cps * 1000).toISOString()
@@ -263,10 +268,21 @@ async function handleSubscriptionUpdated(event: Stripe.Event) {
   const currentPeriodEndIso = Number.isFinite(cpe)
     ? new Date(cpe * 1000).toISOString()
     : null;
-  const priceId = sub?.items?.data?.[0]?.price?.id ?? null;
-  const cancelAtPeriodEnd = Boolean(sub?.cancel_at_period_end);
 
-  const { error } = await supabase
+  const priceId = subscriptionItem?.price?.id ?? null;
+  const interval = subscriptionItem?.price?.recurring?.interval ?? null; // 👈 capture monthly/yearly
+  const cancelAtPeriodEnd = Boolean(sub?.cancel_at_period_end);
+  const planId = subscription.metadata?.plan_id ?? null;
+  const billingCycleRaw = subscription.metadata?.billing_cycle || null;
+  const billingCycle =
+    billingCycleRaw === "monthly"
+      ? "month"
+      : billingCycleRaw === "yearly"
+        ? "year"
+        : null;
+
+  // 1️⃣ Update user_subscription (no vehicle_id)
+  const { data: subscriptionRow, error: subError } = await supabase
     .from("user_subscription")
     .update({
       status: subscription.status,
@@ -274,11 +290,40 @@ async function handleSubscriptionUpdated(event: Stripe.Event) {
       current_period_end: currentPeriodEndIso,
       cancel_at_period_end: cancelAtPeriodEnd,
       price_id: priceId,
+      billing_cycle: billingCycle,
+      subscription_plan_id: planId,
     })
-    .eq("stripe_subscription_id", subscription.id);
+    .eq("stripe_subscription_id", subscription.id)
+    .select()
+    .single();
 
-  if (error) {
-    console.error("Error updating subscription:", error);
+  if (subError) {
+    console.error("Error updating subscription:", subError);
+    return;
+  }
+
+  // 2️⃣ Update subscription_vehicles if vehicle_id exists
+  const vehicleId = subscription.metadata?.vehicle_id ?? null;
+  if (vehicleId && subscriptionRow?.id) {
+    const { data: existingLink } = await supabase
+      .from("subscription_vehicles")
+      .select("id, vehicle_id")
+      .eq("subscription_id", subscriptionRow.id)
+      .maybeSingle();
+
+    if (existingLink) {
+      // Update existing link
+      await supabase
+        .from("subscription_vehicles")
+        .update({ vehicle_id: vehicleId })
+        .eq("subscription_id", subscriptionRow.id);
+    } else {
+      // Insert new link
+      await supabase.from("subscription_vehicles").insert({
+        subscription_id: subscriptionRow.id,
+        vehicle_id: vehicleId,
+      });
+    }
   }
 }
 

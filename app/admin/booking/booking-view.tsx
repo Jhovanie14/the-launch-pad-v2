@@ -72,7 +72,7 @@ export default function BookingsView() {
         .from("bookings")
         .select(
           `*,
-        vehicle:vehicles ( year, make, model, trim, body_type, colors ),
+        vehicle:vehicles ( year, make, model, body_type, colors ),
         add_ons ( name, price )`,
           { count: "exact" }
         )

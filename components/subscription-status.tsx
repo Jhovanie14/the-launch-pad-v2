@@ -1,6 +1,8 @@
 import { useSubscription } from "@/hooks/useSubscription";
 import { Subscription } from "@/types";
 import Link from "next/link";
+import { useState } from "react";
+import { Button } from "./ui/button";
 
 interface SubscriptionStatusProps {
   subscription: Subscription | null;
@@ -9,6 +11,30 @@ interface SubscriptionStatusProps {
 export default function SubscriptionStatus({
   subscription,
 }: SubscriptionStatusProps) {
+  const [loading, setLoading] = useState(false);
+
+  const handleUpdatePayment = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/update-payment-method", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url; // redirect to Stripe Billing Portal
+      } else {
+        alert("Unable to open payment update page.");
+      }
+    } catch (error) {
+      console.error("Error updating payment method:", error);
+      alert("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!subscription) {
     return (
       <div className="bg-white overflow-hidden shadow rounded-lg mb-8">
@@ -130,7 +156,6 @@ export default function SubscriptionStatus({
         );
     }
   };
-
   return (
     <div className="bg-white overflow-hidden shadow rounded-lg mb-8">
       <div className="p-6">
@@ -214,18 +239,14 @@ export default function SubscriptionStatus({
               </div>
             </div>
             <div className="mt-4 flex space-x-3">
-              <Link
-                href="/dashboard/billing"
-                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
-                Manage Subscription
-              </Link>
-              <Link
-                href="/dashboard/billing"
+              <Button
+                variant="outline"
+                onClick={handleUpdatePayment}
+                disabled={loading}
                 className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-900 hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
-                Upgrade Plan
-              </Link>
+                {loading ? "Redirecting..." : "Update Payment Method"}
+              </Button>
             </div>
           </div>
         </div>

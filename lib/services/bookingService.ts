@@ -152,17 +152,28 @@ export const bookingService = {
     const { data, error } = await supabase
       .from("bookings")
       .select(
-        `*,
-        vehicle:vehicles (year, make, model, trim, body_type, colors),
-        add_ons (name, price)
         `
+      *,
+      vehicle:vehicles (year, make, model, body_type, colors),
+      add_ons:booking_add_ons (
+        add_ons (
+          id,
+          name,
+          price
+        )
+      )
+    `
       )
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
     if (error) throw error;
-    return data || [];
+    const bookingsWithAddOns = data?.map((booking: any) => ({
+      ...booking,
+      add_ons: booking.add_ons?.map((row: any) => row.add_ons) ?? [],
+    }));
+    return bookingsWithAddOns ?? [];
   },
 
   async checkReviewExists(

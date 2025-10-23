@@ -161,7 +161,7 @@ export default function ForgotPasswordPage() {
           {/* Back to Login */}
           <div className="text-center pt-4 border-t border-gray-200">
             <Link
-              href="/auth/signin"
+              href="/login"
               className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-blue-600 transition-colors"
             >
               <svg

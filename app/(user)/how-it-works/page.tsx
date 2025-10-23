@@ -12,7 +12,7 @@ import { useBooking } from "@/context/bookingContext";
 export default function HowItWorksPage() {
   const { openBookingModal } = useBooking();
   return (
-    <main className="min-h-screen">
+    <main className="flex-1 container mx-auto px-4 py-8">
       <HowItWorksHero />
       <ProcessSteps />
       <VideoSection />

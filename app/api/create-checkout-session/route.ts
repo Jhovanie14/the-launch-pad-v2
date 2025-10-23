@@ -13,7 +13,6 @@ export async function POST(req: Request) {
       year: number;
       make: string;
       model: string;
-      trim: string;
       body_type?: string;
       color?: string;
     };
@@ -30,7 +29,6 @@ export async function POST(req: Request) {
         year: Number(vehicle.year),
         make: vehicle.make,
         model: vehicle.model,
-        trim: vehicle.trim,
         body_type: vehicle.body_type,
         colors: [vehicle.color ?? ""],
       })
@@ -96,7 +94,6 @@ export async function POST(req: Request) {
       plan_id: planId,
       billing_cycle: billingCycle,
       vehicle_id: vehicleId ?? "",
-      
     },
   });
 

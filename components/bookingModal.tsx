@@ -111,7 +111,6 @@ export default function BookingModal() {
         year: String(selected.year),
         make: selected.make,
         model: selected.model,
-        trim: selected.trim,
         body_type: selected.body_type,
         color: selected.colors?.[0] ?? "",
       });
