@@ -465,10 +465,12 @@ function Products() {
                       </div>
                     </CardContent>
                     <CardFooter className="p-3">
-                      <Button className="w-full bg-blue-800 hover:bg-blue-900">
-                        <span className="text-lg dark:text-white">
-                          Add to cart
-                        </span>
+                      <Button
+                        className="w-full bg-blue-800 hover:bg-blue-900"
+                        disabled
+                      >
+                        <ShoppingBasket className="w-4 h-4" />
+                        <span className="text-lg">Available at the store</span>
                       </Button>
                     </CardFooter>
                   </Card>
@@ -568,9 +570,11 @@ function Products() {
                           )}
                         </CardContent>
                         <CardFooter className="p-0 mt-5">
-                          <Button className=" bg-blue-700 hover:bg-blue-800">
+                          <Button className=" bg-blue-700 hover:bg-blue-800" disabled>
                             <ShoppingBasket className="w-4 h-4" />
-                            <span className="text-lg">Add to cart</span>
+                            <span className="text-lg">
+                              Available at the store
+                            </span>
                           </Button>
                         </CardFooter>
                       </div>

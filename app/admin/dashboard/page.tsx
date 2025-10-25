@@ -5,18 +5,78 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { getUserCount, getUserProfile } from "@/auth/actions";
-import { AdminSidebar } from "@/components/admin/sidebar";
+import { getUserProfile } from "@/auth/actions";
+import {
+  getDashboardStats,
+  getRevenueData,
+  getCategoryData,
+  getBookingStats,
+} from "@/app/admin/dashboard/action";
+import { DashboardCharts } from "@/components/admin/dashboard-charts";
+
+// Helper function to calculate time ago
+function getTimeAgo(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInMs = now.getTime() - date.getTime();
+
+  const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+  const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+  if (diffInMinutes < 60) {
+    return `${diffInMinutes} min ago`;
+  } else if (diffInHours < 24) {
+    return `${diffInHours} hour${diffInHours > 1 ? "s" : ""} ago`;
+  } else {
+    return `${diffInDays} day${diffInDays > 1 ? "s" : ""} ago`;
+  }
+}
 
 export default async function AdminDashboardPage() {
-  const profile = await getUserProfile();
-  const totalUser = await getUserCount();
+  // Fetch all data in parallel
+  const [profile, stats, revenueData, categoryData, bookingStats] =
+    await Promise.all([
+      getUserProfile(),
+      getDashboardStats(),
+      getRevenueData(),
+      getCategoryData(),
+      getBookingStats(),
+    ]);
+
+  const chartData = {
+    revenue: revenueData.revenue,
+    expenses: revenueData.expenses,
+    userGrowth: stats.userGrowthByDay,
+    categories: categoryData.values,
+    categoryLabels: categoryData.labels,
+  };
+
+  // Calculate growth percentages
+  const userGrowthPercentage =
+    stats.totalUsers > 0
+      ? (
+          (stats.userGrowthByDay.reduce((a, b) => a + b, 0) /
+            stats.totalUsers) *
+          100
+        ).toFixed(1)
+      : "0.0";
+
+  const revenueGrowthPercentage =
+    revenueData.revenue.length >= 2 && revenueData.revenue[5] > 0
+      ? (
+          ((revenueData.revenue[6] - revenueData.revenue[5]) /
+            revenueData.revenue[5]) *
+          100
+        ).toFixed(1)
+      : "0.0";
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto">
         <div className="w-full mx-auto px-6 py-8">
           <div className="space-y-6">
+            {/* Header */}
             <div>
               <h1 className="text-3xl font-bold tracking-tight">
                 Admin Dashboard
@@ -26,6 +86,7 @@ export default async function AdminDashboardPage() {
               </p>
             </div>
 
+            {/* Stats Grid */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -48,9 +109,10 @@ export default async function AdminDashboardPage() {
                   </svg>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{totalUser}</div>
+                  <div className="text-2xl font-bold">{stats.totalUsers}</div>
                   <p className="text-xs text-muted-foreground">
-                    +180 from last month
+                    +{stats.userGrowthByDay.reduce((a, b) => a + b, 0)} this
+                    week
                   </p>
                 </CardContent>
               </Card>
@@ -75,7 +137,9 @@ export default async function AdminDashboardPage() {
                   </svg>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">45</div>
+                  <div className="text-2xl font-bold">
+                    {stats.activeSubscriptions}
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     +5 from last week
                   </p>
@@ -95,13 +159,15 @@ export default async function AdminDashboardPage() {
                     strokeWidth="2"
                     className="h-4 w-4 text-muted-foreground"
                   >
-                    <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
                   </svg>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">$45,231</div>
+                  <div className="text-2xl font-bold">
+                    ${revenueData.revenue[6]?.toLocaleString() || "0"}
+                  </div>
                   <p className="text-xs text-muted-foreground">
-                    +20.1% from last month
+                    +{revenueGrowthPercentage}% from last month
                   </p>
                 </CardContent>
               </Card>
@@ -109,7 +175,7 @@ export default async function AdminDashboardPage() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">
-                    Conversion Rate
+                    Total Bookings
                   </CardTitle>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -121,18 +187,27 @@ export default async function AdminDashboardPage() {
                     strokeWidth="2"
                     className="h-4 w-4 text-muted-foreground"
                   >
-                    <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                    <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+                    <line x1="16" x2="16" y1="2" y2="6" />
+                    <line x1="8" x2="8" y1="2" y2="6" />
+                    <line x1="3" x2="21" y1="10" y2="10" />
                   </svg>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">3.2%</div>
+                  <div className="text-2xl font-bold">
+                    {bookingStats.totalBookings}
+                  </div>
                   <p className="text-xs text-muted-foreground">
-                    +0.4% from last month
+                    {bookingStats.confirmedBookings} confirmed
                   </p>
                 </CardContent>
               </Card>
             </div>
 
+            {/* Charts Section */}
+            <DashboardCharts data={chartData} />
+
+            {/* Bottom Grid */}
             <div className="grid gap-6 md:grid-cols-2">
               <Card>
                 <CardHeader>
@@ -143,48 +218,57 @@ export default async function AdminDashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="flex items-center space-x-4">
-                      <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium">
-                        JD
+                    {stats.recentUsers.length > 0 ? (
+                      stats.recentUsers.map((user) => {
+                        const initials = user.full_name
+                          ? user.full_name
+                              .split(" ")
+                              .map((n: string) => n[0])
+                              .join("")
+                              .toUpperCase()
+                          : user.email.substring(0, 2).toUpperCase();
+
+                        const colors = [
+                          "bg-blue-600",
+                          "bg-green-600",
+                          "bg-purple-600",
+                          "bg-orange-600",
+                          "bg-pink-600",
+                        ];
+                        const bgColor =
+                          colors[Math.floor(Math.random() * colors.length)];
+
+                        const timeAgo = getTimeAgo(user.created_at);
+
+                        return (
+                          <div
+                            key={user.id}
+                            className="flex items-center space-x-4"
+                          >
+                            <div
+                              className={`h-8 w-8 rounded-full ${bgColor} flex items-center justify-center text-white text-sm font-medium`}
+                            >
+                              {initials}
+                            </div>
+                            <div className="flex-1 space-y-1">
+                              <p className="text-sm font-medium">
+                                {user.full_name || "Anonymous"}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {user.email}
+                              </p>
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {timeAgo}
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="text-sm text-muted-foreground text-center py-4">
+                        No recent users
                       </div>
-                      <div className="flex-1 space-y-1">
-                        <p className="text-sm font-medium">John Doe</p>
-                        <p className="text-xs text-muted-foreground">
-                          john@example.com
-                        </p>
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        2 hours ago
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      <div className="h-8 w-8 rounded-full bg-green-600 flex items-center justify-center text-white text-sm font-medium">
-                        JS
-                      </div>
-                      <div className="flex-1 space-y-1">
-                        <p className="text-sm font-medium">Jane Smith</p>
-                        <p className="text-xs text-muted-foreground">
-                          jane@example.com
-                        </p>
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        4 hours ago
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      <div className="h-8 w-8 rounded-full bg-purple-600 flex items-center justify-center text-white text-sm font-medium">
-                        MJ
-                      </div>
-                      <div className="flex-1 space-y-1">
-                        <p className="text-sm font-medium">Mike Johnson</p>
-                        <p className="text-xs text-muted-foreground">
-                          mike@example.com
-                        </p>
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        1 day ago
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -200,19 +284,27 @@ export default async function AdminDashboardPage() {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">Database</span>
-                      <span className="text-sm text-green-600">Healthy</span>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Healthy
+                      </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">API Server</span>
-                      <span className="text-sm text-green-600">Healthy</span>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Healthy
+                      </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">Storage</span>
-                      <span className="text-sm text-yellow-600">Warning</span>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                        Warning
+                      </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">CDN</span>
-                      <span className="text-sm text-green-600">Healthy</span>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Healthy
+                      </span>
                     </div>
                   </div>
                 </CardContent>

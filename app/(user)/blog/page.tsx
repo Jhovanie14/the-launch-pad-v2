@@ -88,8 +88,8 @@ export default function Blog() {
                     <div className="relative aspect-video overflow-hidden rounded-t-lg bg-muted">
                       {post.cover_image ? (
                         <Image
-                          height={40}
-                          width={40}
+                          height={450}
+                          width={450}
                           src={post.cover_image}
                           alt={post.title}
                           className="w-full h-full object-cover"
