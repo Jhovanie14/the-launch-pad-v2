@@ -43,7 +43,7 @@ export default async function AdminDashboardPage() {
       getCategoryData(),
       getBookingStats(),
     ]);
-
+  console.log(categoryData);
   const chartData = {
     revenue: revenueData.revenue,
     expenses: revenueData.expenses,

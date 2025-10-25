@@ -84,7 +84,10 @@ const services = [
     description:
       "Experience ultimate control over your vehicle's shine with our Express Detailing Subscription. Designed for those who take pride in a hands-on clean, our self-service bays feature top-tier tools and technology to deliver a professional finish anytime.",
     image: "/express-detailing-subscription.png",
-    images: ["/subscription-service-1.jpg", "/subscription-service-3.jpg"],
+    images: [
+      "/express-detailing-subscription.png",
+      "/subscription-service-3.jpg",
+    ],
     alt: "Express-Detailing-Subscription",
     features: [
       "Commercial-grade equipment",

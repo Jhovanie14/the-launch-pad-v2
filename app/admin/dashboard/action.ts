@@ -13,7 +13,7 @@ export async function getDashboardStats() {
 
     // Get active subscriptions count
     const { count: activeSubscriptions } = await supabase
-      .from("user_subscriptions")
+      .from("user_subscription")
       .select("*", { count: "exact", head: true })
       .eq("status", "active");
 
@@ -88,71 +88,41 @@ export async function getCategoryData() {
   const supabase = await createClient();
 
   try {
-    // Get service packages distribution
+    // Fetch all service packages
     const { data: packages } = await supabase
-      .from("service_package")
-      .select("name, id")
-      .limit(100);
+      .from("service_packages")
+      .select("id, category")
+      .eq("is_active", "true");
 
-    if (!packages || packages.length === 0) {
-      return {
-        values: [35, 25, 20, 12, 8],
-        labels: [
-          "Express Interior",
-          "Basic Wash",
-          "Deluxe Wash",
-          "Premium Service",
-          "Others",
-        ],
-      };
-    }
+    // Fetch precomputed booking counts from view
+    const { data: counts } = await supabase.from("booking_counts").select("*");
 
-    // Get booking counts per package
-    const packageCounts = new Map<string, number>();
+    if (!packages || packages.length === 0) return { labels: [], values: [] };
 
-    for (const pkg of packages) {
-      const { count } = await supabase
-        .from("bookings")
-        .select("*", { count: "exact", head: true })
-        .eq("service_package_id", pkg.id);
-
-      if (count && count > 0) {
-        packageCounts.set(pkg.name, count);
+    // Sum totals per category
+    const categoryTotals: Record<string, number> = {};
+    packages.forEach((pkg) => {
+      const found = counts?.find((c) => c.service_package_id === pkg.id);
+      const total = found?.total ?? 0;
+      if (categoryTotals[pkg.category]) {
+        categoryTotals[pkg.category] += total;
+      } else {
+        categoryTotals[pkg.category] = total;
       }
-    }
+    });
 
-    // Convert to array and get top 5
-    const sortedPackages = Array.from(packageCounts.entries())
-      .sort((a, b) => b[1] - a[1])
+    // Sort top 5 categories
+    const sorted = Object.entries(categoryTotals)
+      .sort(([, a], [, b]) => b - a)
       .slice(0, 5);
 
-    const values = sortedPackages.map(([_, count]) => count);
-    const labels = sortedPackages.map(([name, _]) => name);
-
-    return values.length
-      ? { values, labels }
-      : {
-          values: [35, 25, 20, 12, 8],
-          labels: [
-            "Express Interior",
-            "Basic Wash",
-            "Deluxe Wash",
-            // "Premium Service",
-            // "Others",
-          ],
-        };
+    return {
+      labels: sorted.map(([category]) => category),
+      values: sorted.map(([, total]) => total),
+    };
   } catch (error) {
     console.error("Error fetching category data:", error);
-    return {
-      values: [35, 25, 20, 12, 8],
-      labels: [
-        "Express Interior",
-        "Basic Wash",
-        "Deluxe Wash",
-        // "Premium Service",
-        // "Others",
-      ],
-    };
+    return { labels: [], values: [] };
   }
 }
 
