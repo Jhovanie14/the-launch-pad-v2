@@ -124,16 +124,16 @@ export async function createBooking(car: CarData) {
   }
 
   // Send confirmation email
-  // if (booking.customer_email) {
-  //   await sendBookingConfirmationEmail({
-  //     to: booking.customer_email,
-  //     customerName: booking.customer_name ?? "Customer",
-  //     bookingId: booking.id,
-  //     servicePackage: booking.service_package_name ?? "Service",
-  //     appointmentDate: booking.appointment_date,
-  //     appointmentTime: booking.appointment_time,
-  //   });
-  // }
+  if (booking.customer_email) {
+    await sendBookingConfirmationEmail({
+      to: booking.customer_email,
+      customerName: booking.customer_name ?? "Customer",
+      bookingId: booking.id,
+      servicePackage: booking.service_package_name ?? "Service",
+      appointmentDate: booking.appointment_date,
+      appointmentTime: booking.appointment_time,
+    });
+  }
 
   return booking;
 }

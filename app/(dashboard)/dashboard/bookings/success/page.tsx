@@ -11,13 +11,6 @@ import { OrderData } from "@/types";
 interface SuccessPageProps {
   searchParams: { session_id?: string; booking_id?: string };
 }
-interface BookingAddOnRow {
-  add_ons: {
-    id: string;
-    name: string;
-    price: number;
-  };
-}
 
 export default async function SuccessPage({ searchParams }: SuccessPageProps) {
   const params = await searchParams;
@@ -26,65 +19,79 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
   let orderData: OrderData | null = null;
   let addOns: { id: string; name: string; price: number }[] = [];
 
-  // Stripe Checkout booking
+  // 🔹 Case 1: Stripe Checkout (cash/card or add-ons)
   if (params.session_id) {
     const session = await stripe.checkout.sessions.retrieve(params.session_id, {
       expand: ["line_items", "payment_intent"],
     });
 
-    if (session.status === "open") return redirect("/");
-
     const bookingMeta = session.metadata?.booking
       ? JSON.parse(session.metadata.booking)
       : null;
 
+    const paymentIntentId =
+      typeof session.payment_intent === "string"
+        ? session.payment_intent
+        : session.payment_intent?.id;
+
+    console.log("Booking Meta:", bookingMeta);
+    console.log("Payment Intent ID:", paymentIntentId);
+
+    // 🟩 Fetch booking from Supabase using payment_intent_id
+    const { data: booking, error: bookingError } = await supabase
+      .from("bookings")
+      .select("id")
+      .eq("payment_intent_id", paymentIntentId)
+      .single();
+
+    if (bookingError || !booking) {
+      console.error("Booking not found for payment intent:", paymentIntentId);
+      throw new Error("Booking not found");
+    }
+
+    console.log("Booking ID from DB:", booking.id);
+
+    // 🟩 Build items array from metadata
     const items = [
       {
-        name: bookingMeta?.service_package_name ?? "Service Package",
-        price: bookingMeta?.service_package_price ?? 0,
+        name: bookingMeta?.spn ?? "Service Package",
+        price: Number(bookingMeta?.spp ?? 0),
         quantity: 1,
       },
     ];
 
-    // Fetch add-ons from booking_add_ons table
-    if (bookingMeta?.booking_id) {
-      const { data: addOnsData, error } = await supabase
-        .from("booking_add_ons")
-        .select(
-          `
-        add_ons (
-          id,
-          name,
-          price
-        )
-      `
-        )
-        .eq("booking_id", bookingMeta.booking_id);
+    // 🟩 Fetch add-ons linked to the booking using the DB booking ID
+    const { data: addOnsData, error: addOnsError } = await supabase
+      .from("booking_add_ons")
+      .select("add_ons(id, name, price)")
+      .eq("booking_id", booking.id);
 
-      if (error) {
-        console.error("Error fetching add-ons:", error);
-        addOns = [];
-      } else {
-        // Flatten the nested arrays
-        addOns = addOnsData?.map((row: any) => row.add_ons) ?? [];
-      }
+    // ✅ Assign to the outer addOns variable (not redeclare)
+    if (!addOnsError && addOnsData?.length) {
+      addOns = addOnsData.map((row: any) => row.add_ons);
+      console.log("Add-ons found:", addOns);
     }
 
+    // 🟩 Compute totals
     const subtotal =
       items.reduce((sum, i) => sum + i.price * i.quantity, 0) +
       addOns.reduce((sum, a) => sum + a.price, 0);
+
     const tax = (session.total_details?.amount_tax ?? 0) / 100;
     const total = (session.amount_total ?? 0) / 100;
 
+    // 🟩 Determine payment method
+    const paymentIntent = session.payment_intent as any;
+    const paymentType =
+      paymentIntent?.payment_method_types?.[0]?.toUpperCase() ?? "CARD";
+
     orderData = {
       type: "checkout",
-      date: new Date(session.created * 1000).toLocaleDateString(),
-      orderNumber:
-        typeof session.payment_intent === "string"
-          ? session.payment_intent
-          : ((session.payment_intent as any)?.id ?? session.id),
-      paymentMethod:
-        (session.payment_intent as any)?.payment_method_types?.[0] ?? "Card",
+      date: bookingMeta?.ad
+        ? new Date(bookingMeta.ad).toLocaleDateString()
+        : new Date(session.created * 1000).toLocaleDateString(),
+      orderNumber: paymentIntentId ?? session.id,
+      paymentMethod: paymentType === "CASH" ? "Cash" : "Card",
       items,
       subtotal,
       tax,
@@ -92,16 +99,37 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
     };
   }
 
-  // Subscription-only booking
+  // 🔹 Case 2: Subscription-only or cash booking
   else if (params.booking_id) {
     const { data: booking } = await supabase
       .from("bookings")
-      .select("id, service_package_name, service_package_price, created_at")
+      .select(
+        "id, service_package_name, service_package_price, appointment_date, payment_method"
+      )
       .eq("id", params.booking_id)
       .single();
 
     if (!booking) throw new Error("Booking not found");
 
+    // 🔸 Fetch add-ons (if any)
+    const { data: addOnsData, error } = await supabase
+      .from("booking_add_ons")
+      .select(`add_ons(id, name, price)`)
+      .eq("booking_id", booking.id);
+
+    if (!error && addOnsData) {
+      addOns = addOnsData.map((row: any) => row.add_ons);
+    }
+
+    // 🔸 Determine if this is a pure subscription or add-on payment
+    const hasAddOns = addOns.length > 0;
+    const paymentMethod = hasAddOns
+      ? booking.payment_method === "cash"
+        ? "Cash"
+        : "Card"
+      : "Subscription";
+
+    // 🔸 Only show add-ons if user actually paid for them
     const items = [
       {
         name: booking.service_package_name ?? "Service Package",
@@ -110,28 +138,15 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
       },
     ];
 
-    // Fetch add-ons via join table
-    const { data: addOnsData, error } = await supabase
-      .from("booking_add_ons")
-      .select(`add_ons(id, name, price)`)
-      .eq("booking_id", booking.id);
-
-    if (error) {
-      console.error("Error fetching add-ons:", error);
-      addOns = [];
-    } else {
-      addOns = addOnsData?.flatMap((row: any) => row.add_ons) ?? [];
-    }
-
     const subtotal =
       items.reduce((sum, i) => sum + i.price * i.quantity, 0) +
-      addOns.reduce((sum, a) => sum + a.price, 0);
+      (hasAddOns ? addOns.reduce((sum, a) => sum + a.price, 0) : 0);
 
     orderData = {
-      type: "subscription",
-      date: new Date(booking.created_at).toLocaleDateString(),
+      type: hasAddOns ? "checkout" : "subscription",
+      date: new Date(booking.appointment_date).toLocaleDateString(), // ✅ FIXED date
       orderNumber: booking.id,
-      paymentMethod: "Subscription",
+      paymentMethod,
       items,
       subtotal,
       tax: 0,
@@ -141,6 +156,7 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
 
   if (!orderData) throw new Error("No session_id or booking_id provided");
 
+  // ✅ UI rendering
   return (
     <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-2xl mx-auto">
@@ -165,7 +181,6 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Booking Info */}
             <div className="flex justify-between items-center text-sm">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Calendar className="h-4 w-4" /> Booking Date
@@ -187,7 +202,6 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
 
             <Separator />
 
-            {/* Items Purchased */}
             <div className="space-y-3">
               <h4 className="font-medium">Items Purchased</h4>
               {orderData.items.map((item, index) => (
@@ -196,12 +210,16 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
                   <span className="font-medium">${item.price.toFixed(2)}</span>
                 </div>
               ))}
-              {addOns.length > 0 && (
-                <div className="pl-4 space-y-1 mt-1">
+              {/* ✅ Only show add-ons when paid for */}
+              {orderData.type === "checkout" && addOns.length > 0 && (
+                <div className="pl-4 mt-2 space-y-1">
+                  <span className="text-sm text-muted-foreground font-medium block">
+                    Add-ons
+                  </span>
                   {addOns.map((addon) => (
                     <div
                       key={addon.id}
-                      className="flex justify-between items-center text-sm"
+                      className="flex justify-between items-center text-sm pl-2"
                     >
                       <span>- {addon.name}</span>
                       <span>${addon.price.toFixed(2)}</span>
@@ -213,7 +231,6 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
 
             <Separator />
 
-            {/* Totals */}
             <div className="space-y-2">
               <div className="flex justify-between items-center text-sm">
                 <span className="text-muted-foreground">Subtotal</span>
@@ -233,7 +250,6 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
           </CardContent>
         </Card>
 
-        {/* Action Buttons */}
         <div className="space-y-4">
           <Button asChild className="w-full" size="lg">
             <Link href="/dashboard/bookings">View Your Bookings</Link>
@@ -248,7 +264,6 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="text-center mt-8 p-4 bg-card rounded-lg border">
           <p className="text-sm text-muted-foreground">
             A confirmation email has been sent to your registered email address.

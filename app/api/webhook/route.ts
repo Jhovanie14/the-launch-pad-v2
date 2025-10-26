@@ -154,16 +154,16 @@ async function processBooking(session: Stripe.Checkout.Session) {
       }
     }
     // Send confirmation email
-    // if (bookingRows?.customer_email) {
-    //   await sendBookingConfirmationEmail({
-    //     to: bookingRows.customer_email,
-    //     customerName: bookingRows.customer_name ?? "Customer",
-    //     bookingId: bookingRows.id,
-    //     servicePackage: bookingRows.service_package_name ?? "Service",
-    //     appointmentDate: bookingRows.appointment_date,
-    //     appointmentTime: bookingRows.appointment_time,
-    //   });
-    // }
+    if (bookingRows?.customer_email) {
+      await sendBookingConfirmationEmail({
+        to: bookingRows.customer_email,
+        customerName: bookingRows.customer_name ?? "Customer",
+        bookingId: bookingRows.id,
+        servicePackage: bookingRows.service_package_name ?? "Service",
+        appointmentDate: bookingRows.appointment_date,
+        appointmentTime: bookingRows.appointment_time,
+      });
+    }
   } catch (err) {
     console.error("Booking insert exception:", err);
   }
