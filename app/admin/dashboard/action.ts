@@ -68,7 +68,7 @@ export async function getRevenueData() {
       .from("bookings")
       .select("total_price, created_at, status")
       .gte("created_at", sevenMonthsAgo.toISOString())
-      .in("status", ["confirmed", "completed", "paid"]) // Only count confirmed/completed bookings
+      .in("status", ["confirmed", "completed"]) // Only count confirmed/completed bookings
       .order("created_at", { ascending: true });
 
     // Process revenue by month

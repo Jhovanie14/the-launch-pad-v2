@@ -7,14 +7,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
 import { Input } from "@/components/ui/input";
 import { BookingsTable } from "@/components/user/bookings-table";
 import { createClient } from "@/utils/supabase/client";
 import type { Booking } from "@/types";
 import { format } from "date-fns";
-import { Calendar, Car, DollarSign, Search } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { Calendar, Car, DollarSign, Search, FileDown } from "lucide-react";
+import { useEffect, useState } from "react";
 import {
   Select,
   SelectContent,
@@ -22,17 +21,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
 import { Pagination } from "@/components/ui/pagination";
 import { useBookingRealtime } from "@/hooks/useBookingRealtime";
-import { FileDown, FileSpreadsheet, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ExportModal } from "@/components/export-modal";
 import { useBooking } from "@/context/bookingContext";
@@ -42,84 +32,103 @@ type UserSubscription = {
   status: string;
 };
 
+type DateFilterType = "all" | "today" | "week" | "month";
+type StatusFilterType = "all" | Booking["status"];
+
 export default function BookingsView() {
   const supabase = createClient();
   const { openBookingModal } = useBooking();
+
+  // State
   const [loading, setLoading] = useState(false);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
-  const [total, setTotal] = useState(0);
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [userSubscribe, setUserSubscribe] = useState<UserSubscription[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | Booking["status"]>(
-    "all"
-  );
-  const [dateFilter, setDateFilter] = useState<
-    "all" | "today" | "week" | "month"
-  >("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilterType>("all");
+  const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
   const [exportModalOpen, setExportModalOpen] = useState(false);
-  // const [selectedDate, setSelectedDate] = useState(
-  //   new Date().toISOString().split("T")[0]
-  // );
 
+  // Fetch all bookings
   useEffect(() => {
-    const fetchBookings = async (page: number = 1, pageSize: number = 10) => {
+    const fetchBookings = async () => {
       setLoading(true);
 
-      let query = supabase
+      const { data, error } = await supabase
         .from("bookings")
         .select(
           `*,
-        vehicle:vehicles ( year, make, model, body_type, colors ),
-        add_ons ( name, price )`,
-          { count: "exact" }
+          vehicle:vehicles ( year, make, model, body_type, colors ),
+          add_ons ( name, price )`
         )
         .order("created_at", { ascending: false });
 
-      if (pageSize !== 0) {
-        const from = (page - 1) * pageSize;
-        const to = from + pageSize - 1;
-        query = query.range(from, to);
-      }
-
-      const { data, error, count } = await query;
-
       setLoading(false);
 
-      if (error) console.error(error);
+      if (error) {
+        console.error("Error fetching bookings:", error);
+        return;
+      }
+
       setBookings(data || []);
-      setTotal(count || 0);
     };
-    fetchBookings(page, pageSize);
-  }, [supabase, page, pageSize]);
 
+    fetchBookings();
+  }, [supabase]);
+
+  // Fetch user subscriptions
   useEffect(() => {
-    // Fetch subscriptions
     const fetchUserSubscribe = async () => {
-      setLoading(true);
-
       const { data, error } = await supabase
         .from("user_subscription")
         .select("user_id, status");
 
-      if (error) console.error(error);
-      setUserSubscribe(data || []);
+      if (error) {
+        console.error("Error fetching subscriptions:", error);
+        return;
+      }
 
-      console.log("all subscriber", userSubscribe);
+      setUserSubscribe(data || []);
     };
 
     fetchUserSubscribe();
   }, [supabase]);
 
-  // Realtime updates for bookings table
+  // Fetch total revenue
+  useEffect(() => {
+    const fetchTotalRevenue = async () => {
+      const { data, error } = await supabase
+        .from("bookings")
+        .select("total_price")
+        .eq("status", "completed");
+
+      if (error) {
+        console.error("Error fetching total revenue:", error);
+        return;
+      }
+
+      const revenue = data?.reduce(
+        (sum, b) => sum + Number(b.total_price ?? 0),
+        0
+      );
+
+      setTotalRevenue(revenue ?? 0);
+    };
+
+    fetchTotalRevenue();
+  }, [supabase]);
+
+  // Realtime updates
   useBookingRealtime(setBookings);
 
-  const getBookingsForDate = (date: string) => {
-    return bookings.filter((booking) => booking.appointment_date === date);
-  };
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, statusFilter, dateFilter]);
 
+  // Update booking status
   const updateBookingStatus = async (
     bookingId: string,
     newStatus: Booking["status"]
@@ -136,14 +145,13 @@ export default function BookingsView() {
         updates.completed_at = new Date().toISOString();
       }
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("bookings")
         .update(updates)
         .eq("id", bookingId);
 
       if (error) {
         console.error("Error updating booking:", error);
-        return null;
       }
     } catch (error) {
       console.error("Error updating booking status:", error);
@@ -152,30 +160,7 @@ export default function BookingsView() {
     }
   };
 
-  useEffect(() => {
-    const fetchTotalRevenue = async () => {
-      const { data, error } = await supabase
-        .from("bookings")
-        .select("total_price")
-        .eq("status", "completed"); // only completed bookings
-
-      if (error) {
-        console.error("Error fetching total revenue:", error);
-        return;
-      }
-
-      const revenue = data?.reduce(
-        (sum, b) => sum + Number(b.total_price ?? 0),
-        0
-      );
-
-      setTotalRevenue(revenue ?? 0);
-      console.log("total revenue", revenue);
-    };
-
-    fetchTotalRevenue();
-  }, [supabase]);
-
+  // Export handler
   const handleDownload = async (
     type: "pdf" | "excel",
     statusFilter: string,
@@ -189,6 +174,7 @@ export default function BookingsView() {
       const res = await fetch(
         `/api/bookings/export?type=${type}&${queryParams.toString()}`
       );
+
       if (!res.ok) throw new Error("Failed to generate file");
 
       const blob = await res.blob();
@@ -205,58 +191,89 @@ export default function BookingsView() {
     }
   };
 
+  // Date filter logic
+  const matchesDateFilter = (appointmentDate: string): boolean => {
+    if (dateFilter === "all") return true;
+
+    // Parse the appointment date - handle both ISO and YYYY-MM-DD formats
+    const bookingDate = new Date(appointmentDate + "T00:00:00");
+    const today = new Date();
+
+    // Normalize to start of day for comparison
+    const todayStart = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate()
+    );
+    const bookingDateStart = new Date(
+      bookingDate.getFullYear(),
+      bookingDate.getMonth(),
+      bookingDate.getDate()
+    );
+
+    switch (dateFilter) {
+      case "today":
+        return bookingDateStart.getTime() === todayStart.getTime();
+
+      case "week": {
+        // Show bookings within next 7 days (including today)
+        const weekAhead = new Date(todayStart);
+        weekAhead.setDate(todayStart.getDate() + 7);
+        return bookingDateStart >= todayStart && bookingDateStart <= weekAhead;
+      }
+
+      case "month": {
+        // Show bookings within next 30 days (including today)
+        const monthAhead = new Date(todayStart);
+        monthAhead.setDate(todayStart.getDate() + 30);
+        return bookingDateStart >= todayStart && bookingDateStart <= monthAhead;
+      }
+
+      default:
+        return true;
+    }
+  };
+
+  // Filter bookings
   const filteredBookings = bookings.filter((booking) => {
-    const serviceName = booking.service_package_name?.toLowerCase() ?? "";
-    const make = (booking as any).vehicles?.make?.toLowerCase() ?? "";
-    const model = (booking as any).vehicles?.model?.toLowerCase() ?? "";
-    const custormerName = booking.customer_name?.toLowerCase() ?? "";
-    const customerBookingId = booking?.id.toLowerCase() ?? "";
+    // Search filter
+    const searchFields = [
+      booking.service_package_name?.toLowerCase() ?? "",
+      (booking as any).vehicles?.make?.toLowerCase() ?? "",
+      (booking as any).vehicles?.model?.toLowerCase() ?? "",
+      booking.customer_name?.toLowerCase() ?? "",
+      booking.id.toLowerCase() ?? "",
+    ];
 
     const matchesSearch =
-      serviceName.includes(searchTerm.toLowerCase()) ||
-      make.includes(searchTerm.toLowerCase()) ||
-      model.includes(searchTerm.toLowerCase()) ||
-      custormerName.includes(searchTerm.toLowerCase()) ||
-      customerBookingId.includes(searchTerm.toLowerCase());
+      searchTerm === "" ||
+      searchFields.some((field) => field.includes(searchTerm.toLowerCase()));
 
+    // Status filter
     const matchesStatus =
       statusFilter === "all" || booking.status === statusFilter;
 
-    const matchesDate =
-      dateFilter === "all" ||
-      (() => {
-        const bookingDate = new Date(booking.appointment_date);
-        const today = new Date();
-        switch (dateFilter) {
-          case "today":
-            return (
-              format(bookingDate, "yyyy-MM-dd") === format(today, "yyyy-MM-dd")
-            );
-          case "week": {
-            const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-            return bookingDate >= weekAgo;
-          }
-          case "month": {
-            const monthAgo = new Date(
-              today.getTime() - 30 * 24 * 60 * 60 * 1000
-            );
-            return bookingDate >= monthAgo;
-          }
-          default:
-            return true;
-        }
-      })();
+    // Date filter
+    const matchesDate = matchesDateFilter(booking.appointment_date);
 
     return matchesSearch && matchesStatus && matchesDate;
   });
 
+  // Paginate filtered results
+  const paginatedBookings = filteredBookings.slice(
+    (page - 1) * pageSize,
+    page * pageSize
+  );
+
+  // Today's bookings
   const todayBookings = bookings.filter(
     (b) =>
       format(new Date(b.appointment_date), "yyyy-MM-dd") ===
       format(new Date(), "yyyy-MM-dd")
   );
 
-  if (loading) {
+  // Loading state
+  if (loading && bookings.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="bg-white shadow-sm border-b">
@@ -279,7 +296,7 @@ export default function BookingsView() {
 
   return (
     <div className="flex-1 overflow-y-auto p-6">
-      {/* Booking Controls */}
+      {/* Stats Cards */}
       <div className="grid md:grid-cols-3 gap-6 mb-8">
         <Card>
           <CardContent className="p-6">
@@ -288,12 +305,13 @@ export default function BookingsView() {
                 <p className="text-sm font-medium text-muted-foreground">
                   Total Bookings
                 </p>
-                <p className="text-2xl font-bold">{total}</p>
+                <p className="text-2xl font-bold">{bookings.length}</p>
               </div>
               <Car className="h-8 w-8 text-accent-foreground" />
             </div>
           </CardContent>
         </Card>
+
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -307,6 +325,7 @@ export default function BookingsView() {
             </div>
           </CardContent>
         </Card>
+
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -314,33 +333,35 @@ export default function BookingsView() {
                 <p className="text-sm font-medium text-muted-foreground">
                   Total Revenue
                 </p>
-                <p className="text-2xl font-bold">${totalRevenue}</p>
+                <p className="text-2xl font-bold">
+                  ₱{totalRevenue.toLocaleString()}
+                </p>
               </div>
               <DollarSign className="h-8 w-8 text-accent-foreground" />
             </div>
           </CardContent>
         </Card>
       </div>
-      {/* Bookings for Selected Date */}
+
+      {/* Bookings Table */}
       <Card className="bg-card border-border">
-        <CardHeader className="flex items-center justify-between ">
+        <CardHeader className="flex items-center justify-between">
           <div className="space-y-3">
             <CardTitle>Booking Management</CardTitle>
             <CardDescription>
               View and manage all customer bookings
             </CardDescription>
           </div>
-          <div className="">
-            <Button
-              onClick={openBookingModal}
-              className="bg-blue-900 self-start hover:bg-blue-800 text-white font-semibold px-6 rounded-md transition-all duration-200 shadow-md hover:shadow-lg uppercase tracking-wide"
-            >
-              Book Online
-            </Button>
-          </div>
+          <Button
+            onClick={openBookingModal}
+            className="bg-blue-900 hover:bg-blue-800 text-white font-semibold px-6 rounded-md transition-all duration-200 shadow-md hover:shadow-lg uppercase tracking-wide"
+          >
+            Book Online
+          </Button>
         </CardHeader>
 
         <CardContent>
+          {/* Filters */}
           <div className="flex flex-col md:flex-row gap-4 mb-6">
             <div className="flex-1">
               <div className="relative">
@@ -353,11 +374,10 @@ export default function BookingsView() {
                 />
               </div>
             </div>
+
             <Select
               value={statusFilter}
-              onValueChange={(v) =>
-                setStatusFilter(v as Booking["status"] | "all")
-              }
+              onValueChange={(v) => setStatusFilter(v as StatusFilterType)}
             >
               <SelectTrigger className="w-full md:w-48">
                 <SelectValue placeholder="Filter by status" />
@@ -370,11 +390,10 @@ export default function BookingsView() {
                 <SelectItem value="cancelled">Cancelled</SelectItem>
               </SelectContent>
             </Select>
+
             <Select
               value={dateFilter}
-              onValueChange={(v) =>
-                setDateFilter(v as "all" | "today" | "week" | "month")
-              }
+              onValueChange={(v) => setDateFilter(v as DateFilterType)}
             >
               <SelectTrigger className="w-full md:w-48">
                 <SelectValue placeholder="Filter by date" />
@@ -382,104 +401,44 @@ export default function BookingsView() {
               <SelectContent>
                 <SelectItem value="all">All Time</SelectItem>
                 <SelectItem value="today">Today</SelectItem>
-                <SelectItem value="week">This Week</SelectItem>
-                <SelectItem value="month">This Month</SelectItem>
+                <SelectItem value="week">Next 7 Days</SelectItem>
+                <SelectItem value="month">Next 30 Days</SelectItem>
               </SelectContent>
             </Select>
+
             <Button
               onClick={() => setExportModalOpen(true)}
               variant="outline"
               className="w-24"
             >
-              <FileDown className="h-4 w-4" />
+              <FileDown className="h-4 w-4 mr-2" />
               Export
             </Button>
           </div>
 
+          {/* Table */}
           <BookingsTable
-            bookings={filteredBookings}
+            bookings={paginatedBookings}
             onUpdateStatus={updateBookingStatus}
             user_subscription={userSubscribe}
           />
+
+          {/* Pagination */}
           <Pagination
             page={page}
-            total={total}
+            total={filteredBookings.length}
             pageSize={pageSize}
             onPageChange={setPage}
           />
         </CardContent>
       </Card>
+
+      {/* Export Modal */}
       <ExportModal
         open={exportModalOpen}
         onOpenChange={setExportModalOpen}
         onExport={handleDownload}
       />
-      {/* All Bookings Overview */}
-      {/* <Card className="mt-6 bg-card border-border">
-        <CardHeader>
-          <CardTitle className="text-card-foreground">All Bookings</CardTitle>
-          <CardDescription>Complete list of all appointments</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {bookings.map((booking) => (
-              <div
-                key={booking.id}
-                className="flex items-center justify-between p-3 rounded-lg bg-muted hover:bg-muted/80 transition-colors"
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="flex-shrink-0">
-                    {booking.status === "completed" && (
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                    )}
-                    {booking.status === "confirmed" && (
-                      <Clock className="h-4 w-4 text-yellow-600" />
-                    )}
-                    {booking.status === "pending" && (
-                      <AlertCircle className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </div>
-                  <div>
-                    <p className="font-medium text-card-foreground">
-                      {booking.customer_name}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {booking.service_package_name}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-4">
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-card-foreground">
-                      Date: {booking.appointment_date}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Time: {booking.appointment_time}
-                    </p>
-                  </div>
-                  <Badge
-                    variant="outline"
-                    className={`text-xs ${
-                      booking.status === "pending"
-                        ? "text-yellow-600 border-yellow-600"
-                        : booking.status === "confirmed"
-                        ? "text-green-600 border-green-600"
-                        : booking.status === "completed"
-                        ? "text-blue-900 border-blue-900"
-                        : "text-gray-600 border-gray-600"
-                    }`}
-                  >
-                    {booking.status}
-                  </Badge>
-                  <span className="font-semibold text-card-foreground">
-                    ${booking.total_price}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card> */}
     </div>
   );
 }
