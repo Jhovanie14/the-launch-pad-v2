@@ -31,11 +31,6 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // Allow auth routes to pass through without checks
-  if (pathname.startsWith("/auth/")) {
-    return supabaseResponse;
-  }
-
   // Get user and role
   const {
     data: { user },
@@ -56,12 +51,7 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
-  // Define route patterns
-  const isAdminRoute = pathname.startsWith("/admin");
-  const isUserRoute =
-    pathname.startsWith("/dashboard") ||
-    pathname.startsWith("/profile") ||
-    pathname.startsWith("/settings");
+  // Allow auth routes to not pass through without checks
   const publicRoutes = [
     "/",
     "/login",
@@ -69,7 +59,29 @@ export async function updateSession(request: NextRequest) {
     "/about",
     "/blog",
     "/contact",
+    "/faq",
   ];
+
+  if (publicRoutes.includes(pathname)) {
+    if (user) {
+      // Authenticated user should be redirected away from public routes
+      return NextResponse.redirect(
+        new URL(
+          userRole === "admin" ? "/admin/dashboard" : "/dashboard",
+          request.url
+        )
+      );
+    }
+    // Unauthenticated user can access public route
+    return supabaseResponse;
+  }
+
+  // Define route patterns
+  const isAdminRoute = pathname.startsWith("/admin");
+  const isUserRoute =
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/profile") ||
+    pathname.startsWith("/settings");
 
   // Handle authenticated users
   if (user) {
@@ -81,14 +93,14 @@ export async function updateSession(request: NextRequest) {
       if (isUserRoute)
         return NextResponse.redirect(new URL("/admin/dashboard", request.url));
       // Admin accessing login/signup
-      if (pathname === "/login" || pathname === "/signup")
+      if (pathname === "/login" || pathname === "/signup" || pathname === "/")
         return NextResponse.redirect(new URL("/admin/dashboard", request.url));
     } else {
       // Regular user accessing admin routes
       if (isAdminRoute)
         return NextResponse.redirect(new URL("/dashboard", request.url));
       // Regular user accessing login/signup
-      if (pathname === "/login" || pathname === "/signup")
+      if (pathname === "/login" || pathname === "/signup" || pathname === "/")
         return NextResponse.redirect(new URL("/dashboard", request.url));
     }
   }

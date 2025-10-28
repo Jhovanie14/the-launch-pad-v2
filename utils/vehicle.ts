@@ -2,7 +2,7 @@
 import { createClient } from "@/utils/supabase/server";
 
 export async function ensureVehicle(vehicle: {
-  user_id: string | null;
+  user_id?: string | null;
   year: number;
   make: string;
   model: string;
@@ -11,29 +11,30 @@ export async function ensureVehicle(vehicle: {
 }) {
   const supabase = await createClient();
 
-  // Check if vehicle already exists
-  const { data: existing, error: selectError } = await supabase
-    .from("vehicles")
-    .select("id")
-    .eq("user_id", vehicle.user_id)
+  let existingQuery = supabase.from("vehicles").select("id");
+
+  // Only filter by user_id if provided
+  if (vehicle.user_id) {
+    existingQuery = existingQuery.eq("user_id", vehicle.user_id);
+  }
+
+  const { data: existing, error: selectError } = await existingQuery
     .eq("year", vehicle.year)
     .eq("make", vehicle.make)
     .eq("model", vehicle.model)
     .maybeSingle();
 
-  if (existing) {
-    return existing.id;
-  }
-
   if (selectError) {
     console.error("Error selecting vehicle:", selectError);
     throw selectError;
   }
+  if (existing) return existing.id;
+
   // Insert new vehicle
   const { data: inserted, error: insertError } = await supabase
     .from("vehicles")
     .insert({
-      user_id: vehicle.user_id,
+      user_id: vehicle.user_id || undefined, // <-- undefined instead of null
       year: vehicle.year,
       make: vehicle.make,
       model: vehicle.model,

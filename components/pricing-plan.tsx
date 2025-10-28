@@ -1,13 +1,15 @@
+"use client";
+
 import {
   Card,
-  CardHeader,
   CardTitle,
   CardDescription,
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check } from "lucide-react";
+import { Check, Crown, Gem, PiggyBank, Target, X } from "lucide-react";
+import { Separator } from "./ui/separator";
 
 export default function PricingCard({
   plan,
@@ -31,87 +33,129 @@ export default function PricingCard({
     subscription?.plan_id === plan.id && normalizedBillingCycle === pricing;
 
   const buttonText = !subscription
-    ? `Select ${plan.name}` // No subscription yet
+    ? `Select ${plan.name}`
     : isCurrentPlan
-      ? "Current Plan" // This is the active plan
+      ? "Current Plan"
       : "Upgrade";
 
+  // Popular plans
+  const popularPlans = ["Suvs", "Truck"];
+  const isPopular = popularPlans.includes(plan.name);
+
   return (
-    <Card
-      className={`relative flex flex-col ${
-        isCurrentPlan
-          ? "border-primary shadow-lg shadow-primary/20 scale-105"
-          : ""
-      }`}
-    >
-      {isCurrentPlan && (
-        <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-          <span className="inline-flex items-center rounded-full bg-accent px-4 py-1 text-xs font-semibold text-accent-foreground">
-            Your Plan
-          </span>
+    <div className={`relative ${isPopular ? "md:scale-105" : ""}`}>
+      {/* Popular badge */}
+      {isPopular && (
+        <div className="absolute -top-3 -right-3 z-10">
+          <div className="bg-gradient-to-r from-lime-400 to-lime-500 text-slate-900 px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
+            POPULAR
+          </div>
         </div>
       )}
-      <CardHeader>
-        <CardTitle className="text-2xl">{plan.name}</CardTitle>
-        <CardDescription className="">{plan.description}</CardDescription>
-        <div className="mt-4">
-          <span className="text-4xl font-bold">
-            ${pricing === "monthly" ? plan.monthly_price : plan.yearly_price}
-          </span>
-          <span className="text-muted-foreground">
-            /{pricing === "monthly" ? "month" : "year"}
-          </span>
-        </div>
-      </CardHeader>
-      <CardContent className="flex-1">
-        <ul className="space-y-3" role="list">
-          {plan.features.map((feature: string, index: number) => (
-            <li key={index} className="flex items-start gap-3">
-              <Check
-                className="h-5 w-5 shrink-0 text-primary"
-                aria-hidden="true"
-              />
-              <span className="text-sm">{feature}</span>
-            </li>
-          ))}
-        </ul>
-      </CardContent>
 
-      <CardFooter>
-        <Button
-          variant={plan.buttonVariant}
-          className={`w-full ${isCurrentPlan ? "bg-accent text-accent-foreground hover:bg-accent/90" : ""}`}
-          onClick={() => handleCheckout(plan.id)}
-          aria-label={`Select ${plan.name} plan`}
-          disabled={isCurrentPlan}
-        >
-          {buttonText}
-        </Button>
-      </CardFooter>
-      {/* <CardContent className=" flex-1">
-          <ul className="space-y-3 mb-8 flex-1 text-left">
+      {/* Current plan badge */}
+      {isCurrentPlan && (
+        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
+          <div className="inline-flex items-center rounded-full bg-gradient-to-r from-lime-400 to-lime-500 px-3 py-1 text-xs font-semibold text-accent-foreground shadow">
+            CURRENT PLAN
+          </div>
+        </div>
+      )}
+
+      {/* Popular side bar */}
+      {isPopular && (
+        <div className="absolute -right-1 top-0 bottom-0 w-1 bg-gradient-to-b from-lime-400 to-lime-500 rounded-r-lg" />
+      )}
+
+      <Card
+        className={`relative flex flex-col overflow-hidden transition-all duration-300 p-0 ${
+          isPopular
+            ? "border-lime-400/50 shadow-xl shadow-lime-400/20"
+            : isCurrentPlan
+              ? "border-accent shadow-lg shadow-accent/20"
+              : ""
+        }`}
+      >
+        <div className="bg-black px-6 pt-6 pb-8 relative">
+          <div className="mb-4 flex justify-center">
+            {(() => {
+              switch (plan.name) {
+                case "Sedans":
+                  return (
+                    <PiggyBank className="w-16 h-16 text-white stroke-1" />
+                  );
+                case "Compact SUV":
+                  return <Target className="w-16 h-16 text-white stroke-1" />;
+                case "Suvs":
+                case "Truck":
+                  return <Gem className="w-16 h-16 text-white stroke-1" />;
+                default:
+                  return <Crown className="w-16 h-16 text-white stroke-1" />;
+              }
+            })()}
+          </div>
+          <CardTitle className="text-center text-white text-lg font-semibold">
+            {plan.name}
+          </CardTitle>
+
+          {/* Inverted triangle pointer */}
+          <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-24 border-l-transparent border-r-24 border-r-transparent border-t-24 border-t-black" />
+        </div>
+
+        <div className="bg-white px-6 py-6 text-center border-b border-slate-200">
+          <div className="flex items-baseline justify-center gap-1 mb-3">
+            <span className="text-4xl font-bold text-slate-900">
+              ${pricing === "monthly" ? plan.monthly_price : plan.yearly_price}
+            </span>
+            <span className="text-slate-600 font-medium">
+              /{pricing === "monthly" ? "mo" : "yr"}
+            </span>
+          </div>
+          <Separator />
+          <div className="my-6 flex justify-center">
+            <Check className="w-6 h-6 text-slate-900" />
+          </div>
+          <Separator />
+        </div>
+
+        <CardContent className="flex-1 px-6 py-6 bg-white">
+          <CardDescription className="text-xs text-slate-600 leading-relaxed mb-4">
+            {plan.description}
+          </CardDescription>
+          <ul className="space-y-3" role="list">
             {plan.features.map((feature: string, index: number) => (
-              <li key={index} className="flex items-center">
-                <div className="w-5 h-5 text-green-500 rounded-full flex items-center justify-center mr-3">
-                  <CheckCircle2 />
-                </div>
-                <span className="text-gray-700">{feature}</span>
+              <li key={index} className="flex items-start gap-3">
+                {feature.toLowerCase().includes("not") ? (
+                  <X className="h-5 w-5 shrink-0 text-slate-400 mt-0.5" />
+                ) : (
+                  <Check className="h-5 w-5 shrink-0 text-slate-900 mt-0.5" />
+                )}
+                <span className="text-sm text-accent-foreground">
+                  {feature}
+                </span>
               </li>
             ))}
           </ul>
-  
+        </CardContent>
+
+        <CardFooter className="px-6 py-6 bg-white border-t border-slate-200">
           <Button
+            variant="outline"
+            className={`w-full font-semibold transition-all ${
+              isPopular
+                ? "bg-slate-900 text-white border-slate-900 hover:bg-slate-800"
+                : isCurrentPlan
+                  ? "bg-accent text-accent-foreground border-accent hover:bg-accent/90"
+                  : "border-slate-900 text-slate-900 hover:bg-slate-50"
+            }`}
             onClick={() => handleCheckout(plan.id)}
-            className="w-full bg-blue-900 text-white hover:bg-blue-800 py-3 mt-auto"
+            aria-label={`Select ${plan.name} plan`}
             disabled={isCurrentPlan}
           >
-            {!subscription
-              ? "Get Started"
-              : isCurrentPlan
-                ? "Current Plan"
-                : "Upgrade"}
+            {buttonText}
           </Button>
-        </CardContent> */}
-    </Card>
+        </CardFooter>
+      </Card>
+    </div>
   );
 }

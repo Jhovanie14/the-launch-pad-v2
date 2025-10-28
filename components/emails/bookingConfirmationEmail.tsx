@@ -6,6 +6,7 @@ type BookingConfirmationEmailProps = {
   servicePackage: string;
   appointmentDate: string;
   appointmentTime: string;
+  addOns?: string[]; // optional list of add-on names
 };
 
 export function BookingConfirmationEmail({
@@ -14,7 +15,22 @@ export function BookingConfirmationEmail({
   servicePackage,
   appointmentDate,
   appointmentTime,
+  addOns,
 }: BookingConfirmationEmailProps) {
+  const formattedDate = new Date(appointmentDate).toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  // Format time to 12-hour
+  const [hourStr, minuteStr] = appointmentTime.split(":");
+  let hours = parseInt(hourStr, 10);
+  const minutes = parseInt(minuteStr, 10);
+  const ampm = hours >= 12 ? "PM" : "AM";
+  hours = hours % 12 || 12;
+  const formattedTime = `${hours}:${minutes.toString().padStart(2, "0")} ${ampm}`;
   return (
     <div
       style={{
@@ -167,6 +183,30 @@ export function BookingConfirmationEmail({
                 </span>
               </td>
             </tr>
+            {addOns && addOns.length > 0 && (
+              <tr>
+                <td
+                  style={{
+                    padding: "12px 0",
+                    borderBottom: "1px solid #e2e8f0",
+                  }}
+                >
+                  <strong style={{ color: "#4a5568", fontSize: "14px" }}>
+                    Add-Ons:
+                  </strong>
+                </td>
+                <td
+                  style={{
+                    padding: "12px 0",
+                    borderBottom: "1px solid #e2e8f0",
+                  }}
+                >
+                  <span style={{ color: "#2d3748", fontSize: "14px" }}>
+                    {addOns.join(", ")}
+                  </span>
+                </td>
+              </tr>
+            )}
             <tr>
               <td
                 style={{ padding: "12px 0", borderBottom: "1px solid #e2e8f0" }}
@@ -185,7 +225,7 @@ export function BookingConfirmationEmail({
                     fontWeight: "600",
                   }}
                 >
-                  {appointmentDate}
+                  {formattedDate}
                 </span>
               </td>
             </tr>
@@ -203,7 +243,7 @@ export function BookingConfirmationEmail({
                     fontWeight: "600",
                   }}
                 >
-                  {appointmentTime}
+                  {formattedTime}
                 </span>
               </td>
             </tr>

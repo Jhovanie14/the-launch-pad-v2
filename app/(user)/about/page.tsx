@@ -76,7 +76,7 @@ export default function About() {
             <h1 className="text-4xl md:text-6xl font-semibold text-blue-900">
               About The Launch Pad
             </h1>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+            <p className="text-xl text-accent-foreground max-w-3xl mx-auto">
               Where innovation meets convenience, creating a unique destination
               that combines premium car care with Houston's vibrant food
               culture.
@@ -86,22 +86,22 @@ export default function About() {
             {/* Left content */}
             <div>
               <div className="space-y-8">
-                <h3 className="text-xl text-accent-foreground">Our Story</h3>
-                <p className="text-muted-foreground">
+                <h3 className="text-2xl font-medium text-accent-foreground">Our Story</h3>
+                <p className="text-accent-foreground">
                   Founded in 2024, The Launch Pad was born from a simple yet
                   powerful idea: car care shouldn’t feel like a chore, it should
                   be an experience. We set out to redefine what a car wash could
                   be by blending premium vehicle care with Houston’s vibrant
                   culinary culture.
                 </p>
-                <p className="text-muted-foreground">
+                <p className="text-accent-foreground">
                   At The Launch Pad, state-of-the-art detailing and wash systems
                   work hand in hand with a customer-focused approach, turning
                   every visit into something more than routine maintenance. It’s
                   a place where quality, convenience, and care come together
                   seamlessly.
                 </p>
-                <p className="text-muted-foreground">
+                <p className="text-accent-foreground">
                   Today, we’re proud to stand as Houston’s first hybrid car care
                   and culinary destination, serving a growing community of
                   customers who value quality, innovation, and enjoyment in

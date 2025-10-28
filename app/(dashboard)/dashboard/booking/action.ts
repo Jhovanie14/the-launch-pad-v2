@@ -65,13 +65,13 @@ export async function createBooking(car: CarData) {
   }
 
   // Update user profile if authenticated
-  if (user) {
-    await supabase.from("profiles").upsert({
-      id: user.id,
-      full_name: car.customerName || user.user_metadata?.full_name,
-      updated_at: new Date().toISOString(),
-    });
-  }
+  // if (user) {
+  //   await supabase.from("profiles").upsert({
+  //     id: user.id,
+  //     full_name: car.customerName || user.user_metadata?.full_name,
+  //     updated_at: new Date().toISOString(),
+  //   });
+  // }
 
   // Insert booking
   const { data: booking, error } = await supabase
@@ -123,8 +123,24 @@ export async function createBooking(car: CarData) {
     }
   }
 
+  let addOnNames: string[] = [];
+  if (car.addOnsId && car.addOnsId.length > 0) {
+    const { data: addOnsData, error: addOnsError } = await supabase
+      .from("add_ons")
+      .select("name")
+      .in("id", car.addOnsId);
+
+    if (addOnsError) {
+      console.error("Error fetching add-on names:", addOnsError);
+    } else {
+      addOnNames = addOnsData?.map((a) => a.name) || [];
+    }
+  }
+
   // Send confirmation email
-  if (booking.customer_email) {
+  if (!booking.customer_email) {
+    return null;
+  } else if (booking.customer_email) {
     await sendBookingConfirmationEmail({
       to: booking.customer_email,
       customerName: booking.customer_name ?? "Customer",
@@ -132,6 +148,7 @@ export async function createBooking(car: CarData) {
       servicePackage: booking.service_package_name ?? "Service",
       appointmentDate: booking.appointment_date,
       appointmentTime: booking.appointment_time,
+      addOns: addOnNames,
     });
   }
 

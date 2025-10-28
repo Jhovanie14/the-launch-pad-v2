@@ -90,7 +90,7 @@ export default function BlogManagement() {
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button
-              className="gap-2"
+              className="gap-2 bg-blue-900 hover:bg-blue-700"
               onClick={() => {
                 setEditingPost(null);
                 setDialogOpen(true);

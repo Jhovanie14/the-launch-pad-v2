@@ -38,11 +38,21 @@ export async function getDashboardStats() {
     // Process booking growth data by day
     const bookingGrowthByDay = processUserGrowthByDay(bookingGrowthData || []);
 
+    const { data: userGrowthData } = await supabase
+      .from("profiles")
+      .select("created_at")
+      .gte("created_at", sevenDaysAgo.toISOString())
+      .order("created_at", { ascending: true });
+
+    // Process user growth data by day
+    const userGrowthByDay = processUserGrowthByDay(userGrowthData || []);
+
     return {
       totalUsers: totalUsers || 0,
       activeSubscriptions: activeSubscriptions || 0,
       recentUsers: recentUsers || [],
-      userGrowthByDay: bookingGrowthByDay,
+      bookingGrowthByDay,
+      userGrowthByDay,
     };
   } catch (error) {
     console.error("Error fetching dashboard stats:", error);

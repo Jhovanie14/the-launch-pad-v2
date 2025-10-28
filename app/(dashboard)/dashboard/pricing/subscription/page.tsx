@@ -152,6 +152,12 @@ function SubscriptionCartContent() {
     fetchPlan();
   }, [planId, supabase]);
 
+  const basePrice =
+    billingCycle === "monthly" ? plan?.yearly_price : plan?.yearly_price;
+
+  const displayPrice =
+    billingCycle === "monthly" ? plan?.monthly_price : plan?.yearly_price;
+
   return (
     <div className="grid lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
       {/* Left Column - Form */}
@@ -352,107 +358,123 @@ function SubscriptionCartContent() {
       </div>
 
       {/* Right Column - Cart Summary */}
-      <div className="lg:sticky lg:top-8 h-fit">
+      <div className="space-y-6">
         <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
-          <h1 className="text-2xl md:text-3xl font-bold mb-6 text-foreground">
-            THE LAUNCH PAD
-          </h1>
-
-          {/* Membership Details */}
-          <div className="space-y-3 mb-6 pb-6 border-b border-border">
-            <Card>
-              <CardHeader>
-                <CardTitle>Review Your Subscription</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-lg font-medium">{plan?.name}</p>
-                <p className="text-gray-600">
-                  {billingCycle === "monthly"
-                    ? `$${plan?.monthly_price}/month`
-                    : `$${plan?.yearly_price}/year`}
-                </p>
-                {extraFee > 0 && (
-                  <p className="text-gray-800 font-semibold">
-                    + ${extraFee} / month for selected body type
-                  </p>
-                )}
-
-                {/* <p className="text-lg mt-2 font-bold">
-                  Total: $
-                  {billingCycle === "monthly"
-                    ? (plan?.monthly_price || 0) + extraFee
-                    : (plan?.yearly_price || 0) + extraFee * 12}
-                  {billingCycle === "monthly" ? "/month" : "/year"}
-                </p> */}
-              </CardContent>
-            </Card>
+          <div className="rounded-lg p-6">
+            <h1 className="text-3xl md:text-4xl font-bold mb-2">
+              {plan?.name}
+            </h1>
+            <p className=" text-sm">Subscription Plan</p>
           </div>
 
-          {/* Plan Features */}
-          <div className="space-y-4 mb-6 pb-6 border-b border-border">
-            <h3 className="text-lg font-semibold text-foreground mb-4">
-              What's Included
-            </h3>
-            <div className="space-y-3">
-              {Array.isArray(plan?.features) &&
-                (plan.features as string[]).map((feature, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <div className="w-5 h-5 rounded-full bg-green flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <Check className="w-3 h-3 text-green-foreground" />
+          <div className="bg-card rounded-lg p-6 border border-border shadow-sm">
+            <h2 className="text-lg font-semibold text-foreground mb-4">
+              Pricing Details
+            </h2>
+
+            <div className="space-y-3 mb-6 pb-6 border-b border-border">
+              {/* Base Plan Price */}
+              <div className="flex items-center justify-between">
+                <span className="text-foreground font-medium">
+                  {plan?.name} (
+                  {billingCycle === "monthly" ? "Monthly" : "Yearly"})
+                </span>
+                <span className="text-foreground font-semibold">
+                  ${displayPrice?.toFixed(2)}
+                </span>
+              </div>
+
+              {/* Extra Fee if applicable */}
+              {extraFee > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-foreground font-medium">
+                    Vehicle Type Upgrade
+                  </span>
+                  <span className="text-foreground font-semibold">
+                    +${extraFee?.toFixed(2)}{" "}
+                    {billingCycle === "monthly" ? "/month" : "/year"}
+                  </span>
+                </div>
+              )}
+
+              {/* Total Price */}
+              <div className="flex items-center justify-between pt-3 border-t border-border">
+                <span className="text-lg font-bold text-foreground">Total</span>
+                <span className="text-2xl font-bold text-green-600">
+                  ${displayPrice?.toFixed(2)}
+                  <span className="text-sm text-muted-foreground ml-1">
+                    {billingCycle === "monthly" ? "/month" : "/year"}
+                  </span>
+                </span>
+              </div>
+            </div>
+
+            {/* Billing Cycle Info */}
+            <div className="bg-muted/50 rounded-lg p-4 mb-6">
+              <p className="text-sm text-muted-foreground">
+                <span className="font-semibold text-foreground">
+                  ${displayPrice?.toFixed(2)}
+                </span>{" "}
+                will be billed{" "}
+                <span className="font-semibold">
+                  {billingCycle === "monthly" ? "monthly" : "annually"}
+                </span>{" "}
+                on the same date each billing cycle.
+              </p>
+            </div>
+
+            {/* Plan Features */}
+            <div className="space-y-4 mb-6 pb-6 border-b border-border">
+              <h3 className="text-lg font-semibold text-foreground mb-4">
+                What's Included
+              </h3>
+              <div className="space-y-3">
+                {Array.isArray(plan?.features) &&
+                  (plan.features as string[]).map((feature, i) => (
+                    <div key={i} className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-green flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <Check className="w-3 h-3 text-green-foreground" />
+                      </div>
+                      <p className="font-medium text-foreground">{feature}</p>
                     </div>
-                    <p className="font-medium text-foreground">{feature}</p>
-                  </div>
-                ))}
+                  ))}
+              </div>
             </div>
-          </div>
-
-          {/* Opt-in Checkboxes */}
-          <div className="space-y-3 mb-6">
-            <div className="flex items-center gap-2">
-              {/* <Checkbox
-                    id="email-updates"
-                    checked={emailUpdates}
-                    onCheckedChange={(checked) =>
-                      setEmailUpdates(checked as boolean)
-                    }
-                  /> */}
+            {/* Terms */}
+            <div className=" flex mb-6">
+              <Checkbox
+                className="mr-3 w-5 h-5 border-2 border-black rounded-md"
+                id="authorized"
+                checked={isAuthorized}
+                onCheckedChange={(checked) => {
+                  setIsAuthorized(!!checked);
+                  if (checked) setError(""); // clear error when checked
+                }}
+              />
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                I authorized The Launch Pad to automatically charge the selected
+                paymenth method{" "}
+                {billingCycle === "monthly"
+                  ? `$${plan?.monthly_price}/month`
+                  : `$${plan?.yearly_price}/year`}{" "}
+                each month on the same date of subscripion until my membership
+                is cancelled or terminated.{" "}
+                <a href="#" className="text-primary hover:underline">
+                  Terms of Service Agreement
+                </a>
+                , including the disclaimer of warranties, limitation of
+                liability, and arbitration agreement.
+              </p>
             </div>
+            {error && <p className="text-red-600 text-sm mb-2">{error}</p>}
+            <Button
+              className="w-full bg-blue-900 hover:bg-blue-700"
+              onClick={handleCheckout}
+              disabled={loadingCheckout}
+            >
+              {loadingCheckout ? "Redirecting..." : "Checkout"}
+            </Button>
           </div>
-
-          {/* Terms */}
-          <div className=" flex mb-6">
-            <Checkbox
-              className="mr-3"
-              id="authorized"
-              checked={isAuthorized}
-              onCheckedChange={(checked) => {
-                setIsAuthorized(!!checked);
-                if (checked) setError(""); // clear error when checked
-              }}
-            />
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              I authorized The Launch Pad to automatically charge the selected
-              paymenth method{" "}
-              {billingCycle === "monthly"
-                ? `$${plan?.monthly_price}/month`
-                : `$${plan?.yearly_price}/year`}{" "}
-              each month on the same date of subscripion until my membership is
-              cancelled or terminated.{" "}
-              <a href="#" className="text-primary hover:underline">
-                Terms of Service Agreement
-              </a>
-              , including the disclaimer of warranties, limitation of liability,
-              and arbitration agreement.
-            </p>
-          </div>
-          {error && <p className="text-red-600 text-sm mb-2">{error}</p>}
-          <Button
-            className="w-full"
-            onClick={handleCheckout}
-            disabled={loadingCheckout}
-          >
-            {loadingCheckout ? "Redirecting..." : "Checkout"}
-          </Button>
         </div>
       </div>
     </div>

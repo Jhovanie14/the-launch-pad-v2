@@ -8,9 +8,7 @@ import {
   Mail,
   Wrench,
   Sparkles,
-  DollarSign,
   Calendar,
-  Truck,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -37,8 +35,7 @@ export function Footer() {
             </div>
             <p className="text-sm leading-relaxed">
               Houston's premier car care destination featuring self-service
-              bays, professional detailing, and our famous handwash special,
-              plus amazing food trucks!
+              bays, professional detailing, and our famous handwash special.
             </p>
             <div className="flex gap-4">
               <Link
@@ -212,9 +209,10 @@ export function Footer() {
                 $10 Handwash Special
               </p> */}
               <p className="text-xs text-gray-400">
-                Monday - Friday 9:00 AM - 6:30 PM only
+                Our team member are available 7 days a week from 9:00 AM to 6:30
+                PM
               </p>
-              <p className="text-xs text-gray-400">Sedans, Suvs, Trucks</p>
+              {/* <p className="text-xs text-gray-400">Sedans, Suvs, Trucks</p> */}
             </div>
           </div>
         </div>

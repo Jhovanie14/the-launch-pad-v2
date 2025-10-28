@@ -277,7 +277,11 @@ export function BlogPostForm({
         >
           <Save className="w-4 h-4 mr-2" /> Save Draft
         </Button>
-        <Button type="button" onClick={() => handleSubmit(true)}>
+        <Button
+          className="bg-blue-900 hover:bg-blue-700"
+          type="button"
+          onClick={() => handleSubmit(true)}
+        >
           <Save className="w-4 h-4 mr-2" /> Publish
         </Button>
         <Button

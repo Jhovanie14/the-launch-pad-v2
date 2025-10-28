@@ -4,6 +4,7 @@ import { blogService } from "@/lib/services/blogService";
 import { BlogPost, BlogPostFormData } from "@/types";
 import { createClient } from "@/utils/supabase/client";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export function useBlog() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -51,10 +52,12 @@ export function useBlog() {
       setLoading(true);
       const createdPost = await blogService.CreatePost(supabase, newPost);
       setPosts((prev) => [createdPost, ...prev]);
+      toast.success("Blog post created successfully!");
     } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "Failed to create blog post"
-      );
+      const message =
+        error instanceof Error ? error.message : "Failed to create blog post";
+      setError(message);
+      toast.error(message);
       console.error("Error creating blog post:", error);
     } finally {
       setLoading(false);
@@ -65,10 +68,12 @@ export function useBlog() {
       setLoading(true);
       const post = await blogService.UpdatePost(supabase, updatedPost);
       setPosts((prev) => prev.map((p) => (p.id === post.id ? post : p)));
+      toast.success("Blog post updated successfully!");
     } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "Failed to update blog post"
-      );
+      const message =
+        error instanceof Error ? error.message : "Failed to update blog post";
+      setError(message);
+      toast.error(message);
       console.error("Error updating blog post:", error);
     } finally {
       setLoading(false);
@@ -80,10 +85,12 @@ export function useBlog() {
       setLoading(true);
       await blogService.DeletePost(supabase, post);
       setPosts((prev) => prev.filter((p) => p.id !== post.id));
+      toast.success("Blog post deleted successfully!");
     } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "Failed to delete blog post"
-      );
+      const message =
+        error instanceof Error ? error.message : "Failed to delete blog post";
+      setError(message);
+      toast.error(message);
       console.error("Error deleting blog post:", error);
     } finally {
       setLoading(false);

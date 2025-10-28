@@ -1,17 +1,9 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/auth-context";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useState } from "react";
-import { CheckCircle2, Crown } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Crown } from "lucide-react";
 import AuthPromptModal from "@/components/user/authPromptModal";
 import { usePricingPlans } from "@/hooks/usePricingPlans";
 import PricingCard from "@/components/pricing-plan";

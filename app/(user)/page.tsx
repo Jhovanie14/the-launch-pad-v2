@@ -72,9 +72,7 @@ const services = [
       "Deep interior cleaning and vacuuming",
       "Premium wax application for protection",
       "Professional-grade finishing products",
-      "Leather conditioning and protection",
       "Window and trim detailing",
-      "Engine bay cleaning",
       "Quick turnaround time with express service",
     ],
   },
@@ -82,7 +80,7 @@ const services = [
     id: 3,
     title: "Express Detailing Subscription",
     description:
-      "Experience ultimate control over your vehicle's shine with our Express Detailing Subscription. Designed for those who take pride in a hands-on clean, our self-service bays feature top-tier tools and technology to deliver a professional finish anytime.",
+      "Experience ultimate control over your vehicle's shine with our Express Detailing Subscription. Designed for those who take pride in a hands-on clean, with our professional team feature top-tier tools and technology to deliver a professional finish anytime.",
     image: "/express-detailing-subscription.png",
     images: [
       "/express-detailing-subscription.png",
@@ -91,7 +89,7 @@ const services = [
     alt: "Express-Detailing-Subscription",
     features: [
       "Commercial-grade equipment",
-      "High-pressure hoses & foam brushes",
+      "High-pressure hoses",
       "Powerful vacuum & interior care stations",
       "Tailored for enthusiasts",
     ],
@@ -122,10 +120,10 @@ export default function Home() {
         {/* Service, One Location */}
         <div className=" py-16 md:py-20">
           <div className="max-w-4xl mb-16">
-            <h1 className="text-3xl md:text-5xl font-semibold leading-tight text-blue-900 mb-8">
+            <h1 className="text-3xl md:text-5xl font-bold leading-tight text-blue-900 mb-8">
               Three Amazing Services, One Location
             </h1>
-            <p className="max-w-2xl text-xl text-muted-foreground leading-relaxed">
+            <p className="max-w-2xl text-xl text-accent-foreground leading-relaxed">
               From DIY car washing to professional detailing and delicious food
               trucks, The Launch Pad is your complete automotive and dining
               destination.
@@ -145,10 +143,11 @@ export default function Home() {
                   </div>
                 </CardHeader>
                 <CardContent className="flex-1">
-                  <h3 className="text-2xl text-accent-foreground mb-4">
+                  <h3 className="text-[28px] font-semibold text-accent-foreground mb-4">
                     {service.title}
                   </h3>
-                  <p className="text-sm mb-8 text-muted-foreground">
+
+                  <p className="text-[15px] mb-8 text-accent-foreground">
                     {service.description}
                   </p>
                   <div className="space-y-3">
@@ -199,7 +198,7 @@ export default function Home() {
             </div>
             {/* Right Block */}
             <div className="space-y-4 p-3">
-              <h1 className="text-center font-medium text-2xl">
+              <h1 className="text-center font-semibold text-3xl">
                 Why Choose The Launch Pad?
               </h1>
               <p>
@@ -266,7 +265,9 @@ export default function Home() {
                           {/* customer  */}
                           Satisfaction guarantee
                         </span>
-                        <span className="text-sm">Where car lovers gather</span>
+                        <span className="text-sm">
+                          where we guarantee your shine
+                        </span>
                       </div>
                     </div>
                   </CardContent>

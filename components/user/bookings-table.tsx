@@ -23,6 +23,7 @@ import {
   CreditCard,
   Crown,
   DollarSign,
+  Ellipsis,
   Repeat,
 } from "lucide-react";
 import { format } from "date-fns";
@@ -93,6 +94,7 @@ export function BookingsTable({
             <TableHead>Vehicle</TableHead>
             <TableHead>Date & Time</TableHead>
             <TableHead>Price</TableHead>
+            <TableHead>Payment Type</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
@@ -176,13 +178,14 @@ export function BookingsTable({
                     onUpdateStatus(booking.id, value as Booking["status"])
                   }
                 >
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
+                  <SelectTrigger className="w-10 h-10 p-0 border-none bg-transparent hover:bg-gray-100 rounded-full flex items-center justify-center [&>svg:last-child]:hidden">
+                    <Ellipsis className="w-6 h-6 text-black" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent align="center">
                     <SelectItem value="pending">pending</SelectItem>
                     <SelectItem value="confirmed">Confirmed</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="cancelled">Cancel</SelectItem>
                   </SelectContent>
                 </Select>
               </TableCell>

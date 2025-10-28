@@ -310,10 +310,12 @@ function ConfirmationContent() {
                     <span className="text-gray-600">Model:</span>
                     <span className="font-medium">{vehicleSpecs.model}</span>
                   </div>
-                  {/* <div className="flex justify-between">
-                    <span className="text-gray-600">Trim:</span>
-                    <span className="font-medium">{vehicleSpecs.trim}</span>
-                  </div> */}
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Body Type:</span>
+                    <span className="font-medium">
+                      {vehicleSpecs.body_type}
+                    </span>
+                  </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Color:</span>
                     <span className="font-medium">{vehicleSpecs.color}</span>

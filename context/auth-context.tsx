@@ -24,6 +24,9 @@ const signUpSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   fullName: z.string().min(2, "Full name must be at least 2 characters"),
+  termsAccepted: z.boolean().refine((val) => val === true, {
+    message: "You must accept the Terms and Conditions",
+  }),
 });
 
 interface AuthContextType {
@@ -157,6 +160,7 @@ export function AuthContextProvider({
       email: formData.get("email"),
       password: formData.get("password"),
       fullName: formData.get("fullName"),
+      termsAccepted: formData.get("terms") === "on",
     });
 
     if (!validated.success) {
@@ -190,7 +194,7 @@ export function AuthContextProvider({
       password,
       options: {
         emailRedirectTo: `${siteUrl}/auth/confirm`,
-        data: { full_name: fullName },
+        data: { full_name: fullName, terms_version: "v1.0" },
       },
     });
 

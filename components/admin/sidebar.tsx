@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AuthUser } from "@/types";
 import {
-  Users,
   Settings,
   LogOut,
   Home,
@@ -16,10 +15,13 @@ import {
   Car,
   Truck,
   Notebook,
+  MessageCircle,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/context/auth-context";
 import Image from "next/image";
+import { Badge } from "@/components/ui/badge";
+import { createClient } from "@/utils/supabase/client";
 
 interface AdminSidebarProps {
   user?: AuthUser;
@@ -33,6 +35,7 @@ const navigation = [
   { name: "Services", href: "/admin/services", icon: Car },
   { name: "Add-ons", href: "/admin/addons", icon: Truck },
   { name: "Blog", href: "/admin/blog", icon: Notebook },
+  { name: "Contact", href: "/admin/contact", icon: MessageCircle },
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
@@ -40,6 +43,38 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { signOut } = useAuth();
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    const fetchContacts = async () => {
+      const { count, error } = await supabase
+        .from("contacts")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "new"); // only count new/unreplied contacts
+
+      if (!error && typeof count === "number") {
+        setUnreadCount(count);
+      }
+    };
+
+    fetchContacts();
+
+    // Optional: listen for live changes (realtime)
+    const channel = supabase
+      .channel("contacts-changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "contacts" },
+        () => fetchContacts()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   return (
     <div
@@ -91,8 +126,18 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
                   : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               }`}
             >
-              <item.icon className="mr-3 h-5 w-5 flex-shrink-0" />
-              {item.name}
+              {/* ICON + BADGE WRAPPER */}
+              <div className="relative mr-3 flex items-center justify-center">
+                <item.icon className="h-5 w-5 flex-shrink-0" />
+                {item.name === "Contact" && unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </div>
+
+              {/* LABEL */}
+              <span className="truncate">{item.name}</span>
             </Link>
           );
         })}
@@ -105,7 +150,7 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
             <div className="flex-shrink-0">
               <Avatar className="h-8 w-8">
                 <AvatarImage
-                  src={user.avatar_url || undefined }
+                  src={user.avatar_url || undefined}
                   alt={user.full_name || "Admin"}
                 />
                 <AvatarFallback>

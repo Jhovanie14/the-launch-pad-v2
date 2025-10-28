@@ -80,15 +80,6 @@ export default function BookingModal() {
   const handleBooking = () => {
     console.log("handleBooking clicked");
 
-    if (!user) {
-      // console.log("No user → opening auth modal");
-      setAuthOpen(true);
-      return;
-    }
-    // console.log("user:", user);
-    // console.log("subscriptionVehicles:", subscriptionVehicles);
-    // console.log("selectedVehicleId:", selectedVehicleId);
-
     let params: URLSearchParams;
 
     // ✅ Only run validate() if no subscribed vehicle is selected
@@ -124,7 +115,11 @@ export default function BookingModal() {
     closeBookingModal();
 
     // Redirect to service selection page
-    router.push(`/dashboard/booking/service?${params.toString()}`);
+    router.push(
+      user
+        ? `/dashboard/booking/service?${params.toString()}`
+        : `/service?${params.toString()}`
+    );
   };
 
   if (isLoading) {
@@ -281,13 +276,13 @@ export default function BookingModal() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Sedan">Sedan</SelectItem>
-                    <SelectItem value="Coupe">Coupe</SelectItem>
+                    {/* <SelectItem value="Coupe">Coupe</SelectItem> */}
                     <SelectItem value="Compact Suv">Compact Suv</SelectItem>
                     <SelectItem value="SUV">SUV</SelectItem>
                     <SelectItem value="Small Truck">Small truck</SelectItem>
                     <SelectItem value="Van">Van</SelectItem>
                     <SelectItem value="Truck">Truck</SelectItem>
-                    <SelectItem value="Convertible">Convertible</SelectItem>
+                    {/* <SelectItem value="Convertible">Convertible</SelectItem> */}
                   </SelectContent>
                 </Select>
                 {errors.body_type && (

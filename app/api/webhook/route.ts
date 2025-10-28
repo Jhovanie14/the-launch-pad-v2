@@ -153,6 +153,21 @@ async function processBooking(session: Stripe.Checkout.Session) {
         }
       }
     }
+
+    let addOnNames: string[] = [];
+    if (bookingMeta.aids) {
+      const addOnIds = bookingMeta.aids
+        .split(",")
+        .filter((id: string) => id.trim());
+
+      const { data: addOnsData } = await supabase
+        .from("add_ons")
+        .select("name")
+        .in("id", addOnIds);
+
+      addOnNames = addOnsData?.map((a) => a.name) || [];
+    }
+
     // Send confirmation email
     if (bookingRows?.customer_email) {
       await sendBookingConfirmationEmail({
@@ -162,6 +177,7 @@ async function processBooking(session: Stripe.Checkout.Session) {
         servicePackage: bookingRows.service_package_name ?? "Service",
         appointmentDate: bookingRows.appointment_date,
         appointmentTime: bookingRows.appointment_time,
+        addOns: addOnNames,
       });
     }
   } catch (err) {

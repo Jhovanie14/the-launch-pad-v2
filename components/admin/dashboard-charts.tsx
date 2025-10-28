@@ -181,6 +181,10 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
     };
   }, [data]);
 
+  useEffect(() => {
+    console.log("Weekly userGrowth array:", data.userGrowth);
+  });
+
   return (
     <>
       {/* Charts Grid */}

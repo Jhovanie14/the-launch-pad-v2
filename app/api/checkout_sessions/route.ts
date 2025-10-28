@@ -45,8 +45,8 @@ export async function POST(req: Request) {
 
   // Prepare booking data for webhook
   const bookingData = {
-    uid: user?.id ?? "",
-    vid: vehicleId ?? "",
+    uid: user?.id ?? null,
+    vid: vehicleId ?? null,
     spid: body.servicePackageId ?? "",
     spn: body.servicePackageName ?? "",
     spp: body.servicePackagePrice ?? 0,
@@ -56,7 +56,7 @@ export async function POST(req: Request) {
     tp: Math.round(Number(body.totalPrice)),
     td: body.totalDuration ?? 0,
     em: user?.email ?? body.customerEmail ?? "",
-    nm: body.customerName ?? "",
+    nm: user?.user_metadata.full_name ?? body.customerName ?? "",
     ph: body.customerPhone ?? "",
     si: body.specialInstructions ?? "",
   };
@@ -82,7 +82,10 @@ export async function POST(req: Request) {
       payment_method_types: ["card"],
       line_items: lineItems,
       customer_email: user?.email ?? body.customerEmail ?? undefined,
-      success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/bookings/success?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: user?.id
+        ? `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/bookings/success?session_id={CHECKOUT_SESSION_ID}`
+        : `${process.env.NEXT_PUBLIC_SITE_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
+
       cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/booking/confirmation?cancelled=1`,
       metadata,
     });

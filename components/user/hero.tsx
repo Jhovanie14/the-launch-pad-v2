@@ -4,11 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 
-import { Wrench, Star, CheckCheck } from "lucide-react";
+import { Star, CheckCheck, BrushCleaning } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 const cardContent = [
   {
-    image: Wrench,
+    image: BrushCleaning,
     title: "Self-Service Bays",
     description: "DIY car wash your way",
     color: "text-blue-800",
@@ -50,29 +50,30 @@ export function Hero() {
                   className="px-3 py-2 text-base bg-blue-50 rounded-xl"
                 >
                   <span className="text-sm text-muted-foreground dark:text-black">
-                    🚀 Houston's Premier Car Care & Food Hub
+                    🚀 Houston's Premier Car Care
                   </span>
                 </Badge>
               </div>
 
-              <h1 className="text-center md:text-start text-4xl md:text-6xl text-blue-900 font-semibold leading-tight">
+              <h1 className="text-start text-5xl md:text-6xl text-blue-900 font-bold leading-tight">
                 Car Care Done Right. Finally.
               </h1>
-              <p className="text-center md:text-start text-base md:text-lg text-muted-foreground dark:text-gray-700">
-                Self-service car wash bays, professional detailing, and
-                Houston's best food trucks all in one convenient location.
+              <p className="text-center md:text-start text-lg md:text-xl text-accent-foreground dark:text-gray-700">
+                Self-service car wash and professional auto detailing in
+                Houston. Premium car cleaning, waxing, and interior care in one
+                convenient location.
               </p>
 
               <div className="flex flex-col md:flex-row items-stretch gap-3">
                 <Link
                   href="/services"
-                  className="inline-flex justify-center items-center rounded-md bg-blue-900 text-white px-5 py-3 hover:bg-blue-800"
+                  className="font-medium inline-flex justify-center items-center rounded-md bg-blue-900 text-white px-5 py-3 hover:bg-blue-800"
                 >
                   See my price
                 </Link>
                 <Link
                   href="/how-it-works"
-                  className="inline-flex justify-center items-center rounded-md bg-gray-200 px-5 py-3 text-foreground hover:bg-gray-300 dark:text-black"
+                  className="font-medium inline-flex justify-center items-center rounded-md bg-gray-200 px-5 py-3 text-foreground hover:bg-gray-300 dark:text-black"
                 >
                   How it works
                 </Link>
@@ -84,11 +85,11 @@ export function Hero() {
                     <CardHeader>
                       <content.image className={content.color} />
                     </CardHeader>
-                    <CardContent>
-                      <h3 className="font-medium text-accent-foreground">
+                    <CardContent className="space-y-1">
+                      <h3 className="text-lg font-medium text-accent-foreground">
                         {content.title}
                       </h3>
-                      <span className="text-xs ">{content.description}</span>
+                      <span className="text-sm ">{content.description}</span>
                     </CardContent>
                   </Card>
                 ))}

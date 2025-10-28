@@ -16,15 +16,8 @@ import { Badge } from "@/components/ui/badge";
 // import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { AuthUser } from "@/types";
 import { createClient } from "@/utils/supabase/client";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+
+import { toast } from "sonner";
 
 interface UserProfileProps {
   user: AuthUser;
@@ -37,8 +30,6 @@ export function UserProfile({ user }: UserProfileProps) {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
 
   const [formData, setFormData] = useState({
     fullName: user.full_name || "",
@@ -115,12 +106,10 @@ export function UserProfile({ user }: UserProfileProps) {
 
       // Update local state
       setFormData((prev) => ({ ...prev, avatar_url: avatarUrl }));
-      setSuccessMessage("Profile updated successfully!");
-      setShowSuccessDialog(true); // 👈 show success popup
+      toast.success("Profile updated successfully! 🎉");
     } catch (error) {
       console.error("Error saving profile:", error);
-      setSuccessMessage("Failed to update profile.");
-      setShowSuccessDialog(true); // show error in the same dialog
+      toast.error("Failed to update profile. Please try again.");
     } finally {
       setIsLoading(false);
       setIsEditing(false);
@@ -247,24 +236,6 @@ export function UserProfile({ user }: UserProfileProps) {
           </div>
         </CardContent>
       </Card>
-      <AlertDialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {successMessage.includes("successfully") ? "Success" : "Error"}
-            </AlertDialogTitle>
-            <AlertDialogDescription>{successMessage}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction
-              onClick={() => setShowSuccessDialog(false)}
-              className="bg-blue-900 hover:bg-blue-800"
-            >
-              OK
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }

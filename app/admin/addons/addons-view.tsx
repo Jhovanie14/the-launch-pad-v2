@@ -24,6 +24,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
+import { toast } from "sonner";
 
 type AddOns = {
   id: string;
@@ -45,7 +46,6 @@ export default function AddOnsView() {
 
   const [addOns, setAddOns] = useState<AddOns[]>([]);
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
 
   const resetForm = () => {
@@ -66,31 +66,6 @@ export default function AddOnsView() {
     const { id, checked } = e.target;
     setForm((s) => ({ ...s, [id]: checked }));
   };
-
-  const handleCreate = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      console.log(form);
-      const priceNum = Number(form.price);
-      const durationNum = Number(form.duration);
-
-      const { error } = await supabase.from("add_ons").insert([
-        {
-          name: form.name,
-          price: priceNum,
-          duration: durationNum,
-          is_active: form.is_active,
-        },
-      ]);
-
-      if (error) console.error(error);
-
-      setOpen(false);
-      resetForm();
-      setSuccess("Created successfuly.");
-    },
-    [form]
-  );
 
   const toggleAddOnStatus = async (id: string, newStatus: boolean) => {
     const { error } = await supabase
@@ -124,6 +99,30 @@ export default function AddOnsView() {
   useEffect(() => {
     fetchAddOns();
   }, [fetchAddOns]);
+
+  const handleCreate = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      console.log(form);
+      const priceNum = Number(form.price);
+      const durationNum = Number(form.duration);
+
+      const { error } = await supabase.from("add_ons").insert([
+        {
+          name: form.name,
+          price: priceNum,
+          duration: durationNum,
+          is_active: form.is_active,
+        },
+      ]);
+
+      if (error) console.error(error);
+      toast.success("Add-on created successfully!");
+      setOpen(false);
+      resetForm();
+    },
+    [form, supabase, resetForm, setOpen, fetchAddOns]
+  );
 
   if (loading) {
     return (

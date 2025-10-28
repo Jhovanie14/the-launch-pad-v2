@@ -46,6 +46,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 type ServicePackage = {
   id: string;
@@ -164,12 +165,14 @@ export default function ServicesView() {
 
     if (error) {
       console.error("Error updating status:", error);
+      toast.error("Failed to update status.");
     } else {
       // refresh list or update state
-      console.log(newStatus);
+      // console.log(newStatus);
       setServices((prev) =>
         prev.map((a) => (a.id === id ? { ...a, is_active: newStatus } : a))
       );
+      toast.success(`Service marked as ${newStatus ? "active" : "inactive"}.`);
     }
   };
 
@@ -210,28 +213,23 @@ export default function ServicesView() {
     };
 
     try {
-      if (editingId) {
-        // Update
-        const { error } = await supabase
-          .from("service_packages")
-          .update(payload)
-          .eq("id", editingId);
+      let action = editingId ? "updated" : "created";
+      const { error } = editingId
+        ? await supabase
+            .from("service_packages")
+            .update(payload)
+            .eq("id", editingId)
+        : await supabase.from("service_packages").insert([payload]);
 
-        if (error) throw error;
-      } else {
-        // Create
-        const { error } = await supabase
-          .from("service_packages")
-          .insert([payload]);
+      if (error) throw error;
 
-        if (error) throw error;
-      }
-
+      toast.success(`Service package ${action} successfully!`);
       setOpen(false);
       resetForm();
       await fetchPackages();
     } catch (error) {
       console.error("Error:", error);
+      toast.error("Failed to save service package. Please try again.");
     } finally {
       setSubmitLoading(false);
     }
@@ -249,13 +247,14 @@ export default function ServicesView() {
 
       if (error) throw error;
 
-      console.log("Deleted service with ID:", deleteId);
+      toast.success("Service package deleted successfully.");
 
       setServices((prev) => prev.filter((s) => s.id !== deleteId));
       setDeleteDialogOpen(false);
       setDeleteId(null);
     } catch (error) {
       console.error("Error deleting service:", error);
+      toast.error("Failed to delete service package.");
     } finally {
       setSubmitLoading(false);
     }

@@ -78,13 +78,13 @@ function ListItem({
       <NavigationMenuLink asChild>
         <Link
           href={href}
-          className="flex flex-row items-center space-x-3 p-3 rounded-md hover:bg-accent hover:text-gray-500 transition-colors"
+          className="flex flex-row items-center space-x-3 p-3 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
         >
           {icon &&
             React.createElement(icon, { className: "w-4 h-4 flex-shrink-0" })}
           <div className="flex-1 space-y-2">
-            <div className="text-sm leading-none font-medium">{title}</div>
-            <p className="text-muted-foreground line-clamp-2 text-sm leading-snug">
+            <div className="text-lg leading-none font-medium">{title}</div>
+            <p className="text-accent-foreground line-clamp-2 text-lg leading-snug">
               {children}
             </p>
           </div>
@@ -122,21 +122,21 @@ export function UserNavbar() {
           : "bg-transparent"
       }`}
     >
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 justify-between">
+      <div className="mx-auto max-w-11/12 px-4 sm:px-6 lg:px-8">
+        <div className="flex h-32 justify-between">
           <div className="flex">
             <div className="flex flex-shrink-0 items-center">
               <Link href="/">
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center">
                   <Image
                     src="/thelaunchpad.png"
                     alt="The Launch Pad"
-                    width={48}
-                    height={48}
-                    className="h-8 w-8 sm:h-10 sm:w-10 object-contain"
+                    width={175}
+                    height={175}
+                    className="h-24 w-24 sm:h-32 sm:w-32 object-contain"
                   />
                   <div className="hidden md:flex flex-col">
-                    <span className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
+                    <span className="text-xl sm:text-xl font-bold text-foreground tracking-tight">
                       THE LAUNCH PAD
                     </span>
                     <span className="text-xs text-blue-600 font-medium uppercase tracking-wider">
@@ -146,12 +146,14 @@ export function UserNavbar() {
                 </div>
               </Link>
             </div>
-            <div className="hidden lg:flex sm:space-x-5 ">
-              <NavigationMenu className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100">
+            <div className="hidden lg:flex lg:gap-4">
+              <NavigationMenu className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-lg font-medium text-accent-foreground hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100">
                 <NavigationMenuList>
                   <NavigationMenuItem>
                     <NavigationMenuTrigger>
-                      About Launch Pad
+                      <span className="text-lg font-medium text-accent-foreground hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100">
+                        About Launch Pad
+                      </span>
                     </NavigationMenuTrigger>
                     <NavigationMenuContent>
                       <ul className="grid w-[500px] gap-2 md:w-[600px] md:grid-cols-2 lg:w-[700px] p-4">
@@ -170,21 +172,21 @@ export function UserNavbar() {
                   </NavigationMenuItem>
                 </NavigationMenuList>
               </NavigationMenu>
-              <Link
+              {/* <Link
                 href="/products"
                 className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
               >
                 Products
-              </Link>
+              </Link> */}
               <Link
                 href="/pricing"
-                className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-lg font-medium text-accent-foreground hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
               >
                 Subscription
               </Link>
               <Link
                 href="/services"
-                className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-lg font-medium text-accent-foreground hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
               >
                 Services
               </Link>
@@ -205,33 +207,34 @@ export function UserNavbar() {
                 className="hover:text-blue-800 font-semibold transition-all duration-200 uppercase tracking-wide"
               >
                 <User className="w-4 h-4" />
-                <span className="hidden md:inline ml-2">Login</span>
+                <span className="hidden md:inline ml-2 font-medium text-lg">
+                  Login
+                </span>
               </Button>
             </Link>
             {/* <ThemeToggle /> */}
           </div>
           <div className="-mr-2 flex items-center lg:hidden gap-1">
             <Button
-              size="sm"
+              size="lg"
               onClick={openBookingModal}
-              className="bg-blue-900 hover:bg-blue-800 text-white font-semibold px-4 rounded-md transition-all duration-200 shadow-md hover:shadow-lg text-xs"
+              className="bg-blue-900 hover:bg-blue-800 text-white font-semibold px-6 rounded-md transition-all duration-200 shadow-md hover:shadow-lg uppercase tracking-wide"
             >
-              Book
+              Book Online
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
+            <button
               className="p-2"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
               <span className="sr-only">Open main menu</span>
               {isMobileMenuOpen ? (
-                <X className="h-6 w-6" />
+                <X className="h-8 w-8" />
               ) : (
-                <Menu className="h-6 w-6" />
+                <Menu className="h-8 w-8" />
               )}
-            </Button>
-            <ThemeToggle />
+            </button>
+
+            {/* <ThemeToggle /> */}
           </div>
         </div>
       </div>
@@ -247,7 +250,7 @@ export function UserNavbar() {
             <div className="flex flex-col p-4 space-y-4">
               <Link
                 href="/login"
-                className="flex items-center space-x-2 py-2 border-b font-medium text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                className="flex items-center space-x-2 text-lg py-2 border-b font-medium text-accent-foreground hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <User className="w-4 h-4" />
@@ -256,25 +259,25 @@ export function UserNavbar() {
 
               <Link
                 href="/"
-                className="flex items-center space-x-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                className="flex items-center space-x-2 text-lg font-medium text-accent-foreground hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <Home className="w-4 h-4" />
                 <span>Home</span>
               </Link>
 
-              <Link
+              {/* <Link
                 href="/products"
-                className="flex items-center space-x-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                className="flex items-center space-x-2 text-lg font-medium text-accent-foreground hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <ShoppingBag className="w-4 h-4" />
                 <span>Products</span>
-              </Link>
+              </Link> */}
 
               <Link
                 href="/pricing"
-                className="flex items-center space-x-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                className="flex items-center space-x-2 text-lg font-medium text-accent-foreground hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <BellPlus className="w-4 h-4" />
@@ -282,7 +285,7 @@ export function UserNavbar() {
               </Link>
               <Link
                 href="/services"
-                className="flex items-center space-x-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                className="flex items-center space-x-2 text-lg font-medium text-accent-foreground hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <Wrench className="w-4 h-4" />
@@ -291,7 +294,7 @@ export function UserNavbar() {
 
               <div className="border-b pb-4">
                 <button
-                  className="flex items-center justify-between w-full py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                  className="flex items-center justify-between w-full py-2 text-lg font-medium text-accent-foreground hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
                   onClick={() => setIsAboutDropdownOpen(!isAboutDropdownOpen)}
                 >
                   <span>About Launch Pad</span>
@@ -311,7 +314,7 @@ export function UserNavbar() {
                 >
                   <Link
                     href="/blog"
-                    className="flex items-center space-x-2 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                    className="flex items-center space-x-2 py-2 text-lg font-medium text-accent-foreground hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
                     onClick={() => {
                       setIsMobileMenuOpen(false);
                       setIsAboutDropdownOpen(false);
@@ -323,7 +326,7 @@ export function UserNavbar() {
 
                   <Link
                     href="/contact"
-                    className="flex items-center space-x-2 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                    className="flex items-center space-x-2 py-2 text-lg font-medium text-accent-foreground hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
                     onClick={() => {
                       setIsMobileMenuOpen(false);
                       setIsAboutDropdownOpen(false);
@@ -335,7 +338,7 @@ export function UserNavbar() {
 
                   <Link
                     href="/about"
-                    className="flex items-center space-x-2 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                    className="flex items-center space-x-2 py-2 text-lg font-medium text-accent-foreground hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
                     onClick={() => {
                       setIsMobileMenuOpen(false);
                       setIsAboutDropdownOpen(false);
@@ -347,7 +350,7 @@ export function UserNavbar() {
 
                   <Link
                     href="/faq"
-                    className="flex items-center space-x-2 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                    className="flex items-center space-x-2 py-2 text-lg font-medium text-accent-foreground hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
                     onClick={() => {
                       setIsMobileMenuOpen(false);
                       setIsAboutDropdownOpen(false);

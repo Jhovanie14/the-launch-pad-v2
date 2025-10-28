@@ -163,7 +163,7 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
         {/* Success Header */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <CheckCircle className="h-16 w-16 text-secondary" />
+            <CheckCircle className="h-16 w-16 text-green-500" />
           </div>
           <h1 className="text-3xl font-bold text-primary mb-2">
             Payment Successful!
@@ -250,25 +250,25 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
           </CardContent>
         </Card>
 
+        <div className="text-center mt-8 p-4 bg-card rounded-lg border mb-4">
+          <p className="text-sm text-green-500">
+            A confirmation email has been sent to your registered email address.
+            If you have any questions, please contact our support team.
+          </p>
+        </div>
+
         <div className="space-y-4">
           <Button asChild className="w-full" size="lg">
             <Link href="/dashboard/bookings">View Your Bookings</Link>
           </Button>
-          <div className="flex gap-4">
+          {/* <div className="flex gap-4">
             <Button asChild variant="outline" className="flex-1 bg-transparent">
               <Link href="/">Continue Shopping</Link>
             </Button>
             <Button asChild variant="outline" className="flex-1 bg-transparent">
               <Link href="/support">Contact Support</Link>
             </Button>
-          </div>
-        </div>
-
-        <div className="text-center mt-8 p-4 bg-card rounded-lg border">
-          <p className="text-sm text-muted-foreground">
-            A confirmation email has been sent to your registered email address.
-            If you have any questions, please contact our support team.
-          </p>
+          </div> */}
         </div>
       </div>
     </div>

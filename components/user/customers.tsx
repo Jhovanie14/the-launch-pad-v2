@@ -95,10 +95,10 @@ export default function Customers() {
       <div className="container mx-auto px-4">
         <div className="mb-10">
           <div className="text-center space-y-6">
-            <h1 className="text-4xl md:text-6xl font-semibold text-blue-900">
+            <h1 className="text-4xl md:text-6xl font-bold text-blue-900">
               What Our Customers Say
             </h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-xl text-accent-foreground max-w-2xl mx-auto">
               Don't just take our word for it. Hear what our satisfied customers
               have to say about their experience at The Launch Pad.
             </p>
@@ -129,7 +129,7 @@ export default function Customers() {
                               />
                             ))}
                           </div>
-                          <span className="text-lg text-center text-muted-foreground">
+                          <span className="text-lg text-center text-accent-foreground">
                             "{customer.comment}"
                           </span>
                         </div>

@@ -26,6 +26,7 @@ import { useBookingRealtime } from "@/hooks/useBookingRealtime";
 import { Button } from "@/components/ui/button";
 import { ExportModal } from "@/components/export-modal";
 import { useBooking } from "@/context/bookingContext";
+import NewBookingModal from "@/components/admin/newbooking-modal";
 
 type UserSubscription = {
   user_id: string;
@@ -41,6 +42,7 @@ export default function BookingsView() {
 
   // State
   const [loading, setLoading] = useState(false);
+  const [showNewBooking, setShowNewBooking] = useState(false);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
@@ -63,7 +65,7 @@ export default function BookingsView() {
           vehicle:vehicles ( year, make, model, body_type, colors ),
           add_ons ( name, price )`
         )
-        .order("created_at", { ascending: false });
+        .order("appointment_date", { ascending: true });
 
       setLoading(false);
 
@@ -143,6 +145,10 @@ export default function BookingsView() {
 
       if (newStatus === "completed") {
         updates.completed_at = new Date().toISOString();
+      }
+
+      if (newStatus === "cancelled") {
+        updates.canceled_at = new Date().toISOString();
       }
 
       const { error } = await supabase
@@ -242,7 +248,10 @@ export default function BookingsView() {
       (booking as any).vehicles?.make?.toLowerCase() ?? "",
       (booking as any).vehicles?.model?.toLowerCase() ?? "",
       booking.customer_name?.toLowerCase() ?? "",
+      booking.customer_email?.toLowerCase() ?? "",
       booking.id.toLowerCase() ?? "",
+      booking.vehicle?.make?.toLowerCase() ?? "",
+      booking.vehicle?.model?.toLowerCase() ?? "",
     ];
 
     const matchesSearch =
@@ -353,11 +362,15 @@ export default function BookingsView() {
             </CardDescription>
           </div>
           <Button
-            onClick={openBookingModal}
+            onClick={() => setShowNewBooking(true)}
             className="bg-blue-900 hover:bg-blue-800 text-white font-semibold px-6 rounded-md transition-all duration-200 shadow-md hover:shadow-lg uppercase tracking-wide"
           >
-            Book Online
+            + New Booking
           </Button>
+          <NewBookingModal
+            open={showNewBooking}
+            onOpenChange={setShowNewBooking}
+          />
         </CardHeader>
 
         <CardContent>

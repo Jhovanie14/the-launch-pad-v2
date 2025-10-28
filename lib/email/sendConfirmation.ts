@@ -10,6 +10,7 @@ export async function sendBookingConfirmationEmail({
   servicePackage,
   appointmentDate,
   appointmentTime,
+  addOns,
 }: {
   to: string;
   customerName: string;
@@ -17,6 +18,7 @@ export async function sendBookingConfirmationEmail({
   servicePackage: string;
   appointmentDate: string;
   appointmentTime: string;
+  addOns?: string[];
 }) {
   const { data, error } = await resend.emails.send({
     from: "The Launch Pad Wash <noreply@thelaunchpadwash.com>",
@@ -29,6 +31,7 @@ export async function sendBookingConfirmationEmail({
       servicePackage,
       appointmentDate,
       appointmentTime,
+      addOns,
     }),
   });
 
