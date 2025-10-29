@@ -323,8 +323,8 @@ export default function SubscriptionCart({
 
               {/* Total Price */}
               <div className="flex items-center justify-between pt-3 border-t border-border">
-                <span className="text-lg font-bold text-foreground">Total</span>
-                <span className="text-2xl font-bold text-green-600">
+                <span className="text-2xl font-bold text-amber-400">You First Month</span>
+                <span className="text-2xl font-bold text-amber-400">
                   ${displayPrice?.toFixed(2)}
                   <span className="text-sm text-muted-foreground ml-1">
                     {billingCycle === "monthly" ? "/month" : "/year"}
