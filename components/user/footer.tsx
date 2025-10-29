@@ -161,27 +161,34 @@ export function Footer() {
             <h4 className="text-white font-semibold text-lg mb-4">
               Our Services
             </h4>
-            <ul className="space-y-3">
-              <li className="flex items-center gap-2 text-sm">
-                <Wrench className="w-4 h-4" />
-                Self-Service Car Wash
+            <ul className="space-y-6">
+              <li>
+                <Link
+                  className="flex items-center gap-2 text-sm hover:text-white transition-colors"
+                  href="/blog/wash-it-your-way-the-ultimate-self-service-car-wash-experience"
+                >
+                  <Wrench className="w-4 h-4" />
+                  Self-Service Car Wash
+                </Link>
               </li>
-              <li className="flex items-center gap-2 text-sm">
-                <Sparkles className="w-4 h-4" />
-                Professional Express Detailing
+              <li>
+                <Link
+                  className="flex items-center gap-2 text-sm hover:text-white transition-colors"
+                  href="/blog/experience-the-ultimate-shine-with-our-professional-express-car-detailing"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Professional Express Detailing
+                </Link>
               </li>
-              {/* <li className="flex items-center gap-2 text-sm">
-                <DollarSign className="w-4 h-4" />
-                $10 Handwash Special
-              </li> */}
-              <li className="flex items-center gap-2 text-sm">
-                <Calendar className="w-4 h-4" />
-                Monthly Memberships
+              <li>
+                <Link
+                  className="flex items-center gap-2 text-sm hover:text-white transition-colors"
+                  href="/blog/keep-your-car-looking-its-best-with-our-express-detailing-subscription"
+                >
+                  <Calendar className="w-4 h-4" />
+                  Monthly Memberships
+                </Link>
               </li>
-              {/* <li className="flex items-center gap-2 text-sm">
-                <Truck className="w-4 h-4" />
-                Food Truck Park
-              </li> */}
             </ul>
           </div>
 

@@ -144,15 +144,15 @@ export function AuthContextProvider({
         message: "Invalid credentials",
       };
     }
+    const next = (formData.get("next") as string) || "";
+    if (next) {
+      router.push(next);
+      return;
+    }
 
     const user = await getUserProfile();
     const role = user?.role || "user";
-
-    if (role === "admin") {
-      router.push("/admin/dashboard");
-    } else {
-      router.push("/dashboard");
-    }
+    router.push(role === "admin" ? "/admin/dashboard" : "/dashboard");
   };
 
   const signUp = async (formData: FormData) => {

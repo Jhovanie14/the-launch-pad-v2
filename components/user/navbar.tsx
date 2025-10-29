@@ -19,7 +19,6 @@ import {
   Home,
   NotebookPen,
   Phone,
-  ShoppingBag,
   User,
   Users,
   Menu,
@@ -27,7 +26,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { useBooking } from "@/context/bookingContext";
-import { ThemeToggle } from "../theme-toggle";
+// import { ThemeToggle } from "../theme-toggle";
 
 const services: {
   title: string;

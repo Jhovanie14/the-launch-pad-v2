@@ -76,7 +76,7 @@ export default function ServiceModal({ service, onClose }: ServiceModalProps) {
               {/* Image Container */}
               <div className="relative w-full h-64">
                 <Image
-                  src={images[currentImageIndex] || "/placeholder.svg"}
+                  src={images[currentImageIndex] || ""}
                   alt={`${service.alt} - Image ${currentImageIndex + 1}`}
                   fill
                   className="object-cover transition-opacity duration-300"

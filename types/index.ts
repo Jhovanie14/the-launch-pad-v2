@@ -121,6 +121,7 @@ export interface Review {
   };
   profiles: {
     full_name: string;
+    avatar_url: string;
   };
 }
 export type AddOn = {

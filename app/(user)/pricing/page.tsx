@@ -7,6 +7,7 @@ import { Crown } from "lucide-react";
 import AuthPromptModal from "@/components/user/authPromptModal";
 import { usePricingPlans } from "@/hooks/usePricingPlans";
 import PricingCard from "@/components/pricing-plan";
+import SubscriptionCart from "@/components/subscription/SubscriptionCart";
 
 export default function PricingContent() {
   const [pricing, setPricing] = useState<"monthly" | "yearly">("monthly");
@@ -15,30 +16,10 @@ export default function PricingContent() {
   const { subscription } = useSubscription();
   const { plans, loading } = usePricingPlans();
 
-  const handleCheckout = async (planId: string) => {
-    try {
-      if (!user) {
-        setAuthOpen(true);
-        return;
-      }
-    } catch (error) {
-      console.error("Error creating checkout session:", error);
-    }
+  const handleCheckout = (planId: string) => {
+    const billing = pricing; // "monthly" | "yearly"
+    window.location.href = `/pricing/cart?plan=${encodeURIComponent(planId)}&billing=${billing}`;
   };
-
-  // const handleManageSubscription = async () => {
-  //   try {
-  //     const response = await fetch("/api/create-customer-portal", {
-  //       method: "POST",
-  //     });
-  //     const { url } = await response.json();
-  //     if (url) {
-  //       window.location.href = url;
-  //     }
-  //   } catch (error) {
-  //     console.error("Error creating customer portal session:", error);
-  //   }
-  // };
 
   if (loading) {
     return (
@@ -142,7 +123,6 @@ export default function PricingContent() {
             ))}
           </section>
         </div>
-        <AuthPromptModal open={authOpen} onClose={() => setAuthOpen(false)} />
       </div>
     </main>
   );

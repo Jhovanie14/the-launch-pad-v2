@@ -15,7 +15,7 @@ export default async function BlogPostPage({
     <main className="flex-1 container mx-auto px-4 py-8">
       <div className="max-w-7xl mx-auto">
         <div className="py-20">
-          <div className="container mx-auto px-4">
+          <div className="container mx-auto px-4 mb-12">
             <div className="max-w-4xl mx-auto">
               {post ? (
                 <article>
@@ -27,12 +27,12 @@ export default async function BlogPostPage({
                     {new Date(post.created_at).toLocaleDateString()}
                   </p>
                   {post.cover_image && (
-                    <div className="relative w-full h-64 mb-6">
+                    <div className="relative w-full h-96 mb-6">
                       <Image
                         src={post.cover_image}
                         alt={post.title}
                         layout="fill"
-                        objectFit="cover"
+                        objectFit="contain"
                         className="rounded-lg"
                       />
                     </div>

@@ -137,6 +137,7 @@ export default function Blog() {
                         className="flex items-center space-x-2 mb-3 text-accent-foreground underline hover:text-gray-700 "
                       >
                         <span className="text-lg">Read More</span>
+                        <ArrowRight className="h-5 w-5" />
                       </Link>
                     </CardFooter>
                   </Card>

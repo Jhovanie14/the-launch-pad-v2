@@ -20,7 +20,7 @@ import {
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/auth-context";
 import Image from "next/image";
-import { Badge } from "@/components/ui/badge";
+// import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/utils/supabase/client";
 
 interface AdminSidebarProps {

@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { useAuth } from "@/context/auth-context";
+import { useSearchParams } from "next/navigation";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -21,7 +22,8 @@ export default function LoginPage() {
     password?: string[];
     message?: string;
   }>({});
-
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next") || "";
   const { signIn, forgotPassword } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -70,6 +72,7 @@ export default function LoginPage() {
               {errors.message && (
                 <div className="text-red-600 text-sm">{errors.message}</div>
               )}
+              <input type="hidden" name="next" value={next} />
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -108,7 +111,12 @@ export default function LoginPage() {
                 {isLoading ? "Signing in..." : "Sign In"}
               </Button>
             </form>
-            <Link href="/forgot-password" className="text-sm text-blue-500 hover:text-blue-700">{"Forgot password?"}</Link>
+            <Link
+              href="/forgot-password"
+              className="text-sm text-blue-500 hover:text-blue-700"
+            >
+              {"Forgot password?"}
+            </Link>
             <div className="mt-4 text-center">
               <Link
                 href="/"

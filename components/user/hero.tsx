@@ -71,14 +71,14 @@ export function Hero() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
               <Link
                 href="/services"
-                className="group inline-flex items-center gap-2 px-8 py-3 bg-blue-900 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all duration-300 hover:gap-3"
+                className="group inline-flex items-center gap-2 px-8 py-3 bg-blue-900 hover:bg-blue-700 text-white font-medium rounded-lg transition-all duration-300 hover:gap-3"
               >
                 Explore Services
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link
                 href="/how-it-works"
-                className="inline-flex items-center gap-2 px-8 py-3 border border-white hover:border-slate-200 text-white font-semibold rounded-lg transition-colors duration-300 hover:bg-slate-800/50"
+                className="inline-flex items-center gap-2 px-8 py-3 border border-amber-500 hover:border-white text-amber-400 font-medium rounded-lg transition-colors duration-300 hover:bg-amber-500/50 hover:text-white"
               >
                 Learn More
               </Link>
@@ -117,7 +117,7 @@ export function Hero() {
                   ))}
                 </div>
                 <span className="text-sm text-slate-300">
-                  <span className="font-semibold text-white">1,423</span>{" "}
+                  <span className="font-semibold text-white">500+</span>{" "}
                   satisfied customers
                 </span>
               </div>
@@ -128,6 +128,9 @@ export function Hero() {
 
                 <span className="text-sm text-slate-300 ml-2">4.9 rating</span>
               </div>
+              <Link href="/reviews" className="underline font-medium text-amber-400">
+                See our reviews
+              </Link>
             </div>
           </div>
         </div>

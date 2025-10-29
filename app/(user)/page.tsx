@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Star, Check, Award, Clock, DollarSign, Users } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
+// import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import ServiceModal from "@/components/user/service-modal";
@@ -134,7 +134,7 @@ export default function Home() {
                 <CardHeader className="p-0">
                   <div className="relative w-full h-64 rounded-xl overflow-hidden">
                     <Image
-                      src={service.image || "/placeholder.svg"}
+                      src={service.image || ""}
                       alt={service.alt}
                       fill
                       className="object-cover"

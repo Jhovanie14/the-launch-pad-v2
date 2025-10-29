@@ -17,7 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import { ThemeToggle } from "../theme-toggle";
+// import { ThemeToggle } from "../theme-toggle";
 import { usePathname } from "next/navigation";
 
 export interface UserNavbarProps {

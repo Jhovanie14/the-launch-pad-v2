@@ -2,25 +2,20 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { AnimatedReviews } from "@/components/user/animated-reviews";
 import { useBooking } from "@/context/bookingContext";
+import { Review } from "@/types";
 // import { Review } from "@/types";
 import { createClient } from "@/utils/supabase/client";
 import { Star, Quote, TrendingUp, Users, Award } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-interface Review {
-  id: string;
-  rating: number;
-  comment: string | null;
-  created_at: string;
-  bookings: { service_package_name: string };
-  profiles: { full_name: string };
-}
 export default function ReviewsPage() {
   const supabase = createClient();
   const { openBookingModal } = useBooking();
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const stats = [
     { label: "Happy Customers", value: "2,500+", icon: Users },
@@ -30,35 +25,31 @@ export default function ReviewsPage() {
   ];
 
   useEffect(() => {
-    async function fetchReview() {
+    async function fetchReviews() {
       const { data, error } = await supabase
         .from("reviews")
         .select(
-          `*, 
-            bookings (
-              service_package_name
-            ),
-            profiles (
-              full_name
-            )`
+          `
+      *,
+      bookings ( service_package_name ),
+      profiles ( full_name, avatar_url )
+    `
         )
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      // console.log(data);
-      setReviews(data || []);
-    }
-    fetchReview();
-  }, [supabase]);
+      if (error) {
+        console.error("Error fetching reviews:", error);
+      } else {
+        setReviews(data || []);
+      }
 
-  // const companies = [
-  //   "AutoZone",
-  //   "Jiffy Lube",
-  //   "Valvoline",
-  //   "Midas",
-  //   "Firestone",
-  //   "Goodyear",
-  // ];
+      setIsLoading(false);
+    }
+    fetchReviews();
+  }, []);
+
+  if (isLoading)
+    return <p className="text-center text-muted-foreground">Loading...</p>;
 
   return (
     <main className="flex-1 container mx-auto px-4 py-8">
@@ -122,44 +113,7 @@ export default function ReviewsPage() {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
-              {reviews.map((review, index) => (
-                <Card
-                  key={index}
-                  className="border-border bg-card hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-                >
-                  <CardContent className="p-6 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-1">
-                        {[...Array(review.rating)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className="h-4 w-4 fill-yellow-400 text-yellow-400"
-                          />
-                        ))}
-                      </div>
-                      <Quote className="h-5 w-5 text-muted-foreground" />
-                    </div>
-
-                    <p className="text-foreground text-pretty leading-relaxed">
-                      "{review.comment}"
-                    </p>
-
-                    <div className="space-y-1 pt-2 border-t border-border">
-                      <div className="font-semibold text-foreground">
-                        {review.profiles?.full_name}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        {review.bookings?.service_package_name ?? "Service"}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {new Date(review.created_at).toDateString()}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <AnimatedReviews reviews={reviews} autoplay autoplayInterval={3000} />
           </div>
         </section>
 
