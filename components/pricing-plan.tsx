@@ -39,7 +39,7 @@ export default function PricingCard({
       : "Upgrade";
 
   // Popular plans
-  const popularPlans = ["Suvs", "Truck"];
+  const popularPlans = ["Suvs", "Small Truck"];
   const isPopular = popularPlans.includes(plan.name);
 
   return (
@@ -47,7 +47,7 @@ export default function PricingCard({
       {/* Popular badge */}
       {isPopular && (
         <div className="absolute -top-3 -right-3 z-10">
-          <div className="bg-gradient-to-r from-lime-400 to-lime-500 text-slate-900 px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
+          <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-slate-900 px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
             POPULAR
           </div>
         </div>
@@ -56,7 +56,7 @@ export default function PricingCard({
       {/* Current plan badge */}
       {isCurrentPlan && (
         <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
-          <div className="inline-flex items-center rounded-full bg-gradient-to-r from-lime-400 to-lime-500 px-3 py-1 text-xs font-semibold text-accent-foreground shadow">
+          <div className="inline-flex items-center rounded-full bg-gradient-to-r from-yellow-400 to-yellow-500 px-3 py-1 text-xs font-semibold text-accent-foreground shadow">
             CURRENT PLAN
           </div>
         </div>
@@ -64,42 +64,36 @@ export default function PricingCard({
 
       {/* Popular side bar */}
       {isPopular && (
-        <div className="absolute -right-1 top-0 bottom-0 w-1 bg-gradient-to-b from-lime-400 to-lime-500 rounded-r-lg" />
+        <div className="absolute -right-1 top-0 bottom-0 w-1 bg-gradient-to-b from-yellow-400 to-yellow-500 rounded-r-lg" />
       )}
 
       <Card
         className={`relative flex flex-col overflow-hidden transition-all duration-300 p-0 ${
           isPopular
-            ? "border-lime-400/50 shadow-xl shadow-lime-400/20"
+            ? "border-yellow-400/50 shadow-xl shadow-yellow-400/20"
             : isCurrentPlan
               ? "border-accent shadow-lg shadow-accent/20"
               : ""
         }`}
       >
-        <div className="bg-black px-6 pt-6 pb-8 relative">
+        <div className="bg-blue-900 px-6 pt-6 pb-8 relative">
           <div className="mb-4 flex justify-center">
-            {(() => {
-              switch (plan.name) {
-                case "Sedans":
-                  return (
-                    <PiggyBank className="w-16 h-16 text-white stroke-1" />
-                  );
-                case "Compact SUV":
-                  return <Target className="w-16 h-16 text-white stroke-1" />;
-                case "Suvs":
-                case "Truck":
-                  return <Gem className="w-16 h-16 text-white stroke-1" />;
-                default:
-                  return <Crown className="w-16 h-16 text-white stroke-1" />;
-              }
-            })()}
+            {plan.image_url ? (
+              <img
+                src={plan.image_url}
+                alt={plan.name}
+                className="w-full h-32 object-cover"
+              />
+            ) : (
+              <Gem className="w-full h-32 text-white stroke-1" />
+            )}
           </div>
           <CardTitle className="text-center text-white text-lg font-semibold">
             {plan.name}
           </CardTitle>
 
           {/* Inverted triangle pointer */}
-          <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-24 border-l-transparent border-r-24 border-r-transparent border-t-24 border-t-black" />
+          <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-24 border-l-transparent border-r-24 border-r-transparent border-t-24 border-t-blue-900" />
         </div>
 
         <div className="bg-white px-6 py-6 text-center border-b border-slate-200">

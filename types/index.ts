@@ -60,10 +60,11 @@ export interface SubscriptionPlans {
   id: string;
   name: string;
   description: string;
-  month_price: string;
+  monthly_price: string;
   yearly_price: string;
   features: string[];
   is_active: boolean;
+  image_url: string;
 }
 
 export interface Subscription {

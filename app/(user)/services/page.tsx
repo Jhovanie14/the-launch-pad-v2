@@ -65,21 +65,31 @@ export default function ServicePage() {
   }, []);
 
   const getServiceIcon = (category: string) => {
-    switch (category) {
+    switch (category.toLowerCase()) {
       case "sedan":
         return Car;
       case "compact suv":
-        return CarFront;
       case "suv":
         return CarFront;
       case "truck":
         return TruckElectric;
       case "small truck":
         return Truck;
+      case "van":
+        return Wrench; // You can choose any icon you prefer for van
       default:
-        return Sparkles;
+        return Sparkles; // Fallback icon
     }
   };
+
+  const categoryOrder = [
+    "sedan",
+    "compact suv",
+    "suv",
+    "small truck",
+    "truck",
+    "van",
+  ];
 
   const groupedServices = services.reduce<Record<string, ServicePackage[]>>(
     (acc, service) => {
@@ -90,6 +100,16 @@ export default function ServicePage() {
     },
     {}
   );
+
+  const orderedCategories = Object.entries(groupedServices).sort(
+    ([catA], [catB]) => {
+      const indexA = categoryOrder.indexOf(catA);
+      const indexB = categoryOrder.indexOf(catB);
+      return (indexA === -1 ? 99 : indexA) - (indexB === -1 ? 99 : indexB);
+    }
+  );
+
+  const popularServices = "Deluxe wash";
 
   return (
     <section className="py-20 px-4 bg-background">
@@ -104,10 +124,10 @@ export default function ServicePage() {
         </div>
 
         {/* ✅ Loop through each category */}
-        {Object.entries(groupedServices).map(([category, items]) => (
+        {orderedCategories.map(([category, items]) => (
           <div key={category} className="mb-12">
             {/* Category Label */}
-            <h3 className="text-2xl font-semibold mb-6 flex items-center gap-2 capitalize">
+            <h3 className="text-4xl font-semibold mb-10 flex items-center justify-center gap-2 capitalize">
               {(() => {
                 const Icon = getServiceIcon(category);
                 return <Icon className="h-6 w-6 text-primary" />;
@@ -116,24 +136,27 @@ export default function ServicePage() {
             </h3>
 
             {/* Service Cards */}
-            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
+            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-8 px-4">
               {items.map((service) => {
+                const isPopular = popularServices.includes(service.name);
+
                 return (
                   <Card
                     key={service.id}
                     className={`relative hover:shadow-lg transition-shadow border-border/50 ${
-                      service.name === "Deluxe wash"
-                        ? "border-primary shadow-lg shadow-primary/20 scale-105"
-                        : ""
+                      isPopular
+                        ? "border-yellow-500/50 shadow-xl shadow-yellow-500/20 md:scale-105"
+                        : "border-gray-400"
                     }`}
                   >
-                    {service.name === "Deluxe wash" && (
-                      <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                        <span className="inline-flex items-center rounded-full bg-accent px-4 py-1 text-xs font-semibold text-accent-foreground">
+                    {isPopular && (
+                      <div className="absolute -top-3 -right-3 z-10">
+                        <div className="bg-gradient-to-r from-yellow-400 to-yellow-400 text-slate-900 px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
                           Most Popular
-                        </span>
+                        </div>
                       </div>
                     )}
+
                     <CardHeader>
                       <div className="flex items-start gap-4 mb-2">
                         <div className="bg-secondary/10 p-3 rounded-lg">
@@ -146,26 +169,26 @@ export default function ServicePage() {
                           <CardTitle className="text-xl font-semibold">
                             {service.name}
                           </CardTitle>
-                          <CardDescription className="text-sm text-muted-foreground">
+                          <CardDescription className="text-sm text-accent-foreground">
                             {service.duration} mins
                           </CardDescription>
                         </div>
                       </div>
-                      <CardDescription className="text-base leading-relaxed">
+                      <CardDescription className="text-accent-foreground text-lg leading-relaxed">
                         {service.description}
                       </CardDescription>
                     </CardHeader>
 
                     <CardContent className="flex-1">
                       <div className="space-y-4 mb-6">
-                        <h4 className="font-medium text-card-foreground mb-2">
+                        <h4 className="font-medium text-accent-foreground mb-2">
                           Features
                         </h4>
                         <div className="flex flex-col gap-2">
                           {service.features?.map((feature, index) => (
                             <p
                               key={index}
-                              className="text-sm text-muted-foreground flex items-center"
+                              className="text-sm text-accent-foreground flex items-center"
                             >
                               <Check className="h-3 w-3 mr-1 text-primary" />
                               {feature}
@@ -176,7 +199,7 @@ export default function ServicePage() {
                     </CardContent>
 
                     <CardFooter>
-                      <p className="text-2xl font-bold text-primary">
+                      <p className="text-4xl font-bold text-primary">
                         ${service.price}
                       </p>
                     </CardFooter>

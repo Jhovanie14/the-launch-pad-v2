@@ -1,134 +1,134 @@
 "use client";
-
-import Image from "next/image";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { ArrowRight, Star, Bubbles, SprayCan, Stars } from "lucide-react";
 
-import { Star, CheckCheck, BrushCleaning } from "lucide-react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-const cardContent = [
+const features = [
   {
-    image: BrushCleaning,
+    icon: Bubbles,
     title: "Self-Service Bays",
-    description: "DIY car wash your way",
-    color: "text-blue-800",
+    description: "Premium DIY car wash experience",
   },
   {
-    image: Star,
+    icon: SprayCan,
     title: "Express Detail",
-    description: "Professional express detailing",
-    color: "text-yellow-700",
+    description: "Professional detailing services",
   },
   {
-    image: CheckCheck,
-    title: "Service Rating",
-    description: "Customer service satisfaction",
-    color: "text-red-700",
+    icon: Stars,
+    title: "Premium Care",
+    description: "Expert auto care solutions",
   },
 ];
 
 export function Hero() {
   return (
     <section
-      className="min-h-screen relative overflow-hidden"
+      className="min-h-screen relative overflow-hidden rounded-xl"
       style={{
-        backgroundImage: "url(/launchpad-wash.jpg)",
+        backgroundImage: "url(/self-service.png)",
         backgroundSize: "cover",
-        backgroundPosition: "center right",
+        backgroundPosition: "center",
       }}
     >
-      <div className="absolute inset-0 bg-gradient-to-r from-white via-white/95 to-transparent"></div>
+      <div className="absolute inset-0 opacity-30">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-slate-700/10 rounded-full blur-3xl"></div>
+      </div>
 
       <div className="relative z-10">
-        <div className="container mx-auto px-4">
-          <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-            {/* Left: copy */}
-            <div className="space-y-6 p-6 order-2 md:order-1">
-              <div className="text-center md:inline-flex gap-2 ">
-                <Badge
-                  variant="outline"
-                  className="px-3 py-2 text-base bg-blue-50 rounded-xl"
-                >
-                  <span className="text-sm text-muted-foreground dark:text-black">
-                    🚀 Houston's Premier Car Care
-                  </span>
-                </Badge>
-              </div>
-
-              <h1 className="text-start text-5xl md:text-6xl text-blue-900 font-bold leading-tight">
-                Car Care Done Right. Finally.
-              </h1>
-              <p className="text-center md:text-start text-lg md:text-xl text-accent-foreground dark:text-gray-700">
-                Self-service car wash and professional auto detailing in
-                Houston. Premium car cleaning, waxing, and interior care in one
-                convenient location.
-              </p>
-
-              <div className="flex flex-col md:flex-row items-stretch gap-3">
-                <Link
-                  href="/services"
-                  className="font-medium inline-flex justify-center items-center rounded-md bg-blue-900 text-white px-5 py-3 hover:bg-blue-800"
-                >
-                  See my price
-                </Link>
-                <Link
-                  href="/how-it-works"
-                  className="font-medium inline-flex justify-center items-center rounded-md bg-gray-200 px-5 py-3 text-foreground hover:bg-gray-300 dark:text-black"
-                >
-                  How it works
-                </Link>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-                {cardContent.map((content, id) => (
-                  <Card key={id} className="border-blue-200">
-                    <CardHeader>
-                      <content.image className={content.color} />
-                    </CardHeader>
-                    <CardContent className="space-y-1">
-                      <h3 className="text-lg font-medium text-accent-foreground">
-                        {content.title}
-                      </h3>
-                      <span className="text-sm ">{content.description}</span>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-
-              <div className="flex flex-col sm:flex-row items-center gap-3">
-                <Image
-                  src="/thelaunchpad.png"
-                  alt="review avatars"
-                  width={450}
-                  height={450}
-                  className="h-6 w-auto"
-                />
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="18"
-                      height="17"
-                      viewBox="0 0 18 17"
-                      fill="none"
-                    >
-                      <path
-                        d="M8.40632 0.82955C8.59343 0.253686 9.40813 0.253686 9.59524 0.82955L11.1058 5.47847C11.1894 5.73601 11.4294 5.91037 11.7002 5.91037H16.5884C17.1939 5.91037 17.4456 6.68519 16.9558 7.04109L13.0012 9.91429C12.7821 10.0735 12.6904 10.3556 12.7741 10.6131L14.2846 15.262C14.4717 15.8379 13.8126 16.3168 13.3228 15.9609L9.36818 13.0877C9.1491 12.9285 8.85246 12.9285 8.63339 13.0877L4.67878 15.9609C4.18892 16.3168 3.52982 15.8379 3.71693 15.262L5.22745 10.6131C5.31113 10.3556 5.21946 10.0735 5.00039 9.91429L1.04578 7.04109C0.555922 6.68519 0.807676 5.91037 1.41318 5.91037H6.30134C6.57213 5.91037 6.81212 5.73601 6.8958 5.47847L8.40632 0.82955Z"
-                        fill="#F29A05"
-                      />
-                    </svg>
-                    <span>4.9</span>
-                  </div>
-                  <span>from 12,423 reviews •</span>
-                  <Link href="/reviews" className="underline text-blue-500">
-                    See our reviews
-                  </Link>
-                </div>
-              </div>
+        <div className="container mx-auto px-4 py-20">
+          <div className="max-w-6xl mx-auto">
+            {/* Header Badge */}
+            <div className="flex justify-center mb-6">
+              <Badge
+                variant="outline"
+                className="px-4 py-2 bg-blue-500/10 border-blue-500 text-blue-100 hover:bg-blue-500/20"
+              >
+                <span className="text-sm font-medium text-[#ffffff]">
+                  🚀 Houston's Premier Car Care
+                </span>
+              </Badge>
             </div>
 
-            {/* Right: image space (background shows through) */}
-            <div className="order-1 sm:order-2 hidden md:flex items-center justify-center"></div>
+            {/* Main Heading */}
+            <div className="text-center mb-8 space-y-6">
+              <h1 className="text-5xl md:text-7xl font-extrabold text-white leading-tight tracking-tight">
+                <span className="bg-gradient-to-r from-white via-amber-100 to-amber-200 bg-clip-text text-transparent">
+                  Elevate Your
+                </span>
+                <br />
+                <span>Car Care Experience</span>
+              </h1>
+
+              <p className="text-xl md:text-2xl text-white font-semibold max-w-2xl mx-auto leading-relaxed">
+                Premium self-service bays and professional detailing services
+                designed for those who demand excellence.
+              </p>
+            </div>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+              <Link
+                href="/services"
+                className="group inline-flex items-center gap-2 px-8 py-3 bg-blue-900 hover:bg-blue-700 text-white font-semibold rounded-lg transition-all duration-300 hover:gap-3"
+              >
+                Explore Services
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <Link
+                href="/how-it-works"
+                className="inline-flex items-center gap-2 px-8 py-3 border border-white hover:border-slate-200 text-white font-semibold rounded-lg transition-colors duration-300 hover:bg-slate-800/50"
+              >
+                Learn More
+              </Link>
+            </div>
+
+            {/* Features Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+              {features.map((feature, idx) => {
+                const Icon = feature.icon;
+                return (
+                  <div
+                    key={idx}
+                    className="group p-6 rounded-xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-700/50 hover:border-amber-500/30 transition-all duration-300 hover:bg-slate-800/70"
+                  >
+                    <div className="mb-4 inline-flex p-3 rounded-lg bg-amber-500/10 group-hover:bg-amber-500/20 transition-colors">
+                      <Icon className="w-6 h-6 text-amber-400" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-white mb-2">
+                      {feature.title}
+                    </h3>
+                    <p className="text-white text-sm">{feature.description}</p>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Social Proof */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-8 border-t border-slate-700/50">
+              <div className="flex items-center gap-3">
+                <div className="flex -space-x-2">
+                  {[...Array(3)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 border-2 border-slate-900"
+                    />
+                  ))}
+                </div>
+                <span className="text-sm text-slate-300">
+                  <span className="font-semibold text-white">1,423</span>{" "}
+                  satisfied customers
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-amber-400">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-4 h-4 fill-current" />
+                ))}
+
+                <span className="text-sm text-slate-300 ml-2">4.9 rating</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

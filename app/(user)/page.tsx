@@ -20,7 +20,7 @@ const services = [
     id: 1,
     title: "Self-Service Car Wash",
     description:
-      "Easy-to-use self-service car wash bays for those who prefer a hands-on clean. Wash your car your way with professional-grade equipment, including high-pressure hoses, foam brushes, and powerful vacuums — all available at your convenience.",
+      "Easy-to-use self-service car wash bays for those who prefer a hands-on clean. Wash your car your way with professional-grade equipment, including high-pressure hoses, and powerful vacuums — all available at your convenience.",
     image: "/self-service.png",
     images: [
       "/self-service.png",
@@ -30,19 +30,19 @@ const services = [
     alt: "Self-Service-Car-Wash",
     features: [
       "Professional-grade equipment",
-      "High-pressure hoses & foam brushes",
+      "High-pressure hoses",
       "Powerful vacuum stations",
       "Perfect for DIY car lovers",
     ],
     fullDescription:
-      "Easy-to-use self-service car wash bays for those who prefer a hands-on clean. Wash your car your way with professional-grade equipment, including high-pressure hoses, foam brushes, and powerful vacuums — all available at your convenience. Our self-service bays are designed for maximum convenience and efficiency, allowing you to maintain your vehicle on your own schedule.",
+      "Easy-to-use self-service car wash bays for those who prefer a hands-on clean. Wash your car your way with professional-grade equipment, including high-pressure hoses, and powerful vacuums — all available at your convenience. Our self-service bays are designed for maximum convenience and efficiency, allowing you to maintain your vehicle on your own schedule.",
     details: [
       "Professional-grade equipment and tools",
       "High-pressure hoses for deep cleaning",
-      "Foam brushes for gentle yet effective washing",
+      // "Foam brushes for gentle yet effective washing",
       "Powerful vacuum stations for interior cleaning",
       "Available 24/7 for your convenience",
-      "Affordable pricing with flexible payment options",
+      "Affordable pricing with flexible payment options which includes tap to pay or dollar coins",
       "Well-maintained facilities and equipment",
       "Perfect for DIY car enthusiasts",
     ],
@@ -124,9 +124,8 @@ export default function Home() {
               Three Amazing Services, One Location
             </h1>
             <p className="max-w-2xl text-xl text-accent-foreground leading-relaxed">
-              From DIY car washing to professional detailing and delicious food
-              trucks, The Launch Pad is your complete automotive and dining
-              destination.
+              From DIY car washing to professional detailing and a unique
+              community, The Launch Pad is your complete automotive care center.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">

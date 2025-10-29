@@ -142,7 +142,7 @@ export default function ServicesView() {
       const { data, error } = await supabase
         .from("service_packages")
         .select("*")
-        .order("name", { ascending: true });
+        .order("name, price", { ascending: true });
 
       if (error) throw error;
       setServices(data ?? []);
@@ -173,6 +173,7 @@ export default function ServicesView() {
         prev.map((a) => (a.id === id ? { ...a, is_active: newStatus } : a))
       );
       toast.success(`Service marked as ${newStatus ? "active" : "inactive"}.`);
+      
     }
   };
 
