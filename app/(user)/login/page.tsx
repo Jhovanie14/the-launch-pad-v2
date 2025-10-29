@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,7 +16,7 @@ import { useState } from "react";
 import { useAuth } from "@/context/auth-context";
 import { useSearchParams } from "next/navigation";
 
-export default function LoginPage() {
+function LoginFormContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{
     email?: string[];
@@ -30,18 +31,13 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     setErrors({});
-
     const formData = new FormData(e.currentTarget);
     const result = await signIn(formData);
-
-    if (result?.errors) {
-      setErrors(result.errors);
-    } else if (result?.message) {
-      setErrors({ message: result.message });
-    }
-
+    if (result?.errors) setErrors(result.errors);
+    else if (result?.message) setErrors({ message: result.message });
     setIsLoading(false);
   };
+
   return (
     <div className="flex min-h-screen items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-md space-y-8">
@@ -55,7 +51,7 @@ export default function LoginPage() {
               href="/signup"
               className="font-medium text-blue-900 hover:text-blue-700"
             >
-              {"create a new account"}
+              create a new account
             </Link>
           </p>
         </div>
@@ -115,7 +111,7 @@ export default function LoginPage() {
               href="/forgot-password"
               className="text-sm text-blue-500 hover:text-blue-700"
             >
-              {"Forgot password?"}
+              Forgot password?
             </Link>
             <div className="mt-4 text-center">
               <Link
@@ -129,5 +125,13 @@ export default function LoginPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center">Loading…</div>}>
+      <LoginFormContent />
+    </Suspense>
   );
 }
