@@ -197,9 +197,9 @@ function ConfirmationContent() {
       setIsSubmitting(true);
       setShowPaymentModal(false);
 
-      const addOnsTotal = Array.isArray(selectedAddOns)
-        ? selectedAddOns.reduce((sum, a) => sum + Number(a.price), 0)
-        : 0;
+      // const addOnsTotal = Array.isArray(selectedAddOns)
+      //   ? selectedAddOns.reduce((sum, a) => sum + Number(a.price), 0)
+      //   : 0;
 
       const customerName = guestBooking
         ? guestInfo.name
@@ -220,6 +220,14 @@ function ConfirmationContent() {
           addOnsId: selectedAddOns
             ? selectedAddOns.map((a: { id: string }) => a.id)
             : [],
+          // addOnsId:
+          //   selectedAddOns?.map(
+          //     (a: { id: string; name: string; price: number }) => ({
+          //       id: a.id,
+          //       name: a.name,
+          //       price: a.price,
+          //     })
+          //   ) ?? [],
           appointmentDate: new Date(appointmentDate!),
           appointmentTime: appointmentTime!.toString(),
           totalPrice: calculateTotal(),
@@ -248,9 +256,14 @@ function ConfirmationContent() {
         servicePackageId: selectedPackages!.id,
         servicePackageName: selectedPackages!.name,
         servicePackagePrice: selectedPackages!.price, // 👈 zero if subscribed
-        addOnsId: selectedAddOns
-          ? selectedAddOns.map((a: { id: string }) => a.id)
-          : [],
+        addOns:
+          selectedAddOns?.map(
+            (a: { id: string; name: string; price: number }) => ({
+              id: a.id,
+              name: a.name,
+              price: a.price,
+            })
+          ) ?? [],
         appointmentDate: appointmentDate,
         appointmentTime: appointmentTime!.toString(),
         totalPrice: calculateTotal(),
@@ -344,38 +357,64 @@ function ConfirmationContent() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Date:</span>
-                <span className="font-medium">
-                  {appointmentDate && formatDate(appointmentDate)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Time:</span>
-                <span className="font-medium">
-                  {appointmentTime && formatTime(appointmentTime)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Service:</span>
-                <span className="font-medium">{selectedPackages?.name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Duration:</span>
-                <span className="font-medium">{calculateDuration()} mins</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Total Price:</span>
-                <span className="font-medium">${calculateTotal()}</span>
-              </div>
-              {isSubscribed && (
-                <div className="flex items-center gap-1">
-                  <Crown className="w-4 h-4 text-yellow-500" />
-                  <p className="text-sm text-green-600">
-                    Subscribed — base wash is free, pay only for add-ons.
-                  </p>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Date:</span>
+                  <span className="font-medium">
+                    {appointmentDate && formatDate(appointmentDate)}
+                  </span>
                 </div>
-              )}
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Time:</span>
+                  {appointmentTime && (
+                    <span className="font-medium">
+                      {formatTime(appointmentTime)}
+                    </span>
+                  )}
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Service:</span>
+                  <span className="font-medium">{selectedPackages?.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="pl-4 text-xs text-gray-600">
+                    - Duration:
+                  </span>
+                  <span className="font-medium">
+                    {Number(selectedPackages?.duration)} mins
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-gray-600">Add Ons:</span>
+                  {Array.isArray(selectedAddOns) &&
+                  selectedAddOns.length > 0 ? (
+                    selectedAddOns.map((addon: any) => (
+                      <div
+                        key={addon.id}
+                        className="flex justify-between pl-4 text-sm text-gray-600"
+                      >
+                        <span>{addon.name}</span>
+                        <span>{addon.duration} mins</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex justify-between pl-4 text-sm text-gray-500">
+                      <span className="font-medium">None</span>
+                      <span className="font-medium">0</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Whole Duration:</span>
+                  <span className="font-medium">
+                    {calculateDuration()} minutes
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Total Price:</span>
+                  <span className="font-medium">${calculateTotal()}</span>
+                </div>
+              </div>
             </CardContent>
           </Card>
 

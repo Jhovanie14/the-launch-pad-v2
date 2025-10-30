@@ -131,26 +131,29 @@ async function processBooking(session: Stripe.Checkout.Session) {
 
     console.log("Booking inserted!", bookingRows);
 
-    if (bookingRows && bookingMeta.aids) {
-      const addOnIds = bookingMeta.aids
-        .split(",")
-        .filter((id: string) => id.trim());
+    let addOnIds: string[] = [];
 
-      if (addOnIds.length > 0) {
-        const addOnInserts = addOnIds.map((addOnId: string) => ({
-          booking_id: bookingRows.id,
-          add_on_id: addOnId.trim(),
-        }));
+    if (bookingMeta.aids) {
+      addOnIds = bookingMeta.aids.split(",").filter((id: string) => id.trim());
+    } else if (bookingMeta.addOns?.length) {
+      addOnIds = bookingMeta.addOns.map((a: any) => a.id);
+    }
 
-        const { error: addOnError } = await supabase
-          .from("booking_add_ons")
-          .insert(addOnInserts);
+    // 🟩 Insert add-ons if found
+    if (bookingRows && addOnIds.length > 0) {
+      const addOnInserts = addOnIds.map((addOnId: string) => ({
+        booking_id: bookingRows.id,
+        add_on_id: addOnId.trim(),
+      }));
 
-        if (addOnError) {
-          console.error("Failed to insert booking add-ons:", addOnError);
-        } else {
-          console.log("Booking add-ons inserted!", addOnInserts);
-        }
+      const { error: addOnError } = await supabase
+        .from("booking_add_ons")
+        .insert(addOnInserts);
+
+      if (addOnError) {
+        console.error("Failed to insert booking add-ons:", addOnError);
+      } else {
+        console.log("Booking add-ons inserted!", addOnInserts);
       }
     }
 

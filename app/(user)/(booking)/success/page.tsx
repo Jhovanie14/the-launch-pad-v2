@@ -257,7 +257,7 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
               <div className="flex justify-between items-center font-semibold text-lg">
                 <span>Total</span>
                 <span className="text-primary">
-                  ${orderData.total.toFixed(2)}
+                  ${orderData.subtotal.toFixed(2)}
                 </span>
               </div>
             </div>

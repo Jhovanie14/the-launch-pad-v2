@@ -24,12 +24,30 @@ export async function POST(req: Request) {
     : null;
 
   // Prepare line items for Stripe
+  // const lineItems = [
+  //   {
+  //     price_data: {
+  //       currency: "usd",
+  //       product_data: { name: body.servicePackageName },
+  //       unit_amount: Math.round(Number(body.servicePackagePrice) * 100),
+  //     },
+  //     quantity: 1,
+  //   },
+  //   ...(body.addOns?.map((addon: any) => ({
+  //     price_data: {
+  //       currency: "usd",
+  //       product_data: { name: addon.name },
+  //       unit_amount: Math.round(Number(addon.price) * 100),
+  //     },
+  //     quantity: 1,
+  //   })) || []),
+  // ];
   const lineItems = [
     {
       price_data: {
         currency: "usd",
         product_data: { name: body.servicePackageName },
-        unit_amount: Math.round(Number(body.totalPrice) * 100),
+        unit_amount: Math.round(Number(body.servicePackagePrice) * 100), // ✅ only base price
       },
       quantity: 1,
     },
@@ -42,6 +60,12 @@ export async function POST(req: Request) {
       quantity: 1,
     })) || []),
   ];
+  const aids =
+    body.addOnsId?.join(",") ??
+    body.addOns?.map((a: any) => a.id).join(",") ??
+    "";
+
+  console.log("aids", aids);
 
   // Prepare booking data for webhook
   const bookingData = {
@@ -50,7 +74,7 @@ export async function POST(req: Request) {
     spid: body.servicePackageId ?? "",
     spn: body.servicePackageName ?? "",
     spp: body.servicePackagePrice ?? 0,
-    aids: body.addOnsId?.join(",") ?? "", // Comma-separated is smaller than array
+    aids: aids, // Comma-separated is smaller than array
     ad: body.appointmentDate ?? "",
     at: body.appointmentTime ?? "",
     tp: Math.round(Number(body.totalPrice)),

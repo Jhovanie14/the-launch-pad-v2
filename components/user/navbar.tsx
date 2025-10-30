@@ -50,7 +50,7 @@ const services: {
   },
   {
     icon: Phone,
-    title: "Contact",
+    title: "Contact Us",
     href: "/contact",
     description: "We provide exceptional customer service.",
   },
@@ -83,7 +83,7 @@ function ListItem({
             React.createElement(icon, { className: "w-4 h-4 flex-shrink-0" })}
           <div className="flex-1 space-y-2">
             <div className="text-lg leading-none font-medium">{title}</div>
-            <p className="text-accent-foreground line-clamp-2 text-lg leading-snug">
+            <p className="text-accent-foreground line-clamp-2 text-sm leading-snug">
               {children}
             </p>
           </div>

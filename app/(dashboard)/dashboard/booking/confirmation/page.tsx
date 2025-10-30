@@ -98,6 +98,7 @@ function ConfirmationContent() {
             .in("id", addonIds); // ✅ handle multiple add-ons
           if (error) console.error(error);
           else setSelectedAddOns(data);
+          console.log("add ons ids", data);
         }
       }
       if (dateParam) {
@@ -206,7 +207,6 @@ function ConfirmationContent() {
           addOnsId: selectedAddOns
             ? selectedAddOns.map((a: { id: string }) => a.id)
             : [],
-
           appointmentDate: new Date(appointmentDate!),
           appointmentTime: appointmentTime!.toString(),
           totalPrice: calculateTotal(),
@@ -215,37 +215,42 @@ function ConfirmationContent() {
         });
         window.location.href = `/dashboard/bookings/success?booking_id=${booking.id}`;
         return;
+      } else {
+        // Card payment (via Stripe)
+        const payload = {
+          year: parseInt(vehicleSpecs.year || "0"),
+          make: vehicleSpecs.make || "",
+          model: vehicleSpecs.model || "",
+          body_type: vehicleSpecs.body_type || "",
+          colors: [vehicleSpecs.color || ""],
+          vehicleSpecs,
+          servicePackageId: selectedPackages!.id,
+          servicePackageName: selectedPackages!.name,
+          servicePackagePrice: isSubscribed ? 0 : selectedPackages!.price, // 👈 zero if subscribed
+          addOns:
+            selectedAddOns?.map(
+              (a: { id: string; name: string; price: number }) => ({
+                id: a.id,
+                name: a.name,
+                price: a.price,
+              })
+            ) ?? [],
+          appointmentDate: appointmentDate,
+          appointmentTime: appointmentTime!.toString(),
+          totalPrice: isSubscribed ? addOnsTotal : calculateTotal(),
+          totalDuration: calculateDuration(),
+          payment_method: "card",
+        };
+
+        const res = await fetch("/api/checkout_sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        const { url } = await res.json();
+        if (url) window.location.href = url;
       }
-
-      // Card payment (via Stripe)
-      const payload = {
-        year: parseInt(vehicleSpecs.year || "0"),
-        make: vehicleSpecs.make || "",
-        model: vehicleSpecs.model || "",
-        body_type: vehicleSpecs.body_type || "",
-        colors: [vehicleSpecs.color || ""],
-        vehicleSpecs,
-        servicePackageId: selectedPackages!.id,
-        servicePackageName: selectedPackages!.name,
-        servicePackagePrice: isSubscribed ? 0 : selectedPackages!.price, // 👈 zero if subscribed
-        addOnsId: selectedAddOns
-          ? selectedAddOns.map((a: { id: string }) => a.id)
-          : [],
-        appointmentDate: appointmentDate,
-        appointmentTime: appointmentTime!.toString(),
-        totalPrice: isSubscribed ? addOnsTotal : calculateTotal(),
-        totalDuration: calculateDuration(),
-        payment_method: "card",
-      };
-
-      const res = await fetch("/api/checkout_sessions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const { url } = await res.json();
-      if (url) window.location.href = url;
     } catch (error) {
       console.error("Payment error:", error);
     } finally {

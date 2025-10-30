@@ -276,12 +276,12 @@ export default function BookingModal() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Sedan">Sedan</SelectItem>
-                    {/* <SelectItem value="Coupe">Coupe</SelectItem> */}
                     <SelectItem value="Compact Suv">Compact Suv</SelectItem>
                     <SelectItem value="Suvs">SUV</SelectItem>
                     <SelectItem value="Small Truck">Small truck</SelectItem>
+                    <SelectItem value="Big Truck">Big Truck</SelectItem>
                     <SelectItem value="Van">Van</SelectItem>
-                    <SelectItem value="Big Truck">Truck</SelectItem>
+                    {/* <SelectItem value="Coupe">Coupe</SelectItem> */}
                     {/* <SelectItem value="Convertible">Convertible</SelectItem> */}
                   </SelectContent>
                 </Select>
