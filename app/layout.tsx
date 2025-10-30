@@ -17,19 +17,18 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "The Launch Pad",
-  description: "Houston's Premier Car Care & Food Hub",
+  description: "Houston's Premier Car Care",
   openGraph: {
-    title: "The Launch Pad | Houston's Premier Car Care & Food Hub",
-    description:
-      "Visit The Launch Pad for top-tier car wash, detailing, and an amazing food experience — all in one destination.",
+    title: "The Launch Pad | Houston's Premier Car Care",
+    description: "Visit The Launch Pad for top-tier car wash, detailing.",
     url: "https://www.thelaunchpadwash.com",
     siteName: "The Launch Pad",
     images: [
       {
-        url: "https://www.thelaunchpadwash.com/og-image.jpg", // 👈 replace with your actual OG image
+        url: "/thelaunchpad.png", // 👈 replace with your actual OG image
         width: 1200,
         height: 630,
-        alt: "The Launch Pad Car Care & Food Hub",
+        alt: "The Launch Pad Car Care",
       },
     ],
     locale: "en_US",
@@ -37,9 +36,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "The Launch Pad | Houston's Premier Car Care & Food Hub",
+    title: "The Launch Pad | Houston's Premier Car Care",
     description: "Premium car wash & food experience — The Launch Pad Houston.",
-    images: ["https://www.thelaunchpadwash.com/og-image.jpg"], // same as above
+    images: ["/thelaunchpad.png"], // same as above
   },
 };
 
