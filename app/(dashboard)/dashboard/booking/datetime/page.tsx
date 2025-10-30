@@ -243,6 +243,7 @@ function DateTimeSelectionPage() {
                     selected={selectedDate}
                     onSelect={setSelectedDate}
                     disabled={{ before: new Date() }}
+                    // disabled={[{ before: new Date() }, { dayOfWeek: [0, 6] }]}
                     className="rdp-custom"
                     footer={
                       selectedDate ? (

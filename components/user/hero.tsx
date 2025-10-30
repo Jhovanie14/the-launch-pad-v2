@@ -43,7 +43,7 @@ export function Hero() {
             <div className="flex justify-center mb-6">
               <Badge
                 variant="outline"
-                className="px-4 py-2 bg-blue-500/10 border-blue-500 text-blue-100 hover:bg-blue-500/20"
+                className="px-4 py-2 bg-blue-400 border-white text-blue-100"
               >
                 <span className="text-sm font-medium text-[#ffffff]">
                   🚀 Houston's Premier Car Care

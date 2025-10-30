@@ -158,6 +158,11 @@ export function AuthNavbar() {
                         Billing
                       </Link>
                     </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link className="w-full" href="/dashboard/help">
+                        Help & support
+                      </Link>
+                    </DropdownMenuItem>
                   </DropdownMenuGroup>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={signOut}>

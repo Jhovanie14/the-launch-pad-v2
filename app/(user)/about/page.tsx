@@ -1,5 +1,13 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Car, Clock, Shield, Sparkles, Star, Truck, Users } from "lucide-react";
+import {
+  Car,
+  CarFront,
+  Clock,
+  Shield,
+  Sparkles,
+  Star,
+  Users,
+} from "lucide-react";
 import Image from "next/image";
 
 const coreContent: {
@@ -56,7 +64,7 @@ const diffContent: {
     ],
   },
   {
-    icon: Truck,
+    icon: CarFront,
     color: "text-red-800",
     title: "DIY Carwash",
     description: [
@@ -86,7 +94,9 @@ export default function About() {
             {/* Left content */}
             <div>
               <div className="space-y-8">
-                <h3 className="text-2xl font-medium text-accent-foreground">Our Story</h3>
+                <h3 className="text-2xl font-medium text-accent-foreground">
+                  Our Story
+                </h3>
                 <p className="text-accent-foreground">
                   Founded in 2024, The Launch Pad was born from a simple yet
                   powerful idea: car care shouldn’t feel like a chore, it should
