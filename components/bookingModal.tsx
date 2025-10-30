@@ -271,17 +271,17 @@ export default function BookingModal() {
                     setVehicleInfo((prev) => ({ ...prev, body_type: val }))
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select Body Type" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Sedan">Sedan</SelectItem>
                     {/* <SelectItem value="Coupe">Coupe</SelectItem> */}
                     <SelectItem value="Compact Suv">Compact Suv</SelectItem>
-                    <SelectItem value="SUV">SUV</SelectItem>
+                    <SelectItem value="Suvs">SUV</SelectItem>
                     <SelectItem value="Small Truck">Small truck</SelectItem>
                     <SelectItem value="Van">Van</SelectItem>
-                    <SelectItem value="Truck">Truck</SelectItem>
+                    <SelectItem value="Big Truck">Truck</SelectItem>
                     {/* <SelectItem value="Convertible">Convertible</SelectItem> */}
                   </SelectContent>
                 </Select>

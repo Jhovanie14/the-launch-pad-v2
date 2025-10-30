@@ -72,7 +72,7 @@ export default function Customers() {
           </div>
         </div>
 
-        <ReviewCarousel reviews={reviews} autoplayInterval={3000} />
+        <ReviewCarousel reviews={reviews} autoplayInterval={5000} />
 
         <div className="flex justify-center space-x-2 mt-6">
           {Array.from({ length: count }).map((_, index) => (

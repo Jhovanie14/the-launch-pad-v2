@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -16,10 +16,8 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Check } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
-import { useSubscription } from "@/hooks/useSubscription";
 import { useVehicleForm } from "@/hooks/useVehicleForm";
 import { createClient } from "@/utils/supabase/client";
-import { ensureVehicle } from "@/utils/vehicle";
 
 type Billing = "monthly" | "yearly";
 
@@ -39,10 +37,10 @@ export default function SubscriptionCart({
   onRequireAuth,
 }: SubscriptionCartProps) {
   const searchParams = useSearchParams();
-//   const router = useRouter();
+  //   const router = useRouter();
   const supabase = createClient();
   const { user } = useAuth();
-//   const { subscription } = useSubscription();
+  //   const { subscription } = useSubscription();
 
   const planId = useMemo(
     () => planIdProp ?? searchParams.get("plan"),
@@ -101,9 +99,12 @@ export default function SubscriptionCart({
     };
   }, [planId, supabase]);
 
-  const basePrice =
+  //   const basePrice =
+  //     billingCycle === "monthly" ? plan?.monthly_price : plan?.yearly_price;
+  //   const displayPrice = basePrice + extraFee;
+
+  const displayPrice =
     billingCycle === "monthly" ? plan?.monthly_price : plan?.yearly_price;
-  const displayPrice = basePrice + extraFee;
 
   const handleBodyTypeChange = (val: string) => {
     setVehicleInfo({ ...vehicleInfo, body_type: val });
@@ -180,7 +181,7 @@ export default function SubscriptionCart({
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
+              <div className="space-y-2">
                 <Label>Year</Label>
                 <Input
                   type="number"
@@ -197,7 +198,7 @@ export default function SubscriptionCart({
                   <p className="text-red-600 text-sm mt-1">{errors.year}</p>
                 )}
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label>Make</Label>
                 <Input
                   value={vehicleInfo.make}
@@ -210,7 +211,7 @@ export default function SubscriptionCart({
                   <p className="text-red-600 text-sm mt-1">{errors.make}</p>
                 )}
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label>Model</Label>
                 <Input
                   value={vehicleInfo.model}
@@ -237,14 +238,14 @@ export default function SubscriptionCart({
                 )}
               </div>
 
-              <div>
+              <div className="space-y-2">
                 <Label>Body Type</Label>
                 {plan?.name && (
                   <Select
                     value={vehicleInfo.body_type}
                     onValueChange={handleBodyTypeChange}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue
                         placeholder={
                           plan ? "Select Body Type" : "Loading plan..."
@@ -323,7 +324,9 @@ export default function SubscriptionCart({
 
               {/* Total Price */}
               <div className="flex items-center justify-between pt-3 border-t border-border">
-                <span className="text-2xl font-bold text-amber-400">You First Month</span>
+                <span className="text-2xl font-bold text-amber-400">
+                  You First Month
+                </span>
                 <span className="text-2xl font-bold text-amber-400">
                   ${displayPrice?.toFixed(2)}
                   <span className="text-sm text-muted-foreground ml-1">

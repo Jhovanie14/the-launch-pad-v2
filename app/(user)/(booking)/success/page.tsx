@@ -123,12 +123,16 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
 
     // 🔸 Determine if this is a pure subscription or add-on payment
     const hasAddOns = addOns.length > 0;
-    const paymentMethod = hasAddOns
-      ? booking.payment_method === "cash"
-        ? "Cash"
-        : "Card"
-      : "Subscription";
 
+    const paymentMethod =
+      booking.payment_method === "cash"
+        ? "Cash"
+        : booking.payment_method === "card"
+          ? "Card"
+          : "Unknown";
+
+    const type: "checkout" | "subscription" =
+      booking.payment_method === "card" ? "checkout" : "checkout";
     // 🔸 Only show add-ons if user actually paid for them
     const items = [
       {
@@ -143,7 +147,7 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
       (hasAddOns ? addOns.reduce((sum, a) => sum + a.price, 0) : 0);
 
     orderData = {
-      type: hasAddOns ? "checkout" : "subscription",
+      type,
       date: new Date(booking.appointment_date).toLocaleDateString(), // ✅ FIXED date
       orderNumber: booking.id,
       paymentMethod,
@@ -173,6 +177,16 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
           </p>
         </div>
 
+        <div className="text-center mt-8 p-4 bg-card rounded-lg border mb-4">
+          <p className="text-sm text-green-500">
+            A confirmation email has been sent to your registered email address.
+            If you have any questions, please contact our support team.
+          </p>
+        </div>
+        <p className="text-sm text-green-600 mb-2">
+          You can also screenshot this receipt as an image for your records or
+          validity.
+        </p>
         {/* Order Details */}
         <Card className="mb-8">
           <CardHeader>
@@ -250,13 +264,6 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
           </CardContent>
         </Card>
 
-        <div className="text-center mt-8 p-4 bg-card rounded-lg border mb-4">
-          <p className="text-sm text-green-500">
-            A confirmation email has been sent to your registered email address.
-            If you have any questions, please contact our support team.
-          </p>
-        </div>
-
         <div className="space-y-4">
           <Button asChild className="w-full" size="lg">
             <Link href="/">Back to Home</Link>
@@ -266,7 +273,7 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
               <Link href="/services">Other services</Link>
             </Button>
             <Button asChild variant="outline" className="flex-1 bg-transparent">
-              <Link href="/support">Contact Support</Link>
+              <Link href="/contact">Contact Support</Link>
             </Button>
           </div>
         </div>

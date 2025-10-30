@@ -47,7 +47,7 @@ export default function PricingCard({
       {/* Popular badge */}
       {isPopular && (
         <div className="absolute -top-3 -right-3 z-10">
-          <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-slate-900 px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
+          <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-slate-900 px-3 py-1 text-xs font-bold rounded-full transform rotate-24 shadow-lg">
             POPULAR
           </div>
         </div>
@@ -56,7 +56,7 @@ export default function PricingCard({
       {/* Current plan badge */}
       {isCurrentPlan && (
         <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
-          <div className="inline-flex items-center rounded-full bg-gradient-to-r from-yellow-400 to-yellow-500 px-3 py-1 text-xs font-semibold text-accent-foreground shadow">
+          <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-slate-900 px-3 py-1 text-xs font-bold rounded-full transform shadow-lg">
             CURRENT PLAN
           </div>
         </div>
@@ -135,7 +135,7 @@ export default function PricingCard({
         <CardFooter className="px-6 py-6 bg-white border-t border-slate-200">
           <Button
             variant="outline"
-            className={`w-full font-semibold transition-all ${
+            className={`w-full font-semibold transition-all cursor-pointer ${
               isPopular
                 ? "bg-slate-900 text-white border-slate-900 hover:bg-slate-800"
                 : isCurrentPlan

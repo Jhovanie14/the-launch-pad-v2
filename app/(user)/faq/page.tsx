@@ -16,7 +16,7 @@ const faqData = [
     id: 2,
     question: "How long does a typical car wash take?",
     answer:
-      "Service times vary by package: Basic wash takes 15-20 minutes, Premium wash takes 30-45 minutes, and Full detailing services can take 2-4 hours depending on your vehicle's condition and selected services.",
+      "Service times vary by package: Basic wash takes 15-20 minutes, Premium wash takes 30-45 minutes, and Full detailing services can take 45 minutes to 1 hour depending on your vehicle's condition and selected services.",
   },
   {
     id: 3,
@@ -54,20 +54,20 @@ const faqData = [
     id: 8,
     question: "Can I wait in my car during the wash?",
     answer:
-      "For safety reasons, we require customers to exit their vehicles during automated wash cycles. However, you're welcome to wait in our comfortable customer lounge with complimentary Wi-Fi, refreshments, and charging stations.",
+      "Yes, you’re welcome to remain in your vehicle throughout the wash. Our system is fully designed for a safe and comfortable in-car experience.",
   },
   {
     id: 9,
     question: "Do you offer any guarantees on your services?",
     answer:
-      "We stand behind our work with a 100% satisfaction guarantee. If you're not completely satisfied with any service, let us know within 24 hours and we'll make it right with a complimentary re-wash or full refund.",
+      "We stand behind our work with a 100% satisfaction guarantee. If you're not completely satisfied with any service, let us know within 1 hour and we'll make it right with a complimentary re-wash",
   },
   {
     id: 10,
     question:
       "I have additional questions not covered here, who can I contact?",
     answer:
-      "Our friendly team is here to help! You can reach us at (832) 219-8320, email us at info@thelaunchpadwash.com, or visit us at 10410 Main St, Houston, TX, United States, Texas. ",
+      "Our friendly team is here to help! You can reach us at (832) 219-8320, email us at info@thelaunchpadht.com, or visit us at 10410 Main St, Houston, TX, United States, Texas. ",
     // You can also use our live chat feature on our website or mobile app.
   },
 ];

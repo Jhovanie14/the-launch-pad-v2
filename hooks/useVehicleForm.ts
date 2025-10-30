@@ -5,8 +5,8 @@ import { z } from "zod";
 
 // Vehicle schema
 export const vehicleSchema = z.object({
-  make: z.string().min(4, "Make is required, minimum of 4"),
-  model: z.string().min(4, "Model is required, minimum of 4"),
+  make: z.string().min(1, "Make is required, minimum of 4"),
+  model: z.string().min(1, "Model is required, minimum of 4"),
   year: z.string().regex(/^\d{4}$/, "Year must be a 4-digit number"),
   body_type: z.string().nonempty("Please select a body type"),
   color: z.string().min(1, "Color is required"),

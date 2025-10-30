@@ -78,9 +78,9 @@ export function Hero() {
               </Link>
               <Link
                 href="/how-it-works"
-                className="inline-flex items-center gap-2 px-8 py-3 border border-amber-500 hover:border-white text-amber-400 font-medium rounded-lg transition-colors duration-300 hover:bg-amber-500/50 hover:text-white"
+                className="inline-flex items-center gap-2 px-8 py-3 border border-white bg-amber-400 hover:border-white text-white font-medium rounded-lg transition-colors duration-300 hover:bg-amber-500/30 hover:text-white"
               >
-                Learn More
+                How it Works
               </Link>
             </div>
 

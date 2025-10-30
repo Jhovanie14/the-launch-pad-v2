@@ -16,7 +16,6 @@ export async function GET(request: Request) {
     }
 
     const token = await getCarApiToken();
-
     const res = await fetch(
       `https://carapi.app/api/trims/v2?year=${year}&make=${encodeURIComponent(
         make
@@ -24,10 +23,26 @@ export async function GET(request: Request) {
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
-    if (!res.ok)
+    if (!res.ok) {
       return NextResponse.json(await res.json(), { status: res.status });
+    }
 
-    return NextResponse.json(await res.json());
+    const payload = await res.json();
+    const raw = Array.isArray(payload?.data) ? payload.data : [];
+
+    // Deduplicate by trim name, keep first id
+    const map: Record<string, { id: number; trim: string }> = {};
+    for (const item of raw) {
+      const name = String(item?.trim ?? "").trim();
+      if (!name) continue;
+      const key = name.toLowerCase();
+      if (!map[key]) {
+        map[key] = { id: Number(item?.id), trim: name };
+      }
+    }
+    const unique = Object.values(map);
+
+    return NextResponse.json({ data: unique });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
