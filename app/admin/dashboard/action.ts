@@ -74,21 +74,12 @@ export async function getRevenueData() {
     sevenMonthsAgo.setMonth(sevenMonthsAgo.getMonth() - 7);
 
     // Get bookings with their prices
-    const { data: bookings, error } = await supabase
+    const { data: bookings } = await supabase
       .from("bookings")
       .select("total_price, created_at, status")
       .gte("created_at", sevenMonthsAgo.toISOString())
       .in("status", ["confirmed", "completed"])
       .order("created_at", { ascending: true });
-
-    if (error) throw error;
-    if (!bookings || bookings.length === 0) {
-      console.warn("No booking data found in last 7 months");
-      return {
-        revenue: new Array(7).fill(0),
-        expenses: new Array(7).fill(0),
-      };
-    }
 
     // Process revenue by month
     const revenueByMonth = processRevenueByMonth(bookings || []);

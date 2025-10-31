@@ -51,6 +51,9 @@ export default async function AdminDashboardPage() {
     categoryLabels: categoryData.labels,
   };
 
+  console.log("Dashboard Stats:", stats);
+  console.log("Revenue Data:", revenueData);
+
   // Calculate growth percentages
   const userGrowthPercentage =
     stats.totalUsers > 0
