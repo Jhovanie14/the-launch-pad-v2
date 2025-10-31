@@ -152,7 +152,11 @@ export function AuthContextProvider({
 
     const user = await getUserProfile();
     const role = user?.role || "user";
-    router.push(role === "admin" ? "/admin/dashboard" : "/dashboard");
+    router.push(
+      role === "admin" || role === "moderator"
+        ? "/admin/dashboard"
+        : "/dashboard"
+    );
   };
 
   const signUp = async (formData: FormData) => {

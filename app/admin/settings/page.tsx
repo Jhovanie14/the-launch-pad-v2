@@ -22,6 +22,7 @@ interface AdminProfile {
   full_name: string;
   email: string;
   avatar_url?: string;
+  role: string;
 }
 
 export default function AdminSettingsPage() {
@@ -36,13 +37,36 @@ export default function AdminSettingsPage() {
     avatar_url: "",
   });
 
+  const [currentUser, setCurrentUser] = useState<AdminProfile | null>(null);
+
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("id, full_name, email, avatar_url, role")
+          .eq("id", user.id)
+          .single();
+
+        if (profile) setCurrentUser(profile);
+      }
+    };
+
+    fetchCurrentUser();
+    fetchAdmins();
+  }, []);
+
   const fetchAdmins = async () => {
     setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, full_name, email, avatar_url")
-        .eq("role", "admin")
+        .select("id, full_name, email, avatar_url, role")
+        .eq("role", "moderator")
         .order("created_at", { ascending: true }); // or descending for newest first
 
       if (error) throw error;
@@ -112,7 +136,7 @@ export default function AdminSettingsPage() {
   };
 
   return (
-    <div className="container max-w-6xl mx-auto px-4">
+    <div className="container mx-auto px-4 py-20">
       <div className="space-y-6">
         <h1 className="text-2xl font-semibold">Admin Settings</h1>
         <p className="text-muted-foreground">
@@ -173,67 +197,74 @@ export default function AdminSettingsPage() {
               </div>
             </CardContent>
           </Card>
-          <div>
-            <div className="space-y-3">
-              <h1 className="text-2xl font-semibold">Admin Settings</h1>
-              <InviteAdminForm />
-            </div>
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle>Admin Users</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {isLoading ? (
-                  <p>Loading admins...</p>
-                ) : admins.length === 0 ? (
-                  <p>No admins found.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {admins.map((admin) => (
-                      <div
-                        key={admin.id}
-                        className="flex items-center justify-between gap-4 p-2 border rounded-md"
-                      >
-                        <div className="flex items-center gap-4">
-                          <Avatar className="h-10 w-10">
-                            <AvatarImage src={admin.avatar_url || undefined} />
-                            <AvatarFallback>
-                              {admin.full_name?.[0]?.toUpperCase() || "A"}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium">{admin.full_name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {admin.email}
-                            </p>
+          {currentUser?.role === "admin" && (
+            <div>
+              <div className="space-y-3">
+                <h1 className="text-2xl font-semibold">Admin Settings</h1>
+                <InviteAdminForm />
+              </div>
+              <Card className="mt-6">
+                <CardHeader>
+                  <CardTitle>Admin Moderators</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {isLoading ? (
+                    <p>Loading admins...</p>
+                  ) : admins.length === 0 ? (
+                    <p>No admins found.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {admins.map((admin) => (
+                        <div
+                          key={admin.id}
+                          className="flex items-center justify-between gap-4 p-2 border rounded-md"
+                        >
+                          <div className="flex items-center gap-4">
+                            <Avatar className="h-10 w-10">
+                              <AvatarImage
+                                src={admin.avatar_url || undefined}
+                              />
+                              <AvatarFallback>
+                                {admin.full_name?.[0]?.toUpperCase() || "A"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="space-y-2">
+                              <p className="font-semibold">{admin.full_name}</p>
+                              <p className="text-sm text-foreground">
+                                {admin.email}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {admin.role}
+                              </p>
+                            </div>
                           </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost">
+                                <MoreHorizontal size={20} />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => toast("Edit admin")}
+                              >
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => toast("Delete admin")}
+                              >
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost">
-                              <MoreHorizontal size={20}/>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => toast("Edit admin")}
-                            >
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => toast("Delete admin")}
-                            >
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
       </div>
     </div>

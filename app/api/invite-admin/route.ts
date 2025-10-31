@@ -25,6 +25,7 @@ export async function POST(req: Request) {
   // 3️⃣ Create a new user using the service role
   const { data, error } = await supabaseAdmin.auth.admin.createUser({
     email,
+    password: "launchpad2024!",
     email_confirm: true,
     user_metadata: { full_name },
   });
@@ -40,7 +41,7 @@ export async function POST(req: Request) {
       id: data.user.id,
       email,
       full_name,
-      role: "admin",
+      role: "moderator",
       created_at: new Date().toISOString(),
     });
   }

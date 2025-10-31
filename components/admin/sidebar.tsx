@@ -39,6 +39,12 @@ const navigation = [
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
+const restrictedForModerators = [
+  "/admin/addons",
+  "/admin/subscriptions",
+  "/admin/services",
+];
+
 export function AdminSidebar({ user }: AdminSidebarProps) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -75,6 +81,13 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  const filteredNav =
+    user?.role === "moderator"
+      ? navigation.filter(
+          (item) => !restrictedForModerators.includes(item.href)
+        )
+      : navigation;
 
   return (
     <div
@@ -114,7 +127,7 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
       </div>
 
       <nav className="mt-6 px-3">
-        {navigation.map((item) => {
+        {filteredNav.map((item) => {
           const isActive = pathname === item.href;
           return (
             <Link
@@ -163,7 +176,9 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
               <p className="text-sm font-medium">
                 {user.full_name || user.email}
               </p>
-              <p className="text-xs text-gray-400">Administrator</p>
+              <p className="text-xs text-gray-400">
+                {user.role === "admin" ? "Administrator" : "Moderator"}
+              </p>
             </div>
           </div>
           <div className="ml-auto">

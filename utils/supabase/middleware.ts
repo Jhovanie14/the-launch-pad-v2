@@ -85,7 +85,7 @@ export async function updateSession(request: NextRequest) {
 
   // Handle authenticated users
   if (user) {
-    if (userRole === "admin") {
+    if (userRole === "admin" || userRole === "moderator") {
       // Admin accessing admin root
       if (pathname === "/admin")
         return NextResponse.redirect(new URL("/admin/dashboard", request.url));
