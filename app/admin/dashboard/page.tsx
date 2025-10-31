@@ -44,16 +44,16 @@ export default async function AdminDashboardPage() {
       getBookingStats(),
     ]);
   const chartData = {
-    revenue: revenueData.revenue,
-    expenses: revenueData.expenses,
-    userGrowth: stats.userGrowthByDay,
-    categories: categoryData.values,
-    categoryLabels: categoryData.labels,
+    revenue: revenueData?.revenue?.length
+      ? revenueData.revenue
+      : [0, 0, 0, 0, 0, 0, 0],
+    expenses: revenueData?.expenses?.length
+      ? revenueData.expenses
+      : [0, 0, 0, 0, 0, 0, 0],
+    userGrowth: stats?.userGrowthByDay || [0, 0, 0, 0, 0, 0, 0],
+    categories: categoryData?.values || [],
+    categoryLabels: categoryData?.labels || [],
   };
-
-  console.log("Dashboard Stats:", stats);
-  console.log("Revenue Data:", revenueData);
-
   // Calculate growth percentages
   const userGrowthPercentage =
     stats.totalUsers > 0
@@ -64,12 +64,14 @@ export default async function AdminDashboardPage() {
         ).toFixed(1)
       : "0.0";
 
-  const nonZero = revenueData.revenue.filter((v) => v > 0);
-  const last = nonZero.at(-1) || 0;
-  const prev = nonZero.at(-2) || 0;
-
   const revenueGrowthPercentage =
-    prev > 0 ? (((last - prev) / prev) * 100).toFixed(1) : "0.0";
+    revenueData.revenue.length >= 2 && revenueData.revenue[5] > 0
+      ? (
+          ((revenueData.revenue[6] - revenueData.revenue[5]) /
+            revenueData.revenue[5]) *
+          100
+        ).toFixed(1)
+      : "0.0";
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
