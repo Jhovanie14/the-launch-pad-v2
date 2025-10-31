@@ -271,8 +271,7 @@ export default async function AdminDashboardPage() {
                   </div>
                 </CardContent>
               </Card>
-
-              <Card>
+              {/* <Card>
                 <CardHeader>
                   <CardTitle>System Status</CardTitle>
                   <CardDescription>
@@ -307,7 +306,7 @@ export default async function AdminDashboardPage() {
                     </div>
                   </div>
                 </CardContent>
-              </Card>
+              </Card> */}
             </div>
           </div>
         </div>
