@@ -70,19 +70,14 @@ export async function getRevenueData() {
 
   try {
     // Get booking data for the last 7 months
-    const now = new Date();
-    const sevenMonthsAgoUTC = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 7, 1)
-    );
-
-    console.log("Server Time (UTC):", new Date().toISOString());
-    console.log("Fetching bookings after:", sevenMonthsAgoUTC.toISOString());
+    const sevenMonthsAgo = new Date();
+    sevenMonthsAgo.setMonth(sevenMonthsAgo.getMonth() - 7);
 
     // Get bookings with their prices
     const { data: bookings } = await supabase
       .from("bookings")
       .select("total_price, created_at, status")
-      .gte("created_at", sevenMonthsAgoUTC.toISOString())
+      .gte("created_at", sevenMonthsAgo.toISOString())
       .in("status", ["confirmed", "completed"])
       .order("created_at", { ascending: true });
 

@@ -43,17 +43,15 @@ export default async function AdminDashboardPage() {
       getCategoryData(),
       getBookingStats(),
     ]);
+  console.log(categoryData);
   const chartData = {
-    revenue: revenueData?.revenue?.length
-      ? revenueData.revenue
-      : [0, 0, 0, 0, 0, 0, 0],
-    expenses: revenueData?.expenses?.length
-      ? revenueData.expenses
-      : [0, 0, 0, 0, 0, 0, 0],
-    userGrowth: stats?.userGrowthByDay || [0, 0, 0, 0, 0, 0, 0],
-    categories: categoryData?.values || [],
-    categoryLabels: categoryData?.labels || [],
+    revenue: revenueData.revenue,
+    expenses: revenueData.expenses,
+    userGrowth: stats.userGrowthByDay,
+    categories: categoryData.values,
+    categoryLabels: categoryData.labels,
   };
+
   // Calculate growth percentages
   const userGrowthPercentage =
     stats.totalUsers > 0
@@ -166,7 +164,7 @@ export default async function AdminDashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    ${revenueData.revenue[5].toFixed(2) || "0"}
+                    ${revenueData.revenue[6]?.toLocaleString() || "0"}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {revenueGrowthPercentage}% from last month
@@ -274,7 +272,8 @@ export default async function AdminDashboardPage() {
                   </div>
                 </CardContent>
               </Card>
-              {/* <Card>
+
+              <Card>
                 <CardHeader>
                   <CardTitle>System Status</CardTitle>
                   <CardDescription>
@@ -309,7 +308,7 @@ export default async function AdminDashboardPage() {
                     </div>
                   </div>
                 </CardContent>
-              </Card> */}
+              </Card>
             </div>
           </div>
         </div>
