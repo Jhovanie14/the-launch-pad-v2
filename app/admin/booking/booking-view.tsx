@@ -104,7 +104,7 @@ export default function BookingsView() {
       const { data, error } = await supabase
         .from("bookings")
         .select("total_price")
-        .eq("status", "completed");
+        .in("status", ["completed", "confirmed"]);
 
       if (error) {
         console.error("Error fetching total revenue:", error);

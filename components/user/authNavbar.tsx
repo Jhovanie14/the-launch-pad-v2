@@ -167,7 +167,6 @@ export function AuthNavbar() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={signOut}>
                     Sign Out
-                    <DropdownMenuShortcut>Q</DropdownMenuShortcut>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

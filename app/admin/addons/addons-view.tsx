@@ -92,7 +92,6 @@ export default function AddOnsView() {
       .order("created_at", { ascending: true });
     setLoading(false);
     if (error) console.error(error);
-    console.log(data);
     setAddOns(data ?? []);
   }, [supabase]);
 
@@ -103,7 +102,6 @@ export default function AddOnsView() {
   const handleCreate = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      console.log(form);
       const priceNum = Number(form.price);
       const durationNum = Number(form.duration);
 

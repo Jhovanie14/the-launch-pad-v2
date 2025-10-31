@@ -43,7 +43,6 @@ export default async function AdminDashboardPage() {
       getCategoryData(),
       getBookingStats(),
     ]);
-  console.log(categoryData);
   const chartData = {
     revenue: revenueData.revenue,
     expenses: revenueData.expenses,
@@ -164,7 +163,7 @@ export default async function AdminDashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    ${revenueData.revenue[6]?.toLocaleString() || "0"}
+                    ${revenueData.revenue[5]?.toLocaleString() || "0"}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     +{revenueGrowthPercentage}% from last month

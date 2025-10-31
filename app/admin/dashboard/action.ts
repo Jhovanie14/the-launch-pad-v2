@@ -83,13 +83,13 @@ export async function getRevenueData() {
 
     // Process revenue by month
     const revenueByMonth = processRevenueByMonth(bookings || []);
-
+    // console.log("Revenue by Month:", revenueByMonth);
     return revenueByMonth;
   } catch (error) {
     console.error("Error fetching revenue data:", error);
     return {
-      revenue: [12000, 19000, 15000, 25000, 22000, 30000, 35000],
-      expenses: [8000, 12000, 10000, 15000, 14000, 18000, 20000],
+      revenue: [],
+      expenses: [],
     };
   }
 }
