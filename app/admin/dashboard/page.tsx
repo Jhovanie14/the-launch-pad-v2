@@ -64,14 +64,12 @@ export default async function AdminDashboardPage() {
         ).toFixed(1)
       : "0.0";
 
+  const nonZero = revenueData.revenue.filter((v) => v > 0);
+  const last = nonZero.at(-1) || 0;
+  const prev = nonZero.at(-2) || 0;
+
   const revenueGrowthPercentage =
-    revenueData.revenue.length >= 2 && revenueData.revenue[5] > 0
-      ? (
-          ((revenueData.revenue[6] - revenueData.revenue[5]) /
-            revenueData.revenue[5]) *
-          100
-        ).toFixed(1)
-      : "0.0";
+    prev > 0 ? (((last - prev) / prev) * 100).toFixed(1) : "0.0";
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">

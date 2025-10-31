@@ -66,7 +66,7 @@ export default function AdminSettingsPage() {
       const { data, error } = await supabase
         .from("profiles")
         .select("id, full_name, email, avatar_url, role")
-        .eq("role", "moderator")
+        .eq("role", "admin")
         .order("created_at", { ascending: true }); // or descending for newest first
 
       if (error) throw error;
