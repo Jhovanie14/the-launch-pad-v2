@@ -76,7 +76,7 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
                 beginAtZero: true,
                 ticks: {
                   callback: function (value) {
-                    return "₱" + Number(value).toLocaleString();
+                    return "$" + Number(value).toLocaleString();
                   },
                 },
               },

@@ -1,93 +1,149 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-  type CarouselApi,
-} from "@/components/ui/carousel";
-import { Star, Users2 } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
-import { Review } from "@/types";
-import { useEffect, useState } from "react";
-import { ReviewCarousel } from "./review-carousel";
+import { motion } from "framer-motion";
+import Image from "next/image";
 
-export default function Customers() {
-  const supabase = createClient();
-  const [api, setApi] = useState<CarouselApi>();
-  const [current, setCurrent] = useState(0);
-  const [count, setCount] = useState(0);
-  const [reviews, setReviews] = useState<Review[]>([]);
+interface Testimonial {
+  id: number;
+  image: string;
+}
 
-  useEffect(() => {
-    async function fetchReview() {
-      const { data, error } = await supabase
-        .from("reviews")
-        .select(
-          `*, 
-            bookings (
-              service_package_name
-            ),
-            profiles (
-              full_name,
-              avatar_url
-            )`
-        )
-        .limit(10)
-        .order("created_at", { ascending: false });
+const testimonials: Testimonial[] = [
+  {
+    id: 1,
 
-      if (error) throw error;
-      // console.log(data);
-      setReviews(data || []);
-    }
-    fetchReview();
-    // api
-    if (!api) {
-      return;
-    }
+    image: "/reviews/image10.png",
+  },
+  {
+    id: 2,
 
-    setCount(api.scrollSnapList().length);
-    setCurrent(api.selectedScrollSnap() + 1);
+    image: "/reviews/image11.png",
+  },
+  {
+    id: 3,
 
-    api.on("select", () => {
-      setCurrent(api.selectedScrollSnap() + 1);
-    });
-  }, [api]);
+    image: "/reviews/image12.png",
+  },
+  {
+    id: 4,
 
-  return (
-    <div className="py-16 md:py-20">
-      <div className="container mx-auto px-4">
-        <div className="mb-10">
-          <div className="text-center space-y-6">
-            <h1 className="text-4xl md:text-6xl font-bold text-blue-900">
-              What Our Customers Say
-            </h1>
-            <p className="text-xl text-accent-foreground max-w-2xl mx-auto">
-              Don't just take our word for it. Hear what our satisfied customers
-              have to say about their experience at The Launch Pad.
-            </p>
-          </div>
-        </div>
+    image: "/reviews/image13.png",
+  },
+  {
+    id: 5,
 
-        <ReviewCarousel reviews={reviews} autoplayInterval={5000} />
+    image: "/reviews/image14.png",
+  },
+  {
+    id: 6,
+    image: "/reviews/image15.png",
+  },
+  {
+    id: 7,
+    image: "/reviews/image16.png",
+  },
+  {
+    id: 8,
+    image: "/reviews/image17.png",
+  },
+  {
+    id: 9,
+    image: "/reviews/image18.png",
+  },
+  {
+    id: 10,
+    image: "/reviews/image19.png",
+  },
+];
 
-        <div className="flex justify-center space-x-2 mt-6">
-          {Array.from({ length: count }).map((_, index) => (
-            <button
-              key={index}
-              onClick={() => api?.scrollTo(index)}
-              className={`w-2 h-2 rounded-full transition-colors ${
-                index + 1 === current
-                  ? "bg-blue-600"
-                  : "bg-gray-300 hover:bg-gray-400"
-              }`}
-            />
-          ))}
-        </div>
+const duplicatedTestimonials = [...testimonials, ...testimonials];
+
+export default function Testimonials() {
+  // const leftColumnAnimation = {
+  //   animate: {
+  //     y: [0, -1200],
+  //     transition: {
+  //       duration: 30,
+  //       repeat: Number.POSITIVE_INFINITY,
+  //       ease: "linear",
+  //       repeatType: "loop" as const,
+  //     },
+  //   },
+  // };
+
+  // const rightColumnAnimation = {
+  //   animate: {
+  //     y: [-600, -1800],
+  //     transition: {
+  //       duration: 30,
+  //       repeat: Number.POSITIVE_INFINITY,
+  //       ease: "linear",
+  //       repeatType: "loop" as const,
+  //     },
+  //   },
+  // };
+
+  const TestimonialCard = ({ testimonial }: { testimonial: Testimonial }) => (
+    <div className="bg-white rounded-2xl p-6 shadow-lg flex-shrink-0 w-full">
+      <div className="mb-3">
+        <span className="text-5xl font-bold text-yellow-400">"</span>
+      </div>
+
+      <div className="flex items-center">
+        <Image
+          src={testimonial.image || "/placeholder.svg"}
+          alt={testimonial.image}
+          width={450}
+          height={450}
+          className="w-full h-full rounded-md object-cover"
+        />
       </div>
     </div>
+  );
+
+  return (
+    <section className="bg-gradient-to-br from-blue-700 to-blue-900 py-20 rounded-md px-4 sm:px-6 lg:px-8">
+      <div className="container mx-auto">
+        <div className="grid lg:grid-cols-2 gap-8 items-start">
+          {/* Left Content */}
+          <div className="text-white">
+            <div className="inline-block border border-blue-200 rounded-full px-4 py-2 mb-6 text-sm font-semibold text-blue-100">
+              TESTIMONIALS
+            </div>
+            <h2 className="text-5xl sm:text-6xl font-bold mb-6 leading-tight">
+              What Our Customers are Saying
+            </h2>
+            <p className="text-lg text-emerald-100 leading-relaxed max-w-md">
+              Don't just take our word for it, see what our happy customers are
+              saying! These testimonials show how we make every car shine and
+              every visit worth it.
+            </p>
+          </div>
+
+          {/* Right Escalator Cards */}
+          <div className="flex gap-6 h-96 w-full overflow-hidden">
+            <motion.div
+              className="flex-1 flex flex-col gap-6"
+              animate={{
+                y: [-600, -1800],
+              }}
+              transition={{
+                duration: 30,
+                repeat: Infinity,
+                ease: "linear",
+                repeatType: "loop",
+              }}
+            >
+              {duplicatedTestimonials.map((testimonial, index) => (
+                <TestimonialCard
+                  key={`right-${index}`}
+                  testimonial={testimonial}
+                />
+              ))}
+            </motion.div>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
