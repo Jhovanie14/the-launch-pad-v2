@@ -31,6 +31,7 @@ import { Suspense, useEffect, useState } from "react";
 import { createBooking } from "../action";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
 function ConfirmationContent() {
   const router = useRouter();
@@ -58,6 +59,9 @@ function ConfirmationContent() {
 
   const [appointmentDate, setAppointmentDate] = useState<string | null>(null);
   const [appointmentTime, setAppointmentTime] = useState<string | null>(null);
+
+  const [promoCode, setPromoCode] = useState("");
+  const [discountPercent, setDiscountPercent] = useState(0);
 
   const dateParam = searchParams.get("date");
   const timeParam = searchParams.get("time");
@@ -113,6 +117,42 @@ function ConfirmationContent() {
     })();
   }, [serviceId, addonsParam, dateParam, timeParam, supabase, user?.id]);
 
+  async function validatePromoCode() {
+    if (!promoCode) return;
+
+    const { data, error } = await supabase
+      .from("promo_codes")
+      .select("discount_percent, is_active, applies_to")
+      .ilike("code", promoCode.trim())
+      .maybeSingle();
+
+    console.log("Promo code data:", data, error);
+
+    if (error || !data) {
+      toast.error("Invalid promo code");
+      return;
+    }
+    if (!data.is_active) {
+      toast.error("This promo code is not active");
+      return;
+    }
+
+    if (data.applies_to !== "one_time" && data.applies_to !== "both") {
+      toast.error("This promo code cannot be used for one-time bookings");
+      return;
+    }
+
+    setDiscountPercent(data.discount_percent);
+    toast.success(`Promo applied! ${data.discount_percent}% off your total`);
+  }
+
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase.from("promo_codes").select("*");
+      console.log("🔍 All promo codes:", data, error);
+    })();
+  }, []);
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       weekday: "long",
@@ -147,6 +187,24 @@ function ConfirmationContent() {
     const basePrice = Number(selectedPackages?.price) || 0;
     return basePrice + addOnsTotal;
   };
+
+  const calculateTotalWithPromo = () => {
+    const total = calculateTotal();
+    return discountPercent > 0
+      ? total - (total * discountPercent) / 100
+      : total;
+  };
+
+  function calculateDiscountedAddOnsTotal() {
+    const addOnsTotal = Array.isArray(selectedAddOns)
+      ? selectedAddOns.reduce((sum, a) => sum + Number(a.price), 0)
+      : 0;
+
+    if (!discountPercent || discountPercent <= 0) return addOnsTotal;
+
+    const discounted = addOnsTotal - addOnsTotal * (discountPercent / 100);
+    return Math.round(discounted * 100) / 100; // round to 2 decimals
+  }
 
   const formatTime = (time: string) => {
     const [hours, minutes] = time.split(":").map(Number);
@@ -198,6 +256,8 @@ function ConfirmationContent() {
         ? selectedAddOns.reduce((sum, a) => sum + Number(a.price), 0)
         : 0;
 
+      const totalWithDiscount = Number(calculateTotalWithPromo().toFixed(2));
+
       if (paymentMethod === "cash") {
         const booking = await createBooking({
           year: parseInt(vehicleSpecs.year || "0"),
@@ -211,7 +271,7 @@ function ConfirmationContent() {
             : [],
           appointmentDate: new Date(appointmentDate!),
           appointmentTime: appointmentTime!.toString(),
-          totalPrice: calculateTotal(),
+          totalPrice: totalWithDiscount,
           totalDuration: calculateDuration(),
           payment_method: "cash",
         });
@@ -239,7 +299,7 @@ function ConfirmationContent() {
             ) ?? [],
           appointmentDate: appointmentDate,
           appointmentTime: appointmentTime!.toString(),
-          totalPrice: isSubscribed ? addOnsTotal : calculateTotal(),
+          totalPrice: isSubscribed ? addOnsTotal : totalWithDiscount,
           totalDuration: calculateDuration(),
           payment_method: "card",
         };
@@ -259,6 +319,9 @@ function ConfirmationContent() {
       setIsSubmitting(false);
     }
   };
+
+  const isFreeForSubscriber =
+    isSubscribed && (!selectedAddOns || selectedAddOns.length === 0);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -397,7 +460,12 @@ function ConfirmationContent() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Total Price:</span>
-                    <span className="font-medium">${calculateTotal()}</span>
+                    <span className="font-medium">
+                      $
+                      {discountPercent > 0
+                        ? calculateTotalWithPromo().toFixed(2)
+                        : calculateTotal()}
+                    </span>
                   </div>
                 </div>
               </CardContent>
@@ -411,9 +479,21 @@ function ConfirmationContent() {
                 </p>
               </div>
             )}
-            {/* Action Buttons */}
-            <div className="w-full md:flex space-y-3 md:space-y-0  md:justify-between">
-              <div className="flex justify-between items-center mt-4">
+            {discountPercent > 0 && (
+              <p className="text-green-600 text-sm mt-2">
+                Promo applied: {discountPercent}% off — New Total: $
+                {calculateTotalWithPromo().toFixed(2)}
+              </p>
+            )}
+            {isFreeForSubscriber && (
+              <p className="text-sm text-gray-500 mt-1">
+                Promo codes are not applicable — your wash is free under your
+                subscription.
+              </p>
+            )}
+            <div className="w-full md:flex space-y-3 md:space-y-0 items-center md:justify-between">
+              {/* Promo code */}
+              <div className="flex justify-between items-center gap-1">
                 <Label className="text-accent-foreground" id="promoCode">
                   Promo Code:
                 </Label>
@@ -423,12 +503,21 @@ function ConfirmationContent() {
                     type="text"
                     placeholder="Enter promo code"
                     className="w-48"
+                    value={promoCode}
+                    onChange={(e) => setPromoCode(e.target.value)}
                   />
-                  <Button variant="outline" className="border-blue-900">
+                  <Button
+                    variant="outline"
+                    className="border-blue-900"
+                    disabled={!promoCode || isFreeForSubscriber}
+                    onClick={validatePromoCode}
+                  >
                     Apply
                   </Button>
                 </div>
               </div>
+
+              {/* Action Buttons */}
               <Button
                 onClick={handleConfirmBooking}
                 disabled={isSubmitting}

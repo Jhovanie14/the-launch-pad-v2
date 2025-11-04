@@ -104,7 +104,7 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
     const { data: booking } = await supabase
       .from("bookings")
       .select(
-        "id, service_package_name, service_package_price, appointment_date, payment_method"
+        "id, service_package_name, service_package_price, appointment_date, payment_method, total_price"
       )
       .eq("id", params.booking_id)
       .single();
@@ -142,6 +142,11 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
       items.reduce((sum, i) => sum + i.price * i.quantity, 0) +
       (hasAddOns ? addOns.reduce((sum, a) => sum + a.price, 0) : 0);
 
+    const discountedTotal = booking.total_price ?? subtotal;
+    const discountAmount = subtotal - discountedTotal;
+    const discountPercent =
+      discountAmount > 0 ? Math.round((discountAmount / subtotal) * 100) : 0;
+
     orderData = {
       type: hasAddOns ? "checkout" : "subscription",
       date: new Date(booking.appointment_date).toLocaleDateString(), // ✅ FIXED date
@@ -150,7 +155,9 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
       items,
       subtotal,
       tax: 0,
-      total: subtotal,
+      total: booking.total_price ?? subtotal,
+      discountAmount,
+      discountPercent,
     };
   }
 
@@ -236,6 +243,14 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
                 <span className="text-muted-foreground">Subtotal</span>
                 <span>${orderData.subtotal.toFixed(2)}</span>
               </div>
+
+              {orderData.discountAmount && orderData.discountAmount > 0 && (
+                <div className="flex justify-between items-center text-sm text-green-600">
+                  <span>Discount ({orderData.discountPercent ?? 0}%)</span>
+                  <span>- ${orderData.discountAmount.toFixed(2)}</span>
+                </div>
+              )}
+
               <div className="flex justify-between items-center text-sm">
                 <span className="text-muted-foreground">Tax</span>
                 <span>${orderData.tax.toFixed(2)}</span>

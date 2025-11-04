@@ -417,20 +417,6 @@ function ConfirmationContent() {
               </div>
             </CardContent>
           </Card>
-          <div className="flex justify-between items-center mt-4">
-            <Label className="text-accent-foreground" id="promoCode">
-              Promo Code:
-            </Label>
-            <div className="flex space-x-2">
-              <Input
-                id="promoCode"
-                type="text"
-                placeholder="Enter promo code"
-                className="w-48"
-              />
-              <Button variant="outline" className="border-blue-900">Apply</Button>
-            </div>
-          </div>
           <Button
             onClick={handleConfirmBooking}
             disabled={isSubmitting}

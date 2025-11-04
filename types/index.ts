@@ -109,6 +109,8 @@ export interface OrderData {
   subtotal: number; // sum of items
   tax: number; // Stripe only (0 for subscription)
   total: number; // subtotal + tax
+  discountAmount?: number | 0;
+  discountPercent?: number | 0;
 }
 
 export interface Review {

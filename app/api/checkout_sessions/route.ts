@@ -42,12 +42,19 @@ export async function POST(req: Request) {
   //     quantity: 1,
   //   })) || []),
   // ];
+  const discountFactor =
+    body.totalPrice /
+    (body.servicePackagePrice +
+      body.addOns.reduce((s: number, a: any) => s + a.price, 0));
+
   const lineItems = [
     {
       price_data: {
         currency: "usd",
         product_data: { name: body.servicePackageName },
-        unit_amount: Math.round(Number(body.servicePackagePrice) * 100), // ✅ only base price
+        unit_amount: Math.round(
+          Number(body.servicePackagePrice) * 100 * discountFactor
+        ),
       },
       quantity: 1,
     },
@@ -55,11 +62,12 @@ export async function POST(req: Request) {
       price_data: {
         currency: "usd",
         product_data: { name: addon.name },
-        unit_amount: Math.round(Number(addon.price) * 100),
+        unit_amount: Math.round(Number(addon.price) * 100 * discountFactor),
       },
       quantity: 1,
     })) || []),
   ];
+
   const aids =
     body.addOnsId?.join(",") ??
     body.addOns?.map((a: any) => a.id).join(",") ??
@@ -77,7 +85,7 @@ export async function POST(req: Request) {
     aids: aids, // Comma-separated is smaller than array
     ad: body.appointmentDate ?? "",
     at: body.appointmentTime ?? "",
-    tp: Math.round(Number(body.totalPrice)),
+    tp: Number(parseFloat(body.totalPrice).toFixed(2)),
     td: body.totalDuration ?? 0,
     em: user?.email ?? body.customerEmail ?? "",
     nm: user?.user_metadata.full_name ?? body.customerName ?? "",

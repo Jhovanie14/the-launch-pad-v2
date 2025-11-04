@@ -31,14 +31,13 @@ export default async function BlogPostPage({
                       <Image
                         src={post.cover_image}
                         alt={post.title}
-                        layout="fill"
-                        objectFit="contain"
+                        fill
                         className="rounded-lg"
                       />
                     </div>
                   )}
                   <div className="prose prose-lg max-w-none">
-                    <p>{post.content}</p>
+                    <p className="whitespace-pre-line">{post.content}</p>
                   </div>
                 </article>
               ) : (

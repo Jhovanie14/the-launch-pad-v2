@@ -16,6 +16,7 @@ import {
   Truck,
   Notebook,
   MessageCircle,
+  HandHelping,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/auth-context";
@@ -34,6 +35,7 @@ const navigation = [
   { name: "Subscriptions", href: "/admin/subscriptions", icon: CreditCard },
   { name: "Services", href: "/admin/services", icon: Car },
   { name: "Add-ons", href: "/admin/addons", icon: Truck },
+  { name: "Promo codes", href: "/admin/promo", icon: HandHelping },
   { name: "Blog", href: "/admin/blog", icon: Notebook },
   { name: "Contact", href: "/admin/contact", icon: MessageCircle },
   { name: "Settings", href: "/admin/settings", icon: Settings },
