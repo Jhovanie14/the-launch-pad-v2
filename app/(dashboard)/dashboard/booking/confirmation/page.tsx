@@ -29,6 +29,8 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { createBooking } from "../action";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 function ConfirmationContent() {
   const router = useRouter();
@@ -411,9 +413,22 @@ function ConfirmationContent() {
             )}
             {/* Action Buttons */}
             <div className="w-full md:flex space-y-3 md:space-y-0  md:justify-between">
-              {/* <Button variant="outline" className=" px-8 py-3">
-                Back to Date & Time
-              </Button> */}
+              <div className="flex justify-between items-center mt-4">
+                <Label className="text-accent-foreground" id="promoCode">
+                  Promo Code:
+                </Label>
+                <div className="flex space-x-2">
+                  <Input
+                    id="promoCode"
+                    type="text"
+                    placeholder="Enter promo code"
+                    className="w-48"
+                  />
+                  <Button variant="outline" className="border-blue-900">
+                    Apply
+                  </Button>
+                </div>
+              </div>
               <Button
                 onClick={handleConfirmBooking}
                 disabled={isSubmitting}
@@ -426,7 +441,7 @@ function ConfirmationContent() {
               </Button>
             </div>
           </div>
-          <div className="space-y-4 hidden md:block">
+          <div className="space-y-4">
             <Card>
               <CardHeader className="pb-4">
                 <CardTitle className="text-lg font-semibold text-foreground">

@@ -66,7 +66,7 @@ export default function SubscriptionCart({
   };
 
   const bodyTypeOptions: Record<string, string[]> = {
-    Sedans: ["Sedan", "Coupe", "Convertible"],
+    Sedans: ["Sedan"],
     Suvs: ["SUV"],
     "Compact SUV": ["Compact SUV"],
     "Small Truck": ["Small Pickup Truck"],

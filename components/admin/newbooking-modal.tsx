@@ -122,13 +122,11 @@ export default function NewBookingModal({
                 <SelectContent>
                   {[
                     "Sedan",
-                    "Coupe",
                     "Compact Suv",
-                    "SUV",
+                    "Suvs",
                     "Small Truck",
+                    "Big Truck",
                     "Van",
-                    "Truck",
-                    "Convertible",
                   ].map((type) => (
                     <SelectItem key={type} value={type}>
                       {type}

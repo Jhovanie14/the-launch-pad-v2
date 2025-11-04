@@ -274,7 +274,7 @@ function ConfirmationContent() {
         customerPhone,
       };
 
-      console.log(payload);
+      // console.log(payload);
 
       // Card payment
       const res = await fetch("/api/checkout_sessions", {
@@ -417,7 +417,20 @@ function ConfirmationContent() {
               </div>
             </CardContent>
           </Card>
-
+          <div className="flex justify-between items-center mt-4">
+            <Label className="text-accent-foreground" id="promoCode">
+              Promo Code:
+            </Label>
+            <div className="flex space-x-2">
+              <Input
+                id="promoCode"
+                type="text"
+                placeholder="Enter promo code"
+                className="w-48"
+              />
+              <Button variant="outline" className="border-blue-900">Apply</Button>
+            </div>
+          </div>
           <Button
             onClick={handleConfirmBooking}
             disabled={isSubmitting}
@@ -431,7 +444,7 @@ function ConfirmationContent() {
         </div>
 
         {/* Right: Progress */}
-        <div className="space-y-4 hidden md:block">
+        <div className="space-y-4">
           <Card>
             <CardHeader className="pb-4">
               <CardTitle className="text-lg font-semibold text-foreground">

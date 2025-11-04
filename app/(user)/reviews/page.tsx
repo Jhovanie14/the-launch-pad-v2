@@ -7,7 +7,7 @@ import { useBooking } from "@/context/bookingContext";
 import { Review } from "@/types";
 // import { Review } from "@/types";
 import { createClient } from "@/utils/supabase/client";
-import { Star, Quote, TrendingUp, Users, Award } from "lucide-react";
+import { Star, TrendingUp, Users, Award } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -18,7 +18,7 @@ export default function ReviewsPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const stats = [
-    { label: "Happy Customers", value: "2,500+", icon: Users },
+    { label: "Happy Customers", value: "500+", icon: Users },
     { label: "Average Rating", value: "4.9/5", icon: Star },
     { label: "Years of Excellence", value: "8+", icon: Award },
     { label: "Customer Retention", value: "95%", icon: TrendingUp },
