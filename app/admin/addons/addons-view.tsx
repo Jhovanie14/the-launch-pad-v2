@@ -47,6 +47,8 @@ export default function AddOnsView() {
   const [addOns, setAddOns] = useState<AddOns[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [editAddOn, setEditAddOn] = useState<AddOns | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
 
   const resetForm = () => {
     setForm({
@@ -121,6 +123,41 @@ export default function AddOnsView() {
     },
     [form, supabase, resetForm, setOpen, fetchAddOns]
   );
+  const handleEditClick = (addon: AddOns) => {
+    setEditAddOn(addon);
+    setForm({
+      name: addon.name,
+      price: addon.price.toString(),
+      duration: addon.duration.toString(),
+      is_active: addon.is_active,
+    });
+    setEditOpen(true);
+  };
+
+  // Handle Update
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editAddOn) return;
+
+    const { error } = await supabase
+      .from("add_ons")
+      .update({
+        name: form.name,
+        price: Number(form.price),
+        duration: Number(form.duration),
+        is_active: form.is_active,
+      })
+      .eq("id", editAddOn.id);
+
+    if (error) {
+      console.error("Update error:", error);
+      toast.error("Failed to update add-on");
+    } else {
+      toast.success("Add-on updated successfully!");
+      setEditOpen(false);
+      fetchAddOns(); // refresh list
+    }
+  };
 
   if (loading) {
     return (
@@ -291,7 +328,11 @@ export default function AddOnsView() {
                       {addon.duration} minutes
                     </p>
                   </div>
-                  <Button size="sm" variant="outline">
+                  <Button
+                    onClick={() => handleEditClick(addon)}
+                    size="sm"
+                    variant="outline"
+                  >
                     <Edit className="h-3 w-3 mr-1" />
                     Edit
                   </Button>
@@ -312,6 +353,59 @@ export default function AddOnsView() {
             </CardContent>
           </Card>
         ))}
+        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Add-on</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleUpdate} className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="name">Name</Label>
+                <Input id="name" value={form.name} onChange={handleChange} />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="price">Price</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  step="0.01"
+                  value={form.price}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="duration">Duration (minutes)</Label>
+                <Input
+                  id="duration"
+                  type="number"
+                  value={form.duration}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="flex items-center gap-3 md:col-span-2">
+                <input
+                  id="is_active"
+                  type="checkbox"
+                  checked={form.is_active}
+                  onChange={handleCheckbox}
+                />
+                <Label htmlFor="is_active">Active</Label>
+              </div>
+
+              <DialogFooter className="md:col-span-2">
+                <DialogClose asChild>
+                  <Button variant="outline">Cancel</Button>
+                </DialogClose>
+                <Button type="submit" className="bg-blue-900 hover:bg-blue-800">
+                  Save Changes
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

@@ -34,8 +34,8 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
         ? session.payment_intent
         : session.payment_intent?.id;
 
-    console.log("Booking Meta:", bookingMeta);
-    console.log("Payment Intent ID:", paymentIntentId);
+    // console.log("Booking Meta:", bookingMeta);
+    // console.log("Payment Intent ID:", paymentIntentId);
 
     // 🟩 Fetch booking from Supabase using payment_intent_id
     const { data: booking, error: bookingError } = await supabase

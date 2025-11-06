@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 
 type ServicePackage = {
   id: string;
@@ -61,6 +61,8 @@ function ServiceSelectionPage() {
 
   const bodyType = (vehicleSpecs.body_type || "").toLowerCase();
 
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+
   // Filter services by category matching body type
   const filteredServices = services.filter((s) =>
     bodyType ? s.category?.toLowerCase() === bodyType : true
@@ -68,6 +70,13 @@ function ServiceSelectionPage() {
 
   const handlePackageSelect = (serviceId: string) => {
     setSelectedService(serviceId);
+
+    setTimeout(() => {
+      bottomRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 100);
   };
 
   const handleContinue = () => {
@@ -262,7 +271,10 @@ function ServiceSelectionPage() {
                 </CardContent>
               </Card>
             ))}
-            <div className="flex items-center justify-between border-t p-3 mt-10">
+            <div
+              ref={bottomRef}
+              className="flex items-center justify-between border-t p-3 mt-10"
+            >
               {selectserv && (
                 <>
                   <div className="flex flex-col space-y-1">
