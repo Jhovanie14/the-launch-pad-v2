@@ -68,7 +68,7 @@ export default function Contact() {
                   href="mailto:thelaunchpadht@gmail.com"
                   className="text-muted-foreground hover:text-blue-900 font-medium"
                 >
-                  thelaunchpadht@gmail.com
+                  info@thelaunchpadht.com
                 </a>
               </div>
               <div className="flex items-center space-x-4">

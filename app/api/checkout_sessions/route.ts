@@ -73,7 +73,27 @@ export async function POST(req: Request) {
     body.addOns?.map((a: any) => a.id).join(",") ??
     "";
 
-  console.log("aids", aids);
+  const year = body.vehicleSpecs?.year?.toString() || "";
+  const make = body.vehicleSpecs?.make || "";
+  const model = body.vehicleSpecs?.model || "";
+  const body_type = body.vehicleSpecs?.body_type || "";
+  const color = body.vehicleSpecs?.color || "";
+  const service = body.servicePackageId || "";
+  const addons = aids || "";
+  const date = body.appointmentDate || "";
+  const time = body.appointmentTime || "";
+
+  const currentParams = new URLSearchParams({
+    year,
+    make,
+    model,
+    body_type,
+    color,
+    service,
+    addons,
+    date,
+    time,
+  }).toString();
 
   // Prepare booking data for webhook
   const bookingData = {
@@ -118,9 +138,12 @@ export async function POST(req: Request) {
         ? `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/bookings/success?session_id={CHECKOUT_SESSION_ID}`
         : `${process.env.NEXT_PUBLIC_SITE_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
 
-      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/booking/confirmation?cancelled=1`,
+      cancel_url: user?.id
+        ? `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/booking/confirmation?${currentParams}`
+        : `${process.env.NEXT_PUBLIC_SITE_URL}/confirmation?${currentParams}`,
       metadata,
     });
+    ``;
 
     return new Response(JSON.stringify({ url: session.url }), { status: 200 });
   } catch (err) {

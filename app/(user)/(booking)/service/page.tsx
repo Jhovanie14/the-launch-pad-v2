@@ -2,6 +2,8 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { createClient } from "@/utils/supabase/client";
 import {
   ArrowLeft,
@@ -13,7 +15,8 @@ import {
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 type ServicePackage = {
   id: string;
@@ -48,7 +51,10 @@ function ServiceSelectionPage() {
 
   const [addOns, setAddOns] = useState<AddOns[]>([]);
   const [services, setServices] = useState<ServicePackage[]>([]);
-  const [selectedService, setSelectedService] = useState<string | null>(null);
+  const [vehicleModalOpen, setVehicleModalOpen] = useState(false);
+  const [showVehicleError, setShowVehicleError] = useState(false);
+
+  const selectedServiceParam = searchParams.get("service");
   const [vehicleSpecs, setVehicleSpecs] = useState<any>({
     year: searchParams.get("year"),
     make: searchParams.get("make"),
@@ -56,6 +62,12 @@ function ServiceSelectionPage() {
     body_type: searchParams.get("body_type"),
     color: searchParams.get("color"),
   });
+  const [selectedService, setSelectedService] = useState<string | null>(
+    selectedServiceParam
+  );
+
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const vehicleInfoRef = useRef<HTMLDivElement | null>(null);
 
   const selectserv = services.find((s) => s.id === selectedService);
 
@@ -68,9 +80,30 @@ function ServiceSelectionPage() {
 
   const handlePackageSelect = (serviceId: string) => {
     setSelectedService(serviceId);
+
+    setTimeout(() => {
+      bottomRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 100);
   };
 
   const handleContinue = () => {
+    if (
+      !vehicleSpecs.year ||
+      !vehicleSpecs.make ||
+      !vehicleSpecs.model ||
+      !vehicleSpecs.color
+    ) {
+      toast.error("Please add your vehicle information first.");
+      vehicleInfoRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+      return;
+    }
+
     if (!selectserv) return;
     setAddOnOpen(true);
   };
@@ -205,6 +238,32 @@ function ServiceSelectionPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-8">
+        {/* Vehicle Info Card */}
+        <div ref={vehicleInfoRef} className="mb-6">
+          <Card className="mb-6 shadow-sm border border-gray-200">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-lg font-semibold text-gray-900">
+                  Vehicle Information
+                </CardTitle>
+                <p className="text-sm text-gray-500">
+                  {vehicleSpecs.year
+                    ? `${vehicleSpecs.year} ${vehicleSpecs.make} ${vehicleSpecs.model} (${vehicleSpecs.color})`
+                    : "No vehicle information added yet"}
+                </p>
+              </div>
+
+              <Button
+                variant="outline"
+                className="border-blue-900 text-blue-900 hover:bg-blue-900 hover:text-white transition-all"
+                onClick={() => setVehicleModalOpen(true)}
+              >
+                {vehicleSpecs.year ? "Edit Vehicle" : "Add Vehicle"}
+              </Button>
+            </CardHeader>
+          </Card>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-[800px_1fr] gap-8">
           <div className="space-y-6">
             {filteredServices.length === 0 && (
@@ -262,7 +321,10 @@ function ServiceSelectionPage() {
                 </CardContent>
               </Card>
             ))}
-            <div className="flex items-center justify-between border-t p-3 mt-10">
+            <div
+              ref={bottomRef}
+              className="flex items-center justify-between border-t p-3 mt-10"
+            >
               {selectserv && (
                 <>
                   <div className="flex flex-col space-y-1">
@@ -367,6 +429,157 @@ function ServiceSelectionPage() {
                 </>
               )}
             </div>
+            {vehicleModalOpen && (
+              <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-3xl w-full max-w-md shadow-xl overflow-hidden border border-gray-100">
+                  {/* Header */}
+                  <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-blue-900 to-blue-800 text-white">
+                    <div>
+                      <h2 className="text-lg font-semibold">
+                        {vehicleSpecs.year
+                          ? "Edit Vehicle Information"
+                          : "Add Vehicle Information"}
+                      </h2>
+                      <p className="text-xs text-blue-100">
+                        Your vehicle details help us recommend the right
+                        services.
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setVehicleModalOpen(false)}
+                      className="text-blue-100 hover:text-white hover:bg-blue-800/30"
+                    >
+                      <X className="w-5 h-5" />
+                    </Button>
+                  </div>
+
+                  {/* Form */}
+                  <div className="p-6 space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="year"
+                          className="text-sm font-medium text-gray-700"
+                        >
+                          Year
+                        </Label>
+                        <Input
+                          id="year"
+                          type="number"
+                          placeholder="e.g. 2020"
+                          value={vehicleSpecs.year || ""}
+                          onChange={(e) =>
+                            setVehicleSpecs((prev: any) => ({
+                              ...prev,
+                              year: e.target.value,
+                            }))
+                          }
+                          className="rounded-xl focus-visible:ring-blue-900"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="make"
+                          className="text-sm font-medium text-gray-700"
+                        >
+                          Make
+                        </Label>
+                        <Input
+                          id="make"
+                          type="text"
+                          placeholder="e.g. Toyota"
+                          value={vehicleSpecs.make || ""}
+                          onChange={(e) =>
+                            setVehicleSpecs((prev: any) => ({
+                              ...prev,
+                              make: e.target.value,
+                            }))
+                          }
+                          className="rounded-xl focus-visible:ring-blue-900"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="model"
+                          className="text-sm font-medium text-gray-700"
+                        >
+                          Model
+                        </Label>
+                        <Input
+                          id="model"
+                          type="text"
+                          placeholder="e.g. Camry"
+                          value={vehicleSpecs.model || ""}
+                          onChange={(e) =>
+                            setVehicleSpecs((prev: any) => ({
+                              ...prev,
+                              model: e.target.value,
+                            }))
+                          }
+                          className="rounded-xl focus-visible:ring-blue-900"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="color"
+                          className="text-sm font-medium text-gray-700"
+                        >
+                          Color
+                        </Label>
+                        <Input
+                          id="color"
+                          type="text"
+                          placeholder="e.g. Black"
+                          value={vehicleSpecs.color || ""}
+                          onChange={(e) =>
+                            setVehicleSpecs((prev: any) => ({
+                              ...prev,
+                              color: e.target.value,
+                            }))
+                          }
+                          className="rounded-xl focus-visible:ring-blue-900"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Info Box */}
+                    <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-900 flex items-start space-x-3">
+                      <Car className="w-5 h-5 mt-0.5 text-blue-700 flex-shrink-0" />
+                      <p>
+                        These details ensure accurate service duration and
+                        pricing for your specific vehicle type.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="flex justify-end items-center px-6 py-4 border-t border-gray-100 bg-gray-50">
+                    <Button
+                      className="bg-blue-900 hover:bg-blue-800 text-white flex items-center gap-2 rounded-xl px-5"
+                      onClick={() => {
+                        setVehicleModalOpen(false);
+
+                        // ✅ Scroll down to next section smoothly after saving
+                        setTimeout(() => {
+                          bottomRef.current?.scrollIntoView({
+                            behavior: "smooth",
+                            block: "center",
+                          });
+                        }, 300); // small delay for modal close animation
+                      }}
+                    >
+                      <Check className="w-4 h-4" />
+                      Save Vehicle
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
           <div className="space-y-4 hidden md:block">
             <Card>

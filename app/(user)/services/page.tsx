@@ -21,6 +21,7 @@ import {
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useBooking } from "@/context/bookingContext";
+import { useRouter } from "next/navigation";
 
 type ServicePackage = {
   id: string;
@@ -36,6 +37,8 @@ type ServicePackage = {
 };
 
 export default function ServicePage() {
+  const router = useRouter();
+
   const supabase = createClient();
   const { openBookingModal } = useBooking();
   const [services, setServices] = useState<ServicePackage[]>([]);
@@ -200,7 +203,9 @@ export default function ServicePage() {
                   <motion.div
                     key={service.id}
                     onClick={() => {
-                      openBookingModal();
+                      router.push(
+                        `/service?service=${service.id}&body_type=${service.category}`
+                      );
                     }}
                     variants={cardVariants}
                     whileHover="hover"
