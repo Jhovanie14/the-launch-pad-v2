@@ -70,7 +70,11 @@ export default function BookingsView() {
   const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split("T")[0]
+    new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    })
   );
 
   // Fetch all bookings
@@ -438,7 +442,7 @@ export default function BookingsView() {
         </div>
       </div>
 
-      <Card className="bg-card border-border">
+      <Card className="bg-card border-border mb-10">
         <CardHeader>
           <CardTitle className="text-card-foreground">
             Bookings for {new Date(selectedDate).toLocaleDateString()}

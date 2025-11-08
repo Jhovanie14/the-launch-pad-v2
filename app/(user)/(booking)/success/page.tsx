@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import { stripe } from "@/lib/stripe/stripe";
-import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { OrderData } from "@/types";
 
@@ -170,7 +169,9 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
             <CheckCircle className="h-16 w-16 text-green-500" />
           </div>
           <h1 className="text-3xl font-bold text-primary mb-2">
-            Payment Successful!
+            {orderData.paymentMethod === "Card"
+              ? "Payment Successful!"
+              : "Booking Confirmed!"}
           </h1>
           <p className="text-muted-foreground text-lg">
             Thank you for your purchase. Your order has been confirmed.

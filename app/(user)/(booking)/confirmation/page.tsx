@@ -172,6 +172,7 @@ function ConfirmationContent() {
           model: vehicleSpecs.model || "",
           body_type: vehicleSpecs.body_type || "",
           colors: [vehicleSpecs.color || ""],
+
           servicePackage: { ...selectedPackages, price: 0 },
           addOnsId: [],
           appointmentDate: new Date(appointmentDate!),
@@ -252,6 +253,7 @@ function ConfirmationContent() {
         model: vehicleSpecs.model || "",
         body_type: vehicleSpecs.body_type || "",
         colors: [vehicleSpecs.color || ""],
+        vehicleSpecs,
         servicePackageId: selectedPackages!.id,
         servicePackageName: selectedPackages!.name,
         servicePackagePrice: selectedPackages!.price, // 👈 zero if subscribed
