@@ -32,6 +32,7 @@ import z from "zod";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import LoadingDots from "@/components/loading";
 
 const guestSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -634,17 +635,9 @@ function ConfirmationContent() {
   );
 }
 
-function ConfirmationLoading() {
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="animate-pulse h-64 bg-gray-200"></div>
-    </div>
-  );
-}
-
 export default function ConfirmationPage() {
   return (
-    <Suspense fallback={<ConfirmationLoading />}>
+    <Suspense fallback={<LoadingDots />}>
       <ConfirmationContent />
     </Suspense>
   );

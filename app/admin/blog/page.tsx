@@ -21,6 +21,7 @@ import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useBlog } from "@/hooks/useBlog";
 import { BlogPost } from "@/types";
 import { BlogPostForm } from "@/components/blog-post.form";
+import LoadingDots from "@/components/loading";
 
 export default function BlogManagement() {
   // const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -37,52 +38,11 @@ export default function BlogManagement() {
   } = useBlog();
 
   if (loading) {
-    return (
-      <main className="flex-1 overflow-y-auto p-6">
-        {/* Header Skeleton */}
-        <div className="mb-6 flex items-center justify-between animate-pulse">
-          <div className="h-8 w-48 bg-gray-200 rounded"></div>
-          <div className="h-10 w-28 bg-gray-200 rounded"></div>
-        </div>
-
-        {/* Grid Skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="flex flex-col rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden"
-            >
-              {/* Image placeholder */}
-              <div className="aspect-video bg-gray-200" />
-
-              {/* Card Header */}
-              <div className="p-4 space-y-3">
-                <div className="h-6 w-3/4 bg-gray-200 rounded"></div>
-                <div className="h-4 w-full bg-gray-200 rounded"></div>
-                <div className="h-4 w-5/6 bg-gray-200 rounded"></div>
-              </div>
-
-              {/* Card Content */}
-              <div className="px-4 pb-3 space-y-2">
-                <div className="h-3 w-1/3 bg-gray-200 rounded"></div>
-                <div className="h-3 w-1/2 bg-gray-200 rounded"></div>
-                <div className="h-3 w-1/4 bg-gray-200 rounded"></div>
-              </div>
-
-              {/* Footer Buttons */}
-              <div className="flex space-x-3 p-3">
-                <div className="h-8 w-full bg-gray-200 rounded"></div>
-                <div className="h-8 w-full bg-gray-200 rounded"></div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </main>
-    );
+    return <LoadingDots />;
   }
 
   return (
-    <main className="flex-1 overflow-y-auto p-6">
+    <main className="flex-1 overflow-y-auto mt-16 lg:mt-0 p-6">
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-3xl font-bold">Blog Management</h1>

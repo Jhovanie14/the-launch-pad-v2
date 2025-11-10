@@ -8,7 +8,7 @@ export async function POST(req: Request) {
     const { email, name, bookingId } = await req.json();
     console.log("🟢 Tip email request received:", { email, name, bookingId });
 
-    const tipLink = `https://buy.stripe.com/test_7sY5kC7jc1WD4tHci1cwg00?booking=${bookingId}`;
+    const tipLink = `https://buy.stripe.com/bJeaEW32W1WD4tHeq9cwg01?booking=${bookingId}`;
 
     const data = await resend.emails.send({
       from: "The Launch Pad Wash <noreply@thelaunchpadwash.com>",
@@ -219,18 +219,33 @@ export async function POST(req: Request) {
                           </div>
                           <div class="reason">
                             <span class="reason-icon">✨</span>
-                            <span><strong>Quality matters</strong> — Tips help us invest in the best tools & training</span>
+                            <span><strong>100% to attendants</strong> — Every tip goes directly to the car wash attendants working on your vehicle</span>
                           </div>
                           <div class="reason">
                             <span class="reason-icon">🚀</span>
-                            <span><strong>Drives growth</strong> — Supports us bringing more locations & services to you</span>
+                            <span><strong>Your appreciation matters</strong> — Tips recognize their effort and motivate great service every time</span>
                           </div>
                         </div>
                       </div>
 
                       <!-- CTA -->
                       <div class="cta-container">
-                        <a href="${tipLink}" target="_blank" class="cta-button">💙 Leave a Tip (2 min)</a>
+                        <a href="${tipLink}" target="_blank" class="cta-button">💙 Leave a Tip</a>
+                      </div>
+
+                      <!-- Google Review Section -->
+                      <div class="cta-container">
+                        <p class="message-text" style="margin-bottom: 12px;">
+                          Loved your car wash experience? 💫 Let others know!
+                        </p>
+                        <a
+                          href="https://g.page/r/CZw2a77VbVUUEBM/review"
+                          target="_blank"
+                          class="cta-button"
+                          style="background: linear-gradient(135deg, #34d399 0%, #059669 100%); box-shadow: 0 4px 12px rgba(52, 211, 153, 0.4);"
+                        >
+                          ⭐ Leave us a Google Review
+                        </a>
                       </div>
 
                       <p class="message-text" style="text-align: center; font-size: 14px; color: #888; margin: 16px 0 0 0;">

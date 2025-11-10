@@ -34,6 +34,7 @@ import {
   Upload,
 } from "lucide-react";
 import type { SubscriptionPlans } from "@/types";
+import LoadingDots from "@/components/loading";
 
 export default function SubscriptionView() {
   const supabase = createClient();
@@ -41,6 +42,8 @@ export default function SubscriptionView() {
   const [subscriptionPlans, setSubscriptionPlans] = useState<
     SubscriptionPlans[]
   >([]);
+  const [monthlyRevenue, setMonthlyRevenue] = useState(0);
+  const [avgSubscription, setAvgSubscription] = useState(0);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<SubscriptionPlans | null>(
@@ -54,6 +57,48 @@ export default function SubscriptionView() {
     description: "",
     image_url: "",
   });
+
+  const fetchRevenue = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("user_subscription")
+        .select(
+          `
+        price_id,
+        subscription_plan:subscription_plans (
+          monthly_price,
+          yearly_price
+        )
+      `
+        )
+        .eq("status", "active");
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        // calculate total revenue based on monthly_price for simplicity
+        const totalRevenue = data.reduce((acc, sub: any) => {
+          const price = Number(sub.subscription_plan?.monthly_price || 0);
+          return acc + price;
+        }, 0);
+
+        const avg = totalRevenue / data.length;
+
+        setMonthlyRevenue(totalRevenue);
+        setAvgSubscription(avg);
+      } else {
+        setMonthlyRevenue(0);
+        setAvgSubscription(0);
+      }
+    } catch (err) {
+      console.error("Error fetching revenue:", err);
+      setMonthlyRevenue(0);
+      setAvgSubscription(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
 
   // Fetch subscription plans
   const fetchSubscription = useCallback(async () => {
@@ -71,7 +116,8 @@ export default function SubscriptionView() {
 
   useEffect(() => {
     fetchSubscription();
-  }, [fetchSubscription]);
+    fetchRevenue();
+  }, [fetchSubscription, fetchRevenue]);
 
   // Open modal
   const openModal = (plan?: SubscriptionPlans) => {
@@ -152,7 +198,6 @@ export default function SubscriptionView() {
         image_url: form.image_url, // already set by handleImageUpload
       };
 
-
       if (currentPlan) {
         const { error } = await supabase
           .from("subscription_plans")
@@ -177,6 +222,10 @@ export default function SubscriptionView() {
       setUploading(false);
     }
   };
+
+  if (loading) {
+    return <LoadingDots />;
+  }
 
   return (
     <div className="flex-1 overflow-y-auto bg-gradient-to-br from-background via-background to-muted/20">
@@ -229,7 +278,9 @@ export default function SubscriptionView() {
                   <p className="text-sm font-medium text-muted-foreground">
                     Monthly Revenue
                   </p>
-                  <p className="text-3xl font-bold text-foreground">$0</p>
+                  <p className="text-3xl font-bold text-foreground">
+                    {monthlyRevenue}
+                  </p>
                   <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
                     +12.5% from last month
                   </p>
@@ -267,7 +318,9 @@ export default function SubscriptionView() {
                   <p className="text-sm font-medium text-muted-foreground">
                     Avg. Subscription
                   </p>
-                  <p className="text-3xl font-bold text-foreground">$0</p>
+                  <p className="text-3xl font-bold text-foreground">
+                    {avgSubscription}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     Per customer value
                   </p>

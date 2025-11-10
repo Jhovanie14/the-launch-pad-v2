@@ -25,7 +25,7 @@ export const faqData = [
     category: "Billing & Payments",
     question: "Can I get an invoice for my payment?",
     answer:
-      "Yes, invoices are automatically generated and sent to your email after each payment. You can also download them from your billing dashboard.",
+      "Yes, invoices are automatically generated and sent to your email after each payment.",
   },
   {
     id: "technical-1",
@@ -39,14 +39,14 @@ export const faqData = [
     category: "Technical Issues",
     question: "Is there an API available?",
     answer:
-      "Yes, we provide a comprehensive REST API. Check our API documentation for endpoints, authentication, and code examples.",
+      "Currently, we do not offer an API. All features and data interactions are managed directly within the platform.",
   },
   {
     id: "feature-1",
     category: "Features",
     question: "How do I export my data?",
     answer:
-      "You can export your data in CSV or JSON format from Settings > Data Export. The export will be emailed to you within 24 hours.",
+      "Data export is not supported at the moment. All user information and content remain securely stored within the platform.",
   },
   {
     id: "feature-2",
@@ -60,7 +60,7 @@ export const faqData = [
     category: "Services & Packages",
     question: "What services does The Launch Pad offer?",
     answer:
-      "We offer a comprehensive range of car care services including exterior wash packages, interior detailing, paint protection, ceramic coating, wax treatments, and premium detailing services. Our packages range from basic wash to full-service premium detailing.",
+      "We offer a comprehensive range of car care services including exterior wash packages, express interior detailing, paint protection, wax treatments, and epxress premium detailing services. Our packages range from basic wash to deluxe premium detailing.",
   },
   {
     id: "services-2",

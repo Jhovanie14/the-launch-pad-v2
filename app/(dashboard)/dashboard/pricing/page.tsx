@@ -12,6 +12,7 @@ import { usePricingPlans } from "@/hooks/usePricingPlans";
 
 import AuthPromptModal from "@/components/user/authPromptModal";
 import PricingCard from "@/components/pricing-plan";
+import LoadingDots from "@/components/loading";
 
 export default function PricingPage() {
   const router = useRouter();
@@ -33,39 +34,7 @@ export default function PricingPage() {
   };
 
   if (loading) {
-    return (
-      <>
-        {/* Header Skeleton */}
-        <section className="py-20 text-center">
-          <div className="flex flex-col items-center space-y-6">
-            <div className="animate-pulse bg-gray-200 h-8 w-40 rounded-lg"></div>
-            <div className="animate-pulse bg-gray-200 h-5 w-64 rounded-lg"></div>
-          </div>
-
-          {/* Pricing toggle skeleton */}
-          <div className="mt-10 flex justify-center space-x-4">
-            <div className="animate-pulse bg-gray-200 h-10 w-28 rounded-full"></div>
-            <div className="animate-pulse bg-gray-200 h-10 w-28 rounded-full"></div>
-          </div>
-        </section>
-
-        {/* Pricing cards grid skeleton */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-8 px-4 md:px-0">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="animate-pulse bg-white rounded-2xl shadow-md p-8 flex flex-col items-center space-y-6"
-            >
-              <div className="bg-gray-200 h-6 w-32 rounded"></div>
-              <div className="bg-gray-200 h-10 w-24 rounded"></div>
-              <div className="bg-gray-200 h-4 w-40 rounded"></div>
-              <div className="bg-gray-200 h-4 w-28 rounded"></div>
-              <div className="bg-gray-200 h-10 w-full rounded mt-4"></div>
-            </div>
-          ))}
-        </section>
-      </>
-    );
+    return <LoadingDots />;
   }
 
   return (

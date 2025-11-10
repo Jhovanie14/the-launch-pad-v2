@@ -23,10 +23,8 @@ export interface Booking {
   user_id: string | null;
   vehicle_id: string | null;
   service_package_id: string | null;
-  add_ons_id: string | null;
   service_package_name: string | null;
   service_package_price: string | null; // numeric comes as string from Supabase
-  add_ons: AddOn[];
   appointment_date: string; // ISO string from DB
   appointment_time: string; // e.g. "14:30:00"
   total_price: string; // numeric comes as string
@@ -42,8 +40,8 @@ export interface Booking {
   created_at: string;
   updated_at: string;
   confirmed_at: string | null;
-  completed_at: string | null;
-
+  completed_at: string | null; 
+  add_ons: AddOn[];
   // Relation join
   vehicle?: Vehicle | null;
 }

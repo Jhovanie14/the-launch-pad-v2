@@ -79,6 +79,7 @@ export default function ServiceModal({ service, onClose }: ServiceModalProps) {
                   src={images[currentImageIndex] || ""}
                   alt={`${service.alt} - Image ${currentImageIndex + 1}`}
                   fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   className="object-cover transition-opacity duration-300"
                 />
               </div>
@@ -174,12 +175,6 @@ export default function ServiceModal({ service, onClose }: ServiceModalProps) {
               >
                 Close
               </Button>
-              {/* <Button
-                onClick={handleGetStarted}
-                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
-              >
-                Get Started
-              </Button> */}
             </div>
           </div>
         </div>

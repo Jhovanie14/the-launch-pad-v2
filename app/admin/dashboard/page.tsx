@@ -43,7 +43,7 @@ export default async function AdminDashboardPage() {
       getCategoryData(),
       getBookingStats(),
     ]);
-  console.log(categoryData);
+  // console.log(categoryData);
   const chartData = {
     revenue: revenueData.revenue,
     expenses: revenueData.expenses,
@@ -273,7 +273,7 @@ export default async function AdminDashboardPage() {
                 </CardContent>
               </Card>
 
-              <Card>
+              {/* <Card>
                 <CardHeader>
                   <CardTitle>System Status</CardTitle>
                   <CardDescription>
@@ -308,7 +308,7 @@ export default async function AdminDashboardPage() {
                     </div>
                   </div>
                 </CardContent>
-              </Card>
+              </Card> */}
             </div>
           </div>
         </div>

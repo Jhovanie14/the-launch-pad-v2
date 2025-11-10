@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import LoadingDots from "@/components/loading";
 
 export default function AdminPromos() {
   const supabase = createClient();
@@ -90,8 +91,12 @@ export default function AdminPromos() {
     }
   }
 
+  if (loading) {
+    return <LoadingDots />;
+  }
+
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-6">
+    <div className="p-8 max-w-5xl mx-auto mt-16 lg:mt-0 space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>Add New Promo Code</CardTitle>
@@ -137,7 +142,7 @@ export default function AdminPromos() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <p>Loading...</p>
+            <LoadingDots />
           ) : promos.length === 0 ? (
             <p className="text-gray-500">No promo codes yet.</p>
           ) : (

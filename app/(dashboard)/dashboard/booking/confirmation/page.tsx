@@ -32,6 +32,7 @@ import { createBooking } from "../action";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import LoadingDots from "@/components/loading";
 
 function ConfirmationContent() {
   const router = useRouter();
@@ -344,17 +345,6 @@ function ConfirmationContent() {
           </div>
         </div>
       </div>
-      {/* {userSubscribe && (
-        <Card className="mt-10">
-          <CardHeader>
-            <CardTitle>User Subscription</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p>Customer ID: {userSubscribe.stripe_customer_id}</p>
-            <p>Subscription ID: {userSubscribe.stripe_subscription_id}</p>
-          </CardContent>
-        </Card>
-      )} */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className=" space-y-6">
@@ -523,9 +513,7 @@ function ConfirmationContent() {
                 disabled={isSubmitting}
                 className="bg-blue-900 hover:bg-blue-800 px-8 py-3"
               >
-                {isSubmitting && (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                )}
+                {isSubmitting && <LoadingDots />}
                 {isSubmitting ? "Redirecting..." : "Proceed to Payment"}
               </Button>
             </div>
@@ -642,30 +630,9 @@ function ConfirmationContent() {
   );
 }
 
-function ConfirmationLoading() {
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
-            <div className="animate-pulse bg-gray-200 h-6 w-48 rounded"></div>
-          </div>
-        </div>
-      </div>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-6">
-          <div className="animate-pulse bg-white rounded-lg p-6 h-48"></div>
-          <div className="animate-pulse bg-white rounded-lg p-6 h-64"></div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function ConfirmationPage() {
   return (
-    <Suspense fallback={<ConfirmationLoading />}>
+    <Suspense fallback={<LoadingDots />}>
       <ConfirmationContent />
     </Suspense>
   );

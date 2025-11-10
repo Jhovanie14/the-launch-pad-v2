@@ -19,6 +19,7 @@ import {
 } from "./ui/select";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
+import LoadingDots from "./loading";
 
 export default function BookingModal() {
   const { user, isLoading } = useAuth();
@@ -123,7 +124,7 @@ export default function BookingModal() {
   };
 
   if (isLoading) {
-    return <div>loading....</div>;
+    return <LoadingDots />;
   }
 
   if (!isBookingModalOpen) return null;
@@ -159,7 +160,7 @@ export default function BookingModal() {
                 value={selectedVehicleId ?? ""}
                 onValueChange={setSelectedVehicleId}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select your Vehicle" />
                 </SelectTrigger>
                 <SelectContent>

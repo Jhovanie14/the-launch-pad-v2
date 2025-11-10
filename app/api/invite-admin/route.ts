@@ -41,7 +41,7 @@ export async function POST(req: Request) {
       id: data.user.id,
       email,
       full_name,
-      role: "moderator",
+      role: "admin",
       created_at: new Date().toISOString(),
     });
   }

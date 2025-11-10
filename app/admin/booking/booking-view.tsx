@@ -22,8 +22,6 @@ import {
   Clock,
   AlertCircle,
   Phone,
-  Edit,
-  Trash2,
   Mail,
   CreditCard,
   Banknote,
@@ -41,10 +39,10 @@ import { Pagination } from "@/components/ui/pagination";
 import { useBookingRealtime } from "@/hooks/useBookingRealtime";
 import { Button } from "@/components/ui/button";
 import { ExportModal } from "@/components/export-modal";
-import { useBooking } from "@/context/bookingContext";
 import NewBookingModal from "@/components/admin/newbooking-modal";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import LoadingDots from "@/components/loading";
 
 type UserSubscription = {
   user_id: string;
@@ -70,11 +68,7 @@ export default function BookingsView() {
   const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(
-    new Date().toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    })
+    format(new Date(), "yyyy-MM-dd")
   );
 
   // Fetch all bookings
@@ -87,7 +81,11 @@ export default function BookingsView() {
         .select(
           `*,
           vehicle:vehicles ( year, make, model, body_type, colors ),
-          add_ons ( name, price )`
+           booking_add_ons (
+          add_ons (
+            id, name, price, duration, is_active
+          )
+        )`
         )
         .order("appointment_date", { ascending: true });
 
@@ -97,12 +95,16 @@ export default function BookingsView() {
         console.error("Error fetching bookings:", error);
         return;
       }
-
-      setBookings(data || []);
+      const formatted = (data || []).map((b) => ({
+        ...b,
+        add_ons:
+          b.booking_add_ons?.map((ba: any) => ba.add_ons).filter(Boolean) || [],
+      }));
+      setBookings(formatted);
     };
 
     fetchBookings();
-  }, [supabase]);
+  }, []);
 
   // Fetch user subscriptions
   useEffect(() => {
@@ -115,12 +117,11 @@ export default function BookingsView() {
         console.error("Error fetching subscriptions:", error);
         return;
       }
-
       setUserSubscribe(data || []);
     };
 
     fetchUserSubscribe();
-  }, [supabase]);
+  }, []);
 
   // Fetch total revenue
   useEffect(() => {
@@ -144,7 +145,7 @@ export default function BookingsView() {
     };
 
     fetchTotalRevenue();
-  }, [supabase]);
+  }, []);
 
   // Realtime updates
   useBookingRealtime(setBookings);
@@ -179,6 +180,15 @@ export default function BookingsView() {
         if (booking?.customer_email) {
           console.log("📨 Sending tip email to:", booking.customer_email);
           await fetch("/api/send-tip-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: booking.customer_email,
+              name: booking.customer_name,
+              bookingId: booking.id,
+            }),
+          });
+          await fetch("/api/send-invoice", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -359,24 +369,7 @@ export default function BookingsView() {
 
   // Loading state
   if (loading && bookings.length === 0) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="bg-white shadow-sm border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
-              <div className="animate-pulse bg-gray-200 h-6 w-48 rounded"></div>
-            </div>
-          </div>
-        </div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="space-y-6">
-            <div className="animate-pulse bg-white rounded-lg p-6 h-48"></div>
-            <div className="animate-pulse bg-white rounded-lg p-6 h-64"></div>
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingDots />;
   }
 
   return (
@@ -482,9 +475,32 @@ export default function BookingsView() {
                             <h3 className="font-semibold text-card-foreground text-base sm:text-lg">
                               {booking.customer_name}
                             </h3>
-                            <p className="text-lg sm:text-2xl font-medium text-accent-foreground">
+                          </div>
+                          <div className="flex flex-col sm:flex-row items-baseline sm:items-center space-y-2 sm:space-y-0 space-x-3">
+                            <h3 className="font-semibold text-card-foreground text-base sm:text-lg">
+                              Service Package:
+                            </h3>
+                            <p className="text-xs sm:text-sm font-light text-accent-foreground">
                               {booking.service_package_name}
                             </p>
+                            <h3 className="font-semibold text-card-foreground text-base sm:text-lg">
+                              Inclusions:
+                            </h3>
+                            {booking.add_ons?.length > 0 ? (
+                              <ul>
+                                {booking.add_ons.map((addon) => (
+                                  <li key={addon.id}>
+                                    <p className="text-xs sm:text-sm font-light text-accent-foreground">
+                                      {addon.name}
+                                    </p>
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <span className="text-xs sm:text-sm font-light text-accent-foreground">
+                                No add-ons
+                              </span>
+                            )}
                           </div>
                           <p className="flex items-center text-sm sm:text-lg font-medium text-accent-foreground gap-2">
                             <Car className="w-5 h-5" />
@@ -549,7 +565,7 @@ export default function BookingsView() {
                             {booking.status}
                           </Badge>
 
-                          <span className="font-semibold text-card-foreground text-sm sm:text-base">
+                          <span className="font-semibold text-card-foreground text-lg sm:text-xl">
                             ${booking.total_price}
                           </span>
                         </div>
@@ -571,6 +587,7 @@ export default function BookingsView() {
                           {booking.status === "confirmed" && (
                             <Button
                               size="sm"
+                              disabled={loading}
                               onClick={() =>
                                 updateBookingStatus(booking.id, "completed")
                               }

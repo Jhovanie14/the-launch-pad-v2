@@ -56,7 +56,7 @@ const services = [
     images: [
       "/professional-express-car-detailing.png",
       "/professional-express-car-detailing-1.png",
-      "/professional-detailing-3.jpg",
+      "/professional-express-car-detailing-2.png",
     ],
     alt: "Professional-Express-Car-Detailing",
     features: [
@@ -84,7 +84,7 @@ const services = [
     image: "/express-detailing-subscription.png",
     images: [
       "/express-detailing-subscription.png",
-      "/subscription-service-3.jpg",
+      "/express-detailing-subscription-1.jpg",
     ],
     alt: "Express-Detailing-Subscription",
     features: [
@@ -138,6 +138,7 @@ export default function Home() {
                       alt={service.alt}
                       fill
                       className="object-cover"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     />
                   </div>
                 </CardHeader>
@@ -184,6 +185,7 @@ export default function Home() {
                 width={400}
                 height={400}
                 className="w-full h-full object-contain rounded-md"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               />
               <Card className="absolute -bottom-6 md:bottom-6 -right-3 md:-right-6 bg-gradient-to-r from-red-600 to-blue-600 text-white rounded-xl p-4 soft-shadow">
                 <div className="flex items-center gap-2">

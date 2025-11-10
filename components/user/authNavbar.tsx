@@ -19,6 +19,7 @@ import {
 } from "../ui/dropdown-menu";
 // import { ThemeToggle } from "../theme-toggle";
 import { usePathname } from "next/navigation";
+import LoadingDots from "../loading";
 
 export interface UserNavbarProps {
   user: AuthUser;
@@ -36,7 +37,16 @@ export function AuthNavbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const pathName = usePathname();
+
+  const handleSignOut = async () => {
+    setIsLoggingOut(true); // show full-screen loader
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await signOut(); // your logout logic
+    // router.push('/login') happens inside signOut or after it
+    // no need to set isLoggingOut(false) because the page will redirect
+  };
 
   useEffect(() => {
     setIsMounted(true);
@@ -58,6 +68,7 @@ export function AuthNavbar() {
           : "bg-transparent"
       }`}
     >
+      {isLoggingOut && <LoadingDots />}
       <>
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 justify-between items-center">
@@ -165,7 +176,7 @@ export function AuthNavbar() {
                     </DropdownMenuItem>
                   </DropdownMenuGroup>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={signOut}>
+                  <DropdownMenuItem onClick={handleSignOut}>
                     Sign Out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -282,17 +293,16 @@ export function AuthNavbar() {
                 </div>
               </div>
               <div className="mt-3 space-y-1">
-                <form action={signOut}>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    type="submit"
-                    className="w-full"
-                    disabled={!user}
-                  >
-                    Sign Out
-                  </Button>
-                </form>
+                <Button
+                  onClick={handleSignOut}
+                  variant="outline"
+                  size="sm"
+                  type="submit"
+                  className="w-full"
+                  disabled={!user}
+                >
+                  Sign Out
+                </Button>
               </div>
             </div>
           </div>

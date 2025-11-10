@@ -18,6 +18,8 @@ import { Check } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { useVehicleForm } from "@/hooks/useVehicleForm";
 import { createClient } from "@/utils/supabase/client";
+import TermsModal from "../terms-modal";
+import LoadingDots from "../loading";
 
 type Billing = "monthly" | "yearly";
 
@@ -59,6 +61,7 @@ export default function SubscriptionCart({
   const [error, setError] = useState("");
   const { vehicleInfo, setVehicleInfo, errors, validate } = useVehicleForm();
   const [extraFee, setExtraFee] = useState(0);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const upgradeFees: Record<string, number> = {
     SUV: 10,
@@ -270,7 +273,7 @@ export default function SubscriptionCart({
                 <Label htmlFor="licensePlate">License Plate</Label>
                 <Input
                   id="licensePlate"
-                  placeholder="e.g., ABC123"
+                  placeholder="e.g., ABC123 (optional)"
                   value={vehicleInfo.licensePlate}
                   onChange={(e) =>
                     setVehicleInfo((prev) => ({
@@ -386,9 +389,12 @@ export default function SubscriptionCart({
                   : `$${plan?.yearly_price}/year`}{" "}
                 each month on the same date of subscripion until my membership
                 is cancelled or terminated.{" "}
-                <a href="#" className="text-primary hover:underline">
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="text-primary hover:underline"
+                >
                   Terms of Service Agreement
-                </a>
+                </button>
                 , including the disclaimer of warranties, limitation of
                 liability, and arbitration agreement.
               </p>
@@ -402,9 +408,14 @@ export default function SubscriptionCart({
               disabled={loadingCheckout || loadingPlan || !planId}
             >
               {loadingCheckout ? "Redirecting..." : "Checkout"}
+              {loadingCheckout && <LoadingDots />}
             </Button>
           </CardContent>
         </Card>
+        <TermsModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+        />
       </div>
     </div>
   );

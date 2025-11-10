@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal } from "lucide-react";
+import LoadingDots from "@/components/loading";
 
 interface AdminProfile {
   id: string;
@@ -134,6 +135,10 @@ export default function AdminSettingsPage() {
       setIsLoading(false);
     }
   };
+
+  if (isLoading) {
+    return <LoadingDots />;
+  }
 
   return (
     <div className="container mx-auto px-4 py-20">
