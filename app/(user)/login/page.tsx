@@ -39,10 +39,10 @@ function LoginFormContent() {
     // simulate delay (optional)
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    if (result?.errors) setErrors(result.errors);
-    else if (result?.message) setErrors({ message: result.message });
-    setIsLoggingIn(false);
-    // no need to setIsLoggingIn(false) if signIn redirects
+    if (result?.errors || result?.message) {
+      setErrors(result.errors || { message: result.message });
+      setIsLoggingIn(false);
+    }
   };
   return (
     <>
