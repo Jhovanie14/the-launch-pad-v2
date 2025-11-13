@@ -135,21 +135,69 @@ function DateTimeSelectionPage() {
     return `${year}-${month}-${day}`;
   };
 
+  const getChicagoTime = () => {
+    const now = new Date();
+    const chicagoStr = now.toLocaleString("en-US", {
+      timeZone: "America/Chicago",
+    });
+    return new Date(chicagoStr);
+  };
+
   const isToday = (date: Date) => {
-    const today = new Date();
-    return date.toDateString() === today.toDateString();
+    const chicagoNow = getChicagoTime();
+    const chicagoDate = new Date(
+      date.toLocaleString("en-US", { timeZone: "America/Chicago" })
+    );
+
+    return (
+      chicagoNow.getFullYear() === chicagoDate.getFullYear() &&
+      chicagoNow.getMonth() === chicagoDate.getMonth() &&
+      chicagoNow.getDate() === chicagoDate.getDate()
+    );
   };
 
   const isPastTime = (time: string) => {
     if (!selectedDate || !isToday(selectedDate)) return false;
 
-    const now = new Date();
-    const [hours, minutes] = time.split(":").map(Number);
-    const slotTime = new Date();
-    slotTime.setHours(hours, minutes, 0, 0);
+    // Get current Chicago time
+    const chicagoNow = getChicagoTime();
 
-    return slotTime <= now;
+    // Extract year, month, and day from selected date in Chicago
+    const chicagoDate = new Date(
+      selectedDate.toLocaleString("en-US", { timeZone: "America/Chicago" })
+    );
+
+    // Build the time slot in the same Chicago timezone context
+    const [hours, minutes] = time.split(":").map(Number);
+    const chicagoSlot = new Date(
+      chicagoDate.getFullYear(),
+      chicagoDate.getMonth(),
+      chicagoDate.getDate(),
+      hours,
+      minutes,
+      0,
+      0
+    );
+
+    // Compare both in Chicago local time
+    return chicagoSlot <= chicagoNow;
   };
+
+  // const isToday = (date: Date) => {
+  //   const today = new Date();
+  //   return date.toDateString() === today.toDateString();
+  // };
+
+  // const isPastTime = (time: string) => {
+  //   if (!selectedDate || !isToday(selectedDate)) return false;
+
+  //   const now = new Date();
+  //   const [hours, minutes] = time.split(":").map(Number);
+  //   const slotTime = new Date();
+  //   slotTime.setHours(hours, minutes, 0, 0);
+
+  //   return slotTime <= now;
+  // };
 
   const handleContinue = () => {
     try {

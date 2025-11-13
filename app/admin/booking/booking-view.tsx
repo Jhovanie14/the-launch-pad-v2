@@ -43,6 +43,7 @@ import NewBookingModal from "@/components/admin/newbooking-modal";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import LoadingDots from "@/components/loading";
+import { Progress } from "@/components/ui/progress";
 
 type UserSubscription = {
   user_id: string;
@@ -68,8 +69,14 @@ export default function BookingsView() {
   const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(
-    format(new Date(), "yyyy-MM-dd")
+    // format(new Date(), "yyyy-MM-dd")
+    format(
+      new Date().toLocaleDateString("en-US", { timeZone: "America/Chicago" }),
+      "yyyy-MM-dd"
+    )
   );
+
+  const [averageTime, setAverageTime] = useState("");
 
   // Fetch all bookings
   useEffect(() => {
@@ -87,7 +94,7 @@ export default function BookingsView() {
           )
         )`
         )
-        .order("appointment_date", { ascending: true });
+        .order("appointment_time", { ascending: false });
 
       setLoading(false);
 
@@ -100,6 +107,7 @@ export default function BookingsView() {
         add_ons:
           b.booking_add_ons?.map((ba: any) => ba.add_ons).filter(Boolean) || [],
       }));
+
       setBookings(formatted);
     };
 
@@ -221,6 +229,33 @@ export default function BookingsView() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const getBookingCompletionTime = (booking: Booking) => {
+    if (
+      booking.status !== "completed" ||
+      !booking.confirmed_at ||
+      !booking.completed_at
+    )
+      return null;
+
+    const diffMs =
+      new Date(booking.completed_at).getTime() -
+      new Date(booking.confirmed_at).getTime();
+
+    const diffSec = diffMs / 1000;
+
+    if (diffSec < 60) {
+      return `${diffSec.toFixed(0)} sec`;
+    }
+
+    const diffMin = diffSec / 60;
+    if (diffMin < 60) {
+      return `${diffMin.toFixed(2)} min`;
+    }
+
+    const diffHr = diffMin / 60;
+    return `${diffHr.toFixed(2)} hr`;
   };
 
   // Export handler
@@ -354,6 +389,47 @@ export default function BookingsView() {
     );
   };
 
+  const isNewBooking = (appointmentDate: string, appointmentTime: string) => {
+    if (!appointmentDate || !appointmentTime) return false;
+
+    // Normalize "10:10 PM" → "22:10"
+    let normalizedTime = appointmentTime.trim();
+    if (/am|pm/i.test(normalizedTime)) {
+      const [time, period] = normalizedTime.split(/ ?(am|pm)/i);
+      let [hours, minutes] = time.split(":").map(Number);
+      if (/pm/i.test(period) && hours < 12) hours += 12;
+      if (/am/i.test(period) && hours === 12) hours = 0;
+      normalizedTime = `${hours.toString().padStart(2, "0")}:${minutes
+        .toString()
+        .padStart(2, "0")}`;
+    }
+
+    // Safely parse using toLocaleString (handles both MM/DD/YYYY and YYYY-MM-DD)
+    const appointment = new Date(
+      new Date(`${appointmentDate} ${normalizedTime}`).toLocaleString("en-US")
+    );
+
+    if (isNaN(appointment.getTime())) {
+      console.warn(
+        "⚠️ Invalid booking date/time:",
+        appointmentDate,
+        appointmentTime
+      );
+      return false;
+    }
+
+    const now = new Date();
+    const diffMs = now.getTime() - appointment.getTime();
+    const tenMinutes = 10 * 60 * 1000;
+
+    // Debug (optional)
+    // console.log("Now:", now.toLocaleString());
+    // console.log("Appointment:", appointment.toLocaleString());
+    // console.log("Diff (minutes):", diffMs / 60000);
+
+    return diffMs >= 0 && diffMs <= tenMinutes;
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "confirmed":
@@ -364,6 +440,21 @@ export default function BookingsView() {
         return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getProgress = (status: string) => {
+    switch (status) {
+      case "pending":
+        return { value: 33.3, label: "Pending" };
+      case "confirmed":
+        return { value: 66.6, label: "In Progress" };
+      case "completed":
+        return { value: 100, label: "Completed" };
+      case "cancelled":
+        return { value: 0, label: "Cancelled" };
+      default:
+        return { value: 0, label: "Unknown" };
     }
   };
 
@@ -439,6 +530,9 @@ export default function BookingsView() {
         <CardHeader>
           <CardTitle className="text-card-foreground">
             Bookings for {new Date(selectedDate).toLocaleDateString()}
+            {/* {new Date(selectedDate).toLocaleDateString("en-US", {
+              timeZone: "America/Chicago",
+            })} */}
           </CardTitle>
           <CardDescription>
             {getBookingsForDate(selectedDate).length} appointments scheduled
@@ -453,8 +547,31 @@ export default function BookingsView() {
           ) : (
             <div className="space-y-4">
               {getBookingsForDate(selectedDate).map((booking) => (
-                <Card key={booking.id} className="bg-muted border-border">
+                <Card
+                  key={booking.id}
+                  className={`border-border transition-all duration-300 ${
+                    isNewBooking(
+                      booking.appointment_date,
+                      booking.appointment_time
+                    )
+                      ? "border-yellow-300 shadow-md animate-pulse"
+                      : "bg-muted"
+                  }`}
+                >
                   <CardContent className="p-4">
+                    {booking.status === "completed" && (
+                      <div className="flex items-center justify-end mb-2">
+                        <div className="flex items-center space-x-2">
+                          <p className="text-sm font-medium text-muted-foreground">
+                            Completion Time
+                          </p>
+                          <p className="text-2xl font-bold">
+                            {getBookingCompletionTime(booking)}
+                          </p>
+                          <Clock className="h-6 w-6 text-accent-foreground" />
+                        </div>
+                      </div>
+                    )}
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                       {/* LEFT SIDE: Booking info */}
                       <div className="flex items-start sm:items-center space-x-3 sm:space-x-4">
@@ -558,6 +675,14 @@ export default function BookingsView() {
 
                       {/* RIGHT SIDE: Status + Actions */}
                       <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 space-y-2 sm:space-y-0">
+                        {isNewBooking(
+                          booking.appointment_date,
+                          booking.appointment_time
+                        ) && (
+                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-300 text-yellow-900">
+                            🆕 New Booking
+                          </span>
+                        )}
                         <div className="flex items-center justify-between sm:justify-start space-x-2">
                           <Badge
                             className={`${getStatusColor(booking.status)} capitalize`}
@@ -603,6 +728,29 @@ export default function BookingsView() {
                           </Button> */}
                         </div>
                       </div>
+                    </div>
+                    {/* Progress bar */}
+                    <div className="mt-3 w-full">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs font-medium text-muted-foreground">
+                          {getProgress(booking.status).label}
+                        </span>
+                        <span className="text-xs font-medium text-muted-foreground">
+                          {getProgress(booking.status).value}%
+                        </span>
+                      </div>
+                      <Progress
+                        value={getProgress(booking.status).value}
+                        className={`h-2 rounded-full ${
+                          booking.status === "completed"
+                            ? "bg-green-200"
+                            : booking.status === "confirmed"
+                              ? "bg-blue-200"
+                              : booking.status === "pending"
+                                ? "bg-yellow-200"
+                                : "bg-red-200"
+                        }`}
+                      />
                     </div>
                   </CardContent>
                 </Card>

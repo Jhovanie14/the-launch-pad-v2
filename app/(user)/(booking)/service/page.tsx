@@ -54,6 +54,7 @@ function ServiceSelectionPage() {
   const [services, setServices] = useState<ServicePackage[]>([]);
   const [vehicleModalOpen, setVehicleModalOpen] = useState(false);
   const [showVehicleError, setShowVehicleError] = useState(false);
+  const [showBanner, setShowBanner] = useState(true);
 
   const selectedServiceParam = searchParams.get("service");
   const [vehicleSpecs, setVehicleSpecs] = useState<any>({
@@ -98,6 +99,7 @@ function ServiceSelectionPage() {
       !vehicleSpecs.color
     ) {
       toast.error("Please add your vehicle information first.");
+      setShowVehicleError(true);
       vehicleInfoRef.current?.scrollIntoView({
         behavior: "smooth",
         block: "center",
@@ -200,6 +202,59 @@ function ServiceSelectionPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {showBanner && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full shadow-xl overflow-hidden border border-gray-100">
+            <div className="bg-gradient-to-r from-blue-900 to-blue-800 px-6 py-5 text-white flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Join Our Members!</h2>
+              <Button
+                variant="ghost"
+                onClick={() => setShowBanner(false)}
+                className="text-blue-100 hover:text-white hover:bg-blue-800/30 w-8 h-8"
+              >
+                <X className="w-8 h-8" />
+              </Button>
+            </div>
+
+            <div className="p-6 space-y-4 text-gray-800">
+              <p className="text-base font-medium">
+                🚗 Register now and enjoy exclusive member benefits:
+              </p>
+
+              <ul className="space-y-2 text-sm text-gray-700">
+                <li className="flex items-start">
+                  <Check className="w-4 h-4 mt-1 text-green-600 mr-2" />
+                  Track and manage your bookings easily.
+                </li>
+                <li className="flex items-start">
+                  <Check className="w-4 h-4 mt-1 text-green-600 mr-2" />
+                  Access subscription plans for regular savings.
+                </li>
+                <li className="flex items-start">
+                  <Check className="w-4 h-4 text-green-600 mr-2 flex-shrink-0" />
+                  <div>
+                    Get <span className="font-semibold">10% OFF </span>
+                    on your first booking with promo code{" "}
+                    <span className="font-mono bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">
+                      WELCOME10
+                    </span>
+                  </div>
+                </li>
+              </ul>
+
+              <div className="flex justify-end pt-4">
+                <Button
+                  onClick={() => router.push("/signup")}
+                  className="bg-blue-900 hover:bg-blue-800 text-white rounded-xl"
+                >
+                  Create Free Account
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -224,7 +279,9 @@ function ServiceSelectionPage() {
       <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-8">
         {/* Vehicle Info Card */}
         <div ref={vehicleInfoRef} className="mb-6">
-          <Card className="mb-6 shadow-sm border border-gray-200">
+          <Card
+            className={`mb-6 shadow-sm border ${showVehicleError ? "border-red-500" : "border-gray-200"}`}
+          >
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle className="text-lg font-semibold text-gray-900">
@@ -239,7 +296,7 @@ function ServiceSelectionPage() {
 
               <Button
                 variant="outline"
-                className="border-blue-900 text-blue-900 hover:bg-blue-900 hover:text-white transition-all"
+                className={`border-blue-900 text-blue-900 hover:bg-blue-900 hover:text-white transition-all ${showVehicleError ? "border-red-500 text-red-500 hover:bg-red-500 hover:text-white" : ""}`}
                 onClick={() => setVehicleModalOpen(true)}
               >
                 {vehicleSpecs.year ? "Edit Vehicle" : "Add Vehicle"}
@@ -563,7 +620,7 @@ function ServiceSelectionPage() {
                       className="bg-blue-900 hover:bg-blue-800 text-white flex items-center gap-2 rounded-xl px-5"
                       onClick={() => {
                         setVehicleModalOpen(false);
-
+                        setShowVehicleError(false);
                         // ✅ Scroll down to next section smoothly after saving
                         setTimeout(() => {
                           bottomRef.current?.scrollIntoView({

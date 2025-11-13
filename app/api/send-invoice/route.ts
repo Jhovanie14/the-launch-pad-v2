@@ -46,6 +46,10 @@ export async function POST(req: Request) {
     const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
     const color = rgb(0.42, 0.36, 0.58);
 
+    const completedAt = booking.completed_at
+      ? new Date(booking.completed_at)
+      : new Date();
+
     let y = 800;
 
     // Header
@@ -58,17 +62,14 @@ export async function POST(req: Request) {
     });
     y -= 40;
 
-    page.drawText(
-      `Date: ${new Date(booking.completed_at).toLocaleDateString()}`,
-      {
-        x: 50,
-        y,
-        size: 11,
-        font,
-      }
-    );
+    page.drawText(`Date: ${completedAt.toLocaleDateString()}`, {
+      x: 50,
+      y,
+      size: 11,
+      font,
+    });
     page.drawText(`Receipt #: ${booking.id}`, {
-      x: 400,
+      x: 300,
       y,
       size: 11,
       font,
@@ -170,6 +171,25 @@ export async function POST(req: Request) {
       x: 50,
       y,
       size: 11,
+      font,
+      color: rgb(0.4, 0.4, 0.4),
+    });
+
+    y -= 20;
+
+    // Business contact info
+    page.drawText("10410 Main St, Houston, TX, United States, Texas", {
+      x: 50,
+      y,
+      size: 10,
+      font,
+      color: rgb(0.4, 0.4, 0.4),
+    });
+    y -= 15;
+    page.drawText("Phone: (832) 219-8320 | www.thelaunchpadwash.com", {
+      x: 50,
+      y,
+      size: 10,
       font,
       color: rgb(0.4, 0.4, 0.4),
     });
