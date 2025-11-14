@@ -40,10 +40,11 @@ export interface Booking {
   created_at: string;
   updated_at: string;
   confirmed_at: string | null;
-  completed_at: string | null; 
+  completed_at: string | null;
   add_ons: AddOn[];
   // Relation join
   vehicle?: Vehicle | null;
+  attendant_name: string | null;
 }
 
 export interface UserProfile {

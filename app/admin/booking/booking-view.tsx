@@ -170,14 +170,24 @@ export default function BookingsView() {
   ) => {
     try {
       setLoading(true);
-      const updates: Record<string, any> = { status: newStatus };
+
+      const { data } = await supabase.auth.getUser();
+      const attendantName = data.user?.user_metadata?.full_name ?? "Unknown";
+      console.log("Attendant name:", attendantName);
+      console.log("Supabase user data:", data);
+      const updates: Record<string, any> = {
+        status: newStatus,
+        attendant_name: attendantName,
+      };
 
       if (newStatus === "confirmed") {
         updates.confirmed_at = new Date().toISOString();
+        updates.attendant_name = attendantName;
       }
 
       if (newStatus === "completed") {
         updates.completed_at = new Date().toISOString();
+        updates.attendant_name = attendantName;
 
         const { data: booking } = await supabase
           .from("bookings")
@@ -251,11 +261,11 @@ export default function BookingsView() {
 
     const diffMin = diffSec / 60;
     if (diffMin < 60) {
-      return `${diffMin.toFixed(2)} min`;
+      return `${diffMin.toFixed(0)} min`;
     }
 
     const diffHr = diffMin / 60;
-    return `${diffHr.toFixed(2)} hr`;
+    return `${diffHr.toFixed(0)} hr`;
   };
 
   // Export handler
@@ -558,11 +568,31 @@ export default function BookingsView() {
                       : "bg-muted"
                   }`}
                 >
-                  <CardContent className="p-4">
-                    {booking.status === "completed" && (
-                      <div className="flex items-center justify-end mb-2">
-                        <div className="flex items-center space-x-2">
-                          <p className="text-sm font-medium text-muted-foreground">
+                  <CardContent className="px-4">
+                    <div className="flex-shrink-0 mb-1">
+                      {booking.status === "completed" && (
+                        <CheckCircle className="h-6 w-6 text-green-500" />
+                      )}
+                      {booking.status === "confirmed" && (
+                        <Clock className="h-6 w-6 text-accent" />
+                      )}
+                      {booking.status === "pending" && (
+                        <AlertCircle className="h-6 w-6 text-accent-foreground" />
+                      )}
+                    </div>
+                    <div className="flex flex-col sm:flex-row items-baseline sm:items-center justify-between">
+                      <p className="text-lg text-accent-foreground">
+                        Attendant:{" "}
+                        <span className="font-medium text-sm">
+                          {booking.attendant_name
+                            ? booking.attendant_name.toUpperCase()
+                            : "None"}
+                        </span>
+                      </p>
+
+                      {booking.status === "completed" && (
+                        <div className="flex flex-col sm:flex-row items-center space-x-2">
+                          <p className="text-sm font-medium text-accent-foreground">
                             Completion Time
                           </p>
                           <p className="text-2xl font-bold">
@@ -570,29 +600,22 @@ export default function BookingsView() {
                           </p>
                           <Clock className="h-6 w-6 text-accent-foreground" />
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
+
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                       {/* LEFT SIDE: Booking info */}
                       <div className="flex items-start sm:items-center space-x-3 sm:space-x-4">
-                        <div className="flex-shrink-0">
-                          {booking.status === "completed" && (
-                            <CheckCircle className="h-6 w-6 text-green-500" />
-                          )}
-                          {booking.status === "confirmed" && (
-                            <Clock className="h-6 w-6 text-accent" />
-                          )}
-                          {booking.status === "pending" && (
-                            <AlertCircle className="h-6 w-6 text-accent-foreground" />
-                          )}
-                        </div>
-
                         <div className="flex flex-col space-y-1">
-                          <div className="flex flex-row items-center space-x-3">
+                          <div className="flex flex-col sm:flex-row items-baseline sm:items-center space-y-2 sm:space-y-0 space-x-3">
                             <h3 className="font-semibold text-card-foreground text-base sm:text-lg">
-                              {booking.customer_name}
+                              Customer Name:
                             </h3>
+                            <p className="text-xs sm:text-sm font-light text-accent-foreground">
+                              {booking.customer_name}
+                            </p>
                           </div>
+
                           <div className="flex flex-col sm:flex-row items-baseline sm:items-center space-y-2 sm:space-y-0 space-x-3">
                             <h3 className="font-semibold text-card-foreground text-base sm:text-lg">
                               Service Package:
@@ -627,7 +650,8 @@ export default function BookingsView() {
                             {booking.vehicle?.colors}
                           </p>
                           <p className="text-sm text-accent-foreground">
-                            Booking #{booking.id}
+                            <strong> Booking # </strong>
+                            {booking.id}
                           </p>
 
                           {/* Details */}

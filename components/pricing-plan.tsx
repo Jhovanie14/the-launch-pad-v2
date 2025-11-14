@@ -8,7 +8,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check, Crown, Gem, PiggyBank, Target, X } from "lucide-react";
+import { Check, Gem, X } from "lucide-react";
 import { Separator } from "./ui/separator";
 
 export default function PricingCard({

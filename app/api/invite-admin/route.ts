@@ -11,11 +11,14 @@ export async function POST(req: Request) {
   // 1️⃣ Check if the current user is logged in and an admin
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role, user_type")
     .eq("id", user?.id)
     .single();
 
-  if (!profile || profile.role !== "admin") {
+  if (
+    !profile ||
+    (profile.user_type !== "admin" && profile.user_type !== "super_admin")
+  ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
@@ -42,6 +45,7 @@ export async function POST(req: Request) {
       email,
       full_name,
       role: "admin",
+      user_type: "admin",
       created_at: new Date().toISOString(),
     });
   }

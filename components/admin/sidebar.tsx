@@ -50,6 +50,7 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
   const { signOut } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [userType, setUserType] = useState<string>("admin"); // 👈 added
 
   const handleSignOut = async () => {
     setIsLoggingOut(true); // show full-screen loader
@@ -58,6 +59,35 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
     // router.push('/login') happens inside signOut or after it
     // no need to set isLoggingOut(false) because the page will redirect
   };
+
+  // ✅ Fetch user_type from profiles
+  useEffect(() => {
+    const supabase = createClient();
+    const fetchUserType = async () => {
+      if (!user?.id) return;
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("user_type")
+        .eq("id", user.id)
+        .single();
+      if (!error && data) {
+        setUserType(data.user_type || "customer");
+      }
+    };
+    fetchUserType();
+  }, [user]);
+
+  const filteredNavigation = navigation.filter((item) => {
+    if (
+      ["Services", "Promo codes", "Add-ons", "Subscriptions"].includes(
+        item.name
+      ) &&
+      userType === "admin"
+    ) {
+      return false;
+    }
+    return true;
+  });
 
   useEffect(() => {
     const supabase = createClient();
@@ -138,7 +168,7 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
 
         {/* Navigation */}
         <nav className="mt-6 px-3 flex-1 overflow-y-auto">
-          {navigation.map((item) => {
+          {filteredNavigation.map((item) => {
             const isActive = pathname === item.href;
             return (
               <Link

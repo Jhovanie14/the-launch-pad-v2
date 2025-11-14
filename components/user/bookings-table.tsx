@@ -88,7 +88,8 @@ export function BookingsTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Service</TableHead>
+            <TableHead>Service & Add-ons</TableHead>
+            <TableHead>attendant</TableHead>
             <TableHead>Customer</TableHead>
             <TableHead>Vehicle</TableHead>
             <TableHead>Date & Time</TableHead>
@@ -102,10 +103,38 @@ export function BookingsTable({
           {bookings.map((booking) => (
             <TableRow key={booking.id}>
               <TableCell>
-                <div className="font-medium">
-                  {booking.service_package_name}
+                <div className="">
+                  <p className="font-medium text-sm text-accent-foreground">
+                    Service Package:
+                  </p>
+                  <ul className="list-disc list-inside">
+                    <li> {booking.service_package_name}</li>
+                  </ul>
+                </div>
+                {/* Add-ons */}
+                {booking.add_ons?.length > 0 && (
+                  <div className="text-sm text-accent-foreground mt-1">
+                    Add-ons:
+                    <ul className="list-disc list-inside">
+                      {booking.add_ons.map((addon) => (
+                        <li key={addon.id}>{addon.name}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </TableCell>
+              <TableCell>
+                {/* Attendant Name */}
+                <div className="text-sm text-accent-foreground mt-1">
+                  Attendant:{" "}
+                  <span className="font-medium">
+                    {booking.attendant_name
+                      ? booking.attendant_name.toUpperCase()
+                      : "Unknown"}
+                  </span>
                 </div>
               </TableCell>
+
               <TableCell>
                 <div className=" text-sm">
                   <div className="flex items-center space-x-2">

@@ -49,89 +49,91 @@ export default function BroadcastPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
-      <div className="min-h-screen bg-muted/30 p-4 md:p-8">
-        {/* Header */}
-        <Header />
+    <div className="flex-1 overflow-y-auto">
+      <div className="max-w-7xl mx-auto space-y-8">
+        <div className="min-h-screen bg-muted/30 p-4 md:p-8">
+          {/* Header */}
+          <Header />
 
-        {/* Broadcast Form */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
-            <div className="p-6 md:p-8 space-y-6">
-              <InputField
-                label="Email Subject"
-                placeholder="Enter your email subject..."
-                value={subject}
-                onChange={setSubject}
-              />
-              <InputField
-                label="Email Title"
-                placeholder="Enter the main title for your email..."
-                value={title}
-                onChange={setTitle}
-              />
-              <TextAreaField
-                label="Email Body"
-                placeholder="Write your email content here..."
-                value={body}
-                onChange={setBody}
-              />
-              <InputField
-                label="Banner Image URL (Optional)"
-                placeholder="Enter banner image URL..."
-                value={bannerUrl}
-                onChange={setBannerUrl}
-              />
-
-              {/* Error */}
-              {error && <Message type="error" text={error} />}
-
-              {/* Success */}
-              {sentCount !== null && !loading && (
-                <Message
-                  type="success"
-                  text={`Successfully sent to ${sentCount} subscribers!`}
+          {/* Broadcast Form */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
+              <div className="p-6 md:p-8 space-y-6">
+                <InputField
+                  label="Email Subject"
+                  placeholder="Enter your email subject..."
+                  value={subject}
+                  onChange={setSubject}
                 />
-              )}
+                <InputField
+                  label="Email Title"
+                  placeholder="Enter the main title for your email..."
+                  value={title}
+                  onChange={setTitle}
+                />
+                <TextAreaField
+                  label="Email Body"
+                  placeholder="Write your email content here..."
+                  value={body}
+                  onChange={setBody}
+                />
+                <InputField
+                  label="Banner Image URL (Optional)"
+                  placeholder="Enter banner image URL..."
+                  value={bannerUrl}
+                  onChange={setBannerUrl}
+                />
 
-              {/* Send Button */}
-              <button
-                onClick={handleSend}
-                disabled={loading || !isFormValid}
-                className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 rounded-lg transition-colors duration-200"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Sending...
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-5 h-5" />
-                    Send Broadcast
-                  </>
+                {/* Error */}
+                {error && <Message type="error" text={error} />}
+
+                {/* Success */}
+                {sentCount !== null && !loading && (
+                  <Message
+                    type="success"
+                    text={`Successfully sent to ${sentCount} subscribers!`}
+                  />
                 )}
-              </button>
+
+                {/* Send Button */}
+                <button
+                  onClick={handleSend}
+                  disabled={loading || !isFormValid}
+                  className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 rounded-lg transition-colors duration-200"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-5 h-5" />
+                      Send Broadcast
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 md:px-8 py-4 bg-slate-50 border-t border-slate-200">
+                <p className="text-xs text-slate-600">
+                  <span className="font-semibold">Note:</span> This email will
+                  be sent to all active subscribers.
+                </p>
+              </div>
             </div>
 
-            {/* Footer */}
-            <div className="px-6 md:px-8 py-4 bg-slate-50 border-t border-slate-200">
-              <p className="text-xs text-slate-600">
-                <span className="font-semibold">Note:</span> This email will be
-                sent to all active subscribers.
-              </p>
-            </div>
+            {/* Preview */}
+            {(subject || title || body || bannerUrl) && (
+              <PreviewCard
+                subject={subject}
+                title={title}
+                body={body}
+                bannerUrl={bannerUrl}
+              />
+            )}
           </div>
-
-          {/* Preview */}
-          {(subject || title || body || bannerUrl) && (
-            <PreviewCard
-              subject={subject}
-              title={title}
-              body={body}
-              bannerUrl={bannerUrl}
-            />
-          )}
         </div>
       </div>
     </div>

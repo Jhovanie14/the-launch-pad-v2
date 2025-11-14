@@ -44,6 +44,7 @@ export default function SubscriptionView() {
   >([]);
   const [monthlyRevenue, setMonthlyRevenue] = useState(0);
   const [avgSubscription, setAvgSubscription] = useState(0);
+  const [activeSubscribers, setActiveSubscribers] = useState(0);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<SubscriptionPlans | null>(
@@ -77,6 +78,7 @@ export default function SubscriptionView() {
       if (error) throw error;
 
       if (data && data.length > 0) {
+        setActiveSubscribers(data.length);
         // calculate total revenue based on monthly_price for simplicity
         const totalRevenue = data.reduce((acc, sub: any) => {
           const price = Number(sub.subscription_plan?.monthly_price || 0);
@@ -297,11 +299,13 @@ export default function SubscriptionView() {
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-muted-foreground">
-                    Churn Rate
+                    Active Subscribers
                   </p>
-                  <p className="text-3xl font-bold text-foreground">3.2%</p>
+                  <p className="text-3xl font-bold text-foreground">
+                    {activeSubscribers}
+                  </p>
                   <p className="text-xs text-muted-foreground">
-                    Below industry average
+                    Currently subscribed users
                   </p>
                 </div>
                 <div className="p-3 bg-chart-4/10 rounded-xl">

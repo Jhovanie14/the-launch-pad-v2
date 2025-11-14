@@ -141,135 +141,139 @@ export default function AdminSettingsPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-20">
-      <div className="space-y-6">
-        <h1 className="text-2xl font-semibold">Admin Settings</h1>
-        <p className="text-muted-foreground">
-          Manage your profile and account preferences.
-        </p>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="max-w-4xl">
-            <CardHeader>
-              <CardTitle>Profile Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-4">
-                <Avatar className="h-20 w-20">
-                  <AvatarImage
-                    src={previewUrl || formData.avatar_url || undefined}
-                    alt="Admin Avatar"
+    <div className="flex-1 overflow-y-auto">
+      <div className="container mx-auto px-4 py-10">
+        <div className="space-y-6">
+          <h1 className="text-2xl font-semibold">Admin Settings</h1>
+          <p className="text-muted-foreground">
+            Manage your profile and account preferences.
+          </p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="max-w-4xl">
+              <CardHeader>
+                <CardTitle>Profile Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <Avatar className="h-20 w-20">
+                    <AvatarImage
+                      src={previewUrl || formData.avatar_url || undefined}
+                      alt="Admin Avatar"
+                    />
+                    <AvatarFallback>
+                      {formData.full_name?.[0]?.toUpperCase() || "A"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
                   />
-                  <AvatarFallback>
-                    {formData.full_name?.[0]?.toUpperCase() || "A"}
-                  </AvatarFallback>
-                </Avatar>
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                />
-              </div>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="full_name">Full Name</Label>
-                <Input
-                  id="full_name"
-                  value={formData.full_name}
-                  onChange={handleChange}
-                  placeholder="John Doe"
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="full_name">Full Name</Label>
+                  <Input
+                    id="full_name"
+                    value={formData.full_name}
+                    onChange={handleChange}
+                    placeholder="John Doe"
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="admin@example.com"
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="admin@example.com"
+                  />
+                </div>
 
-              <div className="flex justify-end">
-                <Button
-                  onClick={handleSave}
-                  disabled={isLoading}
-                  className="bg-blue-900 hover:bg-blue-800"
-                >
-                  {isLoading ? "Saving..." : "Save Changes"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-          {currentUser?.role === "admin" && (
-            <div>
-              <div className="space-y-3">
-                <h1 className="text-2xl font-semibold">Admin Settings</h1>
-                <InviteAdminForm />
-              </div>
-              <Card className="mt-6">
-                <CardHeader>
-                  <CardTitle>Admin Moderators</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {isLoading ? (
-                    <p>Loading admins...</p>
-                  ) : admins.length === 0 ? (
-                    <p>No admins found.</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {admins.map((admin) => (
-                        <div
-                          key={admin.id}
-                          className="flex items-center justify-between gap-4 p-2 border rounded-md"
-                        >
-                          <div className="flex items-center gap-4">
-                            <Avatar className="h-10 w-10">
-                              <AvatarImage
-                                src={admin.avatar_url || undefined}
-                              />
-                              <AvatarFallback>
-                                {admin.full_name?.[0]?.toUpperCase() || "A"}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="space-y-2">
-                              <p className="font-semibold">{admin.full_name}</p>
-                              <p className="text-sm text-foreground">
-                                {admin.email}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {admin.role}
-                              </p>
+                <div className="flex justify-end">
+                  <Button
+                    onClick={handleSave}
+                    disabled={isLoading}
+                    className="bg-blue-900 hover:bg-blue-800"
+                  >
+                    {isLoading ? "Saving..." : "Save Changes"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+            {currentUser?.role === "admin" && (
+              <div>
+                <div className="space-y-3">
+                  <h1 className="text-2xl font-semibold">Admin Settings</h1>
+                  <InviteAdminForm />
+                </div>
+                <Card className="mt-6">
+                  <CardHeader>
+                    <CardTitle>Admin Moderators</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {isLoading ? (
+                      <p>Loading admins...</p>
+                    ) : admins.length === 0 ? (
+                      <p>No admins found.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {admins.map((admin) => (
+                          <div
+                            key={admin.id}
+                            className="flex items-center justify-between gap-4 p-2 border rounded-md"
+                          >
+                            <div className="flex items-center gap-4">
+                              <Avatar className="h-10 w-10">
+                                <AvatarImage
+                                  src={admin.avatar_url || undefined}
+                                />
+                                <AvatarFallback>
+                                  {admin.full_name?.[0]?.toUpperCase() || "A"}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="space-y-2">
+                                <p className="font-semibold">
+                                  {admin.full_name}
+                                </p>
+                                <p className="text-sm text-foreground">
+                                  {admin.email}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {admin.role}
+                                </p>
+                              </div>
                             </div>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost">
+                                  <MoreHorizontal size={20} />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => toast("Edit admin")}
+                                >
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => toast("Delete admin")}
+                                >
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost">
-                                <MoreHorizontal size={20} />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => toast("Edit admin")}
-                              >
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => toast("Delete admin")}
-                              >
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          )}
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
