@@ -16,16 +16,45 @@ export async function POST() {
     }
 
     // Get user's Stripe customer ID from your DB
-    const { data: subscription, error } = await supabase
+    // const { data: subscription, error } = await supabase
+    //   .from("user_subscription")
+    //   .select("user_id, stripe_customer_id")
+    //   .eq("user_id", user.id)
+    //   .maybeSingle();
+
+    // console.log("📦 Subscription lookup:", subscription, error);
+
+    // if (error || !subscription?.stripe_customer_id) {
+    //   console.error("No Stripe customer ID found", error);
+    //   return NextResponse.json(
+    //     { error: "No Stripe customer ID found" },
+    //     { status: 404 }
+    //   );
+    // }
+
+    let { data: subscription, error } = await supabase
       .from("user_subscription")
-      .select("user_id, stripe_customer_id")
+      .select("stripe_customer_id")
       .eq("user_id", user.id)
       .maybeSingle();
 
-    console.log("📦 Subscription lookup:", subscription, error);
+    // If no regular subscription, check self-service subscription
+    if (!subscription?.stripe_customer_id) {
+      const { data: selfServiceSub, error: selfError } = await supabase
+        .from("self_service_subscriptions")
+        .select("stripe_customer_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
 
-    if (error || !subscription?.stripe_customer_id) {
-      console.error("No Stripe customer ID found", error);
+      if (selfError) {
+        console.error("Error fetching self-service subscription:", selfError);
+      }
+
+      subscription = selfServiceSub;
+    }
+
+    if (!subscription?.stripe_customer_id) {
+      console.error("No Stripe customer ID found");
       return NextResponse.json(
         { error: "No Stripe customer ID found" },
         { status: 404 }

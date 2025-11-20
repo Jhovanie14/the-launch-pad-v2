@@ -28,6 +28,7 @@ export interface UserNavbarProps {
 const navLinks = [
   { name: "Dashboard", href: "/dashboard" },
   { name: "Bookings", href: "/dashboard/bookings" },
+  { name: "Self Service Logs", href: "/dashboard/self-service-log" },
   { name: "Subscription", href: "/dashboard/pricing" },
 ];
 
@@ -253,6 +254,13 @@ export function AuthNavbar() {
                 onClick={() => setIsOpen(false)}
               >
                 Bookings
+              </Link>
+              <Link
+                href="/dashboard/self-service-log"
+                className="block border-l-4 border-transparent py-2 pl-3 pr-4 text-base font-medium text-gray-500 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+                onClick={() => setIsOpen(false)}
+              >
+                Self Service Logs
               </Link>
               <Link
                 href="/dashboard/pricing"

@@ -63,7 +63,11 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event) {
 
   // Handle subscription checkout
   if (session.mode === "subscription") {
-    await processSubscription(session);
+    if (session.metadata?.plan_type === "self_service") {
+      await processSelfServiceSubscription(session);
+    } else {
+      await processSubscription(session);
+    }
   }
 }
 
@@ -294,6 +298,72 @@ async function processSubscription(session: Stripe.Checkout.Session) {
   }
 }
 
+async function processSelfServiceSubscription(
+  session: Stripe.Checkout.Session
+) {
+  if (!session.subscription || !session.customer) return;
+
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  const appUserId = session.metadata?.app_user_id || null;
+  const planId = session.metadata?.plan_id || null;
+  const vehicleId = session.metadata?.vehicle_id || null;
+
+  const subscription = await stripe.subscriptions.retrieve(
+    session.subscription as string
+  );
+  const subscriptionItem = subscription.items.data[0];
+  const cps = Number(subscriptionItem.current_period_start);
+  const cpe = Number(subscriptionItem.current_period_end);
+
+  const currentPeriodStartIso = Number.isFinite(cps)
+    ? new Date(cps * 1000).toISOString()
+    : new Date().toISOString();
+  const currentPeriodEndIso = Number.isFinite(cpe)
+    ? new Date(cpe * 1000).toISOString()
+    : null;
+
+  // Upsert self-service subscription
+  const { data, error } = await supabase
+    .from("self_service_subscriptions")
+    .upsert(
+      {
+        user_id: appUserId,
+        self_service_plan_id: planId,
+        stripe_subscription_id: subscription.id,
+        stripe_customer_id: session.customer,
+        status: subscription.status,
+        current_period_start: currentPeriodStartIso,
+        current_period_end: currentPeriodEndIso,
+        cancel_at_period_end: subscription.cancel_at_period_end,
+      },
+      { onConflict: "stripe_subscription_id" }
+    )
+    .select()
+    .single();
+
+  if (error) console.error("Error saving self-service subscription:", error);
+  else console.log("Self-service subscription saved!", data);
+
+  if (vehicleId && data?.id) {
+    const { error: linkError } = await supabase
+      .from("self_service_subscription_vehicles")
+      .insert({
+        subscription_id: data.id,
+        vehicle_id: vehicleId,
+      });
+
+    if (linkError)
+      console.error(
+        "Error linking self-service subscription to vehicle:",
+        linkError
+      );
+  }
+}
+
 async function handleSubscriptionUpdated(event: Stripe.Event) {
   const subscription = event.data.object as Stripe.Subscription;
 
@@ -310,17 +380,24 @@ async function handleSubscriptionUpdated(event: Stripe.Event) {
     ? new Date(cpe * 1000).toISOString()
     : null;
 
+  const { data: existingSub } = await supabase
+    .from("user_subscription")
+    .select("subscription_plan_id, billing_cycle")
+    .eq("stripe_subscription_id", subscription.id)
+    .single();
+
   const priceId = subscriptionItem?.price?.id ?? null;
   const interval = subscriptionItem?.price?.recurring?.interval ?? null; // 👈 capture monthly/yearly
   const cancelAtPeriodEnd = Boolean(sub?.cancel_at_period_end);
-  const planId = subscription.metadata?.plan_id ?? null;
+  const planId =
+    subscription.metadata?.plan_id ?? existingSub?.subscription_plan_id ?? null;
   const billingCycleRaw = subscription.metadata?.billing_cycle || null;
   const billingCycle =
     billingCycleRaw === "monthly"
       ? "month"
       : billingCycleRaw === "yearly"
         ? "year"
-        : null;
+        : (existingSub?.billing_cycle ?? null);
 
   // 1️⃣ Update user_subscription (no vehicle_id)
   const { data: subscriptionRow, error: subError } = await supabase

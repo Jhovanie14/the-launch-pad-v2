@@ -85,6 +85,31 @@ export interface Subscription {
   };
 }
 
+// types/selfService.ts
+export interface SelfServiceSubscription {
+  id: string;
+  user_id: string;
+  plan_id: string; // maps to self_service_plan_id
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  status: string; // 'active', 'canceled', etc.
+  billing_cycle: string; // 'month' | 'year' or custom logic
+  current_period_start: string | null;
+  current_period_end: string | null;
+  cancel_at_period_end: boolean;
+  subscription_plans?: {
+    name: string;
+    description: string;
+    monthly_price: number;
+  };
+  is_active: boolean;
+  started_at: string;
+  last_used_date?: string | null;
+  created_at: string;
+  updated_at: string;
+  vehicles: Vehicle[];
+}
+
 export interface PricingPlan {
   id: string;
   name: string;

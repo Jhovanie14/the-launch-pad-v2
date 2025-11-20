@@ -243,7 +243,7 @@ export default function NewBookingModal({
 
           {/* SUBMIT BUTTON */}
           <Button
-            onClick={handleSubmit}
+            onClick={() => handleSubmit({ skipVehicleValidation: false })}
             disabled={loading}
             className="w-full bg-blue-900 hover:bg-blue-700"
           >

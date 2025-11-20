@@ -6,7 +6,7 @@ import { createBooking } from "@/app/(dashboard)/dashboard/booking/action";
 import { toast } from "sonner";
 import { useVehicleForm } from "@/hooks/useVehicleForm";
 
-export function useBookingForm(onSuccess: () => void) {
+export function useBookingForm(onSuccess: () => void, subscriber?: any) {
   const supabase = createClient();
 
   // 🔹 Vehicle form state (with validation)
@@ -27,6 +27,7 @@ export function useBookingForm(onSuccess: () => void) {
     appointmentDate: "",
     appointmentTime: "",
     payment_method: "cash",
+    notes: "",
   });
 
   // -----------------------------
@@ -69,9 +70,9 @@ export function useBookingForm(onSuccess: () => void) {
   // -----------------------------
   // 🔹 Handle Submit
   // -----------------------------
-  const handleSubmit = async () => {
+  const handleSubmit = async ({ skipVehicleValidation = false } = {}) => {
     // ✅ Validate vehicle form
-    if (!validate()) {
+    if (!skipVehicleValidation && !validate()) {
       toast.error("Please fix vehicle form errors before submitting.");
       return;
     }
@@ -100,7 +101,10 @@ export function useBookingForm(onSuccess: () => void) {
       0
     );
 
-    const totalPrice = Number(selectedServiceObj.price || 0) + addOnsTotalPrice;
+    const totalPrice = subscriber
+      ? addOnsTotalPrice // subscriber pays only for add-ons
+      : Number(selectedServiceObj.price || 0) + addOnsTotalPrice;
+
     const totalDuration =
       Number(selectedServiceObj.duration || 0) + addOnsTotalDuration;
 
@@ -108,20 +112,23 @@ export function useBookingForm(onSuccess: () => void) {
 
     try {
       await toast.promise(
-        createBooking({
-          ...form,
-          ...vehicleInfo,
-          year: Number(vehicleInfo.year),
-          colors: vehicleInfo.color
-            .split(",")
-            .map((c) => c.trim())
-            .filter(Boolean),
-          addOnsId: selectedAddOns,
-          appointmentDate: new Date(form.appointmentDate),
-          servicePackage: selectedServiceObj,
-          totalPrice,
-          totalDuration,
-        }),
+        createBooking(
+          {
+            ...form,
+            ...vehicleInfo,
+            year: Number(vehicleInfo.year),
+            colors: vehicleInfo.color
+              .split(",")
+              .map((c) => c.trim())
+              .filter(Boolean),
+            addOnsId: selectedAddOns,
+            appointmentDate: new Date(form.appointmentDate),
+            servicePackage: selectedServiceObj,
+            totalPrice,
+            totalDuration,
+          },
+          subscriber?.user_id
+        ),
         {
           loading: "Creating booking...",
           success: "Booking created successfully!",

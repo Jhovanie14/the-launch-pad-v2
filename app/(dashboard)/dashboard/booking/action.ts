@@ -3,6 +3,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { ServicePackage } from "@/lib/data/services";
 import { sendBookingConfirmationEmail } from "@/lib/email/sendConfirmation";
+import { createAdminClient } from "@/utils/supabase/admin";
 
 type CarData = {
   year: number;
@@ -26,19 +27,32 @@ type CarData = {
   specialInstructions?: string;
 };
 
-export async function createBooking(car: CarData) {
-  const supabase = await createClient();
+export async function createBooking(car: CarData, subscriberId?: string) {
+  const supabase = subscriberId ? createAdminClient() : await createClient();
 
-  // Get current user
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Get current user (only needed for non-subscriber bookings)
+  let currentUser = null;
+  if (!subscriberId) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    currentUser = user;
+  }
+
+  // Determine which user_id to use
+  const targetUserId = subscriberId || currentUser?.id || null;
+
+  console.log("🔍 Booking for:", {
+    isWalkIn: !!subscriberId,
+    targetUserId,
+    currentUser: currentUser?.id,
+  });
 
   // Ensure vehicle exists or insert
   const { data: existing } = await supabase
     .from("vehicles")
     .select("id")
-    .eq("user_id", user?.id)
+    .eq("user_id", targetUserId)
     .eq("year", car.year)
     .eq("make", car.make)
     .eq("model", car.model)
@@ -51,7 +65,7 @@ export async function createBooking(car: CarData) {
     const { data: inserted } = await supabase
       .from("vehicles")
       .insert({
-        user_id: user?.id || null,
+        user_id: targetUserId || null,
         year: car.year,
         make: car.make,
         model: car.model,
@@ -73,11 +87,14 @@ export async function createBooking(car: CarData) {
   //   });
   // }
 
+
+
+  
   // Insert booking
   const { data: booking, error } = await supabase
     .from("bookings")
     .insert({
-      user_id: user?.id || null,
+      user_id: targetUserId,
       vehicle_id: vehicleId,
       service_package_id: car.servicePackage?.id,
       service_package_name: car.servicePackage?.name,
@@ -88,8 +105,9 @@ export async function createBooking(car: CarData) {
       total_duration: car.totalDuration,
       payment_method: car.payment_method,
       status: "pending",
-      customer_name: car.customerName || user?.user_metadata?.full_name || null,
-      customer_email: car.customerEmail || user?.email || null,
+      customer_name:
+        car.customerName || currentUser?.user_metadata?.full_name || null,
+      customer_email: car.customerEmail || currentUser?.email || null,
       customer_phone: car.customerPhone || null,
       notes: car.notes || null,
       special_instructions: car.specialInstructions || null,

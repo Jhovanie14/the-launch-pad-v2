@@ -5,9 +5,13 @@ import SubscriptionStatus from "@/components/subscription-status";
 import Link from "next/link";
 import { useState } from "react";
 import SubscriptionCancelInfo from "@/components/user/subscription-cancel-info";
+import { useSelfServiceSubscription } from "@/hooks/useSelfServiceSubscription";
+import SelfServiceSubscriptionStatus from "@/components/self-service-subscription-status";
 
 export default function BillingPage() {
   const { subscription, loading, error } = useSubscription();
+  const { subscription: selfSubs, loading: selfloading } =
+    useSelfServiceSubscription();
   const [canceling, setCanceling] = useState(false);
 
   async function handleCancelSubscription() {
@@ -76,7 +80,7 @@ export default function BillingPage() {
 
       {/* Subscription status */}
       <SubscriptionStatus subscription={subscription} />
-
+      <SelfServiceSubscriptionStatus subscription={selfSubs} />
       {/* Show cancellation info if scheduled */}
       {subscription && <SubscriptionCancelInfo subscription={subscription} />}
 

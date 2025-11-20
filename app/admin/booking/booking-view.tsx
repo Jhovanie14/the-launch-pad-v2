@@ -44,6 +44,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import LoadingDots from "@/components/loading";
 import { Progress } from "@/components/ui/progress";
+import { useAuth } from "@/context/auth-context";
 
 type UserSubscription = {
   user_id: string;
@@ -55,6 +56,7 @@ type StatusFilterType = "all" | Booking["status"];
 
 export default function BookingsView() {
   const supabase = createClient();
+  const { userProfile } = useAuth();
 
   // State
   const [loading, setLoading] = useState(false);
@@ -171,10 +173,8 @@ export default function BookingsView() {
     try {
       setLoading(true);
 
-      const { data } = await supabase.auth.getUser();
-      const attendantName = data.user?.user_metadata?.full_name ?? "Unknown";
+      const attendantName = userProfile?.full_name ?? "Unknown";
       console.log("Attendant name:", attendantName);
-      console.log("Supabase user data:", data);
       const updates: Record<string, any> = {
         status: newStatus,
         attendant_name: attendantName,

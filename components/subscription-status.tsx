@@ -59,7 +59,7 @@ export default function SubscriptionStatus({
             </div>
             <div className="ml-6 flex-1">
               <h3 className="text-lg font-medium text-gray-900">
-                Subscription Status
+                Express Detailing Subscription Status
               </h3>
               <div className="mt-2">
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
@@ -179,7 +179,7 @@ export default function SubscriptionStatus({
           </div>
           <div className="ml-6 flex-1">
             <h3 className="text-lg font-medium text-gray-900">
-              Subscription Status
+              Express Detailing Subscription Status
             </h3>
             <div className="mt-2">
               <span
