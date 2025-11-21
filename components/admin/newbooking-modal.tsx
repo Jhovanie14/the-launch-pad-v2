@@ -237,7 +237,7 @@ export default function NewBookingModal({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="cash">Cash</SelectItem>
-              {/* <SelectItem value="card">Card</SelectItem> */}
+              <SelectItem value="card">Card</SelectItem>
             </SelectContent>
           </Select>
 

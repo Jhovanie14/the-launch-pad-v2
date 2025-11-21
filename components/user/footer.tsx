@@ -165,7 +165,7 @@ export function Footer() {
               <li>
                 <Link
                   className="flex items-center gap-2 text-sm hover:text-white transition-colors"
-                  href="/blog/wash-it-your-way-the-ultimate-self-service-car-wash-experience"
+                  href="/self-service"
                 >
                   <Wrench className="w-4 h-4" />
                   Self-Service Car Wash
@@ -183,7 +183,7 @@ export function Footer() {
               <li>
                 <Link
                   className="flex items-center gap-2 text-sm hover:text-white transition-colors"
-                  href="/blog/keep-your-car-looking-its-best-with-our-express-detailing-subscription"
+                  href="/pricing"
                 >
                   <Calendar className="w-4 h-4" />
                   Monthly Memberships

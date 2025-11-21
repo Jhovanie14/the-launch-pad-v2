@@ -23,7 +23,8 @@ import {
   Users,
   Menu,
   X,
-  Wrench,
+  ShowerHead,
+  Car,
 } from "lucide-react";
 import { useBooking } from "@/context/bookingContext";
 // import { ThemeToggle } from "../theme-toggle";
@@ -145,7 +146,7 @@ export function UserNavbar() {
                 </div>
               </Link>
             </div>
-            <div className="hidden lg:flex lg:gap-4">
+            <div className="hidden xl:flex lg:gap-4">
               <NavigationMenu className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-lg font-medium text-accent-foreground hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100">
                 <NavigationMenuList>
                   <NavigationMenuItem>
@@ -182,6 +183,12 @@ export function UserNavbar() {
                 className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-lg font-medium text-accent-foreground hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
               >
                 Subscription
+              </Link>
+              <Link
+                href="/self-service"
+                className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-lg font-medium text-accent-foreground hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+              >
+                Self-service
               </Link>
               <Link
                 href="/services"
@@ -241,7 +248,7 @@ export function UserNavbar() {
       {/* Mobile menu */}
       {isMounted && (
         <div
-          className={`sm:hidden transition-all duration-300 ease-in-out overflow-hidden ${
+          className={`lg:hidden transition-all duration-300 ease-in-out overflow-hidden ${
             isMobileMenuOpen ? "max-h-screen opacity-100" : "max-h-0 opacity-0"
           }`}
         >
@@ -283,11 +290,19 @@ export function UserNavbar() {
                 <span>Subscription</span>
               </Link>
               <Link
+                href="/self-service"
+                className="flex items-center space-x-2 text-lg font-medium text-accent-foreground hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <ShowerHead className="w-4 h-4" />
+                <span>Self-service</span>
+              </Link>
+              <Link
                 href="/services"
                 className="flex items-center space-x-2 text-lg font-medium text-accent-foreground hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                <Wrench className="w-4 h-4" />
+                <Car className="w-4 h-4" />
                 <span>Services</span>
               </Link>
 

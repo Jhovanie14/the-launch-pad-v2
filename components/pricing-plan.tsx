@@ -29,14 +29,39 @@ export default function PricingCard({
         ? "monthly"
         : subscription?.billing_cycle;
 
-  const isCurrentPlan =
-    subscription?.plan_id === plan.id && normalizedBillingCycle === pricing;
+  // const isCurrentPlan =
+  //   subscription?.plan_id === plan.id && normalizedBillingCycle === pricing;
 
-  const buttonText = !subscription
-    ? `Select ${plan.name}`
-    : isCurrentPlan
-      ? "Current Plan"
-      : "Upgrade";
+  // const buttonText = !subscription
+  //   ? `Select ${plan.name}`
+  //   : isCurrentPlan
+  //     ? "Current Plan"
+  //     : "Upgrade";
+
+  // Detect if this is the self-service card
+  const isSelfServicePlan = plan.name === "Self-Service Bay Membership";
+
+  // Detect if the user has any subscription passed to this card
+  const hasSubscription = Boolean(subscription);
+
+  // Detect if this is a normal carwash plan the user currently has
+  const isCurrentPlan =
+    !isSelfServicePlan &&
+    subscription?.plan_id === plan.id &&
+    normalizedBillingCycle === pricing;
+
+  // Button text logic
+  let buttonText = `Select ${plan.name}`;
+
+  if (hasSubscription) {
+    if (isSelfServicePlan) {
+      buttonText = "Add more vehicle"; // self-service rule
+    } else if (isCurrentPlan) {
+      buttonText = "Current Plan"; // normal plans
+    } else {
+      buttonText = "Upgrade"; // user has a plan → add vehicle
+    }
+  }
 
   // Popular plans
   const popularPlans = ["Suvs", "Small Truck"];

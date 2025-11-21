@@ -43,12 +43,12 @@ export default function PricingPage() {
   }
 
   return (
-    <>
-      <section className="py-20 text-center">
+    <section>
+      <header className="py-10 text-center">
         <Header user={user} userProfile={userProfile} />
         <SubscriptionTabs activeTab={activeTab} setActiveTab={setActiveTab} />
         <PricingToggle pricing={pricing} setPricing={setPricing} />
-      </section>
+      </header>
 
       {/* TAB: Carwash Subscriptions */}
       {activeTab === "subscriptions" && (
@@ -69,7 +69,7 @@ export default function PricingPage() {
       {activeTab === "selfservice" && <SelfServiceSection user={user} />}
 
       <AuthPromptModal open={authOpen} onClose={() => setAuthOpen(false)} />
-    </>
+    </section>
   );
 }
 

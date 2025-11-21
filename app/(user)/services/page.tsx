@@ -17,6 +17,7 @@ import {
   Truck,
   CarFront,
   BellElectric as TruckElectric,
+  Caravan,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
@@ -70,14 +71,17 @@ export default function ServicePage() {
       case "sedan":
         return Car;
       case "compact suv":
-      case "suv":
+        return CarFront;
+      case "suvs":
         return CarFront;
       case "truck":
         return TruckElectric;
       case "small truck":
         return Truck;
+      case "big truck":
+        return Truck;
       case "van":
-        return Wrench;
+        return Caravan;
       default:
         return Sparkles;
     }
