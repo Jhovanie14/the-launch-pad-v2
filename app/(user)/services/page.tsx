@@ -16,13 +16,19 @@ import {
   Wrench,
   Truck,
   CarFront,
-  BellElectric as TruckElectric,
   Caravan,
+  Droplets,
+  Crown,
+  Calendar,
+  Clock,
+  DollarSign,
+  ArrowRight,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useBooking } from "@/context/bookingContext";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 type ServicePackage = {
   id: string;
@@ -39,11 +45,11 @@ type ServicePackage = {
 
 export default function ServicePage() {
   const router = useRouter();
-
   const supabase = createClient();
   const { openBookingModal } = useBooking();
   const [services, setServices] = useState<ServicePackage[]>([]);
   const [loading, setLoading] = useState(false);
+
   const fetchPackages = async () => {
     setLoading(true);
     try {
@@ -75,7 +81,7 @@ export default function ServicePage() {
       case "suvs":
         return CarFront;
       case "truck":
-        return TruckElectric;
+        return Truck;
       case "small truck":
         return Truck;
       case "big truck":
@@ -113,6 +119,7 @@ export default function ServicePage() {
       return (indexA === -1 ? 99 : indexA) - (indexB === -1 ? 99 : indexB);
     }
   );
+
   const EASE_OUT: [number, number, number, number] = [0.16, 1, 0.3, 1];
   const popularServices = "Deluxe wash";
 
@@ -157,9 +164,58 @@ export default function ServicePage() {
     },
   };
 
+  const mainServiceCategories = [
+    {
+      icon: Droplets,
+      title: "Self-Service Car Wash",
+      description:
+        "Take control of your car's cleanliness with our state-of-the-art self-service bays",
+      features: [
+        "High-pressure wash system",
+        "Foam brush & soap applicator",
+        "Spot-free rinse",
+        "Vacuum stations available",
+      ],
+      time: "8-10 mins",
+      price: "Starting at $8",
+      color: "bg-blue-50 border-blue-200",
+    },
+    {
+      icon: Crown,
+      title: "Professional Express Detailing",
+      description:
+        "Expert detailing services that make your vehicle look showroom-ready",
+      features: [
+        "Interior: Deep vacuum, shampoo, leather conditioning",
+        "Exterior: Premium wash, wax, tire shine",
+        "Engine bay cleaning available",
+        "Paint protection options",
+      ],
+      time: "25-45 mins",
+      price: "Starting at $25",
+      color: "bg-purple-50 border-purple-200",
+    },
+    {
+      icon: Calendar,
+      title: "Express Detailing Subscription",
+      description:
+        "Save time and money with unlimited monthly access to premium services",
+      features: [
+        "Unlimited express washes per month",
+        "Priority scheduling",
+        "15% off all detailing services",
+        "Exclusive member benefits",
+      ],
+      time: "Flexible visits",
+      price: "Starting at $69.99/month",
+      color: "bg-green-50 border-green-200",
+    },
+  ];
+
   return (
     <section className="py-20 px-4 bg-background">
       <div className="max-w-7xl mx-auto">
+        {/* Header */}
         <motion.div
           className="text-center mb-16"
           initial={{ opacity: 0, y: -20 }}
@@ -174,6 +230,113 @@ export default function ServicePage() {
           </p>
         </motion.div>
 
+        {/* Main Service Categories Overview */}
+        <motion.div
+          className="mb-20"
+          initial="hidden"
+          animate="visible"
+          variants={containerVariants}
+        >
+          <motion.h3
+            className="text-3xl font-bold text-center mb-12 text-blue-900"
+            variants={itemVariants}
+          >
+            Choose Your Service Type
+          </motion.h3>
+
+          <div className="grid md:grid-cols-3 gap-8 mb-12">
+            {mainServiceCategories.map((category, index) => {
+              const Icon = category.icon;
+              return (
+                <motion.div key={index} variants={itemVariants}>
+                  <Card
+                    className={`h-full border-2 ${category.color} hover:shadow-xl transition-all duration-300`}
+                  >
+                    <CardHeader>
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="bg-primary/10 p-3 rounded-lg">
+                          <Icon className="h-7 w-7 text-primary" />
+                        </div>
+                        <CardTitle className="text-xl">
+                          {category.title}
+                        </CardTitle>
+                      </div>
+                      <CardDescription className="text-base leading-relaxed">
+                        {category.description}
+                      </CardDescription>
+                    </CardHeader>
+
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        {category.features.map((feature, idx) => (
+                          <div key={idx} className="flex items-start gap-2">
+                            <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                            <span className="text-sm text-muted-foreground">
+                              {feature}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="pt-4 border-t space-y-2">
+                        <div className="flex items-center gap-2 text-sm">
+                          <Clock className="h-4 w-4 text-primary" />
+                          <span className="font-medium">{category.time}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <DollarSign className="h-4 w-4 text-primary" />
+                          <span className="font-bold text-primary text-lg">
+                            {category.price}
+                          </span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })}
+          </div>
+
+          {/* CTA Button */}
+          <motion.div className="text-center" variants={itemVariants}>
+            <Button
+              size="lg"
+              className="text-lg px-8 py-6 bg-primary hover:bg-primary/90"
+              onClick={() => openBookingModal()}
+            >
+              Book Online Now
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+            <p className="text-sm text-muted-foreground mt-3">
+              Fast, easy scheduling • Instant confirmation
+            </p>
+          </motion.div>
+        </motion.div>
+
+        {/* Divider */}
+        <div className="border-t border-border my-16"></div>
+
+        {/* Detailed Service Packages by Vehicle Type */}
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={containerVariants}
+        >
+          <motion.h3
+            className="text-3xl font-bold text-center mb-4 text-blue-900"
+            variants={itemVariants}
+          >
+            Detailed Pricing by Vehicle Type
+          </motion.h3>
+          <motion.p
+            className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto"
+            variants={itemVariants}
+          >
+            Select your vehicle type to see our complete service packages and
+            pricing
+          </motion.p>
+        </motion.div>
+
         {orderedCategories.map(([category, items], categoryIndex) => (
           <motion.div
             key={category}
@@ -185,7 +348,7 @@ export default function ServicePage() {
           >
             {/* Category Label */}
             <motion.h3
-              className="text-4xl font-semibold mb-10 flex items-center justify-center gap-2 capitalize"
+              className="text-2xl font-semibold mb-8 flex items-center justify-center gap-2 capitalize text-blue-900"
               variants={itemVariants}
             >
               {(() => {
@@ -255,7 +418,7 @@ export default function ServicePage() {
                             </CardDescription>
                           </div>
                         </div>
-                        <CardDescription className="text-accent-foreground text-lg leading-relaxed">
+                        <CardDescription className="text-muted-foreground text-sm leading-relaxed">
                           {service.description}
                         </CardDescription>
                       </CardHeader>
@@ -298,6 +461,31 @@ export default function ServicePage() {
             </motion.div>
           </motion.div>
         ))}
+
+        {/* Bottom CTA */}
+        <motion.div
+          className="text-center mt-16 pt-12 border-t"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
+          <h3 className="text-2xl font-bold mb-4 text-blue-900">
+            Ready to Get Started?
+          </h3>
+          <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
+            Book your service online in just a few clicks. Choose your date,
+            time, and service package.
+          </p>
+          <Button
+            size="lg"
+            className="text-lg px-8 py-6 bg-primary hover:bg-primary/90"
+            onClick={() => openBookingModal()}
+          >
+            Book Your Service Now
+            <ArrowRight className="ml-2 h-5 w-5" />
+          </Button>
+        </motion.div>
       </div>
     </section>
   );

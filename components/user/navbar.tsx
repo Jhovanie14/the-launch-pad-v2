@@ -375,6 +375,17 @@ export function UserNavbar() {
                   </Link>
                 </div>
               </div>
+              <Button
+                size="sm"
+                onClick={openBookingModal}
+                className="bg-blue-900 hover:bg-blue-800 text-white font-semibold px-6 rounded-md transition-all duration-200 shadow-md hover:shadow-lg uppercase tracking-wide"
+              >
+                Book Online
+              </Button>
+              <div className="flex items-center space-x-3 text-muted-foreground">
+                <Phone className="w-4 h-4" />
+                <p>(832) 219-8320</p>
+              </div>
             </div>
           </div>
         </div>

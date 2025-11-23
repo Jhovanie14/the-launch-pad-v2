@@ -80,7 +80,7 @@ const services = [
     id: 3,
     title: "Express Detailing Subscription",
     description:
-      "Experience ultimate control over your vehicle's shine with our Express Detailing Subscription. Designed for those who take pride in a hands-on clean, with our professional team feature top-tier tools and technology to deliver a professional finish anytime.",
+      "Experience ultimate control over your vehicle's shine with our Express Detailing Subscription. Designed for drivers who want their car looking sharp all the time. Our team uses top-tier tools and technology to keep your vehicle clean, protected, and ready to roll—without you lifting a finger.",
     image: "/express-detailing-subscription.png",
     images: [
       "/express-detailing-subscription.png",
@@ -113,7 +113,7 @@ export default function Home() {
     (typeof services)[0] | null
   >(null);
   return (
-    <main className="flex-1 container mx-auto py-8">
+    <main className="flex-1 container mx-auto py-8 px-3">
       <Hero />
       <div className="max-w-7xl mx-auto">
         {/* Hero Section */}

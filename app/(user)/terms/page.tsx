@@ -309,8 +309,8 @@ export default function TermsOfServicePage() {
                         <span>
                           Prepaid online appointments cancelled 2 or more hours
                           before the scheduled start time receive a full refund
-                          to the original payment method. Cancellations made
-                          less than 2 hours before the scheduled start time and
+                          to the original payment method. Cancellations made not
+                          less than 24 hours before the scheduled start time and
                           no-shows are non-refundable.
                         </span>
                       </li>

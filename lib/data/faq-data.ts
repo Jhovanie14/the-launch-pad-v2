@@ -13,13 +13,13 @@ export const faqData = [
     answer:
       "Yes, you can update your email in your account settings. Go to Settings > Account > Email and follow the verification process.",
   },
-  {
-    id: "billing-1",
-    category: "Billing & Payments",
-    question: "What payment methods do you accept?",
-    answer:
-      "We accept all major credit cards (Visa, Mastercard, American Express), PayPal, and bank transfers for enterprise customers.",
-  },
+  // {
+  //   id: "billing-1",
+  //   category: "Billing & Payments",
+  //   question: "What payment methods do you accept?",
+  //   answer:
+  //     "We accept all major credit cards (Visa, Mastercard, American Express), PayPal, and bank transfers for enterprise customers.",
+  // },
   {
     id: "billing-2",
     category: "Billing & Payments",
@@ -27,34 +27,34 @@ export const faqData = [
     answer:
       "Yes, invoices are automatically generated and sent to your email after each payment.",
   },
-  {
-    id: "technical-1",
-    category: "Technical Issues",
-    question: "Why am I experiencing slow performance?",
-    answer:
-      "Slow performance can be caused by several factors. Try clearing your browser cache, disabling extensions, or using a different browser. If the issue persists, contact our support team.",
-  },
-  {
-    id: "technical-2",
-    category: "Technical Issues",
-    question: "Is there an API available?",
-    answer:
-      "Currently, we do not offer an API. All features and data interactions are managed directly within the platform.",
-  },
-  {
-    id: "feature-1",
-    category: "Features",
-    question: "How do I export my data?",
-    answer:
-      "Data export is not supported at the moment. All user information and content remain securely stored within the platform.",
-  },
-  {
-    id: "feature-2",
-    category: "Features",
-    question: "Can I integrate with third-party tools?",
-    answer:
-      "No, as of now we don't support integrations with popular tools like Slack, Zapier, and more.",
-  },
+  // {
+  //   id: "technical-1",
+  //   category: "Technical Issues",
+  //   question: "Why am I experiencing slow performance?",
+  //   answer:
+  //     "Slow performance can be caused by several factors. Try clearing your browser cache, disabling extensions, or using a different browser. If the issue persists, contact our support team.",
+  // },
+  // {
+  //   id: "technical-2",
+  //   category: "Technical Issues",
+  //   question: "Is there an API available?",
+  //   answer:
+  //     "Currently, we do not offer an API. All features and data interactions are managed directly within the platform.",
+  // },
+  // {
+  //   id: "feature-1",
+  //   category: "Features",
+  //   question: "How do I export my data?",
+  //   answer:
+  //     "Data export is not supported at the moment. All user information and content remain securely stored within the platform.",
+  // },
+  // {
+  //   id: "feature-2",
+  //   category: "Features",
+  //   question: "Can I integrate with third-party tools?",
+  //   answer:
+  //     "No, as of now we don't support integrations with popular tools like Slack, Zapier, and more.",
+  // },
   {
     id: "services-1",
     category: "Services & Packages",
@@ -125,6 +125,6 @@ export const faqData = [
     question:
       "I have additional questions not covered here, who can I contact?",
     answer:
-      "Our friendly team is here to help! You can reach us at (832) 219-8320, email us at info@thelaunchpadht.com, or visit us at 10410 Main St, Houston, TX, United States, Texas.",
+      "Our friendly team is here to help! You can reach us at (832) 219-8320, email us at info@thelaunchpadht.com, or visit us at 10410 Main St, Houston, TX 77025.",
   },
 ];

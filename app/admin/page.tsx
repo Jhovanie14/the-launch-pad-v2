@@ -22,7 +22,7 @@ export default function AdminLoginPage() {
     password?: string[];
     message?: string;
   }>({});
-  const {signIn} = useAuth()
+  const { signIn } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -99,7 +99,11 @@ export default function AdminLoginPage() {
                 )}
               </div>
 
-              <Button type="submit" className="w-full bg-blue-900 hover:bg-blue-800" disabled={isLoading}>
+              <Button
+                type="submit"
+                className="w-full bg-blue-900 hover:bg-blue-800"
+                disabled={isLoading}
+              >
                 {isLoading ? "Signing in..." : "Sign In as Admin"}
               </Button>
             </form>

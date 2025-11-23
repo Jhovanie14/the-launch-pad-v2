@@ -90,13 +90,12 @@ export default function Testimonials() {
       </div>
 
       <div className="flex items-center">
-        <Image
-          src={testimonial.image || "/placeholder.svg"}
-          alt={testimonial.image}
+        {/* <Image
+          src={testimonial.image}
+          alt={`5-star review from ${testimonial.author} about ${testimonial.vehicle} car wash service`}
           width={450}
           height={450}
-          className="w-full h-full rounded-md object-cover"
-        />
+        /> */}
       </div>
     </div>
   );

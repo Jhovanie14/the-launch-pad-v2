@@ -200,7 +200,7 @@ export function Footer() {
             <ul className="space-y-3">
               <li className="flex items-start gap-2 text-sm">
                 <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <span>10410 Main St, Houston, TX, United States, Texas</span>
+                <span>10410 Main St, Houston, TX 77025</span>
               </li>
               <li className="flex items-center gap-2 text-sm">
                 <Phone className="w-4 h-4 flex-shrink-0" />
@@ -216,8 +216,8 @@ export function Footer() {
                 $10 Handwash Special
               </p> */}
               <p className="text-xs text-gray-400">
-                Our team member are available 7 days a week from 9:00 AM to 6:30
-                PM
+                “Our team members are available 7 days a week from 9:00 AM to
+                6:30 PM.”
               </p>
               {/* <p className="text-xs text-gray-400">Sedans, Suvs, Trucks</p> */}
             </div>

@@ -83,7 +83,7 @@ export default function Contact() {
               <div className="flex items-center space-x-4">
                 <MapPin className="w-6 h-6 text-muted-foreground" />
                 <span className="text-foreground font-medium">
-                  10410 S Main St, Houston, TX 77025
+                  10410 Main St, Houston, TX 77025
                 </span>
               </div>
             </div>

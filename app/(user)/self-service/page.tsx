@@ -1,7 +1,14 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Crown, CheckCircle, Clock, DollarSign, Sparkles } from "lucide-react";
+import {
+  Crown,
+  CheckCircle,
+  Clock,
+  DollarSign,
+  Sparkles,
+  Zap,
+} from "lucide-react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import PricingCard from "@/components/pricing-plan";
@@ -43,9 +50,12 @@ export default function SelfServicePage() {
             <h1 className="text-5xl md:text-7xl font-bold text-blue-900 mb-6">
               Self-Service Bay Membership
             </h1>
-            <p className="text-xl md:text-2xl text-slate-600 mb-8">
-              Take control of your car care with unlimited access to
-              professional equipment
+            <p className="text-xl md:text-2xl text-slate-600 mb-4">
+              DIY car wash starting at $8 per visit, or get unlimited daily
+              access for just $19.99/month
+            </p>
+            <p className="text-lg text-blue-900 font-bold mb-8">
+              That's only $0.67 per day when you subscribe! 🎉
             </p>
             <div className="flex flex-wrap justify-center gap-4 text-sm text-slate-600">
               <div className="flex items-center gap-2">
@@ -65,6 +75,112 @@ export default function SelfServicePage() {
         </div>
       </section>
 
+      {/* Pricing Comparison Section - NEW */}
+      <section className="py-12 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-3xl font-bold text-center text-blue-900 mb-8">
+              Pay-Per-Use vs. Membership
+            </h2>
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Pay Per Use */}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+                className="p-6 bg-slate-50 rounded-xl border-2 border-slate-200"
+              >
+                <div className="text-center mb-4">
+                  <h3 className="text-2xl font-bold text-slate-900 mb-2">
+                    Pay Per Use
+                  </h3>
+                  <div className="text-4xl font-bold text-slate-900">$8</div>
+                  <p className="text-slate-600 text-sm">per visit</p>
+                </div>
+                <ul className="space-y-3">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                    <span className="text-slate-700">
+                      Access to all equipment
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                    <span className="text-slate-700">No commitment needed</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                    <span className="text-slate-700">
+                      Pay only when you use
+                    </span>
+                  </li>
+                </ul>
+                <div className="mt-6 p-4 bg-white rounded-lg border border-slate-200">
+                  <p className="text-sm text-slate-600">
+                    <strong>Monthly cost if used 4x:</strong> $32
+                  </p>
+                </div>
+              </motion.div>
+
+              {/* Membership - Highlighted */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 }}
+                className="p-6 bg-gradient-to-br from-blue-900 to-blue-800 rounded-xl border-4 border-yellow-400 relative overflow-hidden shadow-xl"
+              >
+                <div className="absolute top-0 right-0 bg-yellow-400 text-slate-900 px-4 py-1 text-xs font-bold rounded-bl-lg">
+                  BEST VALUE
+                </div>
+                <div className="text-center mb-4 mt-4">
+                  <h3 className="text-2xl font-bold text-white mb-2">
+                    Monthly Membership
+                  </h3>
+                  <div className="text-4xl font-bold text-yellow-400">
+                    $19.99
+                  </div>
+                  <p className="text-blue-200 text-sm">per month</p>
+                  <div className="mt-2 inline-block bg-yellow-400/20 px-3 py-1 rounded-full">
+                    <p className="text-yellow-400 font-bold text-lg">
+                      Only $0.67/day
+                    </p>
+                  </div>
+                </div>
+                <ul className="space-y-3">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" />
+                    <span className="text-white">Unlimited daily access</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" />
+                    <span className="text-white">Use once per day</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" />
+                    <span className="text-white">Cancel anytime</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Zap className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" />
+                    <span className="text-white font-semibold">
+                      Save up to 75%!
+                    </span>
+                  </li>
+                </ul>
+                <div className="mt-6 p-4 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
+                  <p className="text-sm text-white">
+                    <strong>Savings vs. pay-per-use:</strong> $12.01/month
+                    <br />
+                    <span className="text-yellow-400 text-xs">
+                      (Based on 4 washes per month)
+                    </span>
+                  </p>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Pricing Card Section */}
       <section className="py-16 bg-gradient-to-b from-white to-blue-50">
         <div className="container mx-auto px-4">
@@ -75,7 +191,7 @@ export default function SelfServicePage() {
             className="max-w-xl mx-auto text-center space-y-6"
           >
             <h2 className="text-3xl font-bold text-center text-blue-900 mb-8">
-              Simple, Transparent Pricing
+              Get Started Today
             </h2>
 
             {loading ? (
@@ -142,7 +258,7 @@ export default function SelfServicePage() {
           >
             <img
               src="https://images.unsplash.com/photo-1601362840469-51e4d8d58785?w=1200&h=600&fit=crop"
-              alt="Self-Service Car Wash Bay"
+              alt="Modern self-service car wash bay with high-pressure equipment at The Launch Pad Houston"
               className="w-full h-[400px] md:h-[500px] object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-blue-900/80 via-blue-900/20 to-transparent" />
@@ -163,7 +279,7 @@ export default function SelfServicePage() {
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-blue-900 mb-12">
-            Why Choose Self-Service?
+            Why Choose Self-Service Membership?
           </h2>
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             <motion.div
@@ -176,11 +292,13 @@ export default function SelfServicePage() {
                 <DollarSign className="w-8 h-8 text-blue-900" />
               </div>
               <h3 className="text-xl font-semibold text-slate-900 mb-3">
-                Save Money
+                Incredible Savings
               </h3>
               <p className="text-slate-600">
-                Pay just $19.99/month for 10 mins daily washes. That's ¢66 cents
-                per day!
+                Pay just $19.99/month for unlimited daily 10-minute washes.
+                That's only{" "}
+                <strong className="text-blue-900">$0.67 per day</strong> — way
+                cheaper than $8 per visit!
               </p>
             </motion.div>
 
@@ -198,7 +316,7 @@ export default function SelfServicePage() {
               </h3>
               <p className="text-slate-600">
                 Wash whenever you want, once per day. No appointments needed, no
-                waiting in line.
+                waiting in line. Your bay is ready when you are.
               </p>
             </motion.div>
 
@@ -216,7 +334,7 @@ export default function SelfServicePage() {
               </h3>
               <p className="text-slate-600">
                 Access the same high-quality equipment used by professionals,
-                right at your fingertips.
+                including high-pressure wash, foam brush, and spot-free rinse.
               </p>
             </motion.div>
           </div>
@@ -224,7 +342,7 @@ export default function SelfServicePage() {
       </section>
 
       {/* How It Works Section */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-blue-50">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-blue-900 mb-12">
             How It Works
@@ -235,7 +353,7 @@ export default function SelfServicePage() {
                 step: 1,
                 title: "Sign Up",
                 description:
-                  "Create your account and subscribe to the Self-Service Bay membership",
+                  "Create your account and subscribe to the Self-Service Bay membership for $19.99/month",
               },
               {
                 step: 2,
@@ -247,13 +365,13 @@ export default function SelfServicePage() {
                 step: 3,
                 title: "Wash & Go",
                 description:
-                  "Use our professional equipment to wash, vacuum, and detail your car",
+                  "Use our professional equipment for 10 minutes to wash, rinse, and detail your car",
               },
               {
                 step: 4,
                 title: "Repeat Daily",
                 description:
-                  "Return tomorrow for another wash - it's all included!",
+                  "Return tomorrow for another wash - it's all included! Just $0.67 per day.",
               },
             ].map((item) => (
               <motion.div
@@ -261,7 +379,7 @@ export default function SelfServicePage() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1 * item.step }}
-                className="flex gap-4 items-start p-6 rounded-lg bg-blue-50 border border-blue-100"
+                className="flex gap-4 items-start p-6 rounded-lg bg-white border border-blue-100 shadow-sm"
               >
                 <div className="bg-blue-900 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold flex-shrink-0">
                   {item.step}
@@ -287,11 +405,11 @@ export default function SelfServicePage() {
             transition={{ delay: 0.8 }}
           >
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-              Ready to Get Started?
+              Ready to Save Big?
             </h2>
             <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-              Join hundreds of members who keep their cars spotless with our
-              Self-Service Bay membership
+              Join hundreds of members who keep their cars spotless for just
+              $0.67/day with our Self-Service Bay membership
             </p>
             <Button
               size="lg"
