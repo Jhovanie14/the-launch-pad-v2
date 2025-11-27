@@ -20,7 +20,6 @@ export function useVehicleForm(initialValues?: Partial<VehicleFormData>) {
     year: initialValues?.year ?? "",
     make: initialValues?.make ?? "",
     model: initialValues?.model ?? "",
-
     body_type: initialValues?.body_type ?? "",
     color: initialValues?.color ?? "",
     licensePlate: initialValues?.licensePlate ?? "",

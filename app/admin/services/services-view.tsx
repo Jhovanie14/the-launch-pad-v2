@@ -93,6 +93,10 @@ export default function ServicesView() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [submitLoading, setSubmitLoading] = useState(false);
 
+  const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+
   //
   const getServiceIcon = (category: string) => {
     switch (category) {
@@ -261,6 +265,24 @@ export default function ServicesView() {
     }
   };
 
+  const filteredServices = services.filter((service) => {
+    const matchesSearch =
+      service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      service.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      service.description?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesCategory =
+      categoryFilter === "all" ||
+      service.name.toLowerCase() === categoryFilter.toLowerCase();
+
+    const matchesStatus =
+      statusFilter === "all" ||
+      (statusFilter === "active" && service.is_active) ||
+      (statusFilter === "inactive" && !service.is_active);
+
+    return matchesSearch && matchesCategory && matchesStatus;
+  });
+
   if (loading) {
     return <LoadingDots />;
   }
@@ -325,7 +347,7 @@ export default function ServicesView() {
                   id="category"
                   value={form.category}
                   onChange={handleChange}
-                  placeholder="Exterior"
+                  placeholder="sedan, compact suv, small truck etc..."
                 />
               </div>
 
@@ -398,21 +420,33 @@ export default function ServicesView() {
       <div className="grid gap-3 md:grid-cols-3">
         <div className="space-y-2">
           <Label htmlFor="q">Search</Label>
-          <Input id="q" />
+          <Input
+            id="q"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search services..."
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="cat">Category</Label>
           <select
             id="cat"
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
             className="w-full rounded-md border bg-background p-2"
           >
             <option>All</option>
+            <option value="Basic Wash">Basic Wash</option>
+            <option value="Deluxe Wash">Deluxe Wash</option>
+            <option value="Express Interior">Express Interior</option>
           </select>
         </div>
         <div className="space-y-2">
           <Label htmlFor="active">Status</Label>
           <select
             id="active"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
             className="w-full rounded-md border bg-background p-2"
           >
             <option value="all">All</option>
@@ -423,7 +457,7 @@ export default function ServicesView() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {services.map((service) => {
+        {filteredServices.map((service) => {
           const ServiceIcon = getServiceIcon(service.category);
           return (
             <Card key={service.id} className="bg-card border-border">

@@ -195,10 +195,10 @@ export default function ServicePage() {
       description:
         "Expert detailing services that make your vehicle look showroom-ready",
       features: [
-        "Interior: Deep vacuum, shampoo, leather conditioning",
+        "Interior: Deep vacuum, shampoo",
         "Exterior: Premium wash, wax, tire shine",
-        "Engine bay cleaning available",
-        "Paint protection options",
+        "Window cleaning",
+        "Dashboard shine",
       ],
       time: "25-45 mins",
       price: "Starting at $25",

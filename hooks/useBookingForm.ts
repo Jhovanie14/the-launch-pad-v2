@@ -77,16 +77,16 @@ export function useBookingForm(onSuccess: () => void, subscriber?: any) {
       return;
     }
 
-    if (!selectedService) {
-      toast.error("Please select a service package.");
+    // 🔹 NEW: Allow booking with NO service (only add-ons)
+    if (!selectedService && selectedAddOns.length === 0) {
+      toast.error("Please select at least a service package or add-ons.");
       return;
     }
 
-    const selectedServiceObj = services.find((s) => s.id === selectedService);
-    if (!selectedServiceObj) {
-      toast.error("Invalid service selected.");
-      return;
-    }
+    // 🔹 Get selected service (if any)
+    const selectedServiceObj = selectedService
+      ? services.find((s) => s.id === selectedService)
+      : null;
 
     const selectedAddOnObjs = addOns.filter((a) =>
       selectedAddOns.includes(a.id)
@@ -101,12 +101,19 @@ export function useBookingForm(onSuccess: () => void, subscriber?: any) {
       0
     );
 
+    // 🔹 Calculate total price and duration
+    const servicePrice = selectedServiceObj
+      ? Number(selectedServiceObj.price || 0)
+      : 0;
+    const serviceDuration = selectedServiceObj
+      ? Number(selectedServiceObj.duration || 0)
+      : 0;
+
     const totalPrice = subscriber
       ? addOnsTotalPrice // subscriber pays only for add-ons
-      : Number(selectedServiceObj.price || 0) + addOnsTotalPrice;
+      : servicePrice + addOnsTotalPrice;
 
-    const totalDuration =
-      Number(selectedServiceObj.duration || 0) + addOnsTotalDuration;
+    const totalDuration = serviceDuration + addOnsTotalDuration;
 
     setLoading(true);
 
@@ -123,7 +130,7 @@ export function useBookingForm(onSuccess: () => void, subscriber?: any) {
               .filter(Boolean),
             addOnsId: selectedAddOns,
             appointmentDate: new Date(form.appointmentDate),
-            servicePackage: selectedServiceObj,
+            servicePackage: selectedServiceObj || null, // 🔹 Allow null service
             totalPrice,
             totalDuration,
           },

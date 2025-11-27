@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Check } from "lucide-react";
+import { Check, Ban } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { useBookingForm } from "@/hooks/useBookingForm";
 
@@ -151,6 +151,30 @@ export default function NewBookingModal({
 
           {/* SERVICES */}
           <SectionTitle title="Service Packages" />
+
+          {/* 🔹 NEW: "No Service" Option */}
+          <Card
+            onClick={() => setSelectedService(null)}
+            className={`cursor-pointer border-2 transition-all ${
+              selectedService === null
+                ? "border-blue-600 bg-blue-50"
+                : "border-gray-200 hover:border-blue-300"
+            }`}
+          >
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-base font-medium">
+                <Ban className="w-5 h-5 text-gray-500" />
+                No Service Package
+                <span className="ml-auto font-semibold text-gray-600">
+                  $0.00
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0 text-sm text-gray-600">
+              <p>Select this if you only want add-ons (no main service)</p>
+            </CardContent>
+          </Card>
+
           {services.length === 0 ? (
             <p className="text-sm text-gray-500">
               No services available for this body type.
@@ -189,27 +213,31 @@ export default function NewBookingModal({
 
           {/* ADD-ONS */}
           <SectionTitle title="Add-ons" />
-          <div className="space-y-2">
-            {addOns.map((a) => (
-              <label
-                key={a.id}
-                className="flex justify-between items-center border p-2 rounded cursor-pointer hover:bg-gray-50"
-              >
-                <div>
-                  <p className="font-medium">{a.name}</p>
-                  <p className="text-sm text-gray-500">
-                    ${a.price?.toFixed(2) ?? "0.00"}
-                  </p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={selectedAddOns.includes(a.id)}
-                  onChange={() => toggleAddOn(a.id)}
-                  className="w-5 h-5 text-blue-600"
-                />
-              </label>
-            ))}
-          </div>
+          {addOns.length === 0 ? (
+            <p className="text-sm text-gray-500">No add-ons available.</p>
+          ) : (
+            <div className="space-y-2">
+              {addOns.map((a) => (
+                <label
+                  key={a.id}
+                  className="flex justify-between items-center border p-2 rounded cursor-pointer hover:bg-gray-50"
+                >
+                  <div>
+                    <p className="font-medium">{a.name}</p>
+                    <p className="text-sm text-gray-500">
+                      ${a.price?.toFixed(2) ?? "0.00"}
+                    </p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={selectedAddOns.includes(a.id)}
+                    onChange={() => toggleAddOn(a.id)}
+                    className="w-5 h-5 text-blue-600"
+                  />
+                </label>
+              ))}
+            </div>
+          )}
 
           {/* APPOINTMENT */}
           <SectionTitle title="Appointment" />
@@ -239,6 +267,27 @@ export default function NewBookingModal({
               <SelectItem value="card">Card</SelectItem>
             </SelectContent>
           </Select>
+
+          {/* 🔹 Show selected total */}
+          <div className="bg-gray-50 p-4 rounded-lg border">
+            <div className="flex justify-between items-center">
+              <span className="font-medium">Total Amount:</span>
+              <span className="text-xl font-bold text-blue-900">
+                $
+                {calculateTotal(
+                  selectedService,
+                  services,
+                  selectedAddOns,
+                  addOns
+                ).toFixed(2)}
+              </span>
+            </div>
+            {selectedService === null && selectedAddOns.length > 0 && (
+              <p className="text-sm text-gray-500 mt-1">
+                Add-ons only (no service package)
+              </p>
+            )}
+          </div>
 
           {/* SUBMIT BUTTON */}
           <Button
@@ -288,4 +337,22 @@ function VehicleField({
       {error && <p className="text-red-500 text-sm">{error}</p>}
     </div>
   );
+}
+
+// 🔹 Helper function to calculate total
+function calculateTotal(
+  selectedService: string | null,
+  services: any[],
+  selectedAddOns: string[],
+  addOns: any[]
+): number {
+  const servicePrice = selectedService
+    ? services.find((s) => s.id === selectedService)?.price || 0
+    : 0;
+
+  const addOnsTotal = addOns
+    .filter((a) => selectedAddOns.includes(a.id))
+    .reduce((sum, a) => sum + Number(a.price || 0), 0);
+
+  return servicePrice + addOnsTotal;
 }

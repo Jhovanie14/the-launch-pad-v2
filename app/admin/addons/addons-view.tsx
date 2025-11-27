@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CheckCircle, Edit, Plus } from "lucide-react";
+import { Edit, Plus } from "lucide-react";
 import {
   Dialog,
   DialogClose,
@@ -50,6 +50,10 @@ export default function AddOnsView() {
   const [open, setOpen] = useState(false);
   const [editAddOn, setEditAddOn] = useState<AddOns | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const resetForm = () => {
     setForm({
@@ -160,6 +164,22 @@ export default function AddOnsView() {
     }
   };
 
+  const filteredAddOns = addOns.filter((addon) => {
+    const matchesSearch =
+      addon.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      addon.price.toString().includes(searchTerm.toLowerCase()) ||
+      addon.duration.toString().includes(searchTerm.toLowerCase());
+
+    const matchesStatus =
+      statusFilter === "all" ||
+      (statusFilter === "active" && addon.is_active) ||
+      (statusFilter === "inactive" && !addon.is_active);
+
+    // const matchesCategory = categoryFilter === "all"; // expandable later
+
+    return matchesSearch && matchesStatus;
+  });
+
   if (loading) {
     return <LoadingDots />;
   }
@@ -243,21 +263,20 @@ export default function AddOnsView() {
       <div className="grid gap-3 md:grid-cols-3">
         <div className="space-y-2">
           <Label htmlFor="q">Search</Label>
-          <Input id="q" />
+          <Input
+            id="q"
+            placeholder="Search add-ons"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="cat">Category</Label>
-          <select
-            id="cat"
-            className="w-full rounded-md border bg-background p-2"
-          >
-            <option>All</option>
-          </select>
-        </div>
+
         <div className="space-y-2">
           <Label htmlFor="active">Status</Label>
           <select
             id="active"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
             className="w-full rounded-md border bg-background p-2"
           >
             <option value="all">All</option>
@@ -269,7 +288,7 @@ export default function AddOnsView() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* {services.map((service) => {
           const ServiceIcon = getServiceIcon(service.category); */}
-        {addOns.map((addon) => (
+        {filteredAddOns.map((addon) => (
           <Card key={addon.id} className="bg-card border-border">
             <CardHeader>
               <div className="flex items-center justify-between">
