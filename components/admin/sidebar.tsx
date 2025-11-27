@@ -20,6 +20,7 @@ import {
   QrCode,
   RadioTower,
   UserRound,
+  MessageSquare,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/auth-context";
@@ -34,6 +35,8 @@ interface AdminSidebarProps {
 const navigation = [
   { name: "Dashboard", href: "/admin/dashboard", icon: Home },
   { name: "Users", href: "/admin/users", icon: UserRound },
+  { name: "fleet inquiry", href: "/admin/fleet-inquiry", icon: MessageSquare },
+  { name: "fleet payment management", href: "/admin/fleet-payment-management", icon: MessageSquare },
   { name: "Bookings", href: "/admin/booking", icon: Calendar },
   { name: "Subscriptions", href: "/admin/subscriptions", icon: CreditCard },
   { name: "Services", href: "/admin/services", icon: Car },

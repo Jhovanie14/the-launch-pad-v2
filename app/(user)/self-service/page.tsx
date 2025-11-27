@@ -55,7 +55,7 @@ export default function SelfServicePage() {
               access for just $19.99/month
             </p>
             <p className="text-lg text-blue-900 font-bold mb-8">
-              That's only $0.67 per day when you subscribe! 🎉
+              That's only ¢0.67 per day when you subscribe! 🎉
             </p>
             <div className="flex flex-wrap justify-center gap-4 text-sm text-slate-600">
               <div className="flex items-center gap-2">
@@ -142,7 +142,7 @@ export default function SelfServicePage() {
                   <p className="text-blue-200 text-sm">per month</p>
                   <div className="mt-2 inline-block bg-yellow-400/20 px-3 py-1 rounded-full">
                     <p className="text-yellow-400 font-bold text-lg">
-                      Only $0.67/day
+                      Only ¢0.67/day
                     </p>
                   </div>
                 </div>
@@ -172,6 +172,10 @@ export default function SelfServicePage() {
                     <br />
                     <span className="text-yellow-400 text-xs">
                       (Based on 4 washes per month)
+                    </span>
+                    <br />
+                    <span className="text-yellow-400 text-xs">
+                      no vacuum included
                     </span>
                   </p>
                 </div>
@@ -297,7 +301,7 @@ export default function SelfServicePage() {
               <p className="text-slate-600">
                 Pay just $19.99/month for unlimited daily 10-minute washes.
                 That's only{" "}
-                <strong className="text-blue-900">$0.67 per day</strong> — way
+                <strong className="text-blue-900">¢0.67 per day</strong> — way
                 cheaper than $8 per visit!
               </p>
             </motion.div>

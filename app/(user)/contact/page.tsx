@@ -65,10 +65,10 @@ export default function Contact() {
               <div className="flex items-center space-x-4">
                 <Mail className="w-6 h-6 text-muted-foreground" />
                 <a
-                  href="mailto:thelaunchpadht@gmail.com"
+                  href="mailto:info@thelaunchpadwash.com"
                   className="text-muted-foreground hover:text-blue-900 font-medium"
                 >
-                  info@thelaunchpadht.com
+                  info@thelaunchpadwash.com
                 </a>
               </div>
               <div className="flex items-center space-x-4">
@@ -83,7 +83,7 @@ export default function Contact() {
               <div className="flex items-center space-x-4">
                 <MapPin className="w-6 h-6 text-muted-foreground" />
                 <span className="text-foreground font-medium">
-                  10410 Main St, Houston, TX 77025
+                  10410 South main Main St, Houston, TX 77025
                 </span>
               </div>
             </div>

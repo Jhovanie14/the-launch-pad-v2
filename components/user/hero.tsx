@@ -40,7 +40,7 @@ const customerTypes = [
       "Spot-free rinse & foam brush",
       "Vacuum stations available",
     ],
-    price: "Starting at $8",
+    price: "Starting average at $8",
     cta: "See Self-Service Options",
     ctaLink: "/self-service",
     variant: "outline" as const,
@@ -49,7 +49,7 @@ const customerTypes = [
   },
   {
     icon: Sparkles,
-    label: "Express Detail",
+    label: "Full Service Express Detail",
     whoFor: "For busy professionals who want expert results without the wait",
     whatTheyGet: [
       "Professional hand wash & wax",
@@ -125,7 +125,7 @@ export function Hero() {
 
               <p className="text-xl md:text-2xl text-white font-semibold max-w-2xl mx-auto leading-relaxed">
                 Wash it yourself in our premium bays or let our team handle a
-                full express detail — all at 10410 Main St.
+                full express detail — all at 10410 South Main St.
               </p>
             </div>
 

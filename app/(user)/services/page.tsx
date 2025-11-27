@@ -24,7 +24,7 @@ import {
   DollarSign,
   ArrowRight,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useBooking } from "@/context/bookingContext";
 import { useRouter } from "next/navigation";
@@ -49,6 +49,15 @@ export default function ServicePage() {
   const { openBookingModal } = useBooking();
   const [services, setServices] = useState<ServicePackage[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const serviceRef = useRef<HTMLDivElement | null>(null);
+
+  function handleClickService() {
+    serviceRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+    });
+  }
 
   const fetchPackages = async () => {
     setLoading(true);
@@ -177,7 +186,7 @@ export default function ServicePage() {
         "Vacuum stations available",
       ],
       time: "8-10 mins",
-      price: "Starting at $8",
+      price: "Starting average at $8",
       color: "bg-blue-50 border-blue-200",
     },
     {
@@ -250,6 +259,11 @@ export default function ServicePage() {
               return (
                 <motion.div key={index} variants={itemVariants}>
                   <Card
+                    onClick={
+                      category.title === "Professional Express Detailing"
+                        ? handleClickService
+                        : undefined
+                    }
                     className={`h-full border-2 ${category.color} hover:shadow-xl transition-all duration-300`}
                   >
                     <CardHeader>
@@ -316,152 +330,157 @@ export default function ServicePage() {
         {/* Divider */}
         <div className="border-t border-border my-16"></div>
 
-        {/* Detailed Service Packages by Vehicle Type */}
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={containerVariants}
-        >
-          <motion.h3
-            className="text-3xl font-bold text-center mb-4 text-blue-900"
-            variants={itemVariants}
-          >
-            Detailed Pricing by Vehicle Type
-          </motion.h3>
-          <motion.p
-            className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto"
-            variants={itemVariants}
-          >
-            Select your vehicle type to see our complete service packages and
-            pricing
-          </motion.p>
-        </motion.div>
-
-        {orderedCategories.map(([category, items], categoryIndex) => (
+        <div ref={serviceRef}>
+          {/* Detailed Service Packages by Vehicle Type */}
           <motion.div
-            key={category}
-            className="mb-12"
             initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
+            animate="visible"
             variants={containerVariants}
           >
-            {/* Category Label */}
             <motion.h3
-              className="text-2xl font-semibold mb-8 flex items-center justify-center gap-2 capitalize text-blue-900"
+              className="text-3xl font-bold text-center mb-4 text-blue-900"
               variants={itemVariants}
             >
-              {(() => {
-                const Icon = getServiceIcon(category);
-                return <Icon className="h-6 w-6 text-primary" />;
-              })()}
-              {category}
+              Detailed Pricing by Vehicle Type
             </motion.h3>
+            <motion.p
+              className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto"
+              variants={itemVariants}
+            >
+              Select your vehicle type to see our complete service packages and
+              pricing
+            </motion.p>
+          </motion.div>
 
-            {/* Service Cards */}
+          {orderedCategories.map(([category, items], categoryIndex) => (
             <motion.div
-              className="grid sm:grid-cols-2 md:grid-cols-3 gap-8 px-4"
+              key={category}
+              className="mb-12"
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-100px" }}
               variants={containerVariants}
             >
-              {items.map((service, index) => {
-                const isPopular = popularServices.includes(service.name);
+              {/* Category Label */}
+              <motion.h3
+                className="text-2xl font-semibold mb-8 flex items-center justify-center gap-2 capitalize text-blue-900"
+                variants={itemVariants}
+              >
+                {(() => {
+                  const Icon = getServiceIcon(category);
+                  return <Icon className="h-6 w-6 text-primary" />;
+                })()}
+                {category}
+              </motion.h3>
 
-                return (
-                  <motion.div
-                    key={service.id}
-                    onClick={() => {
-                      router.push(
-                        `/service?service=${service.id}&body_type=${service.category}`
-                      );
-                    }}
-                    variants={cardVariants}
-                    whileHover="hover"
-                  >
-                    <Card
-                      className={`relative hover:shadow-lg transition-shadow border-border/50 h-full cursor-pointer ${
-                        isPopular
-                          ? "border-yellow-500/50 shadow-xl shadow-yellow-500/20 md:scale-105"
-                          : "border-gray-400"
-                      }`}
+              {/* Service Cards */}
+              <motion.div
+                className="grid sm:grid-cols-2 md:grid-cols-3 gap-8 px-4"
+                variants={containerVariants}
+              >
+                {items.map((service, index) => {
+                  const isPopular = popularServices.includes(service.name);
+
+                  return (
+                    <motion.div
+                      key={service.id}
+                      onClick={() => {
+                        router.push(
+                          `/service?service=${service.id}&body_type=${service.category}`
+                        );
+                      }}
+                      variants={cardVariants}
+                      whileHover="hover"
                     >
-                      {isPopular && (
-                        <motion.div
-                          className="absolute -top-3 -right-3 z-10"
-                          initial={{ scale: 0, rotate: -20 }}
-                          animate={{ scale: 1, rotate: 0 }}
-                          transition={{
-                            delay: 0.3 + index * 0.1,
-                            type: "spring",
-                            stiffness: 200,
-                          }}
-                        >
-                          <div className="bg-gradient-to-r from-yellow-400 to-yellow-400 text-slate-900 px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
-                            Most Popular
-                          </div>
-                        </motion.div>
-                      )}
+                      <Card
+                        className={`relative hover:shadow-lg transition-shadow border-border/50 h-full cursor-pointer ${
+                          isPopular
+                            ? "border-yellow-500/50 shadow-xl shadow-yellow-500/20 md:scale-105"
+                            : "border-gray-400"
+                        }`}
+                      >
+                        {isPopular && (
+                          <motion.div
+                            className="absolute -top-3 -right-3 z-10"
+                            initial={{ scale: 0, rotate: -20 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            transition={{
+                              delay: 0.3 + index * 0.1,
+                              type: "spring",
+                              stiffness: 200,
+                            }}
+                          >
+                            <div className="bg-gradient-to-r from-yellow-400 to-yellow-400 text-slate-900 px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
+                              Most Popular
+                            </div>
+                          </motion.div>
+                        )}
 
-                      <CardHeader>
-                        <div className="flex items-start gap-4 mb-2">
-                          <div className="bg-secondary/10 p-3 rounded-lg">
-                            {(() => {
-                              const Icon = getServiceIcon(category);
-                              return <Icon className="h-6 w-6 text-primary" />;
-                            })()}
+                        <CardHeader>
+                          <div className="flex items-start gap-4 mb-2">
+                            <div className="bg-secondary/10 p-3 rounded-lg">
+                              {(() => {
+                                const Icon = getServiceIcon(category);
+                                return (
+                                  <Icon className="h-6 w-6 text-primary" />
+                                );
+                              })()}
+                            </div>
+                            <div className="flex-1">
+                              <CardTitle className="text-xl font-semibold">
+                                {service.name}
+                              </CardTitle>
+                              <CardDescription className="text-sm text-accent-foreground">
+                                {service.duration} mins
+                              </CardDescription>
+                            </div>
                           </div>
-                          <div className="flex-1">
-                            <CardTitle className="text-xl font-semibold">
-                              {service.name}
-                            </CardTitle>
-                            <CardDescription className="text-sm text-accent-foreground">
-                              {service.duration} mins
-                            </CardDescription>
-                          </div>
-                        </div>
-                        <CardDescription className="text-muted-foreground text-sm leading-relaxed">
-                          {service.description}
-                        </CardDescription>
-                      </CardHeader>
+                          <CardDescription className="text-muted-foreground text-sm leading-relaxed">
+                            {service.description}
+                          </CardDescription>
+                        </CardHeader>
 
-                      <CardContent className="flex-1">
-                        <div className="space-y-4 mb-6">
-                          <h4 className="font-medium text-accent-foreground mb-2">
-                            Features
-                          </h4>
-                          <div className="flex flex-col gap-2">
-                            {service.features?.map((feature, featureIndex) => (
-                              <motion.p
-                                key={featureIndex}
-                                className="text-sm text-accent-foreground flex items-center"
-                                initial={{ opacity: 0, x: -10 }}
-                                whileInView={{ opacity: 1, x: 0 }}
-                                transition={{
-                                  delay: featureIndex * 0.05,
-                                  duration: 0.4,
-                                }}
-                                viewport={{ once: true }}
-                              >
-                                <Check className="h-3 w-3 mr-1 text-primary" />
-                                {feature}
-                              </motion.p>
-                            ))}
+                        <CardContent className="flex-1">
+                          <div className="space-y-4 mb-6">
+                            <h4 className="font-medium text-accent-foreground mb-2">
+                              Features
+                            </h4>
+                            <div className="flex flex-col gap-2">
+                              {service.features?.map(
+                                (feature, featureIndex) => (
+                                  <motion.p
+                                    key={featureIndex}
+                                    className="text-sm text-accent-foreground flex items-center"
+                                    initial={{ opacity: 0, x: -10 }}
+                                    whileInView={{ opacity: 1, x: 0 }}
+                                    transition={{
+                                      delay: featureIndex * 0.05,
+                                      duration: 0.4,
+                                    }}
+                                    viewport={{ once: true }}
+                                  >
+                                    <Check className="h-3 w-3 mr-1 text-primary" />
+                                    {feature}
+                                  </motion.p>
+                                )
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </CardContent>
+                        </CardContent>
 
-                      <CardFooter>
-                        <p className="text-4xl font-bold text-primary">
-                          ${service.price}
-                        </p>
-                      </CardFooter>
-                    </Card>
-                  </motion.div>
-                );
-              })}
+                        <CardFooter>
+                          <p className="text-4xl font-bold text-primary">
+                            ${service.price}
+                          </p>
+                        </CardFooter>
+                      </Card>
+                    </motion.div>
+                  );
+                })}
+              </motion.div>
             </motion.div>
-          </motion.div>
-        ))}
-
+          ))}
+        </div>
         {/* Bottom CTA */}
         <motion.div
           className="text-center mt-16 pt-12 border-t"

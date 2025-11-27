@@ -38,7 +38,6 @@ export default function NewBookingModal({
     selectedAddOns,
     toggleAddOn,
     handleSubmit,
-
     // Vehicle
     vehicleInfo,
     setVehicleInfo,

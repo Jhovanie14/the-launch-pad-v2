@@ -324,7 +324,7 @@ export default function CookiePolicyPage() {
               </p>
               <div className="space-y-2 text-foreground">
                 <p className="font-semibold">The Launch Pad</p>
-                <p>10410 Main St, Houston, TX 77025, United States</p>
+                <p>10410 South Main St, Houston, TX 77025, United States</p>
                 <p>
                   Phone:{" "}
                   <a

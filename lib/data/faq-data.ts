@@ -125,6 +125,6 @@ export const faqData = [
     question:
       "I have additional questions not covered here, who can I contact?",
     answer:
-      "Our friendly team is here to help! You can reach us at (832) 219-8320, email us at info@thelaunchpadht.com, or visit us at 10410 Main St, Houston, TX 77025.",
+      "Our friendly team is here to help! You can reach us at (832) 219-8320, email us at info@thelaunchpadwash.com, or visit us at 10410 South Main St, Houston, TX 77025.",
   },
 ];
