@@ -33,7 +33,7 @@ export default function SelfServicePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+    <div className="min-h-screen bg-linear-to-b from-blue-50 to-white">
       {/* Hero Section */}
       <section className="relative py-20 overflow-hidden">
         <div className="absolute inset-0 bg-blue-900/5" />
@@ -99,17 +99,17 @@ export default function SelfServicePage() {
                 </div>
                 <ul className="space-y-3">
                   <li className="flex items-start gap-2">
-                    <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                    <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 shrink-0" />
                     <span className="text-slate-700">
                       Access to all equipment
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                    <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 shrink-0" />
                     <span className="text-slate-700">No commitment needed</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                    <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 shrink-0" />
                     <span className="text-slate-700">
                       Pay only when you use
                     </span>
@@ -127,7 +127,7 @@ export default function SelfServicePage() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.3 }}
-                className="p-6 bg-gradient-to-br from-blue-900 to-blue-800 rounded-xl border-4 border-yellow-400 relative overflow-hidden shadow-xl"
+                className="p-6 bg-linear-to-br from-blue-900 to-blue-800 rounded-xl border-4 border-yellow-400 relative overflow-hidden shadow-xl"
               >
                 <div className="absolute top-0 right-0 bg-yellow-400 text-slate-900 px-4 py-1 text-xs font-bold rounded-bl-lg">
                   BEST VALUE
@@ -148,19 +148,19 @@ export default function SelfServicePage() {
                 </div>
                 <ul className="space-y-3">
                   <li className="flex items-start gap-2">
-                    <CheckCircle className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" />
+                    <CheckCircle className="w-5 h-5 text-yellow-400 mt-0.5 shrink-0" />
                     <span className="text-white">Unlimited daily access</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <CheckCircle className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" />
+                    <CheckCircle className="w-5 h-5 text-yellow-400 mt-0.5 shrink-0" />
                     <span className="text-white">Use once per day</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <CheckCircle className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" />
+                    <CheckCircle className="w-5 h-5 text-yellow-400 mt-0.5 shrink-0" />
                     <span className="text-white">Cancel anytime</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <Zap className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" />
+                    <Zap className="w-5 h-5 text-yellow-400 mt-0.5 shrink-0" />
                     <span className="text-white font-semibold">
                       Save up to 75%!
                     </span>
@@ -186,7 +186,7 @@ export default function SelfServicePage() {
       </section>
 
       {/* Pricing Card Section */}
-      <section className="py-16 bg-gradient-to-b from-white to-blue-50">
+      <section className="py-16 bg-linear-to-b from-white to-blue-50">
         <div className="container mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -265,7 +265,7 @@ export default function SelfServicePage() {
               alt="Modern self-service car wash bay with high-pressure equipment at The Launch Pad Houston"
               className="w-full h-[400px] md:h-[500px] object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-blue-900/80 via-blue-900/20 to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-t from-blue-900/80 via-blue-900/20 to-transparent" />
             <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
               <h2 className="text-3xl md:text-4xl font-bold mb-3">
                 Your Personal Wash Bay Awaits
@@ -385,7 +385,7 @@ export default function SelfServicePage() {
                 transition={{ delay: 0.1 * item.step }}
                 className="flex gap-4 items-start p-6 rounded-lg bg-white border border-blue-100 shadow-sm"
               >
-                <div className="bg-blue-900 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold flex-shrink-0">
+                <div className="bg-blue-900 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold shrink-0">
                   {item.step}
                 </div>
                 <div>

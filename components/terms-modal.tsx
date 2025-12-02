@@ -111,7 +111,7 @@ export default function TermsModal({
                         </h5>
                         <p className="text-sm leading-relaxed">
                           We operate at{" "}
-                          <strong>10410 South Main St, Houston, TX 77025</strong>. We
+                          <strong>10410 S Main St, Houston, TX 77025</strong>. We
                           offer drive-through car wash services, subscription
                           plans (monthly/yearly), and various add-ons.
                         </p>
@@ -226,7 +226,7 @@ export default function TermsModal({
                     </h4>
                     <div className="bg-gray-50 p-4 rounded-lg">
                       <p className="text-sm mb-2">
-                        <strong>Address:</strong> 10410 South Main St, Houston, TX
+                        <strong>Address:</strong> 10410 S Main St, Houston, TX
                         77025
                       </p>
                       <p className="text-sm mb-2">

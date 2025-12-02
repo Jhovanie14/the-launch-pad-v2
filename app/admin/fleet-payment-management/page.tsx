@@ -48,6 +48,9 @@ import {
   XCircle,
   Clock,
   Download,
+  Mail,
+  ExternalLink,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -83,10 +86,11 @@ type FleetInvoice = {
   payment_date: string | null;
   notes: string;
   created_at: string;
+  hosted_invoice_url: string;
+  invoice_pdf_url: string;
 };
 
 export default function FleetPaymentManagement() {
- 
   const [activeTab, setActiveTab] = useState<"contracts" | "invoices">(
     "contracts"
   );
@@ -404,6 +408,33 @@ function InvoicesTable({
   invoices: FleetInvoice[];
   refetch: () => void;
 }) {
+  const [sendingInvoiceId, setSendingInvoiceId] = useState<string | null>(null);
+
+  const sendInvoice = async (invoiceId: string) => {
+    setSendingInvoiceId(invoiceId);
+    try {
+      const response = await fetch("/api/admin/fleet-invoices/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ invoiceId }),
+      });
+
+      if (!response.ok) throw new Error("Failed to send invoice");
+
+      const result = await response.json();
+
+      toast.success("Invoice Sent!", {
+        description: "Customer will receive email with payment link",
+      });
+
+      refetch();
+    } catch (error) {
+      toast.error("Failed to send invoice");
+    } finally {
+      setSendingInvoiceId(null);
+    }
+  };
+
   const markAsPaid = async (id: string) => {
     try {
       const response = await fetch("/api/admin/fleet-invoices", {
@@ -420,6 +451,14 @@ function InvoicesTable({
       refetch();
     } catch (error) {
       toast.error("Failed to update invoice");
+    }
+  };
+
+  const viewInvoice = (invoice: FleetInvoice) => {
+    if (invoice.hosted_invoice_url) {
+      window.open(invoice.hosted_invoice_url, "_blank");
+    } else {
+      toast.error("Invoice URL not available");
     }
   };
 
@@ -464,19 +503,66 @@ function InvoicesTable({
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      {invoice.status !== "paid" && (
+                      {/* Send Invoice Button */}
+                      {invoice.status === "sent" && (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => sendInvoice(invoice.id)}
+                          disabled={sendingInvoiceId === invoice.id}
+                          className="bg-blue-900 hover:bg-blue-800"
+                        >
+                          {sendingInvoiceId === invoice.id ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                              Sending...
+                            </>
+                          ) : (
+                            <>
+                              <Mail className="w-4 h-4 mr-1" />
+                              Send Invoice
+                            </>
+                          )}
+                        </Button>
+                      )}
+
+                      {/* View Invoice Link */}
+                      {invoice.hosted_invoice_url && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => viewInvoice(invoice)}
+                        >
+                          <ExternalLink className="w-4 h-4 mr-1" />
+                          View
+                        </Button>
+                      )}
+
+                      {/* Mark as Paid */}
+                      {invoice.status !== "paid" &&
+                        invoice.status !== "draft" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => markAsPaid(invoice.id)}
+                          >
+                            <CheckCircle className="w-4 h-4 mr-1" />
+                            Mark Paid
+                          </Button>
+                        )}
+
+                      {/* Download PDF */}
+                      {invoice.invoice_pdf_url && (
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => markAsPaid(invoice.id)}
+                          onClick={() =>
+                            window.open(invoice.invoice_pdf_url, "_blank")
+                          }
                         >
-                          <CheckCircle className="w-4 h-4 mr-1" />
-                          Mark Paid
+                          <Download className="w-4 h-4" />
                         </Button>
                       )}
-                      <Button variant="ghost" size="sm">
-                        <Download className="w-4 h-4" />
-                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>

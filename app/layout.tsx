@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     template: "%s | The Launch Pad",
   },
   description:
-    "The Launch Pad in Houston offers 24/7 self-service car wash bays, professional express detailing, and monthly memberships at 10410 South Main St. Book online in minutes.",
+    "The Launch Pad in Houston offers 24/7 self-service car wash bays, professional express detailing, and monthly memberships at 10410 S Main St. Book online in minutes.",
   keywords: [
     "car wash Houston",
     "express detailing Houston",
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "The Launch Pad | Car Wash & Express Detailing in Houston, TX",
     description:
-      "24/7 self-service car wash bays, professional express detailing, and monthly memberships. Visit us at 10410 South Main St, Houston. Book online today!",
+      "24/7 self-service car wash bays, professional express detailing, and monthly memberships. Visit us at 10410 S Main St, Houston. Book online today!",
     url: "https://www.thelaunchpadwash.com",
     siteName: "The Launch Pad",
     images: [
@@ -63,7 +63,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "The Launch Pad | Car Wash & Express Detailing in Houston, TX",
     description:
-      "24/7 self-service car wash bays, professional express detailing, and monthly memberships at 10410 South Main St, Houston.",
+      "24/7 self-service car wash bays, professional express detailing, and monthly memberships at 10410 S Main St, Houston.",
     images: ["/thelaunchpad.png"],
   },
   robots: {

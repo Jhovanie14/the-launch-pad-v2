@@ -82,7 +82,7 @@ export default function TermsOfServicePage() {
                   1.2 Location; Service Availability; Add-Ons; Products
                 </h3>
                 <p className="text-foreground leading-relaxed mb-3">
-                  We operate a single car-wash location at 10410 South Main St,
+                  We operate a single car-wash location at 10410 S Main St,
                   Houston, TX 77025. Hours, equipment availability, and service
                   uptime may vary (including for maintenance or weather). We
                   utilize biodegradable soaps, water-reclamation systems, and
@@ -428,7 +428,7 @@ export default function TermsOfServicePage() {
                     <span>
                       You may cancel at any time with 30 days' advance notice.
                       Cancellations can be submitted through our app or in
-                      person at our location (10410 South Main St, Houston, TX 77025).
+                      person at our location (10410 S Main St, Houston, TX 77025).
                       AutoPay charges may continue through the 30-day notice
                       period; service remains available during that period. No
                       refunds or credits are issued for partial months. To avoid
@@ -560,7 +560,7 @@ export default function TermsOfServicePage() {
                 </p>
                 <div className="bg-muted p-4 rounded mb-3 text-foreground">
                   <p className="font-semibold">The Launch Pad</p>
-                  <p>10410 South Main St, Houston, TX 77025, United States</p>
+                  <p>10410 S Main St, Houston, TX 77025, United States</p>
                   <p className="mt-2 text-sm">
                     WITHIN 30 DAYS OF THE EFFECTIVE DATE, STATING YOU DO NOT
                     AGREE TO ARBITRATION.

@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Car Wash Services & Pricing | The Launch Pad Houston",
     description:
-      "Self-service bays, express detailing, and memberships. Pricing for all vehicle types. Book online at 10410 South Main St, Houston.",
+      "Self-service bays, express detailing, and memberships. Pricing for all vehicle types. Book online at 10410 S Main St, Houston.",
     url: "https://www.thelaunchpadwash.com/services",
   },
 };

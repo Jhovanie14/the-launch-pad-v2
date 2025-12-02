@@ -178,7 +178,7 @@ export async function POST(req: Request) {
     y -= 20;
 
     // Business contact info
-    page.drawText("10410 South Main St, Houston, TX, United States, Texas", {
+    page.drawText("10410 S Main St, Houston, TX, United States, Texas", {
       x: 50,
       y,
       size: 10,

@@ -125,7 +125,7 @@ export function Hero() {
 
               <p className="text-xl md:text-2xl text-white font-semibold max-w-2xl mx-auto leading-relaxed">
                 Wash it yourself in our premium bays or let our team handle a
-                full express detail — all at 10410 South Main St.
+                full express detail — all at 10410 S Main St.
               </p>
             </div>
 
