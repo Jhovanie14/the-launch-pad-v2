@@ -8,25 +8,67 @@ import RecentBookings from "@/components/recent-bookings";
 import QuickActions from "@/components/qucik-actions";
 import StatCard from "@/components/stats-card";
 import { useSubscription } from "@/hooks/useSubscription";
-import { Crown } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import {
+  Crown,
+  Calendar,
+  CreditCard,
+  Car,
+  Sparkles,
+  ArrowRight,
+} from "lucide-react";
+import { useMemo } from "react";
 import SubscriptionCancelInfo from "@/components/user/subscription-cancel-info";
+import { Card, CardContent } from "@/components/ui/card";
+import Link from "next/link";
 
 export default function DashboardPage() {
   const { user, userProfile, isLoading } = useAuth();
   const { openBookingModal } = useBooking();
-  const { stats, recentBookings, loading } = useBookingStats();
+  const { stats, recentBookings } = useBookingStats();
   const { subscription } = useSubscription();
 
-  // console.log("User:", user);
-  // console.log("Subscription:", subscription);
-  // console.log("Stats:", stats);
-  // console.log("Recent Bookings:", recentBookings);
+  // Calculate subscription pricing and details
+  const subscriptionDetails = useMemo(() => {
+    if (!subscription || !subscription.subscription_plans) {
+      return null;
+    }
 
-  useEffect(() => {
-    // console.log("Auth state changed:", { user, isLoading });
-  }, [user, isLoading]);
+    const basePrice =
+      subscription.billing_cycle === "month"
+        ? Number(subscription.subscription_plans.monthly_price ?? 0)
+        : Number(subscription.subscription_plans.yearly_price ?? 0);
+
+    const vehicles = subscription.vehicles || [];
+    const vehiclePricing = vehicles.map((vehicle: any, index: number) => {
+      const isFirstVehicle = index === 0;
+      return {
+        price: isFirstVehicle ? basePrice : basePrice * 0.9,
+        isDiscounted: !isFirstVehicle,
+      };
+    });
+
+    const totalPrice = vehiclePricing.reduce(
+      (sum: number, item) => sum + item.price,
+      0
+    );
+    const totalSavings = vehiclePricing.reduce(
+      (sum: number, item) => sum + (item.isDiscounted ? basePrice * 0.1 : 0),
+      0
+    );
+
+    return {
+      planName: subscription.subscription_plans.name,
+      basePrice,
+      totalPrice,
+      totalSavings,
+      vehicleCount: vehicles.length,
+      isFlock: vehicles.length > 1,
+      billingCycle: subscription.billing_cycle,
+      currentPeriodStart: subscription.current_period_start,
+      currentPeriodEnd: subscription.current_period_end,
+      status: subscription.status,
+    };
+  }, [subscription]);
 
   if (isLoading) {
     return (
@@ -57,42 +99,112 @@ export default function DashboardPage() {
     <main className="py-6">
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            {subscription && (
-              <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 text-sm font-medium w-full">
-                <Crown className="w-5 h-5 text-yellow-500 flex-shrink-0" />
-                <div className="flex flex-col w-full sm:w-auto">
-                  <p className="text-sm font-medium text-gray-500">
-                    Current Period -{" "}
-                    {new Date(
-                      subscription.current_period_start
-                    ).toLocaleDateString()}
-                  </p>
-                  <p className="text-sm font-medium text-gray-500">
-                    Next Billing -{" "}
-                    {new Date(
-                      subscription.current_period_end
-                    ).toLocaleDateString()}
-                  </p>
-                  <div className="mt-2 sm:mt-0">
-                    <SubscriptionCancelInfo subscription={subscription} />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="flex items-center space-x-3">
-              <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-            </div>
-            <p className="text-muted-foreground">
+        <div className="space-y-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+            <p className="text-muted-foreground mt-1">
               Welcome back, {userProfile?.full_name || user?.email}!
             </p>
           </div>
-        
-        </div>
 
-        {/* Subscription */}
+          {/* Subscription Banner */}
+          {subscription && subscriptionDetails && (
+            <Card className="bg-gradient-to-r from-blue-900 to-blue-800 text-white border-0 shadow-lg">
+              <CardContent className="p-6">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div className="flex items-start gap-4 flex-1">
+                    <div className="w-14 h-14 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Crown className="w-8 h-8 text-yellow-300" />
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h2 className="text-xl font-bold">
+                          {subscriptionDetails.planName}
+                        </h2>
+                        {subscriptionDetails.isFlock && (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-white/20 rounded-full text-xs font-medium">
+                            <Sparkles className="w-3 h-3" />
+                            Flock Subscription
+                          </span>
+                        )}
+                        <span className="inline-flex items-center px-2 py-1 bg-green-500/20 rounded-full text-xs font-medium">
+                          Active
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                        <div className="flex items-center gap-2">
+                          <Car className="w-4 h-4 text-blue-200" />
+                          <span className="text-blue-100">
+                            {subscriptionDetails.vehicleCount} Vehicle
+                            {subscriptionDetails.vehicleCount !== 1 ? "s" : ""}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <CreditCard className="w-4 h-4 text-blue-200" />
+                          <span className="text-blue-100">
+                            ${subscriptionDetails.totalPrice.toFixed(2)}/
+                            {subscriptionDetails.billingCycle}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-blue-200" />
+                          <span className="text-blue-100">
+                            Next:{" "}
+                            {new Date(
+                              subscriptionDetails.currentPeriodEnd
+                            ).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                      {subscriptionDetails.isFlock &&
+                        subscriptionDetails.totalSavings > 0 && (
+                          <p className="text-xs text-blue-200 mt-1">
+                            ✨ You're saving $
+                            {subscriptionDetails.totalSavings.toFixed(2)}/
+                            {subscriptionDetails.billingCycle} with your flock
+                            discount!
+                          </p>
+                        )}
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      asChild
+                      variant="secondary"
+                      className="bg-white text-blue-900 hover:bg-blue-50"
+                    >
+                      <Link href="/dashboard/billing">
+                        Manage Subscription
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </Link>
+                    </Button>
+                    {subscription.cancel_at_period_end && (
+                      <SubscriptionCancelInfo subscription={subscription} />
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* No Subscription CTA */}
+          {!subscription && (
+            <Card className="border-2 border-dashed border-gray-300">
+              <CardContent className="p-6 text-center">
+                <Crown className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Unlock Premium Features
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Subscribe to get unlimited car washes and exclusive benefits
+                </p>
+                <Button asChild className="bg-blue-900 hover:bg-blue-800">
+                  <Link href="/dashboard/pricing">View Plans</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
 
         {/* Stats */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

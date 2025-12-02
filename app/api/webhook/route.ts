@@ -204,7 +204,12 @@ async function processSubscription(session: Stripe.Checkout.Session) {
   const appUserId = session.metadata?.app_user_id || null;
   const planId = session.metadata?.plan_id || null;
   const billingCycleRaw = session.metadata?.billing_cycle || null;
-  const vehicleId = session.metadata?.vehicle_id || null;
+  
+  // Support both legacy single vehicle_id and new vehicle_ids format
+  const vehicleIdsStr = session.metadata?.vehicle_ids || session.metadata?.vehicle_id || null;
+  const vehicleIds = vehicleIdsStr
+    ? vehicleIdsStr.split(",").filter((id: string) => id.trim())
+    : [];
 
   const billingCycle =
     billingCycleRaw === "monthly"
@@ -219,7 +224,10 @@ async function processSubscription(session: Stripe.Checkout.Session) {
   );
 
   const sub = subscription as any;
-  const subscriptionItem = sub?.items?.data?.[0];
+  const subscriptionItems = sub?.items?.data || [];
+  
+  // Use the first subscription item for period dates (all items share the same period)
+  const subscriptionItem = subscriptionItems[0];
 
   const cps = Number(subscriptionItem?.current_period_start);
   const cpe = Number(subscriptionItem?.current_period_end);
@@ -231,6 +239,7 @@ async function processSubscription(session: Stripe.Checkout.Session) {
     cpe_number: cpe,
     is_cps_finite: Number.isFinite(cps),
     is_cpe_finite: Number.isFinite(cpe),
+    line_items_count: subscriptionItems.length,
   });
 
   const currentPeriodStartIso = Number.isFinite(cps)
@@ -240,7 +249,8 @@ async function processSubscription(session: Stripe.Checkout.Session) {
     ? new Date(cpe * 1000).toISOString()
     : null;
 
-  const priceId = sub?.items?.data?.[0]?.price?.id ?? null;
+  // Use the first price ID as the primary price (for backward compatibility)
+  const priceId = subscriptionItems[0]?.price?.id ?? null;
   const cancelAtPeriodEnd = Boolean(sub?.cancel_at_period_end);
 
   console.log("Saving subscription with payload:", {
@@ -254,7 +264,8 @@ async function processSubscription(session: Stripe.Checkout.Session) {
     current_period_start: currentPeriodStartIso,
     current_period_end: currentPeriodEndIso,
     cancel_at_period_end: cancelAtPeriodEnd,
-    vehicle_id: vehicleId,
+    vehicle_ids: vehicleIds,
+    vehicle_count: vehicleIds.length,
   });
 
   // Insert/update subscription
@@ -283,17 +294,38 @@ async function processSubscription(session: Stripe.Checkout.Session) {
     return;
   }
 
-  // Link vehicle if provided
-  if (vehicleId) {
-    const { error: linkError } = await supabase
+  // Link all vehicles if provided
+  if (vehicleIds.length > 0 && subscriptionRow?.id) {
+    // First, check for existing vehicle links to avoid duplicates
+    const { data: existingLinks } = await supabase
       .from("subscription_vehicles")
-      .insert({
-        subscription_id: subscriptionRow.id,
-        vehicle_id: vehicleId,
-      });
+      .select("vehicle_id")
+      .eq("subscription_id", subscriptionRow.id);
 
-    if (linkError) {
-      console.error("Error linking subscription to vehicle:", linkError);
+    const existingVehicleIds = new Set(
+      existingLinks?.map((link) => link.vehicle_id) || []
+    );
+
+    // Insert only new vehicle links
+    const newVehicleLinks = vehicleIds
+      .filter((vid: string) => !existingVehicleIds.has(vid))
+      .map((vehicleId: string) => ({
+        subscription_id: subscriptionRow.id,
+        vehicle_id: vehicleId.trim(),
+      }));
+
+    if (newVehicleLinks.length > 0) {
+      const { error: linkError } = await supabase
+        .from("subscription_vehicles")
+        .insert(newVehicleLinks);
+
+      if (linkError) {
+        console.error("Error linking subscription to vehicles:", linkError);
+      } else {
+        console.log(
+          `Successfully linked ${newVehicleLinks.length} vehicle(s) to subscription`
+        );
+      }
     }
   }
 }

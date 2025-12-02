@@ -1,9 +1,10 @@
-import { CheckCircle, Package, Calendar, CreditCard } from "lucide-react";
+import { CheckCircle, Package, Calendar, CreditCard, Car } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import { stripe } from "@/lib/stripe/stripe";
+import Stripe from "stripe";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 
@@ -33,7 +34,29 @@ export default async function SubscriptionSuccessPage({
   }
 
   // Poll Supabase for subscription (wait for webhook to complete)
-  let subscription: any = null;
+  let subscription: {
+    stripe_subscription_id: string;
+    billing_cycle: string;
+    current_period_start: string;
+    current_period_end: string | null;
+    status: string;
+    subscription_plans: {
+      name: string;
+      monthly_price: number | string | null;
+      yearly_price: number | string | null;
+    } | null;
+    subscription_vehicles: Array<{
+      vehicles: {
+        id: string;
+        make: string;
+        model: string;
+        year: number;
+        body_type?: string;
+        colors?: string[];
+      } | null;
+    }>;
+    created_at: string;
+  } | null = null;
   const timeout = Date.now() + 15000; // 15 seconds
 
   while (!subscription && Date.now() < timeout) {
@@ -49,10 +72,14 @@ export default async function SubscriptionSuccessPage({
           yearly_price
         ),
         subscription_vehicles (
-          vehicles (
+          id,
+          vehicle:vehicles (
+            id,
             make,
             model,
-            year
+            year,
+            body_type,
+            colors
           )
         )
       `
@@ -60,19 +87,22 @@ export default async function SubscriptionSuccessPage({
       .eq("stripe_subscription_id", session.subscription as string)
       .maybeSingle();
 
+    if (error) {
+      console.error("Error fetching subscription:", error);
+    }
+
     subscription = data;
 
     if (!subscription) await new Promise((res) => setTimeout(res, 1000));
   }
 
   // If still not found, fallback to Stripe directly
+  let stripeSub: Stripe.Subscription | null = null;
   if (!subscription) {
-    const stripeSub = await stripe.subscriptions.retrieve(
+    stripeSub = await stripe.subscriptions.retrieve(
       session.subscription as string
     );
-    const sub = stripeSub as any;
-
-    const subscriptionItem = sub?.items?.data?.[0];
+    const subscriptionItem = stripeSub.items.data[0];
     const priceObj = stripeSub.items.data[0].price;
 
     const cps = Number(subscriptionItem?.current_period_start);
@@ -85,6 +115,14 @@ export default async function SubscriptionSuccessPage({
       ? new Date(cpe * 1000).toISOString()
       : null;
 
+    // Calculate base price from first item (full price)
+    const basePriceAmount =
+      priceObj.recurring?.interval === "month" && priceObj.unit_amount
+        ? priceObj.unit_amount / 100
+        : priceObj.recurring?.interval === "year" && priceObj.unit_amount
+          ? priceObj.unit_amount / 100
+          : 0;
+
     subscription = {
       stripe_subscription_id: stripeSub.id,
       billing_cycle: priceObj.recurring?.interval || "month",
@@ -94,13 +132,9 @@ export default async function SubscriptionSuccessPage({
       subscription_plans: {
         name: priceObj.nickname || "Premium Plan",
         monthly_price:
-          priceObj.recurring?.interval === "month" && priceObj.unit_amount
-            ? priceObj.unit_amount / 100
-            : null,
+          priceObj.recurring?.interval === "month" ? basePriceAmount : null,
         yearly_price:
-          priceObj.recurring?.interval === "year" && priceObj.unit_amount
-            ? priceObj.unit_amount / 100
-            : null,
+          priceObj.recurring?.interval === "year" ? basePriceAmount : null,
       },
       subscription_vehicles: [],
       created_at: new Date().toISOString(),
@@ -108,26 +142,96 @@ export default async function SubscriptionSuccessPage({
   }
 
   const plan = subscription.subscription_plans;
-  const vehicle = subscription.subscription_vehicles?.[0]?.vehicles;
-  const planPrice =
+  const basePrice =
     subscription.billing_cycle === "month"
-      ? (plan?.monthly_price ?? 0)
-      : (plan?.yearly_price ?? 0);
+      ? Number(plan?.monthly_price ?? 0)
+      : Number(plan?.yearly_price ?? 0);
+
+  // Extract all vehicles from subscription_vehicles
+  // Handle both vehicle:vehicles and vehicles naming conventions
+  const vehicles = (subscription.subscription_vehicles || [])
+    .map((sv: any) => sv.vehicle || sv.vehicles)
+    .filter((v): v is NonNullable<typeof v> => v !== null && v !== undefined);
+
+  // If no vehicles found in DB, try to get from Stripe metadata
+  let vehiclesFromStripe: Array<{
+    id?: string;
+    make: string;
+    model: string;
+    year: number;
+    body_type?: string;
+    colors?: string[];
+  }> = [];
+
+  if (vehicles.length === 0 && session.metadata?.vehicle_ids) {
+    // Try to parse vehicle info from metadata if available
+    // Note: This is a fallback - ideally vehicles should be in DB
+    const vehicleCount = parseInt(session.metadata.vehicle_count || "1", 10);
+    vehiclesFromStripe = Array.from({ length: vehicleCount }, (_, i) => ({
+      make: "Vehicle",
+      model: `${i + 1}`,
+      year: new Date().getFullYear(),
+    }));
+  }
+
+  // Use vehicles from DB, or fallback to Stripe metadata count
+  const vehiclesToDisplay = vehicles.length > 0 ? vehicles : vehiclesFromStripe;
+
+  // Calculate pricing for each vehicle (first full price, others 10% off)
+  const vehiclePricing = vehiclesToDisplay.map((vehicle, index: number) => {
+    const isFirstVehicle = index === 0;
+    const price = isFirstVehicle ? basePrice : basePrice * 0.9;
+    const discount = isFirstVehicle ? 0 : basePrice * 0.1;
+    return {
+      vehicle,
+      price,
+      discount,
+      isDiscounted: !isFirstVehicle,
+      displayName: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
+    };
+  });
+
+  // Get Stripe subscription for total calculation if not already retrieved
+  if (!stripeSub) {
+    stripeSub = await stripe.subscriptions.retrieve(
+      session.subscription as string
+    );
+  }
+
+  // Calculate total price from vehicle pricing, or fallback to Stripe total
+  let totalPrice = vehiclePricing.reduce(
+    (sum: number, item) => sum + item.price,
+    0
+  );
+  const totalSavings = vehiclePricing.reduce(
+    (sum: number, item) => sum + item.discount,
+    0
+  );
+
+  // If no vehicles found, calculate total from Stripe line items
+  if (vehiclePricing.length === 0 && stripeSub.items.data.length > 0) {
+    totalPrice = stripeSub.items.data.reduce((sum: number, item) => {
+      const amount = item.price.unit_amount ? item.price.unit_amount / 100 : 0;
+      return sum + amount * (item.quantity || 1);
+    }, 0);
+  }
 
   const orderData = {
     date: new Date(subscription.created_at).toLocaleDateString(),
     orderNumber: subscription.stripe_subscription_id,
     paymentMethod: "Card",
     planName: plan?.name ?? "Premium Plan",
-    planPrice,
+    basePrice,
+    totalPrice,
+    totalSavings,
     billingCycle: subscription.billing_cycle,
     startDate: new Date(subscription.current_period_start).toLocaleDateString(),
     nextBillingDate: subscription.current_period_end
       ? new Date(subscription.current_period_end).toLocaleDateString()
       : "N/A",
-    vehicle: vehicle
-      ? `${vehicle.year} ${vehicle.make} ${vehicle.model}`
-      : null,
+    vehicles: vehiclePricing,
+    isFlock: vehiclesToDisplay.length > 1,
+    hasVehicleData: vehicles.length > 0, // Whether we have actual vehicle data from DB
   };
 
   return (
@@ -198,16 +302,81 @@ export default async function SubscriptionSuccessPage({
               </div>
 
               <div className="flex justify-between items-center">
-                <span className="text-sm">Price</span>
+                <span className="text-sm">Base Price</span>
                 <span className="font-medium">
-                  ${orderData.planPrice.toFixed(2)}/{orderData.billingCycle}
+                  ${orderData.basePrice.toFixed(2)}/{orderData.billingCycle}
                 </span>
               </div>
 
-              {orderData.vehicle && (
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Vehicle</span>
-                  <span className="font-medium">{orderData.vehicle}</span>
+              {/* Vehicles Section */}
+              {orderData.vehicles.length > 0 ? (
+                <div className="space-y-2 pt-2">
+                  <h4 className="text-sm font-medium">
+                    {orderData.isFlock ? "Flock Vehicles" : "Vehicle"}
+                    {!orderData.hasVehicleData && (
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        (Details loading...)
+                      </span>
+                    )}
+                  </h4>
+                  <div className="space-y-2">
+                    {orderData.vehicles.map((item, index: number) => (
+                      <div
+                        key={item.vehicle.id || index}
+                        className="flex justify-between items-start p-2 bg-muted/50 rounded-md"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <Car className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm font-medium">
+                              {item.displayName}
+                            </span>
+                            {item.isDiscounted && (
+                              <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
+                                10% Flock Discount
+                              </span>
+                            )}
+                          </div>
+                          {item.vehicle.body_type && (
+                            <p className="text-xs text-muted-foreground mt-1 ml-6">
+                              {item.vehicle.body_type}
+                            </p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          {item.isDiscounted && (
+                            <p className="text-xs text-muted-foreground line-through">
+                              ${orderData.basePrice.toFixed(2)}
+                            </p>
+                          )}
+                          <p className="text-sm font-semibold">
+                            ${item.price.toFixed(2)}
+                            <span className="text-xs text-muted-foreground ml-1">
+                              /{orderData.billingCycle}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {orderData.isFlock && orderData.totalSavings > 0 && (
+                    <div className="flex justify-between items-center pt-2 border-t border-border">
+                      <span className="text-sm text-green-600 font-medium">
+                        Total Flock Savings
+                      </span>
+                      <span className="text-sm font-semibold text-green-600">
+                        -${orderData.totalSavings.toFixed(2)}/
+                        {orderData.billingCycle}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-2 pt-2">
+                  <p className="text-sm text-muted-foreground">
+                    Vehicle information is being processed. Please check back in a
+                    moment.
+                  </p>
                 </div>
               )}
             </div>
@@ -225,11 +394,17 @@ export default async function SubscriptionSuccessPage({
                 <span>{orderData.nextBillingDate}</span>
               </div>
               <div className="flex justify-between items-center font-semibold text-lg">
-                <span>Amount Due Today</span>
+                <span>Total Amount Due Today</span>
                 <span className="text-primary">
-                  ${orderData.planPrice.toFixed(2)}
+                  ${orderData.totalPrice.toFixed(2)}
                 </span>
               </div>
+              {orderData.isFlock && (
+                <p className="text-xs text-muted-foreground text-right">
+                  ${orderData.basePrice.toFixed(2)} base +{" "}
+                  {orderData.vehicles.length - 1} vehicle(s) with 10% discount
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>

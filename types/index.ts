@@ -83,6 +83,14 @@ export interface Subscription {
     monthly_price: number;
     yearly_price: number;
   };
+  vehicles?: Array<{
+    id: string;
+    year: number;
+    make: string;
+    model: string;
+    body_type?: string;
+    colors?: string[];
+  }>;
 }
 
 // types/selfService.ts

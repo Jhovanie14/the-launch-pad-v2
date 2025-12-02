@@ -24,10 +24,33 @@ export async function getActiveSubscription(
 
   if (planError) throw planError;
 
+  // Fetch vehicles linked to this subscription
+  const { data: vehicles, error: vehicleError } = await supabase
+    .from("subscription_vehicles")
+    .select(
+      `
+      id,
+      vehicle:vehicles (
+        id,
+        year,
+        make,
+        model,
+        body_type,
+        colors
+      )
+    `
+    )
+    .eq("subscription_id", subs.id);
+
+  if (vehicleError) {
+    console.error("Error fetching subscription vehicles:", vehicleError);
+  }
+
   return {
     ...subs,
     plan_id: subs.subscription_plan_id,
     subscription_plans: plan,
     billing_cycle: subs.billing_cycle || "month",
+    vehicles: (vehicles || []).map((v: any) => v.vehicle).filter(Boolean),
   };
 }

@@ -67,6 +67,18 @@ export default function PricingCard({
   const popularPlans = ["Suvs", "Small Truck"];
   const isPopular = popularPlans.includes(plan.name);
 
+  // Calculate pricing with discount for yearly
+  const monthlyPrice = Number(plan.monthly_price) || 0;
+  const yearlyPrice = Number(plan.yearly_price) || 0;
+  const monthlyEquivalent = monthlyPrice * 12; // What yearly would cost if paid monthly
+  const isYearly = pricing === "yearly";
+  const showDiscount = isYearly && monthlyEquivalent > 0;
+  const discountPercentage = showDiscount
+    ? Math.round(((monthlyEquivalent - yearlyPrice) / monthlyEquivalent) * 100)
+    : 0;
+  const currentPrice = isYearly ? yearlyPrice : monthlyPrice;
+  const originalPrice = isYearly ? monthlyEquivalent : null;
+
   return (
     <div className={`relative ${isPopular ? "md:scale-105" : ""}`}>
       {/* Popular badge */}
@@ -83,6 +95,15 @@ export default function PricingCard({
         <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
           <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-slate-900 px-3 py-1 text-xs font-bold rounded-full transform shadow-lg">
             CURRENT PLAN
+          </div>
+        </div>
+      )}
+
+      {/* 20% Discount badge for yearly */}
+      {showDiscount && discountPercentage > 0 && (
+        <div className="absolute -top-3 -left-3 z-10">
+          <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-1 text-xs font-bold rounded-full shadow-lg">
+            {discountPercentage}% OFF
           </div>
         </div>
       )}
@@ -122,13 +143,33 @@ export default function PricingCard({
         </div>
 
         <div className="bg-white px-6 py-6 text-center border-b border-slate-200">
-          <div className="flex items-baseline justify-center gap-1 mb-3">
-            <span className="text-4xl font-bold text-slate-900">
-              ${pricing === "monthly" ? plan.monthly_price : plan.yearly_price}
-            </span>
-            <span className="text-slate-600 font-medium">
-              /{pricing === "monthly" ? "mo" : "yr"}
-            </span>
+          <div className="flex flex-col items-center gap-2 mb-3">
+            {/* Original price with strikethrough (for yearly) */}
+            {showDiscount && originalPrice && (
+              <div className="flex items-center gap-2">
+                <span className="text-lg text-slate-500 line-through">
+                  ${originalPrice.toFixed(2)}
+                </span>
+                <span className="text-xs text-green-600 font-semibold bg-green-50 px-2 py-0.5 rounded">
+                  Save ${(originalPrice - currentPrice).toFixed(2)}
+                </span>
+              </div>
+            )}
+            {/* Current price */}
+            <div className="flex items-baseline justify-center gap-1">
+              <span className="text-4xl font-bold text-slate-900">
+                ${currentPrice.toFixed(2)}
+              </span>
+              <span className="text-slate-600 font-medium">
+                /{pricing === "monthly" ? "mo" : "yr"}
+              </span>
+            </div>
+            {/* Equivalent monthly price for yearly */}
+            {isYearly && (
+              <p className="text-xs text-slate-500">
+                ${(currentPrice / 12).toFixed(2)}/month billed annually
+              </p>
+            )}
           </div>
           <Separator />
           <div className="my-6 flex justify-center">
