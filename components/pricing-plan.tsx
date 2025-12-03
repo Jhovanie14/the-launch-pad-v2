@@ -84,7 +84,7 @@ export default function PricingCard({
       {/* Popular badge */}
       {isPopular && (
         <div className="absolute -top-3 -right-3 z-10">
-          <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-slate-900 px-3 py-1 text-xs font-bold rounded-full transform rotate-24 shadow-lg">
+          <div className="bg-linear-to-r from-yellow-400 to-yellow-500 text-slate-900 px-3 py-1 text-xs font-bold rounded-full transform rotate-24 shadow-lg">
             POPULAR
           </div>
         </div>
@@ -93,7 +93,7 @@ export default function PricingCard({
       {/* Current plan badge */}
       {isCurrentPlan && (
         <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
-          <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-slate-900 px-3 py-1 text-xs font-bold rounded-full transform shadow-lg">
+          <div className="bg-linear-to-r from-yellow-400 to-yellow-500 text-slate-900 px-3 py-1 text-xs font-bold rounded-full transform shadow-lg">
             CURRENT PLAN
           </div>
         </div>
@@ -102,7 +102,7 @@ export default function PricingCard({
       {/* 20% Discount badge for yearly */}
       {showDiscount && discountPercentage > 0 && (
         <div className="absolute -top-3 -left-3 z-10">
-          <div className="bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-1 text-xs font-bold rounded-full shadow-lg">
+          <div className="bg-linear-to-r from-green-500 to-green-600 text-white px-3 py-1 text-xs font-bold rounded-full shadow-lg">
             {discountPercentage}% OFF
           </div>
         </div>
@@ -110,7 +110,7 @@ export default function PricingCard({
 
       {/* Popular side bar */}
       {isPopular && (
-        <div className="absolute -right-1 top-0 bottom-0 w-1 bg-gradient-to-b from-yellow-400 to-yellow-500 rounded-r-lg" />
+        <div className="absolute -right-1 top-0 bottom-0 w-1 bg-linear-to-b from-yellow-400 to-yellow-500 rounded-r-lg" />
       )}
 
       <Card

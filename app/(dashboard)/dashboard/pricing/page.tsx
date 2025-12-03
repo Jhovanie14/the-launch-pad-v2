@@ -233,7 +233,7 @@ function FleetServicesSection({
     setSubmitting(true);
 
     try {
-      const response = await fetch("/api/fleet-inquiry", {
+      const response = await fetch("/api/admin/fleet-inquiry", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

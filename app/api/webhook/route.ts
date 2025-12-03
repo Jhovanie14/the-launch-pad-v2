@@ -31,6 +31,7 @@ export async function POST(req: Request) {
 
   // Handle events with a clean switch statement
   switch (event.type) {
+    // Subscription & Booking Events
     case "checkout.session.completed":
       await handleCheckoutSessionCompleted(event);
       break;
@@ -41,6 +42,15 @@ export async function POST(req: Request) {
 
     case "customer.subscription.deleted":
       await handleSubscriptionDeleted(event);
+      break;
+
+    // Fleet Invoice Events
+    case "invoice.paid":
+      await handleInvoicePaid(event.data.object as Stripe.Invoice);
+      break;
+
+    case "invoice.payment_failed":
+      await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
       break;
 
     default:
@@ -419,7 +429,6 @@ async function handleSubscriptionUpdated(event: Stripe.Event) {
     .single();
 
   const priceId = subscriptionItem?.price?.id ?? null;
-  const interval = subscriptionItem?.price?.recurring?.interval ?? null; // 👈 capture monthly/yearly
   const cancelAtPeriodEnd = Boolean(sub?.cancel_at_period_end);
   const planId =
     subscription.metadata?.plan_id ?? existingSub?.subscription_plan_id ?? null;
@@ -492,5 +501,41 @@ async function handleSubscriptionDeleted(event: Stripe.Event) {
 
   if (error) {
     console.error("Error canceling subscription:", error);
+  }
+}
+
+// ========================================
+// FLEET INVOICE HANDLERS
+// ========================================
+async function handleInvoicePaid(invoice: Stripe.Invoice) {
+  const { data, error } = await supabase
+    .from("fleet_invoices")
+    .update({
+      status: "paid",
+      payment_date: new Date().toISOString(),
+    })
+    .eq("stripe_invoice_id", invoice.id);
+
+  console.log("Invoice found in DB:", data);
+
+  if (error) {
+    console.error("Failed to update invoice:", error);
+  } else {
+    console.log(`✅ Invoice ${invoice.id} marked as paid`);
+  }
+}
+
+async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
+  const { error } = await supabase
+    .from("fleet_invoices")
+    .update({
+      status: "overdue",
+    })
+    .eq("stripe_invoice_id", invoice.id);
+
+  if (error) {
+    console.error("Failed to update invoice:", error);
+  } else {
+    console.log(`⚠️ Invoice ${invoice.id} payment failed`);
   }
 }

@@ -8,6 +8,7 @@ import RecentBookings from "@/components/recent-bookings";
 import QuickActions from "@/components/qucik-actions";
 import StatCard from "@/components/stats-card";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useSelfServiceSubscription } from "@/hooks/useSelfServiceSubscription";
 import {
   Crown,
   Calendar,
@@ -15,6 +16,7 @@ import {
   Car,
   Sparkles,
   ArrowRight,
+  Wrench,
 } from "lucide-react";
 import { useMemo } from "react";
 import SubscriptionCancelInfo from "@/components/user/subscription-cancel-info";
@@ -26,8 +28,10 @@ export default function DashboardPage() {
   const { openBookingModal } = useBooking();
   const { stats, recentBookings } = useBookingStats();
   const { subscription } = useSubscription();
+  const { subscription: selfServiceSubscription } =
+    useSelfServiceSubscription();
 
-  // Calculate subscription pricing and details
+  // Calculate express subscription pricing and details
   const subscriptionDetails = useMemo(() => {
     if (!subscription || !subscription.subscription_plans) {
       return null;
@@ -67,8 +71,55 @@ export default function DashboardPage() {
       currentPeriodStart: subscription.current_period_start,
       currentPeriodEnd: subscription.current_period_end,
       status: subscription.status,
+      cancelAtPeriodEnd: subscription.cancel_at_period_end,
     };
   }, [subscription]);
+
+  // Calculate self-service subscription pricing and details
+  const selfServiceDetails = useMemo(() => {
+    if (
+      !selfServiceSubscription ||
+      !selfServiceSubscription.subscription_plans
+    ) {
+      return null;
+    }
+
+    const basePrice = Number(
+      selfServiceSubscription.subscription_plans.monthly_price ?? 0
+    );
+
+    const vehicles = selfServiceSubscription.vehicles || [];
+    const vehiclePricing = vehicles.map((vehicle: any, index: number) => {
+      const isFirstVehicle = index === 0;
+      return {
+        price: isFirstVehicle ? basePrice : basePrice * 0.9,
+        isDiscounted: !isFirstVehicle,
+      };
+    });
+
+    const totalPrice = vehiclePricing.reduce(
+      (sum: number, item) => sum + item.price,
+      0
+    );
+    const totalSavings = vehiclePricing.reduce(
+      (sum: number, item) => sum + (item.isDiscounted ? basePrice * 0.1 : 0),
+      0
+    );
+
+    return {
+      planName: selfServiceSubscription.subscription_plans.name,
+      basePrice,
+      totalPrice,
+      totalSavings,
+      vehicleCount: vehicles.length,
+      isFlock: vehicles.length > 1,
+      billingCycle: selfServiceSubscription.billing_cycle || "month",
+      currentPeriodStart: selfServiceSubscription.current_period_start,
+      currentPeriodEnd: selfServiceSubscription.current_period_end,
+      status: selfServiceSubscription.status,
+      cancelAtPeriodEnd: selfServiceSubscription.cancel_at_period_end,
+    };
+  }, [selfServiceSubscription]);
 
   if (isLoading) {
     return (
@@ -107,13 +158,13 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          {/* Subscription Banner */}
+          {/* Express Detailing Subscription Banner */}
           {subscription && subscriptionDetails && (
-            <Card className="bg-gradient-to-r from-blue-900 to-blue-800 text-white border-0 shadow-lg">
+            <Card className="bg-linear-to-r from-blue-900 to-blue-800 text-white border-0 shadow-lg">
               <CardContent className="p-6">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div className="flex items-start gap-4 flex-1">
-                    <div className="w-14 h-14 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <div className="w-14 h-14 bg-white/20 rounded-lg flex items-center justify-center shrink-0">
                       <Crown className="w-8 h-8 text-yellow-300" />
                     </div>
                     <div className="flex-1 space-y-2">
@@ -121,6 +172,9 @@ export default function DashboardPage() {
                         <h2 className="text-xl font-bold">
                           {subscriptionDetails.planName}
                         </h2>
+                        <span className="inline-flex items-center px-2 py-1 bg-blue-700/50 rounded-full text-xs font-medium">
+                          Express Detailing
+                        </span>
                         {subscriptionDetails.isFlock && (
                           <span className="inline-flex items-center gap-1 px-2 py-1 bg-white/20 rounded-full text-xs font-medium">
                             <Sparkles className="w-3 h-3" />
@@ -178,8 +232,94 @@ export default function DashboardPage() {
                         <ArrowRight className="w-4 h-4 ml-2" />
                       </Link>
                     </Button>
-                    {subscription.cancel_at_period_end && (
+                    {subscriptionDetails.cancelAtPeriodEnd && (
                       <SubscriptionCancelInfo subscription={subscription} />
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Self-Service Subscription Banner */}
+          {selfServiceSubscription && selfServiceDetails && (
+            <Card className="bg-linear-to-r from-purple-900 to-purple-800 text-white border-0 shadow-lg">
+              <CardContent className="p-6">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div className="flex items-start gap-4 flex-1">
+                    <div className="w-14 h-14 bg-white/20 rounded-lg flex items-center justify-center shrink-0">
+                      <Wrench className="w-8 h-8 text-yellow-300" />
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h2 className="text-xl font-bold">
+                          {selfServiceDetails.planName}
+                        </h2>
+                        <span className="inline-flex items-center px-2 py-1 bg-purple-700/50 rounded-full text-xs font-medium">
+                          Self-Service
+                        </span>
+                        {selfServiceDetails.isFlock && (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-white/20 rounded-full text-xs font-medium">
+                            <Sparkles className="w-3 h-3" />
+                            Flock Subscription
+                          </span>
+                        )}
+                        <span className="inline-flex items-center px-2 py-1 bg-green-500/20 rounded-full text-xs font-medium">
+                          Active
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                        <div className="flex items-center gap-2">
+                          <Car className="w-4 h-4 text-purple-200" />
+                          <span className="text-purple-100">
+                            {selfServiceDetails.vehicleCount} Vehicle
+                            {selfServiceDetails.vehicleCount !== 1 ? "s" : ""}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <CreditCard className="w-4 h-4 text-purple-200" />
+                          <span className="text-purple-100">
+                            ${selfServiceDetails.totalPrice.toFixed(2)}/
+                            {selfServiceDetails.billingCycle}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-purple-200" />
+                          <span className="text-purple-100">
+                            {selfServiceDetails.currentPeriodEnd
+                              ? `Next: ${new Date(
+                                  selfServiceDetails.currentPeriodEnd
+                                ).toLocaleDateString()}`
+                              : "Active"}
+                          </span>
+                        </div>
+                      </div>
+                      {selfServiceDetails.isFlock &&
+                        selfServiceDetails.totalSavings > 0 && (
+                          <p className="text-xs text-purple-200 mt-1">
+                            ✨ You're saving $
+                            {selfServiceDetails.totalSavings.toFixed(2)}/
+                            {selfServiceDetails.billingCycle} with your flock
+                            discount!
+                          </p>
+                        )}
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      asChild
+                      variant="secondary"
+                      className="bg-white text-purple-900 hover:bg-purple-50"
+                    >
+                      <Link href="/dashboard/billing">
+                        Manage Subscription
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </Link>
+                    </Button>
+                    {selfServiceDetails.cancelAtPeriodEnd && (
+                      <div className="text-xs text-purple-200 text-center">
+                        Scheduled for cancellation
+                      </div>
                     )}
                   </div>
                 </div>

@@ -62,6 +62,15 @@ function ServiceSelectionPage() {
 
   const bodyType = (vehicleSpecs.body_type || "").toLowerCase();
 
+  // ============================================
+  // HOLIDAY SALE: START - Remove all code between START and END when sale ends
+  // ============================================
+  const HOLIDAY_SALE_ACTIVE = true; // Set to false when sale ends
+  const HOLIDAY_SALE_DISCOUNT = 0.35; // 35% off
+  // ============================================
+  // HOLIDAY SALE: END
+  // ============================================
+
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   // Filter services by category matching body type
@@ -127,11 +136,36 @@ function ServiceSelectionPage() {
   };
 
   const calculateTotal = () => {
-    let total = selectserv?.price || 0;
+    // ============================================
+    // HOLIDAY SALE: START
+    // ============================================
+    let basePrice = selectserv?.price || 0;
+    
+    // Apply holiday sale discount
+    if (HOLIDAY_SALE_ACTIVE && basePrice > 0) {
+      basePrice = basePrice * (1 - HOLIDAY_SALE_DISCOUNT);
+    }
+    
+    let total = basePrice;
     selectedAddOnIds.forEach((addOnId) => {
       const addOn = addOns.find((a) => a.id === addOnId);
-      if (addOn) total += addOn.price;
+      if (addOn) {
+        let addOnPrice = addOn.price;
+        // Apply holiday sale to add-ons too
+        if (HOLIDAY_SALE_ACTIVE) {
+          addOnPrice = addOnPrice * (1 - HOLIDAY_SALE_DISCOUNT);
+        }
+        total += addOnPrice;
+      }
     });
+    // ============================================
+    // HOLIDAY SALE: END - Replace above with original code:
+    // let total = selectserv?.price || 0;
+    // selectedAddOnIds.forEach((addOnId) => {
+    //   const addOn = addOns.find((a) => a.id === addOnId);
+    //   if (addOn) total += addOn.price;
+    // });
+    // ============================================
     console.log("total price", total);
     return total;
   };
@@ -176,6 +210,20 @@ function ServiceSelectionPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* ============================================
+          HOLIDAY SALE: START - Remove this banner when sale ends
+          ============================================ */}
+      {HOLIDAY_SALE_ACTIVE && (
+        <div className="bg-linear-to-r from-red-500 to-red-600 text-white text-center py-3 px-4">
+          <div className="max-w-7xl mx-auto flex items-center justify-center gap-2">
+            <span className="text-lg font-bold">🎄 HOLIDAY SALE - 35% OFF ALL SERVICES!</span>
+          </div>
+        </div>
+      )}
+      {/* ============================================
+          HOLIDAY SALE: END
+          ============================================ */}
+
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -205,34 +253,94 @@ function ServiceSelectionPage() {
                 No services found for your vehicle type.
               </div>
             )}
-            {filteredServices.map((service) => (
-              <Card
-                key={service.id}
-                onClick={() => handlePackageSelect(service.id)}
-                className={`cursor-pointer transition-all duration-200 hover:shadow-md border-2 ${
-                  selectedService === service.id
-                    ? "border-blue-500 bg-blue-50/50"
-                    : "border-gray-200 hover:border-blue-300"
-                }`}
-              >
-                <CardHeader className="pb-4">
-                  <div className="flex flex-col sm:flex-row sm:items-start justify-between w-full gap-2">
-                    <div className="flex-1 min-w-0 space-y-1">
-                      <h3 className="text-lg sm:text-base font-semibold text-gray-900 truncate">
-                        {service.name}
-                      </h3>
-                      <div className="flex items-center space-x-2 text-gray-500 text-sm">
-                        <Hourglass className="w-4 h-4 flex-shrink-0" />
-                        <span>{service.duration} mins</span>
+            {/* ============================================
+                HOLIDAY SALE: START - Remove discount display code when sale ends
+                ============================================ */}
+            {filteredServices.map((service) => {
+              const originalPrice = service.price;
+              const salePrice = HOLIDAY_SALE_ACTIVE 
+                ? originalPrice * (1 - HOLIDAY_SALE_DISCOUNT)
+                : originalPrice;
+
+              return (
+                <Card
+                  key={service.id}
+                  onClick={() => handlePackageSelect(service.id)}
+                  className={`relative cursor-pointer transition-all duration-200 hover:shadow-md border-2 ${
+                    selectedService === service.id
+                      ? "border-blue-500 bg-blue-50/50"
+                      : "border-gray-200 hover:border-blue-300"
+                  }`}
+                >
+                  {/* Holiday Sale Badge */}
+                  {HOLIDAY_SALE_ACTIVE && (
+                    <div className="absolute -top-3 -right-3 z-10">
+                      <div className="bg-gradient-to-r from-red-500 to-red-600 text-white px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
+                        35% OFF
                       </div>
                     </div>
-                    <div className="text-right flex-shrink-0">
-                      <span className="text-xl sm:text-lg font-bold text-gray-900">
-                        ${service.price}
-                      </span>
+                  )}
+
+                  <CardHeader className="pb-4">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between w-full gap-2">
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <h3 className="text-lg sm:text-base font-semibold text-gray-900 truncate">
+                          {service.name}
+                        </h3>
+                        <div className="flex items-center space-x-2 text-gray-500 text-sm">
+                          <Hourglass className="w-4 h-4 flex-shrink-0" />
+                          <span>{service.duration} mins</span>
+                        </div>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        {HOLIDAY_SALE_ACTIVE ? (
+                          <div className="flex flex-col items-end">
+                            <span className="text-sm text-gray-500 line-through">
+                              ${originalPrice.toFixed(2)}
+                            </span>
+                            <span className="text-xl sm:text-lg font-bold text-red-600">
+                              ${salePrice.toFixed(2)}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-xl sm:text-lg font-bold text-gray-900">
+                            ${service.price}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </CardHeader>
+                  </CardHeader>
+            {/* ============================================
+                HOLIDAY SALE: END - Replace above with original code:
+                {filteredServices.map((service) => (
+                  <Card
+                    key={service.id}
+                    onClick={() => handlePackageSelect(service.id)}
+                    className={`cursor-pointer transition-all duration-200 hover:shadow-md border-2 ${
+                      selectedService === service.id
+                        ? "border-blue-500 bg-blue-50/50"
+                        : "border-gray-200 hover:border-blue-300"
+                    }`}
+                  >
+                    <CardHeader className="pb-4">
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between w-full gap-2">
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <h3 className="text-lg sm:text-base font-semibold text-gray-900 truncate">
+                            {service.name}
+                          </h3>
+                          <div className="flex items-center space-x-2 text-gray-500 text-sm">
+                            <Hourglass className="w-4 h-4 flex-shrink-0" />
+                            <span>{service.duration} mins</span>
+                          </div>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <span className="text-xl sm:text-lg font-bold text-gray-900">
+                            ${service.price}
+                          </span>
+                        </div>
+                      </div>
+                    </CardHeader>
+                ============================================ */}
                 <CardContent className="pt-0">
                   <div className="space-y-3">
                     <div className="grid gap-1">
@@ -254,7 +362,8 @@ function ServiceSelectionPage() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
             <div
               ref={bottomRef}
               className="flex items-center justify-between border-t p-3 mt-10"
@@ -265,9 +374,29 @@ function ServiceSelectionPage() {
                     <span className="font-medium text-accent-foreground">
                       {selectserv.name}
                     </span>
-                    <span className="font-medium text-accent-foreground">
-                      ${selectserv.price}
-                    </span>
+                    {/* ============================================
+                        HOLIDAY SALE: START
+                        ============================================ */}
+                    {HOLIDAY_SALE_ACTIVE ? (
+                      <div className="flex flex-col">
+                        <span className="text-sm text-gray-500 line-through">
+                          ${selectserv.price.toFixed(2)}
+                        </span>
+                        <span className="font-medium text-red-600">
+                          ${(selectserv.price * (1 - HOLIDAY_SALE_DISCOUNT)).toFixed(2)}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="font-medium text-accent-foreground">
+                        ${selectserv.price}
+                      </span>
+                    )}
+                    {/* ============================================
+                        HOLIDAY SALE: END - Replace above with:
+                        <span className="font-medium text-accent-foreground">
+                          ${selectserv.price}
+                        </span>
+                        ============================================ */}
                   </div>
 
                   <Button
@@ -334,9 +463,37 @@ function ServiceSelectionPage() {
                               <h4 className="font-semibold text-gray-900">
                                 {selectserv.name}
                               </h4>
-                              <p className="text-xl font-bold text-gray-900">
-                                ${totalPrice}
-                              </p>
+                              {/* ============================================
+                                  HOLIDAY SALE: START
+                                  ============================================ */}
+                              {HOLIDAY_SALE_ACTIVE ? (
+                                <div className="flex flex-col">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm text-gray-500 line-through">
+                                      ${(selectserv.price + (selectedAddOnIds.reduce((sum, id) => {
+                                        const addOn = addOns.find(a => a.id === id);
+                                        return sum + (addOn?.price || 0);
+                                      }, 0))).toFixed(2)}
+                                    </span>
+                                    <span className="text-xs text-red-600 font-semibold bg-red-50 px-2 py-0.5 rounded">
+                                      {Math.round(HOLIDAY_SALE_DISCOUNT * 100)}% OFF
+                                    </span>
+                                  </div>
+                                  <p className="text-xl font-bold text-red-600">
+                                    ${totalPrice.toFixed(2)}
+                                  </p>
+                                </div>
+                              ) : (
+                                <p className="text-xl font-bold text-gray-900">
+                                  ${totalPrice.toFixed(2)}
+                                </p>
+                              )}
+                              {/* ============================================
+                                  HOLIDAY SALE: END - Replace above with:
+                                  <p className="text-xl font-bold text-gray-900">
+                                    ${totalPrice}
+                                  </p>
+                                  ============================================ */}
                             </div>
                             {selectedAddOnIds.length === 0 ? (
                               <Button

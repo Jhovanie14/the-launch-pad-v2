@@ -42,10 +42,22 @@ export async function POST(req: Request) {
   //     quantity: 1,
   //   })) || []),
   // ];
-  const discountFactor =
-    body.totalPrice /
-    (body.servicePackagePrice +
-      body.addOns.reduce((s: number, a: any) => s + a.price, 0));
+  // ============================================
+  // HOLIDAY SALE: START - This handles discount factor calculation
+  // ============================================
+  // Calculate discount factor based on discounted totalPrice vs original prices
+  const originalTotal =
+    body.servicePackagePrice +
+    (body.addOns?.reduce((s: number, a: any) => s + a.price, 0) || 0);
+  
+  // Safety check: avoid division by zero
+  const discountFactor = originalTotal > 0 
+    ? body.totalPrice / originalTotal
+    : 1;
+  // ============================================
+  // HOLIDAY SALE: END - The discount factor calculation above is fine to keep
+  // as it automatically handles any discount applied in the frontend
+  // ============================================
 
   const lineItems = [
     {

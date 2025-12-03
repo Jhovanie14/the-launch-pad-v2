@@ -64,6 +64,15 @@ function ConfirmationContent() {
   const [promoCode, setPromoCode] = useState("");
   const [discountPercent, setDiscountPercent] = useState(0);
 
+  // ============================================
+  // HOLIDAY SALE: START - Remove all code between START and END when sale ends
+  // ============================================
+  const HOLIDAY_SALE_ACTIVE = true; // Set to false when sale ends
+  const HOLIDAY_SALE_DISCOUNT = 0.35; // 35% off
+  // ============================================
+  // HOLIDAY SALE: END
+  // ============================================
+
   const dateParam = searchParams.get("date");
   const timeParam = searchParams.get("time");
 
@@ -176,6 +185,47 @@ function ConfirmationContent() {
   };
 
   const calculateTotal = () => {
+    // ============================================
+    // HOLIDAY SALE: START
+    // ============================================
+    const addOnsTotal = Array.isArray(selectedAddOns)
+      ? selectedAddOns.reduce((sum: number, addOn: any) => {
+          let price = Number(addOn.price);
+          // Apply holiday sale to add-ons
+          if (HOLIDAY_SALE_ACTIVE) {
+            price = price * (1 - HOLIDAY_SALE_DISCOUNT);
+          }
+          return sum + price;
+        }, 0)
+      : 0;
+
+    if (isSubscribed) return addOnsTotal;
+
+    let basePrice = Number(selectedPackages?.price) || 0;
+    // Apply holiday sale to base price
+    if (HOLIDAY_SALE_ACTIVE) {
+      basePrice = basePrice * (1 - HOLIDAY_SALE_DISCOUNT);
+    }
+    return basePrice + addOnsTotal;
+    // ============================================
+    // HOLIDAY SALE: END - Replace above with original code:
+    // const addOnsTotal = Array.isArray(selectedAddOns)
+    //   ? selectedAddOns.reduce(
+    //       (sum: number, addOn: any) => sum + Number(addOn.price),
+    //       0
+    //     )
+    //   : 0;
+    // if (isSubscribed) return addOnsTotal;
+    // const basePrice = Number(selectedPackages?.price) || 0;
+    // return basePrice + addOnsTotal;
+    // ============================================
+  };
+
+  // ============================================
+  // HOLIDAY SALE: START - Remove this function when sale ends
+  // ============================================
+  // Calculate original price before any discounts (for display)
+  const calculateOriginalTotal = () => {
     const addOnsTotal = Array.isArray(selectedAddOns)
       ? selectedAddOns.reduce(
           (sum: number, addOn: any) => sum + Number(addOn.price),
@@ -188,9 +238,13 @@ function ConfirmationContent() {
     const basePrice = Number(selectedPackages?.price) || 0;
     return basePrice + addOnsTotal;
   };
+  // ============================================
+  // HOLIDAY SALE: END
+  // ============================================
 
   const calculateTotalWithPromo = () => {
     const total = calculateTotal();
+    // Apply promo code discount on top of holiday sale (if any)
     return discountPercent > 0
       ? total - (total * discountPercent) / 100
       : total;
@@ -253,11 +307,29 @@ function ConfirmationContent() {
       setIsSubmitting(true);
       setShowPaymentModal(false);
 
-      const addOnsTotal = Array.isArray(selectedAddOns)
-        ? selectedAddOns.reduce((sum, a) => sum + Number(a.price), 0)
-        : 0;
-
+      // ============================================
+      // HOLIDAY SALE: START
+      // ============================================
+      // Note: addOnsTotal calculation is handled in calculateTotal() with holiday sale
       const totalWithDiscount = Number(calculateTotalWithPromo().toFixed(2));
+
+      // For subscribed users, calculate add-ons total with holiday sale discount
+      const addOnsTotal = Array.isArray(selectedAddOns)
+        ? selectedAddOns.reduce((sum, a) => {
+            let price = Number(a.price);
+            if (HOLIDAY_SALE_ACTIVE) {
+              price = price * (1 - HOLIDAY_SALE_DISCOUNT);
+            }
+            return sum + price;
+          }, 0)
+        : 0;
+      // ============================================
+      // HOLIDAY SALE: END - Replace above with:
+      // const addOnsTotal = Array.isArray(selectedAddOns)
+      //   ? selectedAddOns.reduce((sum, a) => sum + Number(a.price), 0)
+      //   : 0;
+      // const totalWithDiscount = Number(calculateTotalWithPromo().toFixed(2));
+      // ============================================
 
       if (paymentMethod === "cash") {
         const booking = await createBooking({
@@ -450,21 +522,57 @@ function ConfirmationContent() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Total Price:</span>
-                    <span className="font-medium">
-                      $
-                      {discountPercent > 0
-                        ? calculateTotalWithPromo().toFixed(2)
-                        : calculateTotal()}
-                    </span>
+                    {/* ============================================
+                        HOLIDAY SALE: START
+                        ============================================ */}
+                    <div className="flex flex-col items-end">
+                      {HOLIDAY_SALE_ACTIVE && (
+                        <span className="text-sm text-gray-500 line-through">
+                          ${calculateOriginalTotal().toFixed(2)}
+                        </span>
+                      )}
+                      <span className="font-medium">
+                        $
+                        {discountPercent > 0
+                          ? calculateTotalWithPromo().toFixed(2)
+                          : calculateTotal().toFixed(2)}
+                      </span>
+                    </div>
+                    {/* ============================================
+                        HOLIDAY SALE: END - Replace above with:
+                        <span className="font-medium">
+                          $
+                          {discountPercent > 0
+                            ? calculateTotalWithPromo().toFixed(2)
+                            : calculateTotal()}
+                        </span>
+                        ============================================ */}
                   </div>
                 </div>
               </CardContent>
             </Card>
+            {/* ============================================
+                HOLIDAY SALE: START - Remove this badge when sale ends
+                ============================================ */}
+            {HOLIDAY_SALE_ACTIVE && (
+              <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg p-3">
+                <div className="bg-gradient-to-r from-red-500 to-red-600 text-white px-3 py-1 text-xs font-bold rounded-full">
+                  🎄 HOLIDAY SALE
+                </div>
+                <p className="text-sm text-red-700 font-semibold">
+                  35% OFF Applied! Save $
+                  {(calculateOriginalTotal() - calculateTotal()).toFixed(2)}
+                </p>
+              </div>
+            )}
+            {/* ============================================
+                HOLIDAY SALE: END
+                ============================================ */}
             {isSubscribed && (
               <div className="flex items-center gap-1">
                 <Crown className="w-4 h-4 text-yellow-500" />
                 <p className=" text-sm text-green-600">
-                  You’re subscribed — base wash is free! You only pay for
+                  You're subscribed — base wash is free! You only pay for
                   add-ons.
                 </p>
               </div>
