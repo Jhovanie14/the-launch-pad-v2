@@ -23,7 +23,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
 import { useRouter, useSearchParams } from "next/navigation";
@@ -556,7 +555,7 @@ function ConfirmationContent() {
                 ============================================ */}
             {HOLIDAY_SALE_ACTIVE && (
               <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg p-3">
-                <div className="bg-gradient-to-r from-red-500 to-red-600 text-white px-3 py-1 text-xs font-bold rounded-full">
+                <div className="bg-linear-to-r from-red-500 to-red-600 text-white px-3 py-1 text-xs font-bold rounded-full">
                   🎄 HOLIDAY SALE
                 </div>
                 <p className="text-sm text-red-700 font-semibold">

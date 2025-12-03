@@ -13,7 +13,6 @@ import {
   Sparkles,
   Car,
   Check,
-  Wrench,
   Truck,
   CarFront,
   Caravan,
@@ -239,13 +238,15 @@ export default function ServicePage() {
             ============================================ */}
         {HOLIDAY_SALE_ACTIVE && (
           <motion.div
-            className="bg-gradient-to-r from-red-500 to-red-600 text-white text-center py-4 px-4 rounded-lg mb-8 shadow-lg"
+            className="bg-linear-to-r from-red-500 to-red-600 text-white text-center py-4 px-4 rounded-lg mb-8 shadow-lg"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
             <div className="flex items-center justify-center gap-2">
-              <span className="text-2xl md:text-3xl font-bold">🎄 HOLIDAY SALE - 35% OFF ALL SERVICES!</span>
+              <span className="text-2xl md:text-3xl font-bold">
+                🎄 HOLIDAY SALE - 35% OFF ALL SERVICES!
+              </span>
             </div>
           </motion.div>
         )}
@@ -313,7 +314,7 @@ export default function ServicePage() {
                       <div className="space-y-2">
                         {category.features.map((feature, idx) => (
                           <div key={idx} className="flex items-start gap-2">
-                            <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                            <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                             <span className="text-sm text-muted-foreground">
                               {feature}
                             </span>
@@ -381,7 +382,7 @@ export default function ServicePage() {
             </motion.p>
           </motion.div>
 
-          {orderedCategories.map(([category, items], categoryIndex) => (
+          {orderedCategories.map(([category, items]) => (
             <motion.div
               key={category}
               className="mb-12"
@@ -413,7 +414,7 @@ export default function ServicePage() {
                 {items.map((service, index) => {
                   const isPopular = popularServices.includes(service.name);
                   const originalPrice = service.price;
-                  const salePrice = HOLIDAY_SALE_ACTIVE 
+                  const salePrice = HOLIDAY_SALE_ACTIVE
                     ? originalPrice * (1 - HOLIDAY_SALE_DISCOUNT)
                     : originalPrice;
 
@@ -447,7 +448,7 @@ export default function ServicePage() {
                               stiffness: 200,
                             }}
                           >
-                            <div className="bg-gradient-to-r from-red-500 to-red-600 text-white px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
+                            <div className="bg-linear-to-r from-red-500 to-red-600 text-white px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
                               35% OFF
                             </div>
                           </motion.div>
@@ -465,12 +466,12 @@ export default function ServicePage() {
                               stiffness: 200,
                             }}
                           >
-                            <div className="bg-gradient-to-r from-yellow-400 to-yellow-400 text-slate-900 px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
+                            <div className="bg-linear-to-r from-yellow-400 to-yellow-400 text-slate-900 px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
                               Most Popular
                             </div>
                           </motion.div>
                         )}
-                {/* ============================================
+                        {/* ============================================
                     HOLIDAY SALE: END - Replace above with original code:
                     {items.map((service, index) => {
                       const isPopular = popularServices.includes(service.name);
@@ -573,7 +574,8 @@ export default function ServicePage() {
                                   ${originalPrice.toFixed(2)}
                                 </span>
                                 <span className="text-xs text-red-600 font-semibold bg-red-50 px-2 py-0.5 rounded">
-                                  Save {Math.round(HOLIDAY_SALE_DISCOUNT * 100)}%
+                                  Save {Math.round(HOLIDAY_SALE_DISCOUNT * 100)}
+                                  %
                                 </span>
                               </div>
                               <p className="text-4xl font-bold text-red-600">

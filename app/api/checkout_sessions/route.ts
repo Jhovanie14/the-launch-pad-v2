@@ -46,14 +46,15 @@ export async function POST(req: Request) {
   // HOLIDAY SALE: START - This handles discount factor calculation
   // ============================================
   // Calculate discount factor based on discounted totalPrice vs original prices
+
   const originalTotal =
     body.servicePackagePrice +
     (body.addOns?.reduce((s: number, a: any) => s + a.price, 0) || 0);
-  
+
   // Safety check: avoid division by zero
-  const discountFactor = originalTotal > 0 
-    ? body.totalPrice / originalTotal
-    : 1;
+  const discountFactor =
+    originalTotal > 0 ? body.totalPrice / originalTotal : 1;
+
   // ============================================
   // HOLIDAY SALE: END - The discount factor calculation above is fine to keep
   // as it automatically handles any discount applied in the frontend
@@ -155,8 +156,6 @@ export async function POST(req: Request) {
         : `${process.env.NEXT_PUBLIC_SITE_URL}/confirmation?${currentParams}`,
       metadata,
     });
-    ``;
-
     return new Response(JSON.stringify({ url: session.url }), { status: 200 });
   } catch (err) {
     console.error("Stripe checkout error:", err);
