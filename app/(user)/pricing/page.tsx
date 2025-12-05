@@ -4,13 +4,16 @@ import { useAuth } from "@/context/auth-context";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useState } from "react";
 import { Crown } from "lucide-react";
+import AuthPromptModal from "@/components/user/authPromptModal";
 import { usePricingPlans } from "@/hooks/usePricingPlans";
 import PricingCard from "@/components/pricing-plan";
+import SubscriptionCart from "@/components/subscription/SubscriptionCart";
 import LoadingDots from "@/components/loading";
 import { motion } from "framer-motion";
 
 export default function PricingContent() {
   const [pricing, setPricing] = useState<"monthly" | "yearly">("monthly");
+  const [authOpen, setAuthOpen] = useState(false);
   const { user, userProfile } = useAuth();
   const { subscription } = useSubscription();
   const { plans, loading } = usePricingPlans();
@@ -33,7 +36,7 @@ export default function PricingContent() {
       >
         <div className="flex items-center justify-center gap-2">
           <span className="text-2xl md:text-3xl font-bold">
-            Get 35% Off When You Apply Promo Code LAUNCHPAD35 at Checkout
+            Get 35% Off When You Apply Promo Code LAUNCHPAD20 at Checkout
           </span>
         </div>
       </motion.div>

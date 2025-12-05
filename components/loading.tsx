@@ -1,38 +1,58 @@
 // components/loading.tsx
 "use client";
-
 import { motion } from "framer-motion";
 import Image from "next/image";
 
 export default function LoadingDots() {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white">
-      <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
+      <motion.div
+        className="relative"
+        animate={{
+          y: [0, -30, 0],
+          scale: [1, 1.1, 1],
+        }}
+        transition={{
+          repeat: Infinity,
+          duration: 1.5,
+          ease: "easeInOut",
+        }}
+      >
         <motion.div
-          className="relative"
-          initial={{ y: 0, opacity: 1 }}
           animate={{
-            y: [0, -300, -600],
-            opacity: [1, 1, 0],
-            scale: [1, 1.1, 1.2],
+            rotate: [0, 5, -5, 0],
           }}
           transition={{
-            duration: 2.5,
             repeat: Infinity,
-            ease: [0.4, 0, 0.2, 1],
-            repeatDelay: 0.5,
+            duration: 2,
+            ease: "easeInOut",
           }}
         >
           <Image
             src="/thelaunchpad.png"
             alt="The LaunchPad Carwash Logo"
-            width={250}
-            height={250}
+            width={200}
+            height={200}
             className="object-contain"
             priority
           />
         </motion.div>
-      </div>
+        {/* Rocket trail effect */}
+        <motion.div
+          className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-16 h-8"
+          animate={{
+            opacity: [0.3, 0.7, 0.3],
+            scaleY: [0.8, 1.2, 0.8],
+          }}
+          transition={{
+            repeat: Infinity,
+            duration: 1.5,
+            ease: "easeInOut",
+          }}
+        >
+          <div className="w-full h-full bg-linear-to-t from-yellow-400 via-orange-500 to-transparent rounded-full blur-sm" />
+        </motion.div>
+      </motion.div>
     </div>
   );
 }
