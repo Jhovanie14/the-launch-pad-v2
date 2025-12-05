@@ -1,18 +1,37 @@
 // components/loading.tsx
 "use client";
 import { motion } from "framer-motion";
+import Image from "next/image";
 
 export default function LoadingDots() {
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white">
-      {[0, 1, 2, 3].map((i) => (
-        <motion.span
-          key={i}
-          className="w-3 h-3 bg-primary rounded-full mx-1"
-          animate={{ y: [0, -10, 0] }}
-          transition={{ repeat: Infinity, duration: 0.6, delay: i * 0.2 }}
-        />
-      ))}
+    <div className="fixed inset-0 z-100 flex items-center justify-center bg-white">
+      <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
+        <motion.div
+          className="relative"
+          initial={{ y: 0, opacity: 1 }}
+          animate={{
+            y: [0, -300, -600],
+            opacity: [1, 1, 0],
+            scale: [1, 1.1, 1.2],
+          }}
+          transition={{
+            duration: 2.5,
+            repeat: Infinity,
+            ease: [0.4, 0, 0.2, 1],
+            repeatDelay: 0.5,
+          }}
+        >
+          <Image
+            src="/thelaunchpad.png"
+            alt="The LaunchPad Carwash Logo"
+            width={250}
+            height={250}
+            className="object-contain"
+            priority
+          />
+        </motion.div>
+      </div>
     </div>
   );
 }

@@ -221,13 +221,13 @@ export function UserNavbar() {
             {/* <ThemeToggle /> */}
           </div>
           <div className="-mr-2 flex items-center lg:hidden gap-1">
-            <Button
+            {/* <Button
               size="lg"
               onClick={openBookingModal}
               className="bg-blue-900 hover:bg-blue-800 text-white font-semibold px-6 rounded-md transition-all duration-200 shadow-md hover:shadow-lg uppercase tracking-wide"
             >
               Book Online
-            </Button>
+            </Button> */}
             <button
               className="p-2"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -383,8 +383,8 @@ export function UserNavbar() {
                 Book Online
               </Button>
               <div className="flex items-center space-x-3 text-muted-foreground">
-                <Phone className="w-4 h-4" />
-                <p>(832) 219-8320</p>
+                <Phone className="w-4 h-4 text-blue-900" />
+                <p>or call (832) 219-8320</p>
               </div>
             </div>
           </div>

@@ -79,6 +79,15 @@ export default function PricingCard({
   const currentPrice = isYearly ? yearlyPrice : monthlyPrice;
   const originalPrice = isYearly ? monthlyEquivalent : null;
 
+  // ============================================
+  // PROMO CODE DISCOUNT (COMMENT OUT WHEN PROMO ENDS)
+  // ============================================
+  // Discount for promo code: 20% for self-service, 35% for subscriptions
+  const promoDiscountPercent = isSelfServicePlan ? 0.20 : 0.35; // 20% off for self-service, 35% off for subscriptions
+  const originalPriceWithPromo = currentPrice;
+  const discountedPriceWithPromo = currentPrice * (1 - promoDiscountPercent);
+  // ============================================
+
   return (
     <div className={`relative ${isPopular ? "md:scale-105" : ""}`}>
       {/* Popular badge */}
@@ -144,21 +153,22 @@ export default function PricingCard({
 
         <div className="bg-white px-6 py-6 text-center border-b border-slate-200">
           <div className="flex flex-col items-center gap-2 mb-3">
-            {/* Original price with strikethrough (for yearly) */}
-            {showDiscount && originalPrice && (
-              <div className="flex items-center gap-2">
-                <span className="text-lg text-slate-500 line-through">
-                  ${originalPrice.toFixed(2)}
-                </span>
-                <span className="text-xs text-green-600 font-semibold bg-green-50 px-2 py-0.5 rounded">
-                  Save ${(originalPrice - currentPrice).toFixed(2)}
-                </span>
-              </div>
-            )}
-            {/* Current price */}
+            {/* ============================================
+                PROMO CODE DISCOUNT DISPLAY (COMMENT OUT WHEN PROMO ENDS)
+                ============================================ */}
+            {/* Original price with strikethrough (promo code discount) */}
+            <div className="flex items-center gap-2">
+              <span className="text-lg text-slate-500 line-through">
+                ${originalPriceWithPromo.toFixed(2)}
+              </span>
+              <span className="text-xs text-red-600 font-semibold bg-red-50 px-2 py-0.5 rounded">
+                Save {Math.round(promoDiscountPercent * 100)}%
+              </span>
+            </div>
+            {/* Discounted price */}
             <div className="flex items-baseline justify-center gap-1">
               <span className="text-4xl font-bold text-slate-900">
-                ${currentPrice.toFixed(2)}
+                ${discountedPriceWithPromo.toFixed(2)}
               </span>
               <span className="text-slate-600 font-medium">
                 /{pricing === "monthly" ? "mo" : "yr"}
@@ -167,9 +177,40 @@ export default function PricingCard({
             {/* Equivalent monthly price for yearly */}
             {isYearly && (
               <p className="text-xs text-slate-500">
-                ${(currentPrice / 12).toFixed(2)}/month billed annually
+                ${(discountedPriceWithPromo / 12).toFixed(2)}/month billed
+                annually
               </p>
             )}
+            {/* ============================================
+                ORIGINAL PRICE DISPLAY (UNCOMMENT WHEN PROMO ENDS)
+                ============================================ */}
+            {/* Original price with strikethrough (for yearly) */}
+            {/* {showDiscount && originalPrice && (
+              <div className="flex items-center gap-2">
+                <span className="text-lg text-slate-500 line-through">
+                  ${originalPrice.toFixed(2)}
+                </span>
+                <span className="text-xs text-green-600 font-semibold bg-green-50 px-2 py-0.5 rounded">
+                  Save ${(originalPrice - currentPrice).toFixed(2)}
+                </span>
+              </div>
+            )} */}
+            {/* Current price */}
+            {/* <div className="flex items-baseline justify-center gap-1">
+              <span className="text-4xl font-bold text-slate-900">
+                ${currentPrice.toFixed(2)}
+              </span>
+              <span className="text-slate-600 font-medium">
+                /{pricing === "monthly" ? "mo" : "yr"}
+              </span>
+            </div> */}
+            {/* Equivalent monthly price for yearly */}
+            {/* {isYearly && (
+              <p className="text-xs text-slate-500">
+                ${(currentPrice / 12).toFixed(2)}/month billed annually
+              </p>
+            )} */}
+            {/* ============================================ */}
           </div>
           <Separator />
           <div className="my-6 flex justify-center">

@@ -34,6 +34,19 @@ export default function SelfServicePage() {
 
   return (
     <div className="min-h-screen bg-linear-to-b from-blue-50 to-white">
+      {/* Promo Banner */}
+      <motion.div
+        className="bg-linear-to-r from-red-500 to-red-600 text-white text-center py-4 px-4 shadow-lg"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <div className="flex items-center justify-center gap-2">
+          <span className="text-2xl md:text-3xl font-bold">
+            Get 20% Off When You Apply Promo Code LAUNCHPAD20 at Checkout
+          </span>
+        </div>
+      </motion.div>
       {/* Hero Section */}
       <section className="relative py-20 overflow-hidden">
         <div className="absolute inset-0 bg-blue-900/5" />
@@ -136,7 +149,30 @@ export default function SelfServicePage() {
                   <h3 className="text-2xl font-bold text-white mb-2">
                     Monthly Membership
                   </h3>
+                  {/* ============================================
+                      PROMO CODE DISCOUNT DISPLAY (COMMENT OUT WHEN PROMO ENDS)
+                      ============================================ */}
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <span className="text-lg text-blue-200 line-through">
+                      $19.99
+                    </span>
+                    <span className="text-xs text-yellow-400 font-semibold bg-yellow-400/20 px-2 py-0.5 rounded">
+                      Save 20%
+                    </span>
+                  </div>
                   <div className="text-4xl font-bold text-yellow-400">
+                    $15.99
+                  </div>
+                  <p className="text-blue-200 text-sm">per month</p>
+                  <div className="mt-2 inline-block bg-yellow-400/20 px-3 py-1 rounded-full">
+                    <p className="text-yellow-400 font-bold text-lg">
+                      Only ¢0.53/day
+                    </p>
+                  </div>
+                  {/* ============================================
+                      ORIGINAL PRICE DISPLAY (UNCOMMENT WHEN PROMO ENDS)
+                      ============================================ */}
+                  {/* <div className="text-4xl font-bold text-yellow-400">
                     $19.99
                   </div>
                   <p className="text-blue-200 text-sm">per month</p>
@@ -144,7 +180,8 @@ export default function SelfServicePage() {
                     <p className="text-yellow-400 font-bold text-lg">
                       Only ¢0.67/day
                     </p>
-                  </div>
+                  </div> */}
+                  {/* ============================================ */}
                 </div>
                 <ul className="space-y-3">
                   <li className="flex items-start gap-2">

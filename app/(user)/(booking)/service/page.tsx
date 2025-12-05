@@ -79,7 +79,7 @@ function ServiceSelectionPage() {
   // HOLIDAY SALE: START - Remove all code between START and END when sale ends
   // ============================================
   const HOLIDAY_SALE_ACTIVE = true; // Set to false when sale ends
-  const HOLIDAY_SALE_DISCOUNT = 0.35; // 35% off
+  const HOLIDAY_SALE_DISCOUNT = 0.15; // 15% off
   // ============================================
   // HOLIDAY SALE: END
   // ============================================
@@ -240,9 +240,9 @@ function ServiceSelectionPage() {
           HOLIDAY SALE: START - Remove this banner when sale ends
           ============================================ */}
       {HOLIDAY_SALE_ACTIVE && (
-        <div className="bg-gradient-to-r from-red-500 to-red-600 text-white text-center py-3 px-4">
+        <div className="bg-linear-to-r from-red-500 to-red-600 text-white text-center py-3 px-4">
           <div className="max-w-7xl mx-auto flex items-center justify-center gap-2">
-            <span className="text-lg font-bold">🎄 HOLIDAY SALE - 35% OFF ALL SERVICES!</span>
+            <span className="text-lg font-bold">🎄 HOLIDAY SALE - 15% OFF ALL SERVICES!</span>
           </div>
         </div>
       )}
@@ -253,7 +253,7 @@ function ServiceSelectionPage() {
       {showBanner && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-3xl max-w-lg w-full shadow-xl overflow-hidden border border-gray-100">
-            <div className="bg-gradient-to-r from-blue-900 to-blue-800 px-6 py-5 text-white flex items-center justify-between">
+            <div className="bg-linear-to-r from-blue-900 to-blue-800 px-6 py-5 text-white flex items-center justify-between">
               <h2 className="text-lg font-semibold">Join Our Members!</h2>
               <Button
                 variant="ghost"

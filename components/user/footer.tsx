@@ -69,7 +69,7 @@ export function Footer() {
                 />
               </Link>
               <Link
-                href="https://tiktok.com/@thelaunchpadhtx%3Flang%3Den"
+                href="https://www.tiktok.com/@thelaunchpadwash?lang=en"
                 target="_blank"
                 rel="noopener"
                 aria-label="Tiktok"

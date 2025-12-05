@@ -78,7 +78,6 @@ export default function SubscriptionCart({
   } = useVehicleFlock();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
- 
   const bodyTypeOptions: Record<string, string[]> = {
     Sedans: ["Sedan"],
     Suvs: ["SUV"],
@@ -118,7 +117,8 @@ export default function SubscriptionCart({
   //   const displayPrice = basePrice + extraFee;
 
   const basePrice = useMemo(() => {
-    const price = billingCycle === "monthly" ? plan?.monthly_price : plan?.yearly_price;
+    const price =
+      billingCycle === "monthly" ? plan?.monthly_price : plan?.yearly_price;
     return price ? Number(price) : 0;
   }, [plan, billingCycle]);
 
@@ -228,7 +228,7 @@ export default function SubscriptionCart({
                   )}
                   {index > 0 && (
                     <span className="ml-2 text-sm font-normal text-green-600">
-                      (10% Flock Discount)
+                      (10% Family Discount)
                     </span>
                   )}
                 </CardTitle>
@@ -360,15 +360,18 @@ export default function SubscriptionCart({
         ))}
 
         {canAddMore && (
-          <Button
-            variant="outline"
-            onClick={addVehicle}
-            className="w-full"
-            disabled={!canAddMore}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Another Vehicle / Flock
-          </Button>
+          <>
+            <Label className="text-xl">+ Add Family Vehicles</Label>
+            <Button
+              variant="outline"
+              onClick={addVehicle}
+              className="w-full"
+              disabled={!canAddMore}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Another Family Vehicle
+            </Button>
+          </>
         )}
 
         {!canAddMore && vehicles.length >= 5 && (
@@ -381,7 +384,7 @@ export default function SubscriptionCart({
       <div className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Subscription Summary</CardTitle>
+            <CardTitle className="text-lg">Subscription Summary</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between mb-4">
@@ -476,9 +479,9 @@ export default function SubscriptionCart({
               </p>
               {vehicles.length > 1 && (
                 <p className="text-xs text-green-600 mt-2">
-                  ✨ You're saving ${(
-                    basePrice * 0.1 * (vehicles.length - 1)
-                  ).toFixed(2)}/month with your flock discount!
+                  ✨ You're saving $
+                  {(basePrice * 0.1 * (vehicles.length - 1)).toFixed(2)}/month
+                  with your flock discount!
                 </p>
               )}
             </div>
@@ -518,8 +521,8 @@ export default function SubscriptionCart({
                   ${totalPrice.toFixed(2)}
                   {billingCycle === "monthly" ? "/month" : "/year"}
                 </span>{" "}
-                each {billingCycle === "monthly" ? "month" : "year"} on the
-                same date of subscription until my membership is cancelled or
+                each {billingCycle === "monthly" ? "month" : "year"} on the same
+                date of subscription until my membership is cancelled or
                 terminated.{" "}
                 <button
                   onClick={() => setIsModalOpen(true)}

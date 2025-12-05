@@ -20,6 +20,7 @@ import { useVehicleForm } from "@/hooks/useVehicleForm";
 import { createClient } from "@/utils/supabase/client";
 import TermsModal from "@/components/terms-modal";
 import LoadingDots from "@/components/loading";
+import { motion } from "framer-motion";
 
 export default function SelfServiceCart() {
   const supabase = createClient();
@@ -123,7 +124,21 @@ export default function SelfServiceCart() {
   if (loadingPlan) return <LoadingDots />;
 
   return (
-    <div className="grid lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
+    <div className="space-y-8">
+      {/* Promo Banner */}
+      <motion.div
+        className="bg-linear-to-r from-red-500 to-red-600 text-white text-center py-4 px-4 rounded-lg shadow-lg"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <div className="flex items-center justify-center gap-2">
+          <span className="text-2xl md:text-3xl font-bold">
+            Get 20% Off When You Apply Promo Code LAUNCHPAD20 at Checkout
+          </span>
+        </div>
+      </motion.div>
+      <div className="grid lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
       <Card>
         <CardHeader>
           <CardTitle>Vehicle Information</CardTitle>
@@ -235,7 +250,27 @@ export default function SelfServiceCart() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-muted-foreground">{plan?.description}</p>
-          <p className="text-2xl font-semibold">${plan?.monthly_price}/month</p>
+          {/* ============================================
+              PROMO CODE DISCOUNT DISPLAY (COMMENT OUT WHEN PROMO ENDS)
+              ============================================ */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-lg text-slate-500 line-through">
+                ${plan?.monthly_price}/month
+              </span>
+              <span className="text-xs text-red-600 font-semibold bg-red-50 px-2 py-0.5 rounded">
+                Save 20%
+              </span>
+            </div>
+            <p className="text-2xl font-semibold">
+              ${((plan?.monthly_price || 0) * 0.8).toFixed(2)}/month
+            </p>
+          </div>
+          {/* ============================================
+              ORIGINAL PRICE DISPLAY (UNCOMMENT WHEN PROMO ENDS)
+              ============================================ */}
+          {/* <p className="text-2xl font-semibold">${plan?.monthly_price}/month</p> */}
+          {/* ============================================ */}
 
           {plan?.features?.length && (
             <div className="space-y-2">
@@ -284,6 +319,7 @@ export default function SelfServiceCart() {
       </Card>
 
       <TermsModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      </div>
     </div>
   );
 }
