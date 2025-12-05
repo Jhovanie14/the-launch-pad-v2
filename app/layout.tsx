@@ -3,6 +3,7 @@
 // ============================================
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import BookingProvider from "@/context/bookingContext";
 import BookingModal from "@/components/bookingModal";
@@ -92,6 +93,18 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-KQCN95LYTS"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-KQCN95LYTS');
+          `}
+        </Script>
         <AuthContextProvider>
           <BookingProvider>
             {children}

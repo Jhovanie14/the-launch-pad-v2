@@ -35,6 +35,7 @@ export default function LoadingDots() {
             height={200}
             className="object-contain"
             priority
+            unoptimized
           />
         </motion.div>
         {/* Rocket trail effect */}

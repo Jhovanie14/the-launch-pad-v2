@@ -83,11 +83,6 @@ export function Footer() {
                   className="object-contain"
                 />
               </Link>
-              {/* <Link href="#" className="hover:text-white transition-colors">
-                <!-- tiktok-monochrome.svg -->
-<svg xmlns="http://www.w3.org/2000/
-
-              </Link> */}
             </div>
           </div>
 
