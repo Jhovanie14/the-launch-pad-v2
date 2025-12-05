@@ -5,7 +5,7 @@ import Image from "next/image";
 
 export default function LoadingDots() {
   return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center bg-white">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white">
       <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
         <motion.div
           className="relative"
