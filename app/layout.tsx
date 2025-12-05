@@ -93,7 +93,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {/* <Script
+        <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-KQCN95LYTS"
           strategy="afterInteractive"
         />
@@ -104,7 +104,7 @@ export default function RootLayout({
             gtag('js', new Date());
             gtag('config', 'G-KQCN95LYTS');
           `}
-        </Script> */}
+        </Script>
         <AuthContextProvider>
           <BookingProvider>
             {children}
