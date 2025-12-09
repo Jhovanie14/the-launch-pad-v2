@@ -13,6 +13,14 @@ import {
   NavigationMenuTrigger,
 } from "../ui/navigation-menu";
 import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import {
   BellPlus,
   ChevronDown,
   CircleQuestionMark,
@@ -125,15 +133,15 @@ export function UserNavbar() {
       <div className="mx-auto max-w-11/12 px-4 sm:px-6 lg:px-8">
         <div className="flex h-32 justify-between">
           <div className="flex">
-            <div className="flex flex-shrink-0 items-center">
+            <div className="flex shrink-0 items-center">
               <Link href="/">
                 <div className="flex items-center">
                   <Image
-                    src="/thelaunchpad.png"
+                    src="/xmas-launchpad-logo.png"
                     alt="The Launch Pad"
-                    width={175}
-                    height={175}
-                    className="h-24 w-24 sm:h-32 sm:w-32 object-contain"
+                    width={250}
+                    height={250}
+                    className="h-20 w-20 sm:h-28 sm:w-28 object-contain"
                   />
                   <div className="hidden md:flex flex-col">
                     <span className="text-xl sm:text-xl font-bold text-foreground tracking-tight">
@@ -247,16 +255,20 @@ export function UserNavbar() {
 
       {/* Mobile menu */}
       {isMounted && (
-        <div
-          className={`lg:hidden transition-all duration-300 ease-in-out overflow-hidden ${
-            isMobileMenuOpen ? "max-h-screen opacity-100" : "max-h-0 opacity-0"
-          }`}
-        >
-          <div className="bg-white dark:bg-gray-900 border-t dark:border-gray-800">
-            <div className="flex flex-col p-4 space-y-4">
+        <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+          {/* --- Sheet Content (Mobile Menu) --- */}
+          <SheetContent side="right" className="w-[300px] p-4">
+            <SheetHeader>
+              <SheetTitle className="flex items-center text-xl font-semibold gap-3">
+                <Image width={50} height={50} alt="the-launch-pad-logo" src={"/xmas-launchpad-logo.png"} /> The Launch Pad
+              </SheetTitle>
+              {/* <SheetDescription>Navigate through the website</SheetDescription> */}
+            </SheetHeader>
+
+            <div className="flex flex-col space-y-4">
               <Link
                 href="/login"
-                className="flex items-center space-x-2 text-lg py-2 border-b font-medium text-accent-foreground hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                className="flex items-center space-x-2 text-lg py-2 border-b font-medium hover:text-gray-700 dark:hover:text-gray-100"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <User className="w-4 h-4" />
@@ -265,70 +277,62 @@ export function UserNavbar() {
 
               <Link
                 href="/"
-                className="flex items-center space-x-2 text-lg font-medium text-accent-foreground hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                className="flex items-center space-x-2 text-lg font-medium hover:text-gray-700 dark:hover:text-gray-100"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <Home className="w-4 h-4" />
                 <span>Home</span>
               </Link>
 
-              {/* <Link
-                href="/products"
-                className="flex items-center space-x-2 text-lg font-medium text-accent-foreground hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <ShoppingBag className="w-4 h-4" />
-                <span>Products</span>
-              </Link> */}
-
               <Link
                 href="/pricing"
-                className="flex items-center space-x-2 text-lg font-medium text-accent-foreground hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                className="flex items-center space-x-2 text-lg font-medium hover:text-gray-700 dark:hover:text-gray-100"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <BellPlus className="w-4 h-4" />
                 <span>Subscription</span>
               </Link>
+
               <Link
                 href="/self-service"
-                className="flex items-center space-x-2 text-lg font-medium text-accent-foreground hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                className="flex items-center space-x-2 text-lg font-medium hover:text-gray-700 dark:hover:text-gray-100"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <ShowerHead className="w-4 h-4" />
                 <span>Self-service</span>
               </Link>
+
               <Link
                 href="/services"
-                className="flex items-center space-x-2 text-lg font-medium text-accent-foreground hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                className="flex items-center space-x-2 text-lg font-medium hover:text-gray-700 dark:hover:text-gray-100"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <Car className="w-4 h-4" />
                 <span>Services</span>
               </Link>
 
-              <div className="border-b pb-4">
+              {/* --- ABOUT DROPDOWN --- */}
+              <div className="pt-2 border-t">
                 <button
-                  className="flex items-center justify-between w-full py-2 text-lg font-medium text-accent-foreground hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                  className="flex items-center justify-between w-full py-2 text-lg font-medium hover:text-gray-700 dark:hover:text-gray-100"
                   onClick={() => setIsAboutDropdownOpen(!isAboutDropdownOpen)}
                 >
                   <span>About Launch Pad</span>
                   <ChevronDown
-                    className={`w-4 h-4 transition-transform duration-300 ${
+                    className={`w-4 h-4 transition-transform ${
                       isAboutDropdownOpen ? "rotate-180" : ""
                     }`}
                   />
                 </button>
 
                 <div
-                  className={`ml-4 space-y-2 transition-all duration-300 overflow-hidden ${
-                    isAboutDropdownOpen
-                      ? "mt-2 max-h-screen opacity-100"
-                      : "max-h-0 opacity-0"
+                  className={`ml-4 overflow-hidden space-y-2 transition-all ${
+                    isAboutDropdownOpen ? "max-h-screen mt-2" : "max-h-0"
                   }`}
                 >
                   <Link
                     href="/blog"
-                    className="flex items-center space-x-2 py-2 text-lg font-medium text-accent-foreground hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                    className="flex items-center space-x-2 py-2 text-lg hover:text-gray-700 dark:hover:text-gray-100"
                     onClick={() => {
                       setIsMobileMenuOpen(false);
                       setIsAboutDropdownOpen(false);
@@ -340,7 +344,7 @@ export function UserNavbar() {
 
                   <Link
                     href="/contact"
-                    className="flex items-center space-x-2 py-2 text-lg font-medium text-accent-foreground hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                    className="flex items-center space-x-2 py-2 text-lg hover:text-gray-700 dark:hover:text-gray-100"
                     onClick={() => {
                       setIsMobileMenuOpen(false);
                       setIsAboutDropdownOpen(false);
@@ -352,7 +356,7 @@ export function UserNavbar() {
 
                   <Link
                     href="/about"
-                    className="flex items-center space-x-2 py-2 text-lg font-medium text-accent-foreground hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                    className="flex items-center space-x-2 py-2 text-lg hover:text-gray-700 dark:hover:text-gray-100"
                     onClick={() => {
                       setIsMobileMenuOpen(false);
                       setIsAboutDropdownOpen(false);
@@ -364,7 +368,7 @@ export function UserNavbar() {
 
                   <Link
                     href="/faq"
-                    className="flex items-center space-x-2 py-2 text-lg font-medium text-accent-foreground hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                    className="flex items-center space-x-2 py-2 text-lg hover:text-gray-700 dark:hover:text-gray-100"
                     onClick={() => {
                       setIsMobileMenuOpen(false);
                       setIsAboutDropdownOpen(false);
@@ -375,20 +379,26 @@ export function UserNavbar() {
                   </Link>
                 </div>
               </div>
+
+              {/* --- BOOKING BUTTON --- */}
               <Button
                 size="sm"
-                onClick={openBookingModal}
-                className="bg-blue-900 hover:bg-blue-800 text-white font-semibold px-6 rounded-md transition-all duration-200 shadow-md hover:shadow-lg uppercase tracking-wide"
+                onClick={() => {
+                  openBookingModal();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="bg-blue-900 hover:bg-blue-800 text-white font-semibold px-6 rounded-md shadow-md hover:shadow-lg uppercase tracking-wide"
               >
                 Book Online
               </Button>
+
               <div className="flex items-center space-x-3 text-muted-foreground">
                 <Phone className="w-4 h-4 text-blue-900" />
                 <p>or call (832) 219-8320</p>
               </div>
             </div>
-          </div>
-        </div>
+          </SheetContent>
+        </Sheet>
       )}
     </nav>
   );

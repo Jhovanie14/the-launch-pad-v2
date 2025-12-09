@@ -145,7 +145,7 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
           <Link href="/">
             <div className="flex flex-col items-center space-x-3">
               <Image
-                src="/thelaunchpad.png"
+                src="/xmas-launchpad-logo.png"
                 alt="The Launch Pad"
                 width={48}
                 height={48}

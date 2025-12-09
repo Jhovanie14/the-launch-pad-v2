@@ -117,13 +117,13 @@ export function Hero() {
 
             {/* Main Heading */}
             <div className="text-center mb-8 space-y-6">
-              <h1 className="text-5xl md:text-7xl font-extrabold text-white leading-tight tracking-tight">
+              <h1 className="text-3xl md:text-6xl font-extrabold text-white leading-tight tracking-tight">
                 <span className="bg-gradient-to-r from-white via-amber-100 to-amber-200 bg-clip-text text-transparent">
                   24/7 Self-Service Car Wash + Professional Detailing in Houston
                 </span>
               </h1>
 
-              <p className="text-xl md:text-2xl text-white font-semibold max-w-2xl mx-auto leading-relaxed">
+              <p className="text-lg md:text-2xl text-white font-semibold max-w-2xl mx-auto leading-relaxed">
                 Wash it yourself in our premium bays or let our team handle a
                 full express detail — all at 10410 S Main St.
               </p>

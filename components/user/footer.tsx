@@ -194,15 +194,15 @@ export function Footer() {
             </h4>
             <ul className="space-y-3">
               <li className="flex items-start gap-2 text-sm">
-                <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <MapPin className="w-4 h-4 mt-0.5 shrink-0" />
                 <span>10410 S Main St, Houston, TX 77025</span>
               </li>
               <li className="flex items-center gap-2 text-sm">
-                <Phone className="w-4 h-4 flex-shrink-0" />
+                <Phone className="w-4 h-4 shrink-0" />
                 <span>(832) 219-8320</span>
               </li>
               <li className="flex items-center gap-2 text-sm">
-                <Mail className="w-4 h-4 flex-shrink-0" />
+                <Mail className="w-4 h-4 shrink-0" />
                 <span>info@thelaunchpadwash.com</span>
               </li>
             </ul>

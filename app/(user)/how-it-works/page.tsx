@@ -1,13 +1,13 @@
 "use client";
 
 import { HowItWorksHero } from "@/components/how-it-works-hero";
-import { ProcessSteps } from "@/components/process-steps";
 import { VideoSection } from "@/components/video-section";
 // import { CTASection } from "@/components/cta-section";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useBooking } from "@/context/bookingContext";
+import ProcessSteps from "@/components/process-steps";
 
 export default function HowItWorksPage() {
   const { openBookingModal } = useBooking();

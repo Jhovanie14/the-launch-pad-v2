@@ -6,7 +6,6 @@ import { X } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { useEffect, useState } from "react";
 import AuthPromptModal from "./user/authPromptModal";
-import { carApiService } from "@/lib/services/carapi";
 import { useVehicleForm } from "@/hooks/useVehicleForm";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";

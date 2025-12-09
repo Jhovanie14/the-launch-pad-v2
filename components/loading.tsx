@@ -6,7 +6,7 @@ import Image from "next/image";
 
 export default function LoadingDots() {
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-white">
+    <div className="fixed inset-0 z-100 flex items-center justify-center bg-white">
       {/* ============================================
           ORIGINAL LOADING ANIMATION (COMMENTED OUT)
           ============================================ */}
@@ -73,8 +73,8 @@ export default function LoadingDots() {
           scale: [1, 1.1, 0.8],
         }}
         transition={{
-          delay: 1, // Wait 1 second at center before launching
-          duration: 3,
+          delay: 1.5, // Wait 1 second at center before launching
+          duration: 5,
           ease: "easeOut",
         }}
       >
@@ -90,7 +90,7 @@ export default function LoadingDots() {
           }}
         >
           <Image
-            src="/thelaunchpad.png"
+            src="/xmas-launchpad-logo.png"
             alt="The LaunchPad Carwash Logo"
             width={200}
             height={200}
@@ -110,8 +110,8 @@ export default function LoadingDots() {
             scaleX: [0.8, 1, 1.3, 1.5, 1.2],
           }}
           transition={{
-            delay: 1, // Start trail when rocket launches
-            duration: 2,
+            delay: 1.5, // Start trail when rocket launches
+            duration: 5,
             ease: "easeOut",
           }}
         >
