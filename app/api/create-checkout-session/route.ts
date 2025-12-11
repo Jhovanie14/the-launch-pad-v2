@@ -5,26 +5,28 @@ import { ensureVehicle } from "@/utils/vehicle";
 export async function POST(req: Request) {
   const supabase = await createClient();
   const body = await req.json();
-  const { planId, billingCycle, userId, vehicle, vehicles } = body as {
-    planId: string;
-    billingCycle: "monthly" | "yearly";
-    userId?: string | null;
-    vehicle?: {
-      year: number;
-      make: string;
-      model: string;
-      body_type?: string;
-      color?: string;
+  const { planId, billingCycle, userId, vehicle, vehicles, couponId } =
+    body as {
+      planId: string;
+      billingCycle: "monthly" | "yearly";
+      userId?: string | null;
+      vehicle?: {
+        year: number;
+        make: string;
+        model: string;
+        body_type?: string;
+        color?: string;
+      };
+      vehicles?: Array<{
+        year: number;
+        make: string;
+        model: string;
+        body_type?: string;
+        color?: string;
+        licensePlate?: string;
+      }>;
+      couponId?: string;
     };
-    vehicles?: Array<{
-      year: number;
-      make: string;
-      model: string;
-      body_type?: string;
-      color?: string;
-      licensePlate?: string;
-    }>;
-  };
 
   const {
     data: { user },
@@ -60,7 +62,9 @@ export async function POST(req: Request) {
 
   const { data: plan, error: planError } = await supabase
     .from("subscription_plans")
-    .select("stripe_price_id_monthly, stripe_price_id_yearly, monthly_price, yearly_price")
+    .select(
+      "stripe_price_id_monthly, stripe_price_id_yearly, monthly_price, yearly_price"
+    )
     .eq("id", planId)
     .single();
 
@@ -109,7 +113,7 @@ export async function POST(req: Request) {
 
   for (let i = 0; i < vehiclesList.length; i++) {
     const isFirstVehicle = i === 0;
-    
+
     if (isFirstVehicle) {
       // First vehicle uses the base price
       lineItems.push({ price: basePriceId, quantity: 1 });
@@ -117,7 +121,7 @@ export async function POST(req: Request) {
       // Additional vehicles get 10% discount
       // Create a discounted price for this vehicle
       const discountedAmount = Math.round(baseAmount * 0.9);
-      
+
       // Check if we already have a discounted price for this plan
       // For simplicity, we'll create a new price each time, but in production
       // you might want to cache these prices
@@ -139,20 +143,45 @@ export async function POST(req: Request) {
     }
   }
 
-  console.log("Creating checkout session with metadata:", {
-    app_user_id: user?.id ?? userId ?? "",
-    plan_id: planId,
-    billing_cycle: billingCycle,
-    vehicle_ids: vehicleIds.join(","),
-    vehicle_count: vehiclesList.length,
-  });
+  const discounts = couponId ? [{ coupon: couponId }] : undefined;
+
+  // Optional: Validate the coupon exists in Stripe before creating session
+  if (couponId) {
+    try {
+      const coupon = await stripe.coupons.retrieve(couponId);
+      if (!coupon.valid) {
+        return new Response(
+          JSON.stringify({ error: "Promo code is no longer valid" }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
+    } catch (error) {
+      console.error("Invalid coupon:", error);
+      return new Response(JSON.stringify({ error: "Invalid promo code" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+  }
+
+  // console.log("Creating checkout session with metadata:", {
+  //   app_user_id: user?.id ?? userId ?? "",
+  //   plan_id: planId,
+  //   billing_cycle: billingCycle,
+  //   vehicle_ids: vehicleIds.join(","),
+  //   vehicle_count: vehiclesList.length,
+  // });
 
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     payment_method_types: ["card"],
     line_items: lineItems,
     customer_email: email,
-    allow_promotion_codes: true,
+    discounts: discounts,
+    // allow_promotion_codes: true,
     success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/pricing/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/pricing`,
     metadata: {

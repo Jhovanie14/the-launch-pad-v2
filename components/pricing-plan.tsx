@@ -64,7 +64,7 @@ export default function PricingCard({
   }
 
   // Popular plans
-  const popularPlans = ["Suvs", "Small Truck"];
+  const popularPlans = ["Suvs", "Mini Vans"];
   const isPopular = popularPlans.includes(plan.name);
 
   // Calculate pricing with discount for yearly

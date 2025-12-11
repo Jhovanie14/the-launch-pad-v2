@@ -231,7 +231,7 @@ export default function ServicePage() {
   ];
 
   return (
-    <section className="py-20 px-4 bg-background">
+    <section className="px-4 bg-background">
       <div className="max-w-7xl mx-auto">
         {/* ============================================
             HOLIDAY SALE: START - Remove this banner when sale ends
@@ -594,6 +594,20 @@ export default function ServicePage() {
                               </p>
                               ============================================ */}
                         </CardFooter>
+                        <motion.div
+                          className="absolute -bottom-2 right-0 z-10"
+                          initial={{ scale: 0, rotate: -20 }}
+                          animate={{ scale: 1, rotate: 0 }}
+                          transition={{
+                            delay: 0.3 + index * 0.1,
+                            type: "spring",
+                            stiffness: 200,
+                          }}
+                        >
+                          <div className="bg-linear-to-r from-yellow-400 to-yellow-400 text-slate-900 px-3 py-1 text-xs font-bold rounded-lg transform shadow-lg">
+                            Promo runs until January 1, 2026
+                          </div>
+                        </motion.div>
                       </Card>
                     </motion.div>
                   );
@@ -604,7 +618,7 @@ export default function ServicePage() {
         </div>
         {/* Bottom CTA */}
         <motion.div
-          className="text-center mt-16 pt-12 border-t"
+          className="text-center my-16 pt-12 border-t"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
