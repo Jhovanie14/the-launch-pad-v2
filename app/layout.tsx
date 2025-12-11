@@ -95,7 +95,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-KQCN95LYTS"
+          src="https://www.googletagmanager.com/gtag/js?id=G-N38CCY2FTY"
           strategy="afterInteractive"
         />
         <Script id="google-analytics" strategy="afterInteractive">
@@ -103,7 +103,7 @@ export default function RootLayout({
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
-            gtag('config', 'G-KQCN95LYTS');
+            gtag('config', 'G-N38CCY2FTY');
           `}
         </Script>
         <SnowEffect />

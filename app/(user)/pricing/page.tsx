@@ -4,10 +4,8 @@ import { useAuth } from "@/context/auth-context";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useState } from "react";
 import { Crown } from "lucide-react";
-import AuthPromptModal from "@/components/user/authPromptModal";
 import { usePricingPlans } from "@/hooks/usePricingPlans";
 import PricingCard from "@/components/pricing-plan";
-import SubscriptionCart from "@/components/subscription/SubscriptionCart";
 import LoadingDots from "@/components/loading";
 import { motion } from "framer-motion";
 
