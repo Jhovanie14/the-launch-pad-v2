@@ -51,12 +51,41 @@ function ServiceSelectionPage() {
   const [services, setServices] = useState<ServicePackage[]>([]);
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [vehicleSpecs, setVehicleSpecs] = useState<any>({
-    year: searchParams.get("year"),
-    make: searchParams.get("make"),
-    model: searchParams.get("model"),
-    body_type: searchParams.get("body_type"),
-    color: searchParams.get("color"),
+    year: searchParams.get("year") ?? "",
+    make: searchParams.get("make") ?? "",
+    model: searchParams.get("model") ?? "",
+    body_type: searchParams.get("body_type") ?? "",
+    color: searchParams.get("color") ?? "",
   });
+
+  // Keep vehicleSpecs in sync with URL search params so the page updates when
+  // the booking modal or other parts of the app navigate here with params.
+  useEffect(() => {
+    const newSpecs = {
+      year: searchParams.get("year") ?? "",
+      make: searchParams.get("make") ?? "",
+      model: searchParams.get("model") ?? "",
+      body_type: searchParams.get("body_type") ?? "",
+      color: searchParams.get("color") ?? "",
+    };
+    setVehicleSpecs((prev: any) => {
+      // Only update state if something changed to avoid unnecessary re-renders
+      if (
+        prev.year === newSpecs.year &&
+        prev.make === newSpecs.make &&
+        prev.model === newSpecs.model &&
+        prev.body_type === newSpecs.body_type &&
+        prev.color === newSpecs.color
+      ) {
+        return prev;
+      }
+      return newSpecs;
+    });
+
+    // If a service was provided in the URL, select it
+    const svc = searchParams.get("service");
+    if (svc) setSelectedService(svc);
+  }, [searchParams]);
 
   const selectserv = services.find((s) => s.id === selectedService);
 

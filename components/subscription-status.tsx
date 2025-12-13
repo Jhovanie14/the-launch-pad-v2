@@ -201,7 +201,7 @@ export default function SubscriptionStatus({
               </h4>
               {pricing.isFlock && (
                 <span className="text-xs text-green-600 font-medium">
-                  ✨ Flock Discount Active
+                  ✨ Family Discount Active
                 </span>
               )}
             </div>
@@ -224,7 +224,7 @@ export default function SubscriptionStatus({
                       )}
                       {item.isDiscounted && (
                         <span className="text-xs text-green-600 font-medium mt-1 inline-block">
-                          10% Flock Discount
+                          10% Family Discount
                         </span>
                       )}
                     </div>
@@ -248,7 +248,7 @@ export default function SubscriptionStatus({
             {pricing.isFlock && pricing.totalSavings > 0 && (
               <div className="flex items-center justify-between pt-2 border-t border-gray-200">
                 <span className="text-sm font-medium text-green-600">
-                  Total Flock Savings
+                  Total Family Savings
                 </span>
                 <span className="text-sm font-semibold text-green-600">
                   -${pricing.totalSavings.toFixed(2)}/

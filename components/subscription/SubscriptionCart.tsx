@@ -616,6 +616,16 @@ export default function SubscriptionCart({
     stripe_price_id_monthly?: string;
     stripe_price_id_yearly?: string;
   } | null>(null);
+  const [allPlans, setAllPlans] = useState<
+    Array<{
+      id: string;
+      name: string;
+      monthly_price: number | string;
+      yearly_price: number | string;
+      stripe_price_id_monthly?: string;
+      stripe_price_id_yearly?: string;
+    }>
+  >([]);
   const [loadingPlan, setLoadingPlan] = useState(true);
   const [loadingCheckout, setLoadingCheckout] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
@@ -638,20 +648,27 @@ export default function SubscriptionCart({
     enabled: true, // Set to false when promo ends
     // You need TWO separate Stripe coupons:
     stripeCouponId_SelfService: "JQn39l5R", // 20% off coupon for self-service
-    stripeCouponId_Subscription: "TplBWVaw", // 35% off coupon for subscriptions
+    stripeCouponId_Subscription: "w8jaH8ZL", // 35% off coupon for subscriptions
     isSelfServicePercent: 20, // Self-service discount percentage
     isSubscriptionPercent: 35, // Subscription discount percentage
   };
   // ============================================
 
   const bodyTypeOptions: Record<string, string[]> = {
-    Sedans: ["Sedan"],
-    Suvs: ["SUV"],
-    "Compact SUV": ["Compact SUV"],
-    "Small Truck": ["Small Pickup Truck"],
-    Van: ["Van"],
-    "Big Trucks": ["Big Pickup Truck"],
+    Sedans: ["sedan"],
+    Suvs: ["suvs"],
+    "Compact SUV": ["compact suv"],
+    "Small Truck": ["small truck"],
+    Van: ["van"],
+    "Mini Van": ["mini van"],
+    "Big Trucks": ["big truck"],
   };
+
+  const allBodyTypes = useMemo(() => {
+    const types: string[] = [];
+    Object.values(bodyTypeOptions).forEach((arr) => arr.forEach((t) => types.push(t)));
+    return Array.from(new Set(types));
+  }, [bodyTypeOptions]);
 
   useEffect(() => {
     if (!planId) return;
@@ -673,10 +690,32 @@ export default function SubscriptionCart({
       }
     })();
 
+    // Also fetch all plans so we can show per-vehicle plan info
+    (async () => {
+      try {
+        const { data: plans } = await supabase
+          .from("subscription_plans")
+          .select("id,name,monthly_price,yearly_price,stripe_price_id_monthly,stripe_price_id_yearly");
+        if (plans && active) setAllPlans(plans as any);
+      } catch (err) {
+        // ignore
+      }
+    })();
+
     return () => {
       active = false;
     };
   }, [planId, supabase]);
+
+  // Map body type -> plan (based on bodyTypeOptions)
+  const bodyTypeToPlan = useMemo(() => {
+    const map: Record<string, typeof allPlans[number] | null> = {};
+    allPlans.forEach((p) => {
+      const opts = bodyTypeOptions[p.name] || [];
+      opts.forEach((opt) => (map[opt] = p));
+    });
+    return map;
+  }, [allPlans]);
 
   // Detect if this is self-service plan
   const isSelfServicePlan = plan?.name === "Self-Service Bay Membership";
@@ -707,15 +746,21 @@ export default function SubscriptionCart({
 
   // Calculate pricing for each vehicle (using ORIGINAL prices)
   const vehiclePricing = useMemo(() => {
-    return vehicles.map((_, index) => {
+    return vehicles.map((v, index) => {
       const isFirstVehicle = index === 0;
-      // Use ORIGINAL price for calculations
-      const price = isFirstVehicle
-        ? basePrice.original
-        : basePrice.original * 0.9; // 10% flock discount
-      const flockDiscount = isFirstVehicle ? 0 : basePrice.original * 0.1;
+      // Determine plan for this vehicle (fallback to main plan)
+      const vehiclePlan = v.body_type ? bodyTypeToPlan[v.body_type] : null;
+      const vehicleBase = vehiclePlan
+        ? Number(
+            billingCycle === "monthly"
+              ? vehiclePlan.monthly_price
+              : vehiclePlan.yearly_price
+          )
+        : basePrice.original;
 
-      // Calculate estimated price after promo
+      const price = isFirstVehicle ? vehicleBase : vehicleBase * 0.9;
+      const flockDiscount = isFirstVehicle ? 0 : vehicleBase * 0.1;
+
       const estimatedPrice = price * (1 - promoDiscountPercent / 100);
       const promoSavings = price * (promoDiscountPercent / 100);
 
@@ -725,6 +770,7 @@ export default function SubscriptionCart({
         promoSavings: promoSavings,
         flockDiscount,
         isDiscounted: !isFirstVehicle,
+        vehiclePlan,
       };
     });
   }, [vehicles, basePrice, promoDiscountPercent]);
@@ -773,6 +819,10 @@ export default function SubscriptionCart({
         body_type: vehicle.body_type,
         color: vehicle.color,
         licensePlate: vehicle.licensePlate,
+        // Include planId associated with the selected body type, fallback to selected subscription plan
+        planId: vehicle.body_type
+          ? bodyTypeToPlan[vehicle.body_type]?.id ?? plan?.id
+          : plan?.id,
       }));
 
       // Select the appropriate coupon based on plan type
@@ -841,7 +891,7 @@ export default function SubscriptionCart({
                   )}
                   {index > 0 && (
                     <span className="ml-2 text-sm font-normal text-green-600">
-                      (10% Flock Discount)
+                      (10% Family Discount)
                     </span>
                   )}
                 </CardTitle>
@@ -936,7 +986,10 @@ export default function SubscriptionCart({
                         />
                       </SelectTrigger>
                       <SelectContent>
-                        {bodyTypeOptions[plan.name]?.map((option) => (
+                        {(index === 0 && plan?.name
+                          ? bodyTypeOptions[plan.name]
+                          : allBodyTypes
+                        )?.map((option) => (
                           <SelectItem key={option} value={option}>
                             {option}
                           </SelectItem>
@@ -949,6 +1002,25 @@ export default function SubscriptionCart({
                       {errors[index].body_type}
                     </p>
                   )}
+                    {vehiclePricing[index]?.vehiclePlan && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Plan: {vehiclePricing[index].vehiclePlan.name} • {"$" + (
+                          billingCycle === "monthly"
+                            ? Number(vehiclePricing[index].vehiclePlan.monthly_price)
+                            : Number(vehiclePricing[index].vehiclePlan.yearly_price)
+                        ).toFixed(2)}
+                        <span className="ml-1 text-xs text-muted-foreground">
+                          {billingCycle === "monthly" ? "/mo" : "/yr"}
+                        </span>
+                      </p>
+                    )}
+                    {vehiclePricing[index]?.vehiclePlan &&
+                      plan &&
+                      vehiclePricing[index].vehiclePlan.id !== plan.id && (
+                        <p className="text-xs text-muted-foreground italic mt-1">
+                          Note: This body type maps to the "{vehiclePricing[index].vehiclePlan.name}" plan. Checkout will use the selected plan.
+                        </p>
+                      )}
                 </div>
 
                 <div className="space-y-2">
@@ -1024,10 +1096,12 @@ export default function SubscriptionCart({
                       🎉 Promo Code Auto-Applied!
                     </p>
                     <p className="text-sm font-semibold text-red-800">
-                      {promoDiscountPercent}% OFF Your Subscription
+                      {promoDiscountPercent}% OFF your first month of
+                      subscription. After the first month, your subscription
+                      will renew at the regular price.
                     </p>
                     <p className="text-xs text-red-700 mt-1">
-                      Discount will be applied at checkout via Stripe
+                      Discount applied automatically at checkout via Stripe
                     </p>
                   </div>
                 </div>
@@ -1060,10 +1134,15 @@ export default function SubscriptionCart({
                             {vehicle.body_type}
                           </p>
                         )}
+                        {pricing.vehiclePlan && (
+                          <p className="text-xs text-muted-foreground">
+                            {pricing.vehiclePlan.name}
+                          </p>
+                        )}
                         <div className="flex flex-col gap-0.5 mt-1">
                           {pricing.isDiscounted && (
                             <p className="text-xs text-green-600">
-                              Flock: 10% off (-$
+                              Family: 10% off (-$
                               {pricing.flockDiscount.toFixed(2)})
                             </p>
                           )}
@@ -1107,7 +1186,8 @@ export default function SubscriptionCart({
                     </p>
                     {totalFlockSavings > 0 && (
                       <p className="text-xs text-green-700">
-                        • Flock Discount: ${totalFlockSavings.toFixed(2)}
+                        {/* Flock */}
+                        • Family Discount: ${totalFlockSavings.toFixed(2)}
                       </p>
                     )}
                     {totalPromoSavings > 0 && (
@@ -1228,13 +1308,20 @@ export default function SubscriptionCart({
                 <span className="font-semibold">
                   $
                   {PROMO_CONFIG.enabled
+                    ? totalOriginalPrice.toFixed(2)
+                    : totalOriginalPrice.toFixed(2)}
+                  {billingCycle === "monthly" ? "/month" : "/year"}
+                </span>{" "}
+                after my first month which is discounted to{" "}
+                <span className="font-semibold">
+                  $
+                  {PROMO_CONFIG.enabled
                     ? totalEstimatedPrice.toFixed(2)
                     : totalOriginalPrice.toFixed(2)}
                   {billingCycle === "monthly" ? "/month" : "/year"}
                 </span>{" "}
-                each {billingCycle === "monthly" ? "month" : "year"} on the same
-                date of subscription until my membership is cancelled or
-                terminated.{" "}
+                Billing will occur on the same subscription date each month
+                until I cancel or terminate my membership{" "}
                 <button
                   onClick={() => setIsModalOpen(true)}
                   className="text-primary hover:underline"

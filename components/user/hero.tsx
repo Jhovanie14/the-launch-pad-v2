@@ -118,7 +118,7 @@ export function Hero() {
             {/* Main Heading */}
             <div className="text-center mb-8 space-y-6">
               <h1 className="text-3xl md:text-6xl font-extrabold text-white leading-tight tracking-tight">
-                <span className="bg-gradient-to-r from-white via-amber-100 to-amber-200 bg-clip-text text-transparent">
+                <span className="bg-linear-to-r from-white via-amber-100 to-amber-200 bg-clip-text text-transparent">
                   24/7 Self-Service Car Wash + Professional Detailing in Houston
                 </span>
               </h1>
@@ -141,7 +141,7 @@ export function Hero() {
                   return (
                     <div
                       key={idx}
-                      className={`relative group p-6 rounded-xl bg-gradient-to-br ${type.gradient} backdrop-blur-sm border-2 ${type.borderColor} transition-all duration-300 hover:scale-[1.02] ${
+                      className={`relative group p-6 rounded-xl bg-linear-to-br ${type.gradient} backdrop-blur-sm border-2 ${type.borderColor} transition-all duration-300 hover:scale-[1.02] ${
                         type.featured
                           ? "md:scale-105 shadow-2xl shadow-amber-500/20"
                           : ""
@@ -174,7 +174,7 @@ export function Hero() {
                       <div className="space-y-2 mb-6">
                         {type.whatTheyGet.map((item, i) => (
                           <div key={i} className="flex items-start gap-2">
-                            <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
+                            <Check className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
                             <span className="text-sm text-white/80">
                               {item}
                             </span>
@@ -237,12 +237,12 @@ export function Hero() {
                   {[...Array(3)].map((_, i) => (
                     <div
                       key={i}
-                      className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 border-2 border-slate-900"
+                      className="w-8 h-8 rounded-full bg-linear-to-br from-amber-400 to-amber-600 border-2 border-slate-900"
                     />
                   ))}
                 </div>
                 <span className="text-sm text-slate-300">
-                  <span className="font-semibold text-white">500+</span>{" "}
+                  <span className="font-semibold text-white">31+</span>{" "}
                   satisfied customers
                 </span>
               </div>
@@ -251,7 +251,7 @@ export function Hero() {
                   <Star key={i} className="w-4 h-4 fill-current" />
                 ))}
 
-                <span className="text-sm text-slate-300 ml-2">4.9 rating</span>
+                <span className="text-sm text-slate-300 ml-2">4.4 rating</span>
               </div>
               <Link
                 href="/reviews"

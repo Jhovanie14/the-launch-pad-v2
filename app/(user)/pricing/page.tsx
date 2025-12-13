@@ -33,8 +33,8 @@ export default function PricingContent() {
         transition={{ duration: 0.6 }}
       >
         <div className="flex items-center justify-center gap-2">
-          <span className="text-2xl md:text-3xl font-bold">
-            Get 35% Off When You Apply Promo Code LAUNCHPAD20 at Checkout
+          <span className="text-lg md:text-3xl font-bold">
+            Get 35% Off on the 1st month when you apply Promo Code LAUNCHPAD35 at Checkout
           </span>
         </div>
       </motion.div>
