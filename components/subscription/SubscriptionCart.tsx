@@ -648,7 +648,7 @@ export default function SubscriptionCart({
     enabled: true, // Set to false when promo ends
     // You need TWO separate Stripe coupons:
     stripeCouponId_SelfService: "JQn39l5R", // 20% off coupon for self-service
-    stripeCouponId_Subscription: "w8jaH8ZL", // 35% off coupon for subscriptions
+    stripeCouponId_Subscription: "TplBWVaw", // 35% off coupon for subscriptions
     isSelfServicePercent: 20, // Self-service discount percentage
     isSubscriptionPercent: 35, // Subscription discount percentage
   };
