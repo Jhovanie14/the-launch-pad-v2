@@ -54,7 +54,7 @@ export default function ServicePage() {
   // ============================================
   // HOLIDAY SALE: 35% discount (UI only - backend prices will be updated separately)
   const HOLIDAY_SALE_ACTIVE = true; // Set to false when sale ends
-  const HOLIDAY_SALE_DISCOUNT = 0.15; // 15% off
+  const HOLIDAY_SALE_DISCOUNT = 0.10; // 15% off
   // ============================================
   // HOLIDAY SALE: END
   // ============================================
@@ -245,7 +245,7 @@ export default function ServicePage() {
           >
             <div className="flex items-center justify-center gap-2">
               <span className="text-2xl md:text-3xl font-bold">
-                🎄 HOLIDAY SALE - 15% OFF ALL SERVICES!
+                🎄 HOLIDAY SALE - 10% OFF ALL SERVICES!
               </span>
             </div>
           </motion.div>
@@ -449,7 +449,7 @@ export default function ServicePage() {
                             }}
                           >
                             <div className="bg-linear-to-r from-red-500 to-red-600 text-white px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
-                              15% OFF
+                              10% OFF
                             </div>
                           </motion.div>
                         )}

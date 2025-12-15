@@ -86,7 +86,7 @@ function ConfirmationContent() {
   // HOLIDAY SALE: START - Remove all code between START and END when sale ends
   // ============================================
   const HOLIDAY_SALE_ACTIVE = true; // Set to false when sale ends
-  const HOLIDAY_SALE_DISCOUNT = 0.35; // 35% off
+  const HOLIDAY_SALE_DISCOUNT = 0.10; // 15% off
   // ============================================
   // HOLIDAY SALE: END
   // ============================================
@@ -493,11 +493,11 @@ function ConfirmationContent() {
               ============================================ */}
           {HOLIDAY_SALE_ACTIVE && (
             <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg p-3">
-              <div className="bg-gradient-to-r from-red-500 to-red-600 text-white px-3 py-1 text-xs font-bold rounded-full">
+              <div className="bg-linear-to-r from-red-500 to-red-600 text-white px-3 py-1 text-xs font-bold rounded-full">
                 🎄 HOLIDAY SALE
               </div>
               <p className="text-sm text-red-700 font-semibold">
-                35% OFF Applied! Save ${(calculateOriginalTotal() - calculateTotal()).toFixed(2)}
+                15% OFF Applied! Save ${(calculateOriginalTotal() - calculateTotal()).toFixed(2)}
               </p>
             </div>
           )}

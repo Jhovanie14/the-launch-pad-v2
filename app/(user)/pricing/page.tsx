@@ -34,7 +34,7 @@ export default function PricingContent() {
       >
         <div className="flex items-center justify-center gap-2">
           <span className="text-lg md:text-3xl font-bold">
-            Get 35% Off on the 1st month when you apply Promo Code LAUNCHPAD35 at Checkout
+            Get 35% Off on the 1st month when you subscribe today!
           </span>
         </div>
       </motion.div>
