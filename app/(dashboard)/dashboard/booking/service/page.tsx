@@ -95,7 +95,7 @@ function ServiceSelectionPage() {
   // HOLIDAY SALE: START - Remove all code between START and END when sale ends
   // ============================================
   const HOLIDAY_SALE_ACTIVE = true; // Set to false when sale ends
-  const HOLIDAY_SALE_DISCOUNT = 0.35; // 35% off
+  const HOLIDAY_SALE_DISCOUNT = 0.10; // 35% off
   // ============================================
   // HOLIDAY SALE: END
   // ============================================
@@ -246,7 +246,7 @@ function ServiceSelectionPage() {
         <div className="bg-linear-to-r from-red-500 to-red-600 text-white text-center py-3 px-4">
           <div className="max-w-7xl mx-auto flex items-center justify-center gap-2">
             <span className="text-lg font-bold">
-              🎄 HOLIDAY SALE - 35% OFF ALL SERVICES!
+              🎄 HOLIDAY SALE - 10% OFF ALL SERVICES!
             </span>
           </div>
         </div>
@@ -307,7 +307,7 @@ function ServiceSelectionPage() {
                   {HOLIDAY_SALE_ACTIVE && (
                     <div className="absolute -top-3 -right-3 z-10">
                       <div className="bg-linear-to-r from-red-500 to-red-600 text-white px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
-                        35% OFF
+                        10% OFF
                       </div>
                     </div>
                   )}

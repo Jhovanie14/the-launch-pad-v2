@@ -79,7 +79,7 @@ function ServiceSelectionPage() {
   // HOLIDAY SALE: START - Remove all code between START and END when sale ends
   // ============================================
   const HOLIDAY_SALE_ACTIVE = true; // Set to false when sale ends
-  const HOLIDAY_SALE_DISCOUNT = 0.15; // 15% off
+  const HOLIDAY_SALE_DISCOUNT = 0.10; // 15% off
   // ============================================
   // HOLIDAY SALE: END
   // ============================================
@@ -166,12 +166,12 @@ function ServiceSelectionPage() {
     // HOLIDAY SALE: START
     // ============================================
     let basePrice = selectserv?.price || 0;
-    
+
     // Apply holiday sale discount
     if (HOLIDAY_SALE_ACTIVE && basePrice > 0) {
       basePrice = basePrice * (1 - HOLIDAY_SALE_DISCOUNT);
     }
-    
+
     let total = basePrice;
     selectedAddOnIds.forEach((addOnId) => {
       const addOn = addOns.find((a) => a.id === addOnId);
@@ -242,7 +242,9 @@ function ServiceSelectionPage() {
       {HOLIDAY_SALE_ACTIVE && (
         <div className="bg-linear-to-r from-red-500 to-red-600 text-white text-center py-3 px-4">
           <div className="max-w-7xl mx-auto flex items-center justify-center gap-2">
-            <span className="text-lg font-bold">🎄 HOLIDAY SALE - 15% OFF ALL SERVICES!</span>
+            <span className="text-lg font-bold">
+              🎄 HOLIDAY SALE - 10% OFF ALL SERVICES!
+            </span>
           </div>
         </div>
       )}
@@ -365,7 +367,7 @@ function ServiceSelectionPage() {
                 ============================================ */}
             {filteredServices.map((service) => {
               const originalPrice = service.price;
-              const salePrice = HOLIDAY_SALE_ACTIVE 
+              const salePrice = HOLIDAY_SALE_ACTIVE
                 ? originalPrice * (1 - HOLIDAY_SALE_DISCOUNT)
                 : originalPrice;
 
@@ -382,8 +384,8 @@ function ServiceSelectionPage() {
                   {/* Holiday Sale Badge */}
                   {HOLIDAY_SALE_ACTIVE && (
                     <div className="absolute -top-3 -right-3 z-10">
-                      <div className="bg-gradient-to-r from-red-500 to-red-600 text-white px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
-                        35% OFF
+                      <div className="bg-linear-to-r from-red-500 to-red-600 text-white px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
+                        10% OFF
                       </div>
                     </div>
                   )}
@@ -395,11 +397,11 @@ function ServiceSelectionPage() {
                           {service.name}
                         </h3>
                         <div className="flex items-center space-x-2 text-gray-500 text-sm">
-                          <Hourglass className="w-4 h-4 flex-shrink-0" />
+                          <Hourglass className="w-4 h-4 shrink-0" />
                           <span>{service.duration} mins</span>
                         </div>
                       </div>
-                      <div className="text-right flex-shrink-0">
+                      <div className="text-right shrink-0">
                         {HOLIDAY_SALE_ACTIVE ? (
                           <div className="flex flex-col items-end">
                             <span className="text-sm text-gray-500 line-through">
@@ -417,7 +419,7 @@ function ServiceSelectionPage() {
                       </div>
                     </div>
                   </CardHeader>
-            {/* ============================================
+                  {/* ============================================
                 HOLIDAY SALE: END - Replace above with original code:
                 {filteredServices.map((service) => (
                   <Card
@@ -478,27 +480,27 @@ function ServiceSelectionPage() {
                       </div>
                     </CardHeader>
                 ============================================ */}
-                <CardContent className="pt-0">
-                  <div className="space-y-3">
-                    <div className="grid gap-1">
-                      {service.features?.map((feature, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center text-sm text-gray-600 min-w-0"
-                        >
-                          <Check className="h-4 w-4 mr-2 text-green-500 flex-shrink-0" />
-                          <span className="truncate">{feature}</span>
-                        </div>
-                      ))}
+                  <CardContent className="pt-0">
+                    <div className="space-y-3">
+                      <div className="grid gap-1">
+                        {service.features?.map((feature, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center text-sm text-gray-600 min-w-0"
+                          >
+                            <Check className="h-4 w-4 mr-2 text-green-500 shrink-0" />
+                            <span className="truncate">{feature}</span>
+                          </div>
+                        ))}
+                      </div>
+                      {service.description && (
+                        <p className="text-sm text-gray-500 pt-2 border-t border-gray-100 truncate">
+                          {service.description}
+                        </p>
+                      )}
                     </div>
-                    {service.description && (
-                      <p className="text-sm text-gray-500 pt-2 border-t border-gray-100 truncate">
-                        {service.description}
-                      </p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
               );
             })}
             <div
@@ -517,7 +519,11 @@ function ServiceSelectionPage() {
                           ${selectserv.price.toFixed(2)}
                         </span>
                         <span className="font-medium text-red-600">
-                          ${(selectserv.price * (1 - HOLIDAY_SALE_DISCOUNT)).toFixed(2)}
+                          $
+                          {(
+                            selectserv.price *
+                            (1 - HOLIDAY_SALE_DISCOUNT)
+                          ).toFixed(2)}
                         </span>
                       </div>
                     ) : (
@@ -598,13 +604,20 @@ function ServiceSelectionPage() {
                                 <div className="flex flex-col">
                                   <div className="flex items-center gap-2">
                                     <span className="text-sm text-gray-500 line-through">
-                                      ${(selectserv.price + (selectedAddOnIds.reduce((sum, id) => {
-                                        const addOn = addOns.find(a => a.id === id);
-                                        return sum + (addOn?.price || 0);
-                                      }, 0))).toFixed(2)}
+                                      $
+                                      {(
+                                        selectserv.price +
+                                        selectedAddOnIds.reduce((sum, id) => {
+                                          const addOn = addOns.find(
+                                            (a) => a.id === id
+                                          );
+                                          return sum + (addOn?.price || 0);
+                                        }, 0)
+                                      ).toFixed(2)}
                                     </span>
                                     <span className="text-xs text-red-600 font-semibold bg-red-50 px-2 py-0.5 rounded">
-                                      {Math.round(HOLIDAY_SALE_DISCOUNT * 100)}% OFF
+                                      {Math.round(HOLIDAY_SALE_DISCOUNT * 100)}%
+                                      OFF
                                     </span>
                                   </div>
                                   <p className="text-xl font-bold text-red-600">

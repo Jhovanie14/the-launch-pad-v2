@@ -497,7 +497,7 @@ function ConfirmationContent() {
                 🎄 HOLIDAY SALE
               </div>
               <p className="text-sm text-red-700 font-semibold">
-                15% OFF Applied! Save ${(calculateOriginalTotal() - calculateTotal()).toFixed(2)}
+                10% OFF Applied! Save ${(calculateOriginalTotal() - calculateTotal()).toFixed(2)}
               </p>
             </div>
           )}

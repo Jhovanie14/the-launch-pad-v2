@@ -67,7 +67,7 @@ function ConfirmationContent() {
   // HOLIDAY SALE: START - Remove all code between START and END when sale ends
   // ============================================
   const HOLIDAY_SALE_ACTIVE = true; // Set to false when sale ends
-  const HOLIDAY_SALE_DISCOUNT = 0.35; // 35% off
+  const HOLIDAY_SALE_DISCOUNT = 0.10; // 10% off
   // ============================================
   // HOLIDAY SALE: END
   // ============================================
@@ -559,7 +559,7 @@ function ConfirmationContent() {
                   🎄 HOLIDAY SALE
                 </div>
                 <p className="text-sm text-red-700 font-semibold">
-                  35% OFF Applied! Save $
+                  10% OFF Applied! Save $
                   {(calculateOriginalTotal() - calculateTotal()).toFixed(2)}
                 </p>
               </div>
