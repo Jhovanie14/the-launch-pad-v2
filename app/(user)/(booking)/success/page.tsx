@@ -33,8 +33,8 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
         ? session.payment_intent
         : session.payment_intent?.id;
 
-    console.log("Booking Meta:", bookingMeta);
-    console.log("Payment Intent ID:", paymentIntentId);
+    // console.log("Booking Meta:", bookingMeta);
+    // console.log("Payment Intent ID:", paymentIntentId);
 
     // 🟩 Fetch booking from Supabase using payment_intent_id
     const { data: booking, error: bookingError } = await supabase
@@ -103,7 +103,7 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
     const { data: booking } = await supabase
       .from("bookings")
       .select(
-        "id, service_package_name, service_package_price, appointment_date, payment_method"
+        "id, service_package_name, service_package_price, appointment_date, payment_method, total_price"
       )
       .eq("id", params.booking_id)
       .single();
@@ -128,7 +128,7 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
         ? "Cash"
         : booking.payment_method === "card"
           ? "Card"
-          : "Unknown";
+          : "Subscription";
 
     const type: "checkout" | "subscription" =
       booking.payment_method === "card" ? "checkout" : "checkout";
@@ -145,15 +145,22 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
       items.reduce((sum, i) => sum + i.price * i.quantity, 0) +
       (hasAddOns ? addOns.reduce((sum, a) => sum + a.price, 0) : 0);
 
+    const discountedTotal = booking.total_price ?? subtotal;
+    const discountAmount = subtotal - discountedTotal;
+    const discountPercent =
+      discountAmount > 0 ? Math.round((discountAmount / subtotal) * 100) : 0;
+
     orderData = {
-      type,
+      type: hasAddOns ? "checkout" : "subscription",
       date: new Date(booking.appointment_date).toLocaleDateString(), // ✅ FIXED date
       orderNumber: booking.id,
       paymentMethod,
       items,
       subtotal,
       tax: 0,
-      total: subtotal,
+      total: booking.total_price ?? subtotal,
+      discountAmount,
+      discountPercent,
     };
   }
 

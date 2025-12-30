@@ -61,11 +61,10 @@ export function useBookingForm(onSuccess: () => void, subscriber?: any) {
   // -----------------------------
   // 🔹 Filter Services by Body Type
   // -----------------------------
-  const filteredServices = vehicleInfo.body_type
-    ? services.filter(
-        (s) => s.category?.toLowerCase() === vehicleInfo.body_type.toLowerCase()
-      )
-    : [];
+  const bodyType = (vehicleInfo as any).body_type;
+  const filteredServices = bodyType
+    ? services.filter((s) => s.category?.toLowerCase() === bodyType.toLowerCase())
+    : services; // Show all services when no body type is provided
 
   // -----------------------------
   // 🔹 Handle Submit

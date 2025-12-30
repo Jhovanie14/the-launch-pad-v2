@@ -128,7 +128,9 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
         ? "Cash"
         : "Card"
       : "Subscription";
-
+      
+    const type: "checkout" | "subscription" =
+      booking.payment_method === "card" ? "checkout" : "checkout";
     // 🔸 Only show add-ons if user actually paid for them
     const items = [
       {

@@ -8,7 +8,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check, Gem, X } from "lucide-react";
+import { Check, Crown, Gem, X } from "lucide-react";
 import { Separator } from "./ui/separator";
 
 export default function PricingCard({
@@ -64,7 +64,7 @@ export default function PricingCard({
   }
 
   // Popular plans
-  const popularPlans = ["Suvs", "Mini Vans"];
+  const popularPlans = "Deluxe Wash";
   const isPopular = popularPlans.includes(plan.name);
 
   // Calculate pricing with discount for yearly
@@ -83,7 +83,7 @@ export default function PricingCard({
   // PROMO CODE DISCOUNT (COMMENT OUT WHEN PROMO ENDS)
   // ============================================
   // Discount for promo code: 20% for self-service, 35% for subscriptions
-  const promoDiscountPercent = isSelfServicePlan ? 0.20 : 0.35; // 20% off for self-service, 35% off for subscriptions
+  const promoDiscountPercent = isSelfServicePlan ? 0.2 : 0.35; // 20% off for self-service, 35% off for subscriptions
   const originalPriceWithPromo = currentPrice;
   const discountedPriceWithPromo = currentPrice * (1 - promoDiscountPercent);
   // ============================================
@@ -140,7 +140,7 @@ export default function PricingCard({
                 className="w-full h-32 object-cover"
               />
             ) : (
-              <Gem className="w-full h-32 text-white stroke-1" />
+              <Crown className="w-full h-32 text-white stroke-1" />
             )}
           </div>
           <CardTitle className="text-center text-white text-lg font-semibold">

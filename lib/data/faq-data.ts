@@ -82,7 +82,7 @@ export const faqData = [
     category: "Pricing & Memberships",
     question: "Do you offer membership or subscription plans?",
     answer:
-      "Yes! We offer monthly unlimited wash memberships starting at $49.99/month for sedan's premium wash, $89.99/month for Suv's premium wash, and $149.99/month for our small trucks premium package. Members also receive priority service and exclusive discounts.",
+      "Yes! We offer two monthly unlimited wash memberships: Basic — $39.99/month (Exterior Only, Unlimited, Any vehicle) and Deluxe — $59.99/month (Inside & Outside, Unlimited, Any vehicle). No contracts • Cancel anytime • No vehicle upcharges.",
   },
   {
     id: "payment-1",

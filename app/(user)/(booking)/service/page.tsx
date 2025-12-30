@@ -5,6 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { createClient } from "@/utils/supabase/client";
 import {
   ArrowLeft,
@@ -41,6 +48,22 @@ type AddOns = {
   created_at: string | null;
 };
 
+const BODY_TYPES = [
+  "Sedan",
+  "Hatchback",
+  "Coupe",
+  "Convertible",
+  "Wagon",
+  "SUV",
+  "Compact SUV",
+  "Crossover",
+  "Minivan",
+  "Van",
+  "Pickup Truck",
+  "Cargo Van",
+  "Other",
+];
+
 function ServiceSelectionPage() {
   const supabase = createClient();
   const router = useRouter();
@@ -73,21 +96,21 @@ function ServiceSelectionPage() {
 
   const selectserv = services.find((s) => s.id === selectedService);
 
-  const bodyType = (vehicleSpecs.body_type || "").toLowerCase();
+  // const bodyType = (vehicleSpecs.body_type || "").toLowerCase();
 
   // ============================================
   // HOLIDAY SALE: START - Remove all code between START and END when sale ends
   // ============================================
   const HOLIDAY_SALE_ACTIVE = true; // Set to false when sale ends
-  const HOLIDAY_SALE_DISCOUNT = 0.10; // 15% off
+  const HOLIDAY_SALE_DISCOUNT = 0.1; // 15% off
   // ============================================
   // HOLIDAY SALE: END
   // ============================================
 
   // Filter services by category matching body type
-  const filteredServices = services.filter((s) =>
-    bodyType ? s.category?.toLowerCase() === bodyType : true
-  );
+  // const filteredServices = services.filter((s) =>
+  //   bodyType ? s.category?.toLowerCase() === bodyType : true
+  // );
 
   const handlePackageSelect = (serviceId: string) => {
     setSelectedService(serviceId);
@@ -281,7 +304,7 @@ function ServiceSelectionPage() {
                   Access subscription plans for regular savings.
                 </li>
                 <li className="flex items-start">
-                  <Check className="w-4 h-4 text-green-600 mr-2 flex-shrink-0" />
+                  <Check className="w-4 h-4 text-green-600 mr-2 shrink-0" />
                   <div>
                     Get <span className="font-semibold">10% OFF </span>
                     on your first booking with promo code{" "}
@@ -339,7 +362,7 @@ function ServiceSelectionPage() {
                 </CardTitle>
                 <p className="text-sm text-gray-500">
                   {vehicleSpecs.year
-                    ? `${vehicleSpecs.year} ${vehicleSpecs.make} ${vehicleSpecs.model} (${vehicleSpecs.color}) - ${bodyType}`
+                    ? `${vehicleSpecs.year} ${vehicleSpecs.make} ${vehicleSpecs.model} (${vehicleSpecs.color}) - ${vehicleSpecs.body_type}`
                     : "No vehicle information added yet"}
                 </p>
               </div>
@@ -357,7 +380,7 @@ function ServiceSelectionPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-[800px_1fr] gap-8">
           <div className="space-y-6">
-            {filteredServices.length === 0 && (
+            {services.length === 0 && (
               <div className="text-center text-gray-500 py-10">
                 No services found for your vehicle type.
               </div>
@@ -365,7 +388,7 @@ function ServiceSelectionPage() {
             {/* ============================================
                 HOLIDAY SALE: START - Remove discount display code when sale ends
                 ============================================ */}
-            {filteredServices.map((service) => {
+            {services.map((service) => {
               const originalPrice = service.price;
               const salePrice = HOLIDAY_SALE_ACTIVE
                 ? originalPrice * (1 - HOLIDAY_SALE_DISCOUNT)
@@ -665,7 +688,7 @@ function ServiceSelectionPage() {
               <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                 <div className="bg-white rounded-3xl w-full max-w-md shadow-xl overflow-hidden border border-gray-100">
                   {/* Header */}
-                  <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-blue-900 to-blue-800 text-white">
+                  <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 bg-linear-to-r from-blue-900 to-blue-800 text-white">
                     <div>
                       <h2 className="text-lg font-semibold">
                         {vehicleSpecs.year
@@ -708,7 +731,7 @@ function ServiceSelectionPage() {
                               year: e.target.value,
                             }))
                           }
-                          className="rounded-xl focus-visible:ring-blue-900"
+                          className="rounded focus-visible:ring-blue-900"
                         />
                       </div>
 
@@ -730,7 +753,7 @@ function ServiceSelectionPage() {
                               make: e.target.value,
                             }))
                           }
-                          className="rounded-xl focus-visible:ring-blue-900"
+                          className="rounded focus-visible:ring-blue-900"
                         />
                       </div>
 
@@ -752,7 +775,7 @@ function ServiceSelectionPage() {
                               model: e.target.value,
                             }))
                           }
-                          className="rounded-xl focus-visible:ring-blue-900"
+                          className="rounded focus-visible:ring-blue-900"
                         />
                       </div>
 
@@ -774,7 +797,7 @@ function ServiceSelectionPage() {
                               color: e.target.value,
                             }))
                           }
-                          className="rounded-xl focus-visible:ring-blue-900"
+                          className="rounded focus-visible:ring-blue-900"
                         />
                       </div>
                       <div className="space-y-2">
@@ -784,20 +807,32 @@ function ServiceSelectionPage() {
                         >
                           Body Type
                         </Label>
-                        <Input
-                          id="color"
-                          type="text"
-                          placeholder="e.g. Black"
-                          value={bodyType || ""}
-                          readOnly
-                          className="rounded-xl bg-gray-200"
-                        />
+                        <Select
+                          value={vehicleSpecs.body_type}
+                          onValueChange={(val) =>
+                            setVehicleSpecs((prev: any) => ({
+                              ...prev,
+                              body_type: val,
+                            }))
+                          }
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select Body Type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {BODY_TYPES.map((type) => (
+                              <SelectItem key={type} value={type}>
+                                {type}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
 
                     {/* Info Box */}
                     <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-900 flex items-start space-x-3">
-                      <Car className="w-5 h-5 mt-0.5 text-blue-700 flex-shrink-0" />
+                      <Car className="w-5 h-5 mt-0.5 text-blue-700 shrink-0" />
                       <p>
                         These details ensure accurate service duration and
                         pricing for your specific vehicle type.

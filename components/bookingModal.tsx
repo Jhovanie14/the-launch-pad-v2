@@ -20,6 +20,22 @@ import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import LoadingDots from "./loading";
 
+const BODY_TYPES = [
+  "Sedan",
+  "Hatchback",
+  "Coupe",
+  "Convertible",
+  "Wagon",
+  "SUV",
+  "Compact SUV",
+  "Crossover",
+  "Minivan",
+  "Van",
+  "Pickup Truck",
+  "Cargo Van",
+  "Other",
+];
+
 export default function BookingModal() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
@@ -275,14 +291,11 @@ export default function BookingModal() {
                     <SelectValue placeholder="Select Body Type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Sedan">Sedan</SelectItem>
-                    <SelectItem value="Compact Suv">Compact Suv</SelectItem>
-                    <SelectItem value="Suvs">SUV</SelectItem>
-                    <SelectItem value="Small Truck">Small truck</SelectItem>
-                    <SelectItem value="Big Truck">Big Truck</SelectItem>
-                    <SelectItem value="Van">Van</SelectItem>
-                    {/* <SelectItem value="Coupe">Coupe</SelectItem> */}
-                    {/* <SelectItem value="Convertible">Convertible</SelectItem> */}
+                    {BODY_TYPES.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 {errors.body_type && (

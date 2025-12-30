@@ -87,9 +87,6 @@ export async function createBooking(car: CarData, subscriberId?: string) {
   //   });
   // }
 
-
-
-  
   // Insert booking
   const { data: booking, error } = await supabase
     .from("bookings")
@@ -159,15 +156,28 @@ export async function createBooking(car: CarData, subscriberId?: string) {
   if (!booking.customer_email) {
     return null;
   } else if (booking.customer_email) {
-    await sendBookingConfirmationEmail({
-      to: booking.customer_email,
-      customerName: booking.customer_name ?? "Customer",
-      bookingId: booking.id,
-      servicePackage: booking.service_package_name ?? "Service",
-      appointmentDate: booking.appointment_date,
-      appointmentTime: booking.appointment_time,
-      addOns: addOnNames,
-    });
+    // await sendBookingConfirmationEmail({
+    //   to: booking.customer_email,
+    //   customerName: booking.customer_name ?? "Customer",
+    //   bookingId: booking.id,
+    //   servicePackage: booking.service_package_name ?? "Service",
+    //   appointmentDate: booking.appointment_date,
+    //   appointmentTime: booking.appointment_time,
+    //   addOns: addOnNames,
+    // });
+    try {
+      await sendBookingConfirmationEmail({
+        to: booking.customer_email ?? car.customerEmail,
+        customerName: booking.customer_name ?? "Customer",
+        bookingId: booking.id,
+        servicePackage: booking.service_package_name ?? "Service",
+        appointmentDate: booking.appointment_date,
+        appointmentTime: booking.appointment_time,
+        addOns: addOnNames,
+      });
+    } catch (emailErr) {
+      console.error("Error sending booking confirmation email:", emailErr);
+    }
   }
 
   return booking;

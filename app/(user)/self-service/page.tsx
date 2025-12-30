@@ -64,7 +64,7 @@ export default function SelfServicePage() {
               Self-Service Bay Membership
             </h1>
             <p className="text-xl md:text-2xl text-slate-600 mb-4">
-              DIY car wash starting at $8 per visit, or get unlimited daily
+              DIY car wash — pay-per-use $8 per visit, or get unlimited daily
               access for just $19.99/month
             </p>
             <p className="text-lg text-blue-900 font-bold mb-8">

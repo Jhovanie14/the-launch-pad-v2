@@ -54,7 +54,7 @@ export default function ServicePage() {
   // ============================================
   // HOLIDAY SALE: 35% discount (UI only - backend prices will be updated separately)
   const HOLIDAY_SALE_ACTIVE = true; // Set to false when sale ends
-  const HOLIDAY_SALE_DISCOUNT = 0.10; // 15% off
+  const HOLIDAY_SALE_DISCOUNT = 0.1; // 15% off
   // ============================================
   // HOLIDAY SALE: END
   // ============================================
@@ -195,7 +195,7 @@ export default function ServicePage() {
         "Vacuum stations available",
       ],
       time: "8-10 mins",
-      price: "Starting average at $8",
+      price: "$8 per visit",
       color: "bg-blue-50 border-blue-200",
     },
     {
@@ -209,8 +209,8 @@ export default function ServicePage() {
         "Window cleaning",
         "Dashboard shine",
       ],
-      time: "25-45 mins",
-      price: "Starting at $25",
+      time: "15-45 mins",
+      price: "$30",
       color: "bg-purple-50 border-purple-200",
     },
     {
@@ -225,7 +225,7 @@ export default function ServicePage() {
         "Exclusive member benefits",
       ],
       time: "Flexible visits",
-      price: "Starting at $69.99/month",
+      price: "Basic $39.99/mo",
       color: "bg-green-50 border-green-200",
     },
   ];
@@ -422,9 +422,7 @@ export default function ServicePage() {
                     <motion.div
                       key={service.id}
                       onClick={() => {
-                        router.push(
-                          `/service?service=${service.id}&body_type=${service.category}`
-                        );
+                        router.push(`/service?service=${service.id}`);
                       }}
                       variants={cardVariants}
                       whileHover="hover"

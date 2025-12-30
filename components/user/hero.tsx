@@ -11,24 +11,6 @@ import {
   Check,
 } from "lucide-react";
 
-// const features = [
-//   {
-//     icon: Droplets,
-//     title: "Self-Service Bays",
-//     description: "Premium DIY car wash experience",
-//   },
-//   {
-//     icon: Sparkles,
-//     title: "Express Detail",
-//     description: "Professional detailing services",
-//   },
-//   {
-//     icon: Calendar,
-//     title: "Premium Care",
-//     description: "Expert auto care solutions",
-//   },
-// ];
-
 const customerTypes = [
   {
     icon: Droplets,
@@ -40,7 +22,7 @@ const customerTypes = [
       "Spot-free rinse & foam brush",
       "Vacuum stations available",
     ],
-    price: "Starting average at $8",
+    price: "$8 per visit",
     cta: "See Self-Service Options",
     ctaLink: "/self-service",
     variant: "outline" as const,
@@ -55,9 +37,9 @@ const customerTypes = [
       "Professional hand wash & wax",
       "Interior vacuum & detail",
       "Tire shine & windows",
-      "45-90 minute service",
+      "15-45 minute service",
     ],
-    price: "Starting at $25",
+    price: "$30",
     cta: "Book Express Detail",
     ctaLink: "/services",
     variant: "default" as const,
@@ -75,7 +57,7 @@ const customerTypes = [
       "15% off all detailing",
       "Exclusive member benefits",
     ],
-    price: "Starting at $69.99/mo",
+    price: "Basic $39.99/mo",
     cta: "Learn More",
     ctaLink: "/pricing",
     variant: "outline" as const,

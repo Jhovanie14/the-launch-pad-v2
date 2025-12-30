@@ -68,7 +68,7 @@ export default function PricingPage() {
 
       {/* TAB: Carwash Subscriptions */}
       {activeTab === "subscriptions" && (
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-8 px-4 md:px-0">
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-10 px-4 md:px-0">
           {plans.map((plan) => (
             <PricingCard
               key={plan.id}

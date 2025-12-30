@@ -6,6 +6,7 @@ export const pricingService = {
     const { data, error } = await supabase
       .from("subscription_plans")
       .select("*")
+      .eq("is_active", true)
       .order("created_at", { ascending: true });
 
     if (error) throw error;
