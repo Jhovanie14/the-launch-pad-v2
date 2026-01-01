@@ -569,7 +569,7 @@ export default function BookingsView() {
                   }`}
                 >
                   <CardContent className="px-4">
-                    <div className="flex-shrink-0 mb-1">
+                    <div className="shrink-0 mb-1">
                       {booking.status === "completed" && (
                         <CheckCircle className="h-6 w-6 text-green-500" />
                       )}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -16,6 +17,21 @@ import { toast } from "sonner";
 
 export default function AdminUsersPage() {
   const supabase = createClient();
+
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const initialTab = searchParams?.get("tab") ?? "users";
+  const [tab, setTab] = useState(initialTab);
+
+  useEffect(() => {
+    setTab(searchParams?.get("tab") ?? "users");
+  }, [searchParams]);
+
+  const handleTabChange = (value: string) => {
+    setTab(value);
+    // update URL without refreshing the page
+    router.replace(`/admin/users?tab=${value}`);
+  };
 
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [expressSubs, setExpressSubs] = useState<any[]>([]);
@@ -136,7 +152,7 @@ export default function AdminUsersPage() {
             onChange={(e) => setSearch(e.target.value.toLowerCase())}
           />
 
-          <Tabs defaultValue="users">
+          <Tabs value={tab} onValueChange={handleTabChange}>
             <TabsList>
               <TabsTrigger value="users">Users</TabsTrigger>
               <TabsTrigger value="express">Express Subscribers</TabsTrigger>

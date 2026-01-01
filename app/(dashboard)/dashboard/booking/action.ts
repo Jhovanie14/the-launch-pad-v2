@@ -152,6 +152,11 @@ export async function createBooking(car: CarData, subscriberId?: string) {
     }
   }
 
+  console.log("EMAIL DEBUG:", {
+    bookingEmail: booking.customer_email,
+    carEmail: car.customerEmail,
+  });
+
   // Send confirmation email
   if (!booking.customer_email) {
     return null;
@@ -167,7 +172,7 @@ export async function createBooking(car: CarData, subscriberId?: string) {
     // });
     try {
       await sendBookingConfirmationEmail({
-        to: booking.customer_email ?? car.customerEmail,
+        to: booking.customer_email || car.customerEmail,
         customerName: booking.customer_name ?? "Customer",
         bookingId: booking.id,
         servicePackage: booking.service_package_name ?? "Service",

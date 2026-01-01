@@ -11,8 +11,11 @@ import {
   getRevenueData,
   getCategoryData,
   getBookingStats,
+  getAddOnRevenue,
 } from "@/app/admin/dashboard/action";
 import { DashboardCharts } from "@/components/admin/dashboard-charts";
+import RevenueCard from "@/components/admin/revenue-card";
+import Link from "next/link";
 
 // Helper function to calculate time ago
 function getTimeAgo(dateString: string): string {
@@ -35,13 +38,14 @@ function getTimeAgo(dateString: string): string {
 
 export default async function AdminDashboardPage() {
   // Fetch all data in parallel
-  const [profile, stats, revenueData, categoryData, bookingStats] =
+  const [profile, stats, revenueData, categoryData, bookingStats, addOnRevenue] =
     await Promise.all([
       getUserProfile(),
       getDashboardStats(),
       getRevenueData(),
       getCategoryData(),
       getBookingStats(),
+      getAddOnRevenue(),
     ]);
   // console.log(categoryData);
   const chartData = {
@@ -88,89 +92,76 @@ export default async function AdminDashboardPage() {
 
             {/* Stats Grid */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Total Users
-                  </CardTitle>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    className="h-4 w-4 text-muted-foreground"
-                  >
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                    <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-                  </svg>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats.totalUsers}</div>
-                  <p className="text-xs text-muted-foreground">
-                    +{stats.userGrowthByDay.reduce((a, b) => a + b, 0)} this
-                    week
-                  </p>
-                </CardContent>
-              </Card>
+              <Link href="/admin/users?tab=users" className="block">
+                <Card className="cursor-pointer hover:shadow">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Total Users
+                    </CardTitle>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      className="h-4 w-4 text-muted-foreground"
+                    >
+                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                      <circle cx="9" cy="7" r="4" />
+                      <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats.totalUsers}</div>
+                    <p className="text-xs text-muted-foreground">
+                      +{stats.userGrowthByDay.reduce((a, b) => a + b, 0)} this
+                      week
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link> 
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Active Subscription
-                  </CardTitle>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    className="h-4 w-4 text-muted-foreground"
-                  >
-                    <path d="M9 11l3 3L22 4" />
-                    <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
-                  </svg>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {stats.activeSubscriptions}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    +5 from last week
-                  </p>
-                </CardContent>
-              </Card>
+              <Link href="/admin/users?tab=express" className="block">
+                <Card className="cursor-pointer hover:shadow">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Active Subscription
+                    </CardTitle>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      className="h-4 w-4 text-muted-foreground"
+                    >
+                      <path d="M9 11l3 3L22 4" />
+                      <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+                    </svg>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {stats.activeSubscriptions}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      +5 from last week
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link> 
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Revenue</CardTitle>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    className="h-4 w-4 text-muted-foreground"
-                  >
-                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                  </svg>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    ${revenueData.revenue[6]?.toLocaleString() || "0"}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {revenueGrowthPercentage}% from last month
-                  </p>
-                </CardContent>
-              </Card>
+              <div>
+                <RevenueCard
+                  revenueData={revenueData}
+                  addOnRevenue={addOnRevenue}
+                  bookingStats={bookingStats}
+                  activeSubscriptions={stats.activeSubscriptions}
+                />
+              </div>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
