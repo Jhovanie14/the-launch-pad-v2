@@ -90,10 +90,10 @@ export default function SubscriptionCart({
   const PROMO_CONFIG = {
     enabled: true, // Set to false when promo ends
     // You need TWO separate Stripe coupons:
-    stripeCouponId_SelfService: "JQn39l5R", // 20% off coupon for self-service
-    stripeCouponId_Subscription: "TplBWVaw", // 35% off coupon for subscriptions
-    isSelfServicePercent: 20, // Self-service discount percentage
-    isSubscriptionPercent: 35, // Subscription discount percentage
+    // stripeCouponId_SelfService: "JQn39l5R", // 20% off coupon for self-service
+    stripeCouponId_Subscription: "pbau1m2G", // 10% off coupon for subscriptions
+    // isSelfServicePercent: 0, // Self-service discount percentage
+    isSubscriptionPercent: 10, // Subscription discount percentage
   };
   // ============================================
 
@@ -162,9 +162,7 @@ export default function SubscriptionCart({
 
   // Get the appropriate discount percentage for display
   const promoDiscountPercent = PROMO_CONFIG.enabled
-    ? isSelfServicePlan
-      ? PROMO_CONFIG.isSelfServicePercent
-      : PROMO_CONFIG.isSubscriptionPercent
+    ? PROMO_CONFIG.isSubscriptionPercent
     : 0;
 
   // Calculate base price (WITHOUT discount - Stripe will handle it)
@@ -252,9 +250,7 @@ export default function SubscriptionCart({
 
       // Select the appropriate coupon based on plan type
       const couponId = PROMO_CONFIG.enabled
-        ? isSelfServicePlan
-          ? PROMO_CONFIG.stripeCouponId_SelfService
-          : PROMO_CONFIG.stripeCouponId_Subscription
+        ? PROMO_CONFIG.stripeCouponId_Subscription
         : undefined;
 
       const res = await fetch("/api/create-checkout-session", {

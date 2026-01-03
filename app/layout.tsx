@@ -106,7 +106,7 @@ export default function RootLayout({
             gtag('config', 'G-N38CCY2FTY');
           `}
         </Script>
-        <SnowEffect />
+        {/* <SnowEffect /> */}
         <AuthContextProvider>
           <BookingProvider>
             {children}

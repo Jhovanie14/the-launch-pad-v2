@@ -137,17 +137,13 @@ function DateTimeSelectionPage() {
 
   const getChicagoTime = () => {
     const now = new Date();
-    const chicagoStr = now.toLocaleString("en-US", {
-      timeZone: "America/Chicago",
-    });
+    const chicagoStr = now.toLocaleString("en-US");
     return new Date(chicagoStr);
   };
 
   const isToday = (date: Date) => {
     const chicagoNow = getChicagoTime();
-    const chicagoDate = new Date(
-      date.toLocaleString("en-US", { timeZone: "America/Chicago" })
-    );
+    const chicagoDate = new Date(date.toLocaleString("en-US"));
 
     return (
       chicagoNow.getFullYear() === chicagoDate.getFullYear() &&
@@ -164,7 +160,7 @@ function DateTimeSelectionPage() {
 
     // Extract year, month, and day from selected date in Chicago
     const chicagoDate = new Date(
-      selectedDate.toLocaleString("en-US", { timeZone: "America/Chicago" })
+      selectedDate.toLocaleString("en-US")
     );
 
     // Build the time slot in the same Chicago timezone context

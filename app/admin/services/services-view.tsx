@@ -284,7 +284,11 @@ export default function ServicesView() {
   });
 
   if (loading) {
-    return <LoadingDots />;
+    return (
+      <div className="w-full flex items-center justify-center h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-900" />
+      </div>
+    );
   }
 
   return (

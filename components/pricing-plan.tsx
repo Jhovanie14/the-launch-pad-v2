@@ -83,7 +83,7 @@ export default function PricingCard({
   // PROMO CODE DISCOUNT (COMMENT OUT WHEN PROMO ENDS)
   // ============================================
   // Discount for promo code: 20% for self-service, 35% for subscriptions
-  const promoDiscountPercent = isSelfServicePlan ? 0.2 : 0.35; // 20% off for self-service, 35% off for subscriptions
+  const promoDiscountPercent = isSelfServicePlan ? 0 : 0.10; // 20% off for self-service, 35% off for subscriptions
   const originalPriceWithPromo = currentPrice;
   const discountedPriceWithPromo = currentPrice * (1 - promoDiscountPercent);
   // ============================================

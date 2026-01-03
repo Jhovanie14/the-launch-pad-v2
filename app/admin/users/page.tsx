@@ -249,8 +249,10 @@ export default function AdminUsersPage() {
                               </div>
                             )}
                         </div>
-                        <Badge className="bg-blue-500 text-white">
-                          Express Active
+                        <Badge className="bg-green-500 text-white">
+                          {sub.status === "active"
+                            ? "Express Active"
+                            : "Inactive"}
                         </Badge>
                       </div>
 
@@ -386,7 +388,7 @@ export default function AdminUsersPage() {
                         <Button
                           size="sm"
                           onClick={() => handleSelfServiceCheckIn(selfSub)}
-                          className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+                          className="flex items-center gap-2 "
                         >
                           <Car size={16} />
                           Check In

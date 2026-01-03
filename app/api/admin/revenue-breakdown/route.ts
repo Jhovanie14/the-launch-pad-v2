@@ -19,7 +19,7 @@ export async function GET() {
         profiles:user_id ( full_name, email )
       `
       )
-      .in("status", ["confirmed", "completed"])
+      .eq("status", "completed")
       .order("created_at", { ascending: false })
       .limit(50);
 

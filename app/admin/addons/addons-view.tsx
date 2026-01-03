@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Edit, Plus } from "lucide-react";
+import { Edit, Loader2, Plus } from "lucide-react";
 import {
   Dialog,
   DialogClose,
@@ -181,7 +181,11 @@ export default function AddOnsView() {
   });
 
   if (loading) {
-    return <LoadingDots />;
+    return (
+      <div className="w-full flex items-center justify-center h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-900" />
+      </div>
+    );
   }
 
   return (

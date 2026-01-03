@@ -126,7 +126,7 @@ export default function SelfServiceCart() {
   return (
     <div className="space-y-8">
       {/* Promo Banner */}
-      <motion.div
+      {/* <motion.div
         className="bg-linear-to-r from-red-500 to-red-600 text-white text-center py-4 px-4 rounded-lg shadow-lg"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -137,123 +137,123 @@ export default function SelfServiceCart() {
             Get 20% Off When You Apply Promo Code LAUNCHPAD20 at Checkout
           </span>
         </div>
-      </motion.div>
+      </motion.div> */}
       <div className="grid lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
-      <Card>
-        <CardHeader>
-          <CardTitle>Vehicle Information</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Year</Label>
-              <Input
-                type="number"
-                value={vehicleInfo.year ?? ""}
-                onChange={(e) =>
-                  setVehicleInfo({ ...vehicleInfo, year: e.target.value })
-                }
-                placeholder="e.g. 2022"
-              />
-              {errors.year && (
-                <p className="text-red-600 text-sm">{errors.year}</p>
-              )}
-            </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Vehicle Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Year</Label>
+                <Input
+                  type="number"
+                  value={vehicleInfo.year ?? ""}
+                  onChange={(e) =>
+                    setVehicleInfo({ ...vehicleInfo, year: e.target.value })
+                  }
+                  placeholder="e.g. 2022"
+                />
+                {errors.year && (
+                  <p className="text-red-600 text-sm">{errors.year}</p>
+                )}
+              </div>
 
-            <div className="space-y-2">
-              <Label>Make</Label>
-              <Input
-                value={vehicleInfo.make}
-                onChange={(e) =>
-                  setVehicleInfo({ ...vehicleInfo, make: e.target.value })
-                }
-                placeholder="e.g. Toyota"
-              />
-              {errors.make && (
-                <p className="text-red-600 text-sm">{errors.make}</p>
-              )}
-            </div>
+              <div className="space-y-2">
+                <Label>Make</Label>
+                <Input
+                  value={vehicleInfo.make}
+                  onChange={(e) =>
+                    setVehicleInfo({ ...vehicleInfo, make: e.target.value })
+                  }
+                  placeholder="e.g. Toyota"
+                />
+                {errors.make && (
+                  <p className="text-red-600 text-sm">{errors.make}</p>
+                )}
+              </div>
 
-            <div className="space-y-2">
-              <Label>Model</Label>
-              <Input
-                value={vehicleInfo.model}
-                onChange={(e) =>
-                  setVehicleInfo({ ...vehicleInfo, model: e.target.value })
-                }
-                placeholder="e.g. Camry"
-              />
-              {errors.model && (
-                <p className="text-red-600 text-sm">{errors.model}</p>
-              )}
-            </div>
+              <div className="space-y-2">
+                <Label>Model</Label>
+                <Input
+                  value={vehicleInfo.model}
+                  onChange={(e) =>
+                    setVehicleInfo({ ...vehicleInfo, model: e.target.value })
+                  }
+                  placeholder="e.g. Camry"
+                />
+                {errors.model && (
+                  <p className="text-red-600 text-sm">{errors.model}</p>
+                )}
+              </div>
 
-            <div className="space-y-2">
-              <Label>Color</Label>
-              <Input
-                value={vehicleInfo.color}
-                onChange={(e) =>
-                  setVehicleInfo({ ...vehicleInfo, color: e.target.value })
-                }
-                placeholder="e.g. White"
-              />
-              {errors.color && (
-                <p className="text-red-600 text-sm">{errors.color}</p>
-              )}
-            </div>
+              <div className="space-y-2">
+                <Label>Color</Label>
+                <Input
+                  value={vehicleInfo.color}
+                  onChange={(e) =>
+                    setVehicleInfo({ ...vehicleInfo, color: e.target.value })
+                  }
+                  placeholder="e.g. White"
+                />
+                {errors.color && (
+                  <p className="text-red-600 text-sm">{errors.color}</p>
+                )}
+              </div>
 
-            <div className="space-y-2">
-              <Label>Body Type</Label>
-              <Select
-                value={vehicleInfo.body_type}
-                onValueChange={handleBodyTypeChange}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Body Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {bodyTypeOptions.map((option) => (
-                    <SelectItem key={option} value={option}>
-                      {option}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.body_type && (
-                <p className="text-red-600 text-sm">{errors.body_type}</p>
-              )}
-            </div>
+              <div className="space-y-2">
+                <Label>Body Type</Label>
+                <Select
+                  value={vehicleInfo.body_type}
+                  onValueChange={handleBodyTypeChange}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select Body Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {bodyTypeOptions.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.body_type && (
+                  <p className="text-red-600 text-sm">{errors.body_type}</p>
+                )}
+              </div>
 
-            <div className="space-y-2">
-              <Label>License Plate</Label>
-              <Input
-                placeholder="e.g., ABC123 (optional)"
-                value={vehicleInfo.licensePlate}
-                onChange={(e) =>
-                  setVehicleInfo({
-                    ...vehicleInfo,
-                    licensePlate: e.target.value,
-                  })
-                }
-              />
-              {errors.licensePlate && (
-                <p className="text-red-600 text-sm">{errors.licensePlate}</p>
-              )}
+              <div className="space-y-2">
+                <Label>License Plate</Label>
+                <Input
+                  placeholder="e.g., ABC123 (optional)"
+                  value={vehicleInfo.licensePlate}
+                  onChange={(e) =>
+                    setVehicleInfo({
+                      ...vehicleInfo,
+                      licensePlate: e.target.value,
+                    })
+                  }
+                />
+                {errors.licensePlate && (
+                  <p className="text-red-600 text-sm">{errors.licensePlate}</p>
+                )}
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{plan?.name}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-muted-foreground">{plan?.description}</p>
-          {/* ============================================
+        <Card>
+          <CardHeader>
+            <CardTitle>{plan?.name}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground">{plan?.description}</p>
+            {/* ============================================
               PROMO CODE DISCOUNT DISPLAY (COMMENT OUT WHEN PROMO ENDS)
               ============================================ */}
-          <div className="space-y-2">
+            {/* <div className="space-y-2">
             <div className="flex items-center gap-2">
               <span className="text-lg text-slate-500 line-through">
                 ${plan?.monthly_price}/month
@@ -265,60 +265,66 @@ export default function SelfServiceCart() {
             <p className="text-2xl font-semibold">
               ${((plan?.monthly_price || 0) * 0.8).toFixed(2)}/month
             </p>
-          </div>
-          {/* ============================================
+          </div> */}
+
+            {/* ============================================
               ORIGINAL PRICE DISPLAY (UNCOMMENT WHEN PROMO ENDS)
               ============================================ */}
-          {/* <p className="text-2xl font-semibold">${plan?.monthly_price}/month</p> */}
-          {/* ============================================ */}
-
-          {plan?.features?.length && (
-            <div className="space-y-2">
-              <h3 className="font-semibold text-lg">What's Included</h3>
-              {plan.features.map((feature: string, i: number) => (
-                <div key={i} className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-green-500" />
-                  <p>{feature}</p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className="flex items-start gap-3 mt-4">
-            <Checkbox
-              checked={isAuthorized}
-              onCheckedChange={(checked) => {
-                setIsAuthorized(!!checked);
-                if (checked) setError("");
-              }}
-            />
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              I authorize automatic monthly charges for this membership until
-              cancelled.
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(true)}
-                className="text-blue-700 underline ml-1"
-              >
-                Terms of Service
-              </button>
+            <p className="text-2xl font-semibold">
+              ${plan?.monthly_price}/month
             </p>
-          </div>
+            {/* ============================================ */}
 
-          {error && <p className="text-red-600 text-sm">{error}</p>}
+            {plan?.features?.length && (
+              <div className="space-y-2">
+                <h3 className="font-semibold text-lg">What's Included</h3>
+                {plan.features.map((feature: string, i: number) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-green-500" />
+                    <p>{feature}</p>
+                  </div>
+                ))}
+              </div>
+            )}
 
-          <Button
-            className="w-full bg-blue-900 hover:bg-blue-700"
-            onClick={handleCheckoutClick}
-            disabled={loadingCheckout || !plan}
-          >
-            {loadingCheckout ? "Redirecting..." : "Subscribe"}
-            {loadingCheckout && <LoadingDots />}
-          </Button>
-        </CardContent>
-      </Card>
+            <div className="flex items-start gap-3 mt-4">
+              <Checkbox
+                checked={isAuthorized}
+                onCheckedChange={(checked) => {
+                  setIsAuthorized(!!checked);
+                  if (checked) setError("");
+                }}
+              />
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                I authorize automatic monthly charges for this membership until
+                cancelled.
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(true)}
+                  className="text-blue-700 underline ml-1"
+                >
+                  Terms of Service
+                </button>
+              </p>
+            </div>
 
-      <TermsModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+            {error && <p className="text-red-600 text-sm">{error}</p>}
+
+            <Button
+              className="w-full bg-blue-900 hover:bg-blue-700"
+              onClick={handleCheckoutClick}
+              disabled={loadingCheckout || !plan}
+            >
+              {loadingCheckout ? "Redirecting..." : "Subscribe"}
+              {loadingCheckout && <LoadingDots />}
+            </Button>
+          </CardContent>
+        </Card>
+
+        <TermsModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+        />
       </div>
     </div>
   );

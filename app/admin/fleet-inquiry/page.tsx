@@ -143,7 +143,7 @@ export default function FleetInquiriesAdmin() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
+      <div className="w-full flex items-center justify-center h-screen">
         <Loader2 className="w-8 h-8 animate-spin text-blue-900" />
       </div>
     );
@@ -409,7 +409,7 @@ export default function FleetInquiriesAdmin() {
                   Message
                 </label>
                 <div className="mt-1 p-4 bg-gray-50 rounded-md">
-                  <p className="text-sm whitespace-pre-wrap break-words">
+                  <p className="text-sm whitespace-pre-wrap wrap-break-word">
                     {selectedInquiry.message}
                   </p>
                 </div>

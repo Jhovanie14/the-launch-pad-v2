@@ -138,9 +138,7 @@ function DateTimeSelectionPage() {
   // Converts a Date to a Date object in America/Chicago local time
   const getChicagoTime = () => {
     const now = new Date();
-    const chicagoStr = now.toLocaleString("en-US", {
-      timeZone: "America/Chicago",
-    });
+    const chicagoStr = now.toLocaleString("en-US");
     return new Date(chicagoStr);
   };
 

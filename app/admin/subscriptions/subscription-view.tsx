@@ -32,6 +32,7 @@ import {
   Check,
   Trash2,
   Upload,
+  Loader2,
 } from "lucide-react";
 import type { SubscriptionPlans } from "@/types";
 import LoadingDots from "@/components/loading";
@@ -226,11 +227,15 @@ export default function SubscriptionView() {
   };
 
   if (loading) {
-    return <LoadingDots />;
+    return (
+      <div className="w-full flex items-center justify-center h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-900" />
+      </div>
+    );
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="flex-1 overflow-y-auto bg-linear-to-br from-background via-background to-muted/20">
       <div className="max-w-7xl mx-auto p-8">
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -252,7 +257,7 @@ export default function SubscriptionView() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-          <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow bg-gradient-to-br from-card to-card/50">
+          <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow bg-linear-to-br from-card to-card/50">
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
@@ -273,7 +278,7 @@ export default function SubscriptionView() {
             </CardContent>
           </Card>
 
-          <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow bg-gradient-to-br from-card to-card/50">
+          <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow bg-linear-to-br from-card to-card/50">
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
@@ -294,7 +299,7 @@ export default function SubscriptionView() {
             </CardContent>
           </Card>
 
-          <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow bg-gradient-to-br from-card to-card/50">
+          <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow bg-linear-to-br from-card to-card/50">
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
@@ -315,7 +320,7 @@ export default function SubscriptionView() {
             </CardContent>
           </Card>
 
-          <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow bg-gradient-to-br from-card to-card/50">
+          <Card className="border-border/50 shadow-sm hover:shadow-md transition-shadow bg-linear-to-br from-card to-card/50">
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
@@ -361,9 +366,9 @@ export default function SubscriptionView() {
             {subscriptionPlans.map((plan, index) => (
               <Card
                 key={plan.id}
-                className="relative border-border/50 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-gradient-to-br from-card to-card/80 overflow-hidden group"
+                className="relative border-border/50 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-linear-to-br from-card to-card/80 overflow-hidden group"
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
                 <div className="absolute top-4 right-4 z-10 ">
                   <Button

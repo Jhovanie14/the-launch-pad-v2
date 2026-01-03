@@ -66,6 +66,11 @@ export async function POST(req: Request) {
 async function handleCheckoutSessionCompleted(event: Stripe.Event) {
   const session = event.data.object as Stripe.Checkout.Session;
 
+  if (session.metadata?.payment_type === "walkin_booking") {
+    await processWalkInBooking(session);
+    return;
+  }
+
   // Handle booking checkout
   if (session.mode === "payment") {
     await processBooking(session);
@@ -78,6 +83,197 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event) {
     } else {
       await processSubscription(session);
     }
+  }
+}
+
+async function processWalkInBooking(session: Stripe.Checkout.Session) {
+  try {
+    const {
+      subscriber_id,
+      subscription_vehicle_id,
+      service_package_id,
+      add_on_ids,
+      appointment_date,
+      appointment_time,
+      notes,
+    } = session.metadata!;
+
+    console.log("Processing walk-in booking:", {
+      subscriber_id,
+      subscription_vehicle_id,
+      service_package_id,
+      add_on_ids,
+      payment_intent: session.payment_intent,
+    });
+
+    // Check for existing booking by payment_intent
+    const { data: existingBooking } = await supabase
+      .from("bookings")
+      .select("id")
+      .eq("payment_intent_id", session.payment_intent)
+      .maybeSingle();
+
+    if (existingBooking) {
+      console.log(
+        "Duplicate prevented: Walk-in booking already exists for payment_intent:",
+        session.payment_intent
+      );
+      return;
+    }
+
+    // Get subscriber details
+    const { data: subscriber } = await supabase
+      .from("user_subscription")
+      .select("user_id, profiles(*)")
+      .eq("id", subscriber_id)
+      .single();
+
+    if (!subscriber) {
+      console.error("Subscriber not found:", subscriber_id);
+      return;
+    }
+
+    // Get vehicle details
+    const { data: vehicleData } = await supabase
+      .from("subscription_vehicles")
+      .select("vehicle_id, vehicles(*)")
+      .eq("id", subscription_vehicle_id)
+      .single();
+
+    if (!vehicleData) {
+      console.error("Vehicle not found:", subscription_vehicle_id);
+      return;
+    }
+
+    // Get service package details (if any)
+    let servicePackage = null;
+    let servicePackageName = null;
+    let servicePackagePrice = 0;
+    let serviceDuration = 0;
+
+    if (service_package_id) {
+      const { data } = await supabase
+        .from("service_packages")
+        .select("*")
+        .eq("id", service_package_id)
+        .single();
+
+      if (data) {
+        servicePackage = data;
+        servicePackageName = data.name;
+        servicePackagePrice = Number(data.price || 0);
+        serviceDuration = Number(data.duration || 0);
+      }
+    }
+
+    // Get add-ons details
+    const addOnIds = JSON.parse(add_on_ids || "[]");
+    let addOnsData: any[] = [];
+    let addOnsTotalPrice = 0;
+    let addOnsTotalDuration = 0;
+
+    if (addOnIds.length > 0) {
+      const { data } = await supabase
+        .from("add_ons")
+        .select("*")
+        .in("id", addOnIds);
+
+      addOnsData = data || [];
+      addOnsTotalPrice = addOnsData.reduce(
+        (sum, a) => sum + Number(a.price || 0),
+        0
+      );
+      addOnsTotalDuration = addOnsData.reduce(
+        (sum, a) => sum + Number(a.duration || 0),
+        0
+      );
+    }
+
+    const profile = Array.isArray(subscriber.profiles)
+      ? subscriber.profiles[0]
+      : subscriber.profiles;
+
+    // Calculate totals (subscribers only pay for add-ons)
+    const totalPrice = addOnsTotalPrice;
+    const totalDuration = serviceDuration + addOnsTotalDuration;
+
+    // Create the booking
+    const { data: booking, error: bookingError } = await supabase
+      .from("bookings")
+      .insert({
+        user_id: subscriber.user_id,
+        vehicle_id: vehicleData.vehicle_id,
+        service_package_id: service_package_id || null,
+        service_package_name: servicePackageName,
+        service_package_price: servicePackagePrice,
+        appointment_date: new Date(appointment_date),
+        appointment_time,
+        status: "pending",
+        total_price: totalPrice,
+        total_duration: totalDuration,
+        notes: notes || null,
+        payment_method: "card",
+        payment_intent_id: session.payment_intent as string,
+        customer_name: profile?.full_name || null,
+        customer_email: profile?.email || null,
+        customer_phone: profile?.phone || null,
+        created_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (bookingError) {
+      // If error is unique constraint violation, ignore
+      if (bookingError.code === "23505") {
+        console.log(
+          "Duplicate walk-in booking insert prevented by DB constraint."
+        );
+        return;
+      }
+      console.error("Walk-in booking creation error:", bookingError);
+      return;
+    }
+
+    console.log("Walk-in booking created:", booking.id);
+
+    // Link add-ons to booking
+    if (addOnIds.length > 0 && booking?.id) {
+      const bookingAddOns = addOnIds.map((addOnId: string) => ({
+        booking_id: booking.id,
+        add_on_id: addOnId,
+      }));
+
+      const { error: addOnError } = await supabase
+        .from("booking_add_ons")
+        .insert(bookingAddOns);
+
+      if (addOnError) {
+        console.error("Failed to insert walk-in booking add-ons:", addOnError);
+      } else {
+        console.log("Walk-in booking add-ons inserted:", bookingAddOns.length);
+      }
+    }
+
+    // Send confirmation email
+    if (booking?.customer_email) {
+      const addOnNames = addOnsData.map((a) => a.name);
+
+      await sendBookingConfirmationEmail({
+        to: booking.customer_email,
+        customerName: booking.customer_name ?? "Customer",
+        bookingId: booking.id,
+        servicePackage: servicePackageName ?? "Service",
+        appointmentDate: booking.appointment_date,
+        appointmentTime: booking.appointment_time,
+        addOns: addOnNames,
+      });
+
+      console.log("Walk-in booking confirmation email sent");
+    }
+
+    console.log("✅ Walk-in booking processed successfully:", booking.id);
+  } catch (error) {
+    console.error("Error processing walk-in booking:", error);
   }
 }
 
@@ -214,9 +410,10 @@ async function processSubscription(session: Stripe.Checkout.Session) {
   const appUserId = session.metadata?.app_user_id || null;
   const planId = session.metadata?.plan_id || null;
   const billingCycleRaw = session.metadata?.billing_cycle || null;
-  
+
   // Support both legacy single vehicle_id and new vehicle_ids format
-  const vehicleIdsStr = session.metadata?.vehicle_ids || session.metadata?.vehicle_id || null;
+  const vehicleIdsStr =
+    session.metadata?.vehicle_ids || session.metadata?.vehicle_id || null;
   const vehicleIds = vehicleIdsStr
     ? vehicleIdsStr.split(",").filter((id: string) => id.trim())
     : [];
@@ -235,7 +432,7 @@ async function processSubscription(session: Stripe.Checkout.Session) {
 
   const sub = subscription as any;
   const subscriptionItems = sub?.items?.data || [];
-  
+
   // Use the first subscription item for period dates (all items share the same period)
   const subscriptionItem = subscriptionItems[0];
 

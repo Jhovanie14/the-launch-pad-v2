@@ -26,6 +26,7 @@ import {
   CreditCard,
   Banknote,
   Repeat,
+  Loader2,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
@@ -72,10 +73,7 @@ export default function BookingsView() {
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(
     // format(new Date(), "yyyy-MM-dd")
-    format(
-      new Date().toLocaleDateString("en-US", { timeZone: "America/Chicago" }),
-      "yyyy-MM-dd"
-    )
+    format(new Date().toLocaleDateString("en-US"), "yyyy-MM-dd")
   );
 
   const [averageTime, setAverageTime] = useState("");
@@ -470,7 +468,11 @@ export default function BookingsView() {
 
   // Loading state
   if (loading && bookings.length === 0) {
-    return <LoadingDots />;
+    return (
+      <div className="w-full flex items-center justify-center h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-900" />
+      </div>
+    );
   }
 
   return (
@@ -539,7 +541,7 @@ export default function BookingsView() {
       <Card className="bg-card border-border mb-10">
         <CardHeader>
           <CardTitle className="text-card-foreground">
-            Bookings for {new Date(selectedDate).toLocaleDateString()}
+            Bookings for {new Date(selectedDate).toLocaleDateString("en-US")}
             {/* {new Date(selectedDate).toLocaleDateString("en-US", {
               timeZone: "America/Chicago",
             })} */}

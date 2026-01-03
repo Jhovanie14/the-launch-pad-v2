@@ -69,7 +69,10 @@ export function useBookingForm(onSuccess: () => void, subscriber?: any) {
   // -----------------------------
   // 🔹 Handle Submit
   // -----------------------------
-  const handleSubmit = async ({ skipVehicleValidation = false } = {}) => {
+  const handleSubmit = async ({ 
+    skipVehicleValidation = false,
+    paymentMethod = "cash" 
+  } = {}) => {
     // ✅ Validate vehicle form
     if (!skipVehicleValidation && !validate()) {
       toast.error("Please fix vehicle form errors before submitting.");
@@ -129,9 +132,10 @@ export function useBookingForm(onSuccess: () => void, subscriber?: any) {
               .filter(Boolean),
             addOnsId: selectedAddOns,
             appointmentDate: new Date(form.appointmentDate),
-            servicePackage: selectedServiceObj || null, // 🔹 Allow null service
+            servicePackage: selectedServiceObj || null,
             totalPrice,
             totalDuration,
+            payment_method: paymentMethod, // 🔹 NEW: Pass payment method
           },
           subscriber?.user_id
         ),

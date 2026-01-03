@@ -54,7 +54,7 @@ export default function ServicePage() {
   // ============================================
   // HOLIDAY SALE: 35% discount (UI only - backend prices will be updated separately)
   const HOLIDAY_SALE_ACTIVE = true; // Set to false when sale ends
-  const HOLIDAY_SALE_DISCOUNT = 0.1; // 15% off
+  const HOLIDAY_SALE_DISCOUNT = 0.05; // 5% off
   // ============================================
   // HOLIDAY SALE: END
   // ============================================
@@ -245,7 +245,7 @@ export default function ServicePage() {
           >
             <div className="flex items-center justify-center gap-2">
               <span className="text-2xl md:text-3xl font-bold">
-                🎄 HOLIDAY SALE - 10% OFF ALL SERVICES!
+                5% OFF ALL SERVICES!
               </span>
             </div>
           </motion.div>
@@ -342,7 +342,7 @@ export default function ServicePage() {
           </div>
 
           {/* CTA Button */}
-          <motion.div className="text-center" variants={itemVariants}>
+          {/* <motion.div className="text-center" variants={itemVariants}>
             <Button
               size="lg"
               className="text-lg px-8 py-6 bg-primary hover:bg-primary/90"
@@ -354,7 +354,7 @@ export default function ServicePage() {
             <p className="text-sm text-muted-foreground mt-3">
               Fast, easy scheduling • Instant confirmation
             </p>
-          </motion.div>
+          </motion.div> */}
         </motion.div>
 
         {/* Divider */}
@@ -447,7 +447,7 @@ export default function ServicePage() {
                             }}
                           >
                             <div className="bg-linear-to-r from-red-500 to-red-600 text-white px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
-                              10% OFF
+                              5% OFF
                             </div>
                           </motion.div>
                         )}
@@ -576,7 +576,7 @@ export default function ServicePage() {
                                   %
                                 </span>
                               </div>
-                              <p className="text-4xl font-bold text-red-600">
+                              <p className="text-4xl font-bold ">
                                 ${salePrice.toFixed(2)}
                               </p>
                             </div>
@@ -603,7 +603,7 @@ export default function ServicePage() {
                           }}
                         >
                           <div className="bg-linear-to-r from-yellow-400 to-yellow-400 text-slate-900 px-3 py-1 text-xs font-bold rounded-lg transform shadow-lg">
-                            Promo runs until January 1, 2026
+                            Promo runs until February 1st
                           </div>
                         </motion.div>
                       </Card>

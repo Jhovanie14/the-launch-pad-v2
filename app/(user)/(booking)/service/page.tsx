@@ -102,7 +102,7 @@ function ServiceSelectionPage() {
   // HOLIDAY SALE: START - Remove all code between START and END when sale ends
   // ============================================
   const HOLIDAY_SALE_ACTIVE = true; // Set to false when sale ends
-  const HOLIDAY_SALE_DISCOUNT = 0.1; // 15% off
+  const HOLIDAY_SALE_DISCOUNT = 0.05; // 5% off
   // ============================================
   // HOLIDAY SALE: END
   // ============================================
@@ -265,9 +265,7 @@ function ServiceSelectionPage() {
       {HOLIDAY_SALE_ACTIVE && (
         <div className="bg-linear-to-r from-red-500 to-red-600 text-white text-center py-3 px-4">
           <div className="max-w-7xl mx-auto flex items-center justify-center gap-2">
-            <span className="text-lg font-bold">
-              🎄 HOLIDAY SALE - 10% OFF ALL SERVICES!
-            </span>
+            <span className="text-lg font-bold">5% OFF ALL SERVICES!</span>
           </div>
         </div>
       )}
@@ -408,7 +406,7 @@ function ServiceSelectionPage() {
                   {HOLIDAY_SALE_ACTIVE && (
                     <div className="absolute -top-3 -right-3 z-10">
                       <div className="bg-linear-to-r from-red-500 to-red-600 text-white px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
-                        10% OFF
+                        5% OFF
                       </div>
                     </div>
                   )}
@@ -808,7 +806,7 @@ function ServiceSelectionPage() {
                           Body Type
                         </Label>
                         <Select
-                          value={vehicleSpecs.body_type}
+                          value={vehicleSpecs.body_type || ""}
                           onValueChange={(val) =>
                             setVehicleSpecs((prev: any) => ({
                               ...prev,
