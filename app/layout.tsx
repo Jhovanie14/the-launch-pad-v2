@@ -8,7 +8,7 @@ import "./globals.css";
 import BookingProvider from "@/context/bookingContext";
 import BookingModal from "@/components/bookingModal";
 import { AuthContextProvider } from "@/context/auth-context";
-import SnowEffect from "@/components/snow-effect";
+import ServiceWorkerRegister from "@/components/service-worker-register";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -109,6 +109,7 @@ export default function RootLayout({
         {/* <SnowEffect /> */}
         <AuthContextProvider>
           <BookingProvider>
+            <ServiceWorkerRegister />
             {children}
             <BookingModal />
           </BookingProvider>

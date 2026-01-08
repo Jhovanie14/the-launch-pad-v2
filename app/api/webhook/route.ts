@@ -71,6 +71,11 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event) {
     return;
   }
 
+  if (session.metadata?.payment_type === "new_booking") {
+    await processNewBooking(session);
+    return;
+  }
+
   // Handle booking checkout
   if (session.mode === "payment") {
     await processBooking(session);
@@ -83,6 +88,205 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event) {
     } else {
       await processSubscription(session);
     }
+  }
+}
+
+async function processNewBooking(session: Stripe.Checkout.Session) {
+  try {
+    const {
+      customer_name,
+      customer_email,
+      customer_phone,
+      vehicle_make,
+      vehicle_model,
+      vehicle_year,
+      vehicle_color,
+      vehicle_body_type,
+      vehicle_license_plate,
+      service_package_id,
+      add_on_ids,
+      appointment_date,
+      appointment_time,
+    } = session.metadata!;
+
+    console.log("Processing new booking:", {
+      customer_name,
+      customer_email,
+      service_package_id,
+      add_on_ids,
+      payment_intent: session.payment_intent,
+    });
+
+    // Check for existing booking by payment_intent
+    const { data: existingBooking } = await supabase
+      .from("bookings")
+      .select("id")
+      .eq("payment_intent_id", session.payment_intent)
+      .maybeSingle();
+
+    if (existingBooking) {
+      console.log(
+        "Duplicate prevented: Booking already exists for payment_intent:",
+        session.payment_intent
+      );
+      return;
+    }
+
+    // 1. Get or create user profile (for non-registered users, user_id will be null)
+    // First check if user exists by email
+    const { data: existingProfile } = await supabase
+      .from("profiles")
+      .select("id, user_id")
+      .eq("email", customer_email)
+      .maybeSingle();
+
+    let userId = existingProfile?.user_id || null;
+
+    // If no existing profile, we'll create booking without user_id (guest booking)
+    console.log("User lookup result:", { existingProfile, userId });
+
+    // 2. Create vehicle (can exist without user_id for guest bookings)
+    const colors = vehicle_color.split(",").map((c: string) => c.trim());
+
+    const { data: vehicle, error: vehicleError } = await supabase
+      .from("vehicles")
+      .insert({
+        user_id: userId, // Will be null for guest bookings
+        make: vehicle_make,
+        model: vehicle_model,
+        year: vehicle_year,
+        colors,
+        body_type: vehicle_body_type,
+        // license_plate: vehicle_license_plate || null,
+      })
+      .select()
+      .single();
+
+    if (vehicleError) {
+      console.error("Vehicle creation error:", vehicleError);
+      return;
+    }
+
+    // 3. Get service package details
+    let servicePackageName = null;
+    let servicePackagePrice = 0;
+    let serviceDuration = 0;
+
+    if (service_package_id) {
+      const { data: servicePackage } = await supabase
+        .from("service_packages")
+        .select("*")
+        .eq("id", service_package_id)
+        .single();
+
+      if (servicePackage) {
+        servicePackageName = servicePackage.name;
+        servicePackagePrice = Number(servicePackage.price || 0);
+        serviceDuration = Number(servicePackage.duration || 0);
+      }
+    }
+
+    // 4. Get add-ons details
+    const addOnIds = JSON.parse(add_on_ids || "[]");
+    let addOnsData: any[] = [];
+    let addOnsTotalPrice = 0;
+    let addOnsTotalDuration = 0;
+
+    if (addOnIds.length > 0) {
+      const { data } = await supabase
+        .from("add_ons")
+        .select("*")
+        .in("id", addOnIds);
+
+      addOnsData = data || [];
+      addOnsTotalPrice = addOnsData.reduce(
+        (sum, a) => sum + Number(a.price || 0),
+        0
+      );
+      addOnsTotalDuration = addOnsData.reduce(
+        (sum, a) => sum + Number(a.duration || 0),
+        0
+      );
+    }
+
+    // Calculate totals
+    const totalPrice = servicePackagePrice + addOnsTotalPrice;
+    const totalDuration = serviceDuration + addOnsTotalDuration;
+
+    // 5. Create the booking
+    const { data: booking, error: bookingError } = await supabase
+      .from("bookings")
+      .insert({
+        user_id: userId, // Will be null for guest bookings
+        vehicle_id: vehicle.id,
+        service_package_id: service_package_id || null,
+        service_package_name: servicePackageName,
+        service_package_price: servicePackagePrice,
+        appointment_date: new Date(appointment_date),
+        appointment_time,
+        status: "pending",
+        total_price: totalPrice,
+        total_duration: totalDuration,
+        payment_method: "card",
+        payment_intent_id: session.payment_intent as string,
+        customer_name,
+        customer_email,
+        customer_phone: customer_phone || null,
+        created_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (bookingError) {
+      // If error is unique constraint violation, ignore
+      if (bookingError.code === "23505") {
+        console.log("Duplicate booking insert prevented by DB constraint.");
+        return;
+      }
+      console.error("Booking creation error:", bookingError);
+      return;
+    }
+
+    console.log("New booking created:", booking.id);
+
+    // 6. Link add-ons to booking
+    if (addOnIds.length > 0 && booking?.id) {
+      const bookingAddOns = addOnIds.map((addOnId: string) => ({
+        booking_id: booking.id,
+        add_on_id: addOnId,
+      }));
+
+      const { error: addOnError } = await supabase
+        .from("booking_add_ons")
+        .insert(bookingAddOns);
+
+      if (addOnError) {
+        console.error("Failed to insert booking add-ons:", addOnError);
+      } else {
+        console.log("Booking add-ons inserted:", bookingAddOns.length);
+      }
+    }
+
+    // 7. Send confirmation email
+    if (booking?.customer_email) {
+      const addOnNames = addOnsData.map((a) => a.name);
+
+      await sendBookingConfirmationEmail({
+        to: booking.customer_email,
+        customerName: booking.customer_name ?? "Customer",
+        bookingId: booking.id,
+        servicePackage: servicePackageName ?? "Service",
+        appointmentDate: booking.appointment_date,
+        appointmentTime: booking.appointment_time,
+        addOns: addOnNames,
+      });
+
+      console.log("Booking confirmation email sent");
+    }
+
+    console.log("✅ New booking processed successfully:", booking.id);
+  } catch (error) {
+    console.error("Error processing new booking:", error);
   }
 }
 

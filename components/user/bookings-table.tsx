@@ -15,6 +15,16 @@ import {
   SelectTrigger,
 } from "@/components/ui/select";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Banknote,
   Calendar,
   Car,
@@ -26,6 +36,8 @@ import {
   Repeat,
 } from "lucide-react";
 import { format } from "date-fns";
+import { useState } from "react";
+import { toast } from "sonner";
 import type { Booking } from "@/types";
 
 interface UserSubscription {
@@ -37,13 +49,22 @@ interface BookingsTableProps {
   bookings: Booking[];
   user_subscription: UserSubscription[];
   onUpdateStatus: (bookingId: string, status: Booking["status"]) => void;
+  onDeleteBooking: (bookingId: string) => void;
+  userProfile: {
+    user_type?: string;
+  } | null;
 }
 
 export function BookingsTable({
   bookings,
   onUpdateStatus,
+  onDeleteBooking,
   user_subscription,
+  userProfile,
 }: BookingsTableProps) {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [bookingToDelete, setBookingToDelete] = useState<string | null>(null);
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "confirmed":
@@ -202,9 +223,16 @@ export function BookingsTable({
               <TableCell>
                 <Select
                   value={booking.status}
-                  onValueChange={(value) =>
-                    onUpdateStatus(booking.id, value as Booking["status"])
-                  }
+                  onValueChange={(value) => {
+                    if (value === "__delete__") {
+                      setBookingToDelete(booking.id);
+                      setDeleteDialogOpen(true);
+                      return;
+                    }
+
+                    // Normal status update
+                    onUpdateStatus(booking.id, value as Booking["status"]);
+                  }}
                 >
                   <SelectTrigger className="w-10 h-10 p-0 border-none bg-transparent hover:bg-gray-100 rounded-full flex items-center justify-center [&>svg:last-child]:hidden">
                     <Ellipsis className="w-6 h-6 text-black" />
@@ -214,6 +242,17 @@ export function BookingsTable({
                     <SelectItem value="confirmed">Confirmed</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
                     <SelectItem value="cancelled">Cancel</SelectItem>
+                    {userProfile?.user_type === "super_admin" && (
+                      <>
+                        <div className="my-1 h-px bg-border" />
+                        <SelectItem
+                          value="__delete__"
+                          className="text-red-600 focus:text-red-600"
+                        >
+                          Delete Booking
+                        </SelectItem>
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
               </TableCell>
@@ -221,6 +260,32 @@ export function BookingsTable({
           ))}
         </TableBody>
       </Table>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Booking</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this booking? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (bookingToDelete) {
+                  onDeleteBooking(bookingToDelete);
+                  toast.success("Booking deleted successfully");
+                  setBookingToDelete(null);
+                }
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

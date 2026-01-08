@@ -3,7 +3,8 @@ import { createClient } from "@/utils/supabase/client";
 import { useEffect } from "react";
 
 export function useBookingRealtime(
-  setBookings: React.Dispatch<React.SetStateAction<Booking[]>>
+  setBookings: React.Dispatch<React.SetStateAction<Booking[]>>,
+  onNewBooking?: (booking: Booking) => void // Add callback for new bookings
 ) {
   const supabase = createClient();
 
@@ -72,6 +73,13 @@ export function useBookingRealtime(
             setBookings((current) => {
               switch (payload.eventType) {
                 case "INSERT":
+                  // Trigger notification for new bookings
+                  if (
+                    onNewBooking &&
+                    !current.find((b) => b.id === fullBooking.id)
+                  ) {
+                    onNewBooking(fullBooking);
+                  }
                   return current.find((b) => b.id === fullBooking.id)
                     ? current
                     : [fullBooking, ...current];
@@ -96,5 +104,5 @@ export function useBookingRealtime(
     return () => {
       channels.forEach((channel) => supabase.removeChannel(channel));
     };
-  }, [supabase, setBookings]);
+  }, [supabase, setBookings, onNewBooking]);
 }

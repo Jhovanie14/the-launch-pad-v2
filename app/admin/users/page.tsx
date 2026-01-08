@@ -7,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { User, Mail, Car, Calendar } from "lucide-react";
+import { User, Mail, Car, Calendar, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import WalkInBookingModal from "@/components/walkin-booking-modal";
 import WalkInProgressModal from "@/components/walkin-progress-modal";
@@ -85,6 +85,12 @@ export default function AdminUsersPage() {
             body_type,
             colors
           )
+        ),
+        subscription_plan:subscription_plans (
+          name,
+          description,
+          monthly_price,
+          yearly_price
         )
       `
       )
@@ -204,6 +210,11 @@ export default function AdminUsersPage() {
                       {/* Subscriber Info */}
                       <div className="flex flex-col-reverse md:flex-row md:justify-between items-start">
                         <div className="space-y-2">
+                          <div className="flex  items-center gap-2 font-medium text-blue-900 text-lg">
+                            <Crown size={16} />
+                            Subscription Plan: {sub.subscription_plan.name}
+                          </div>
+
                           <p className="font-semibold text-lg flex items-center gap-2">
                             <User size={18} />
                             {sub.profiles.full_name}

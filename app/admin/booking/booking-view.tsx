@@ -1,5 +1,8 @@
 "use client";
 
+import { usePushNotifications } from "@/hooks/usePushNotification";
+import { BookingNotification } from "@/components/booking-notification";
+
 import {
   Card,
   CardContent,
@@ -27,8 +30,9 @@ import {
   Banknote,
   Repeat,
   Loader2,
+  Edit,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Select,
   SelectContent,
@@ -43,16 +47,25 @@ import { ExportModal } from "@/components/export-modal";
 import NewBookingModal from "@/components/admin/newbooking-modal";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import LoadingDots from "@/components/loading";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/context/auth-context";
+
+// At the top of your BookingsView component, add this import:
+import EditBookingModal from "@/components/edit-booking-modal";
+import { toast } from "sonner";
 
 type UserSubscription = {
   user_id: string;
   status: string;
 };
 
-type DateFilterType = "all" | "today" | "week" | "month";
+type DateFilterType =
+  | "all"
+  | "today"
+  | "week"
+  | "month"
+  | "lastWeek"
+  | "lastMonth";
 type StatusFilterType = "all" | Booking["status"];
 
 export default function BookingsView() {
@@ -72,11 +85,58 @@ export default function BookingsView() {
   const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(
-    // format(new Date(), "yyyy-MM-dd")
-    format(new Date().toLocaleDateString("en-US"), "yyyy-MM-dd")
+    format(new Date(), "yyyy-MM-dd")
   );
 
-  const [averageTime, setAverageTime] = useState("");
+  // const [averageTime, setAverageTime] = useState("");
+
+  // Add these state variables after your existing state declarations:
+  const [showEditBooking, setShowEditBooking] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [newBookingNotification, setNewBookingNotification] =
+    useState<Booking | null>(null);
+
+  // Add this handler function:
+  const handleEditClick = (booking: Booking) => {
+    setSelectedBooking(booking);
+    setShowEditBooking(true);
+  };
+
+  const handleEditSuccess = () => {
+    // Refresh bookings after successful edit
+    const fetchBookings = async () => {
+      setLoading(true);
+
+      const { data, error } = await supabase
+        .from("bookings")
+        .select(
+          `*,
+          vehicle:vehicles ( year, make, model, body_type, colors ),
+           booking_add_ons (
+          add_ons (
+            id, name, price, duration, is_active
+          )
+        )`
+        )
+        .order("appointment_time", { ascending: false });
+
+      setLoading(false);
+
+      if (error) {
+        console.error("Error fetching bookings:", error);
+        return;
+      }
+      const formatted = (data || []).map((b) => ({
+        ...b,
+        add_ons:
+          b.booking_add_ons?.map((ba: any) => ba.add_ons).filter(Boolean) || [],
+      }));
+
+      setBookings(formatted);
+    };
+
+    fetchBookings();
+  };
 
   // Fetch all bookings
   useEffect(() => {
@@ -94,6 +154,7 @@ export default function BookingsView() {
           )
         )`
         )
+        .order("appointment_date", { ascending: false })
         .order("appointment_time", { ascending: false });
 
       setLoading(false);
@@ -155,13 +216,100 @@ export default function BookingsView() {
     fetchTotalRevenue();
   }, []);
 
+  const { isSupported, requestPermission, showNotification, isGranted } =
+    usePushNotifications();
+
+  // Request permission on mount (optional - you can also add a button)
+  useEffect(() => {
+    if (isSupported && !isGranted) {
+      // Optionally auto-request, or show a button to request
+      // requestPermission();
+    }
+  }, [isSupported, isGranted]);
+
+  const handleNewBooking = useCallback((booking: Booking) => {
+    // const customerName = booking.customer_name || "Guest";
+    // const serviceName = booking.service_package_name || "Service";
+    // const appointmentTime = booking.appointment_time || "";
+
+    // Show custom notification instead of browser notification
+    setNewBookingNotification(booking);
+
+    // Also show toast notification
+    // toast.success(`New booking from ${customerName}`, {
+    //   description: `${serviceName} - ${appointmentTime}`,
+    //   duration: 5000,
+    // });
+
+    // Auto-dismiss after 10 seconds (optional)
+    setTimeout(() => {
+      setNewBookingNotification(null);
+    }, 120000);
+  }, []);
+  useBookingRealtime(setBookings, handleNewBooking);
+  // const handleNewBooking = useCallback(
+  //   (booking: Booking) => {
+  //     const customerName = booking.customer_name || "Guest";
+  //     const serviceName = booking.service_package_name || "Service";
+  //     const appointmentTime = booking.appointment_time || "";
+
+  //     showNotification("New Booking Received", {
+  //       body: `${customerName} - ${serviceName} at ${appointmentTime}`,
+  //       tag: `booking-${booking.id}`,
+  //       requireInteraction: true, // Add this - keeps notification visible
+  //       vibrate: [200, 100, 200], // Add vibration pattern
+  //       data: {
+  //         url: `/admin/booking`,
+  //         bookingId: booking.id,
+  //       },
+  //     } as NotificationOptions & { vibrate?: number[] }); // Type assertion to include vibrate
+
+  //     // Also show toast notification
+  //     toast.success(`New booking from ${customerName}`, {
+  //       description: `${serviceName} - ${appointmentTime}`,
+  //       duration: 30000, // Make toast stay longer too (5 seconds)
+  //     });
+  //   },
+  //   [showNotification]
+  // );
+
   // Realtime updates
-  useBookingRealtime(setBookings);
+
+  useEffect(() => {
+    if (isSupported && !isGranted) {
+      requestPermission(); // Uncomment this line
+    }
+  }, [isSupported, isGranted, requestPermission]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
     setPage(1);
   }, [searchTerm, statusFilter, dateFilter]);
+
+  const deleteBooking = async (bookingId: string) => {
+    try {
+      setLoading(true);
+
+      const { error } = await supabase
+        .from("bookings")
+        .delete()
+        .eq("id", bookingId);
+
+      if (error) {
+        console.error(error);
+        toast.error("Failed to delete booking");
+        return;
+      }
+
+      setBookings((prev) => prev.filter((b) => b.id !== bookingId));
+      toast.success("Booking deleted");
+    } catch (err) {
+      console.error(err);
+      toast.error("Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Update booking status
   const updateBookingStatus = async (
@@ -342,6 +490,18 @@ export default function BookingsView() {
         return bookingDateStart >= todayStart && bookingDateStart <= monthAhead;
       }
 
+      case "lastWeek": {
+        const weekAgo = new Date(todayStart);
+        weekAgo.setDate(todayStart.getDate() - 7);
+        return bookingDateStart >= weekAgo && bookingDateStart < todayStart;
+      }
+
+      case "lastMonth": {
+        const monthAgo = new Date(todayStart);
+        monthAgo.setDate(todayStart.getDate() - 30);
+        return bookingDateStart >= monthAgo && bookingDateStart < todayStart;
+      }
+
       default:
         return true;
     }
@@ -389,12 +549,15 @@ export default function BookingsView() {
   );
 
   const getBookingsForDate = (date: string) => {
-    if (!date) return [];
-    return bookings.filter(
-      (b) =>
-        new Date(b.appointment_date).toLocaleDateString() ===
-        new Date(date).toLocaleDateString()
-    );
+    const target = new Date(date);
+    return bookings.filter((b) => {
+      const bookingDate = new Date(b.appointment_date);
+      return (
+        bookingDate.getFullYear() === target.getFullYear() &&
+        bookingDate.getMonth() === target.getMonth() &&
+        bookingDate.getDate() === target.getDate()
+      );
+    });
   };
 
   const isNewBooking = (appointmentDate: string, appointmentTime: string) => {
@@ -477,6 +640,10 @@ export default function BookingsView() {
 
   return (
     <div className="flex-1 overflow-y-auto p-6">
+      <BookingNotification
+        booking={newBookingNotification}
+        onClose={() => setNewBookingNotification(null)}
+      />
       {/* Stats Cards */}
       <div className="grid md:grid-cols-3 gap-6 mb-8">
         <Card>
@@ -536,15 +703,29 @@ export default function BookingsView() {
             />
           </div>
         </div>
+        {!isGranted && isSupported && (
+          <Button
+            onClick={requestPermission}
+            variant="outline"
+            className="bg-blue-900 hover:bg-blue-800 text-white"
+          >
+            Enable Notifications
+          </Button>
+        )}
+        {isGranted && (
+          <Button
+            onClick={requestPermission}
+            variant="outline"
+            className="bg-blue-900 hover:bg-blue-800 text-white"
+          >
+            Disable Notifications
+          </Button>
+        )}
       </div>
-
       <Card className="bg-card border-border mb-10">
         <CardHeader>
           <CardTitle className="text-card-foreground">
             Bookings for {new Date(selectedDate).toLocaleDateString("en-US")}
-            {/* {new Date(selectedDate).toLocaleDateString("en-US", {
-              timeZone: "America/Chicago",
-            })} */}
           </CardTitle>
           <CardDescription>
             {getBookingsForDate(selectedDate).length} appointments scheduled
@@ -724,16 +905,28 @@ export default function BookingsView() {
                         {/* ACTION BUTTONS */}
                         <div className="flex flex-wrap gap-2 sm:gap-1">
                           {booking.status === "pending" && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="bg-blue-300"
-                              onClick={() =>
-                                updateBookingStatus(booking.id, "confirmed")
-                              }
-                            >
-                              Start
-                            </Button>
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEditClick(booking)}
+                                className="bg-gray-100 hover:bg-gray-200"
+                              >
+                                <Edit className="h-3 w-3 mr-1" />
+                                Edit
+                              </Button>
+
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="bg-blue-300"
+                                onClick={() =>
+                                  updateBookingStatus(booking.id, "confirmed")
+                                }
+                              >
+                                Start
+                              </Button>
+                            </>
                           )}
                           {booking.status === "confirmed" && (
                             <Button
@@ -849,6 +1042,8 @@ export default function BookingsView() {
                 <SelectItem value="today">Today</SelectItem>
                 <SelectItem value="week">Next 7 Days</SelectItem>
                 <SelectItem value="month">Next 30 Days</SelectItem>
+                <SelectItem value="lastWeek">Last 7 Days</SelectItem>
+                <SelectItem value="lastMonth">Last 30 Days</SelectItem>
               </SelectContent>
             </Select>
 
@@ -866,7 +1061,9 @@ export default function BookingsView() {
           <BookingsTable
             bookings={paginatedBookings}
             onUpdateStatus={updateBookingStatus}
+            onDeleteBooking={deleteBooking}
             user_subscription={userSubscribe}
+            userProfile={userProfile}
           />
 
           {/* Pagination */}
@@ -878,12 +1075,17 @@ export default function BookingsView() {
           />
         </CardContent>
       </Card>
-
       {/* Export Modal */}
       <ExportModal
         open={exportModalOpen}
         onOpenChange={setExportModalOpen}
         onExport={handleDownload}
+      />
+      <EditBookingModal
+        open={showEditBooking}
+        onOpenChange={setShowEditBooking}
+        booking={selectedBooking}
+        onSuccess={handleEditSuccess}
       />
     </div>
   );

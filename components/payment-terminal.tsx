@@ -123,7 +123,7 @@ export default function PaymentTerminal({
                 Payment Successful!
               </h2>
               <p className="text-muted-foreground">
-                ₱{amount.toFixed(2)} received
+                ${amount.toFixed(2)} received
               </p>
               <p className="text-sm text-muted-foreground">
                 Closing in {countdown}...
@@ -165,7 +165,7 @@ export default function PaymentTerminal({
                 Amount Due
               </p>
               <div className="text-6xl font-bold text-green-400">
-                ₱{amount.toFixed(2)}
+                ${amount.toFixed(2)}
               </div>
             </div>
 
@@ -178,13 +178,13 @@ export default function PaymentTerminal({
                 <div key={idx} className="flex justify-between text-sm">
                   <span className="text-gray-300">{addon.name}</span>
                   <span className="text-white font-medium">
-                    ₱{addon.price.toFixed(2)}
+                    ${addon.price.toFixed(2)}
                   </span>
                 </div>
               ))}
               <div className="border-t border-gray-700 pt-3 flex justify-between font-bold text-lg">
                 <span>Total</span>
-                <span className="text-green-400">₱{amount.toFixed(2)}</span>
+                <span className="text-green-400">${amount.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -349,7 +349,7 @@ export default function PaymentTerminal({
 
                     {!processing && (
                       <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-full text-sm font-semibold">
-                        ₱{amount.toFixed(2)}
+                        ${amount.toFixed(2)}
                       </div>
                     )}
                   </div>

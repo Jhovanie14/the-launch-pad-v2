@@ -50,15 +50,17 @@ type AddOns = {
 
 const BODY_TYPES = [
   "Sedan",
+  "Compact Suv",
+  "Suvs",
+  "Small Truck",
+  "Big Truck",
+  "Van",
   "Hatchback",
   "Coupe",
   "Convertible",
   "Wagon",
-  "SUV",
-  "Compact SUV",
   "Crossover",
   "Minivan",
-  "Van",
   "Pickup Truck",
   "Cargo Van",
   "Other",
@@ -80,11 +82,22 @@ function ServiceSelectionPage() {
   const [showBanner, setShowBanner] = useState(true);
 
   const selectedServiceParam = searchParams.get("service");
+  
+  // Normalize body_type from URL to match BODY_TYPES array
+  const normalizeBodyType = (bodyType: string | null): string => {
+    if (!bodyType) return "";
+    // Try to find a case-insensitive match in BODY_TYPES
+    const normalized = BODY_TYPES.find(
+      (type) => type.toLowerCase() === bodyType.toLowerCase()
+    );
+    return normalized || bodyType; // Return matched value or original if no match
+  };
+
   const [vehicleSpecs, setVehicleSpecs] = useState<any>({
     year: searchParams.get("year"),
     make: searchParams.get("make"),
     model: searchParams.get("model"),
-    body_type: searchParams.get("body_type"),
+    body_type: normalizeBodyType(searchParams.get("body_type")),
     color: searchParams.get("color"),
   });
   const [selectedService, setSelectedService] = useState<string | null>(

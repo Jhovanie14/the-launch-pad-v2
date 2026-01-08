@@ -41,6 +41,29 @@ export function useBookingForm(onSuccess: () => void, subscriber?: any) {
       prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]
     );
 
+  // 🔹 Reset form to initial state
+  const resetForm = useCallback(() => {
+    setForm({
+      customerName: "",
+      customerEmail: "",
+      customerPhone: "",
+      appointmentDate: "",
+      appointmentTime: "",
+      payment_method: "cash",
+      notes: "",
+    });
+    setSelectedService(null);
+    setSelectedAddOns([]);
+    setVehicleInfo({
+      year: "",
+      make: "",
+      model: "",
+      body_type: "",
+      color: "",
+      licensePlate: "",
+    });
+  }, [setVehicleInfo]);
+
   // -----------------------------
   // 🔹 Fetch Data
   // -----------------------------
@@ -71,7 +94,8 @@ export function useBookingForm(onSuccess: () => void, subscriber?: any) {
   // -----------------------------
   const handleSubmit = async ({ 
     skipVehicleValidation = false,
-    paymentMethod = "cash" 
+    paymentMethod = "cash",
+    discountPercent = 0
   } = {}) => {
     // ✅ Validate vehicle form
     if (!skipVehicleValidation && !validate()) {
@@ -111,9 +135,14 @@ export function useBookingForm(onSuccess: () => void, subscriber?: any) {
       ? Number(selectedServiceObj.duration || 0)
       : 0;
 
-    const totalPrice = subscriber
+    let totalPrice = subscriber
       ? addOnsTotalPrice // subscriber pays only for add-ons
       : servicePrice + addOnsTotalPrice;
+
+    // Apply promo code discount if provided
+    if (discountPercent > 0) {
+      totalPrice = totalPrice - (totalPrice * discountPercent) / 100;
+    }
 
     const totalDuration = serviceDuration + addOnsTotalDuration;
 
@@ -146,6 +175,8 @@ export function useBookingForm(onSuccess: () => void, subscriber?: any) {
         }
       );
 
+      // Reset form after successful booking
+      resetForm();
       onSuccess();
     } catch (err) {
       console.error("❌ Booking creation failed:", err);
@@ -168,6 +199,7 @@ export function useBookingForm(onSuccess: () => void, subscriber?: any) {
     selectedAddOns,
     toggleAddOn,
     handleSubmit,
+    resetForm,
 
     // Vehicle form
     vehicleInfo,

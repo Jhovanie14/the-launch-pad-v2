@@ -347,7 +347,7 @@ export default function WalkInBookingModal({
                     <div className="flex flex-col">
                       <span className="text-sm font-medium">{a.name}</span>
                       <span className="text-lg font-bold text-primary">
-                        ₱{Number(a.price || 0).toFixed(2)}
+                        ${Number(a.price || 0).toFixed(2)}
                       </span>
                     </div>
                     <input
@@ -405,7 +405,7 @@ export default function WalkInBookingModal({
                           Total Payment Required:
                         </span>
                         <span className="text-3xl font-bold text-primary">
-                          ₱{addOnsTotal.toFixed(2)}
+                          ${addOnsTotal.toFixed(2)}
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground">
@@ -498,7 +498,7 @@ export default function WalkInBookingModal({
               </span>
             ) : hasAddOns && paymentMethod === "card" ? (
               <>
-                Process Card Payment (₱{addOnsTotal.toFixed(2)})
+                Process Card Payment (${addOnsTotal.toFixed(2)})
                 <span className="ml-2 text-xl">→</span>
               </>
             ) : hasAddOns && paymentMethod === "cash" ? (

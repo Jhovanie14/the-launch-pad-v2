@@ -53,6 +53,9 @@ export interface UserProfile {
   full_name?: string;
   avatar_url?: string;
   provider?: string;
+  user_type: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface SubscriptionPlans {

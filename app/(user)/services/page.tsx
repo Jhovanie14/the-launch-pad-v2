@@ -422,7 +422,7 @@ export default function ServicePage() {
                     <motion.div
                       key={service.id}
                       onClick={() => {
-                        router.push(`/service?service=${service.id}`);
+                        router.push(`/service?service=${service.id}&body_type=${service.category}`);
                       }}
                       variants={cardVariants}
                       whileHover="hover"
