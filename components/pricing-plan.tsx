@@ -8,8 +8,9 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check, Crown, Gem, X } from "lucide-react";
+import { Check, CheckCircle, Crown, Gem, X } from "lucide-react";
 import { Separator } from "./ui/separator";
+import Image from "next/image";
 
 export default function PricingCard({
   plan,
@@ -83,7 +84,7 @@ export default function PricingCard({
   // PROMO CODE DISCOUNT (COMMENT OUT WHEN PROMO ENDS)
   // ============================================
   // Discount for promo code: 20% for self-service, 35% for subscriptions
-  const promoDiscountPercent = isSelfServicePlan ? 0 : 0.10; // 20% off for self-service, 35% off for subscriptions
+  const promoDiscountPercent = isSelfServicePlan ? 0 : 0.1; // 20% off for self-service, 35% off for subscriptions
   const originalPriceWithPromo = currentPrice;
   const discountedPriceWithPromo = currentPrice * (1 - promoDiscountPercent);
   // ============================================
@@ -134,16 +135,18 @@ export default function PricingCard({
         <div className="bg-blue-900 px-6 pt-6 pb-8 relative">
           <div className="mb-4 flex justify-center">
             {plan.image_url ? (
-              <img
+              <Image
                 src={plan.image_url}
                 alt={plan.name}
+                width={100}
+                height={100}
                 className="w-full h-32 object-cover"
               />
             ) : (
               <Crown className="w-full h-32 text-white stroke-1" />
             )}
           </div>
-          <CardTitle className="text-center text-white text-lg font-semibold">
+          <CardTitle className="text-center text-white text-xl md:text-2xl font-semibold">
             {plan.name}
           </CardTitle>
 
@@ -159,10 +162,14 @@ export default function PricingCard({
             {/* Original price with strikethrough (promo code discount) */}
             <div className="flex items-center gap-2">
               <span className="text-lg text-slate-500 line-through">
-                ${originalPriceWithPromo.toFixed(2)}
+                {!isSelfServicePlan
+                  ? `$${originalPriceWithPromo.toFixed(2)}`
+                  : ""}
               </span>
               <span className="text-xs text-red-600 font-semibold bg-red-50 px-2 py-0.5 rounded">
-                Save {Math.round(promoDiscountPercent * 100)}%
+                {!isSelfServicePlan
+                  ? `Save ${(promoDiscountPercent * 100).toFixed(0)}% `
+                  : ""}
               </span>
             </div>
             {/* Discounted price */}
@@ -219,8 +226,8 @@ export default function PricingCard({
           <Separator />
         </div>
 
-        <CardContent className="flex-1 px-6 py-6 bg-white">
-          <CardDescription className="text-xs text-slate-600 leading-relaxed mb-4">
+        <CardContent className="flex-1 px-6 bg-white">
+          <CardDescription className="text-sm font-medium text-accent-foreground leading-relaxed mb-8">
             {plan.description}
           </CardDescription>
           <ul className="space-y-3" role="list">
@@ -229,7 +236,7 @@ export default function PricingCard({
                 {feature.toLowerCase().includes("not") ? (
                   <X className="h-5 w-5 shrink-0 text-slate-400 mt-0.5" />
                 ) : (
-                  <Check className="h-5 w-5 shrink-0 text-slate-900 mt-0.5" />
+                  <CheckCircle className="h-5 w-5 shrink-0 text-green-600 mt-0.5" />
                 )}
                 <span className="text-sm text-accent-foreground">
                   {feature}
@@ -239,7 +246,7 @@ export default function PricingCard({
           </ul>
         </CardContent>
 
-        <CardFooter className="px-6 py-6 bg-white border-t border-slate-200">
+        <CardFooter className="flex flex-col space-y-2 px-3 py-3 bg-white border-t border-slate-200">
           <Button
             variant="outline"
             className={`w-full font-semibold transition-all cursor-pointer ${
@@ -255,6 +262,9 @@ export default function PricingCard({
           >
             {buttonText}
           </Button>
+          <span className="text-xs text-blue-900">
+            1 Vehicle per subscription
+          </span>
         </CardFooter>
       </Card>
     </div>

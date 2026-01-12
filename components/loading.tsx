@@ -90,7 +90,7 @@ export default function LoadingDots() {
           }}
         >
           <Image
-            src="/xmas-launchpad-logo.png"
+            src="/thelaunchpad.png"
             alt="The LaunchPad Carwash Logo"
             width={200}
             height={200}

@@ -301,3 +301,62 @@ export async function getConversionRate() {
     return "3.2";
   }
 }
+
+export async function getAddOnStats() {
+  const supabase = await createClient();
+
+  try {
+    // Fetch all booking_add_ons with add-on details
+    const { data: bookingAddOns, error } = await supabase.from(
+      "booking_add_ons"
+    ).select(`
+        add_on_id,
+        add_ons (
+          id,
+          name,
+          price
+        )
+      `);
+
+    if (error) {
+      console.error("Error fetching add-on stats:", error);
+      return { labels: [], values: [], revenue: [] };
+    }
+
+    // Count occurrences of each add-on
+    const addOnCounts: Record<
+      string,
+      { count: number; name: string; revenue: number }
+    > = {};
+
+    bookingAddOns?.forEach((item: any) => {
+      const addOn = item.add_ons;
+      if (addOn) {
+        const addOnId = addOn.id;
+        if (!addOnCounts[addOnId]) {
+          addOnCounts[addOnId] = {
+            count: 0,
+            name: addOn.name || "Unknown",
+            revenue: 0,
+          };
+        }
+        addOnCounts[addOnId].count += 1;
+        addOnCounts[addOnId].revenue += Number(addOn.price || 0);
+      }
+    });
+
+    // Sort by count (most popular first) and get top 10
+    const sorted = Object.entries(addOnCounts)
+      .sort(([, a], [, b]) => b.count - a.count)
+      .slice(0, 10); // Top 10 most popular add-ons
+
+    return {
+      labels: sorted.map(([, data]) => data.name),
+      values: sorted.map(([, data]) => data.count),
+      revenue: sorted.map(([, data]) => data.revenue),
+    };
+  } catch (error) {
+    console.error("Error fetching add-on stats:", error);
+    return { labels: [], values: [], revenue: [] };
+  }
+}

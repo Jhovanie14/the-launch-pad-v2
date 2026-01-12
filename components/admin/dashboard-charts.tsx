@@ -2,7 +2,13 @@
 
 import { useEffect, useRef } from "react";
 import { Chart, registerables } from "chart.js";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 Chart.register(...registerables);
 
@@ -14,6 +20,9 @@ interface DashboardChartsProps {
     bookingGrowth?: number[]; // optional: daily bookings if you add it
     categories: number[];
     categoryLabels: string[];
+    addOnLabels: string[]; // Add this
+    addOnCounts: number[]; // Add this
+    addOnRevenue: number[]; // Add this
   };
 }
 
@@ -21,10 +30,12 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
   const revenueChartRef = useRef<HTMLCanvasElement>(null);
   const bookingChartRef = useRef<HTMLCanvasElement>(null);
   const serviceChartRef = useRef<HTMLCanvasElement>(null);
+  const addOnChartRef = useRef<HTMLCanvasElement>(null); // Add this
 
   const revenueChartInstance = useRef<Chart | null>(null);
   const bookingChartInstance = useRef<Chart | null>(null);
   const serviceChartInstance = useRef<Chart | null>(null);
+  const addOnChartInstance = useRef<Chart | null>(null); // Add this
 
   useEffect(() => {
     // ✅ Dynamic month labels for last 7 months
@@ -173,11 +184,64 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
       }
     }
 
+    if (addOnChartRef.current && data.addOnLabels.length > 0) {
+      const ctx = addOnChartRef.current.getContext("2d");
+      if (ctx) {
+        if (addOnChartInstance.current) addOnChartInstance.current.destroy();
+
+        addOnChartInstance.current = new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: data.addOnLabels,
+            datasets: [
+              {
+                label: "Times Booked",
+                data: data.addOnCounts,
+                backgroundColor: "rgba(251, 191, 36, 0.8)",
+                borderColor: "rgb(251, 191, 36)",
+                borderWidth: 1,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: "y", // Horizontal bar chart
+            plugins: {
+              legend: { display: false },
+              title: {
+                display: true,
+                text: "Most Popular Add-Ons",
+              },
+              tooltip: {
+                callbacks: {
+                  afterLabel: (context) => {
+                    const index = context.dataIndex;
+                    const revenue = data.addOnRevenue[index];
+                    return `Revenue: $${revenue.toFixed(2)}`;
+                  },
+                },
+              },
+            },
+            scales: {
+              x: {
+                beginAtZero: true,
+                ticks: {
+                  stepSize: 1,
+                },
+              },
+            },
+          },
+        });
+      }
+    }
+
     // 🧹 Cleanup
     return () => {
       revenueChartInstance.current?.destroy();
       bookingChartInstance.current?.destroy();
       serviceChartInstance.current?.destroy();
+      addOnChartInstance.current?.destroy();
     };
   }, [data]);
 
@@ -218,6 +282,20 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
         <CardContent>
           <div className="h-64">
             <canvas ref={bookingChartRef}></canvas>
+          </div>
+        </CardContent>
+      </Card>
+      {/* Add-Ons Popularity Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Most Popular Add-Ons</CardTitle>
+          <CardDescription>
+            Top add-ons by booking count and revenue
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-80">
+            <canvas ref={addOnChartRef}></canvas>
           </div>
         </CardContent>
       </Card>

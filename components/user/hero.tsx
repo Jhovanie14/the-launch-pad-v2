@@ -22,7 +22,7 @@ const customerTypes = [
       "Spot-free rinse & foam brush",
       "Vacuum stations available",
     ],
-    price: "$8 per visit",
+    price: "Average customer spend $10",
     cta: "See Self-Service Options",
     ctaLink: "/self-service",
     variant: "outline" as const,

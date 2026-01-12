@@ -244,7 +244,7 @@ export default function BookingsView() {
     // Auto-dismiss after 10 seconds (optional)
     setTimeout(() => {
       setNewBookingNotification(null);
-    }, 120000);
+    }, 120000 );
   }, []);
   useBookingRealtime(setBookings, handleNewBooking);
   // const handleNewBooking = useCallback(

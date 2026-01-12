@@ -195,7 +195,7 @@ export default function ServicePage() {
         "Vacuum stations available",
       ],
       time: "8-10 mins",
-      price: "$8 per visit",
+      price: "Average customer spend $10",
       color: "bg-blue-50 border-blue-200",
     },
     {

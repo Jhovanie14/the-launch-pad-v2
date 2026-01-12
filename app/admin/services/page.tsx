@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Car Wash Services & Pricing",
   description:
-    "Self-service car wash bays $8 per visit, express detailing from $25, and unlimited monthly memberships: Basic $39.99/mo and Deluxe $59.99/mo. One price for all vehicles — no vehicle upcharges.",
+    "Self-service car wash bays $10 per visit, express detailing from $25, and unlimited monthly memberships: Basic $39.99/mo and Deluxe $59.99/mo. One price for all vehicles — no vehicle upcharges.",
   alternates: {
     canonical: "/services",
   },

@@ -137,7 +137,7 @@ export function UserNavbar() {
               <Link href="/">
                 <div className="flex items-center">
                   <Image
-                    src="/xmas-launchpad-logo.png"
+                    src="/thelaunchpad.png"
                     alt="The Launch Pad"
                     width={250}
                     height={250}
@@ -260,7 +260,7 @@ export function UserNavbar() {
           <SheetContent side="right" className="w-[300px] p-4">
             <SheetHeader>
               <SheetTitle className="flex items-center text-xl font-semibold gap-3">
-                <Image width={50} height={50} alt="the-launch-pad-logo" src={"/xmas-launchpad-logo.png"} /> The Launch Pad
+                <Image width={50} height={50} alt="the-launch-pad-logo" src={"/thelaunchpad.png"} /> The Launch Pad
               </SheetTitle>
               {/* <SheetDescription>Navigate through the website</SheetDescription> */}
             </SheetHeader>

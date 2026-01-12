@@ -85,7 +85,7 @@ export default function ProcessSteps() {
     {
       step: 1,
       title: "Report Issue",
-      description: "Contact us within 48 hours of service completion",
+      description: "Contact us within 24 hours of service completion",
       icon: Phone,
     },
     {
@@ -113,7 +113,7 @@ export default function ProcessSteps() {
     {
       question: "How long do I have to file a claim?",
       answer:
-        "You must report any issues within 48 hours of service completion. This allows us to assess the concern while the service is still recent and address it promptly.",
+        "You must report any issues within 24 hours of service completion. This allows us to assess the concern while the service is still recent and address it promptly.",
     },
     {
       question: "What documentation do I need?",

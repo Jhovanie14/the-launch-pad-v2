@@ -12,6 +12,7 @@ import {
   getCategoryData,
   getBookingStats,
   getAddOnRevenue,
+  getAddOnStats
 } from "@/app/admin/dashboard/action";
 import { DashboardCharts } from "@/components/admin/dashboard-charts";
 import RevenueCard from "@/components/admin/revenue-card";
@@ -38,7 +39,7 @@ function getTimeAgo(dateString: string): string {
 
 export default async function AdminDashboardPage() {
   // Fetch all data in parallel
-  const [profile, stats, revenueData, categoryData, bookingStats, addOnRevenue] =
+  const [profile, stats, revenueData, categoryData, bookingStats, addOnRevenue, addOnStats] =
     await Promise.all([
       getUserProfile(),
       getDashboardStats(),
@@ -46,6 +47,7 @@ export default async function AdminDashboardPage() {
       getCategoryData(),
       getBookingStats(),
       getAddOnRevenue(),
+      getAddOnStats(),
     ]);
   // console.log(categoryData);
   const chartData = {
@@ -54,6 +56,9 @@ export default async function AdminDashboardPage() {
     userGrowth: stats.userGrowthByDay,
     categories: categoryData.values,
     categoryLabels: categoryData.labels,
+    addOnLabels: addOnStats.labels,
+    addOnCounts: addOnStats.values, 
+    addOnRevenue: addOnStats.revenue, 
   };
 
   // Calculate growth percentages

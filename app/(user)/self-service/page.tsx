@@ -64,7 +64,7 @@ export default function SelfServicePage() {
               Self-Service Bay Membership
             </h1>
             <p className="text-xl md:text-2xl text-slate-600 mb-4">
-              DIY car wash — pay-per-use $8 per visit, or get unlimited daily
+              DIY car wash — pay-per-use $10 per visit, or get daily
               access for just $19.99/month
             </p>
             <p className="text-lg text-blue-900 font-bold mb-8">
@@ -130,7 +130,7 @@ export default function SelfServicePage() {
                 </ul>
                 <div className="mt-6 p-4 bg-white rounded-lg border border-slate-200">
                   <p className="text-sm text-slate-600">
-                    <strong>Monthly cost if used 4x:</strong> $32
+                    <strong>Monthly cost if used 4x:</strong> $40
                   </p>
                 </div>
               </motion.div>
@@ -186,11 +186,15 @@ export default function SelfServicePage() {
                 <ul className="space-y-3">
                   <li className="flex items-start gap-2">
                     <CheckCircle className="w-5 h-5 text-yellow-400 mt-0.5 shrink-0" />
-                    <span className="text-white">Unlimited daily access</span>
+                    <span className="text-white">Daily access</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle className="w-5 h-5 text-yellow-400 mt-0.5 shrink-0" />
                     <span className="text-white">Use once per day</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-5 h-5 text-yellow-400 mt-0.5 shrink-0" />
+                    <span className="text-white">Anything in the bay</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle className="w-5 h-5 text-yellow-400 mt-0.5 shrink-0" />
@@ -205,7 +209,7 @@ export default function SelfServicePage() {
                 </ul>
                 <div className="mt-6 p-4 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
                   <p className="text-sm text-white">
-                    <strong>Savings vs. pay-per-use:</strong> $12.01/month
+                    <strong>Savings vs. pay-per-use:</strong> $21.01/month
                     <br />
                     <span className="text-yellow-400 text-xs">
                       (Based on 4 washes per month)
@@ -339,7 +343,7 @@ export default function SelfServicePage() {
                 Pay just $19.99/month for unlimited daily 10-minute washes.
                 That's only{" "}
                 <strong className="text-blue-900">¢0.67 per day</strong> — way
-                cheaper than $8 per visit!
+                cheaper than 10 per visit!
               </p>
             </motion.div>
 
