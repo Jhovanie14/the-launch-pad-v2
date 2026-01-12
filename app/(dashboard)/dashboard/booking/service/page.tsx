@@ -3,15 +3,18 @@
 import LoadingDots from "@/components/loading";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { createClient } from "@/utils/supabase/client";
+import { useSubscription } from "@/hooks/useSubscription";
 import {
   ArrowLeft,
   Car,
   Check,
-  Filter,
   Hourglass,
   PackageCheck,
   X,
+  Clock,
+  Sparkles,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
@@ -43,6 +46,7 @@ function ServiceSelectionPage() {
   const supabase = createClient();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { subscription } = useSubscription();
   const [loading, setLoading] = useState(false);
 
   const [addOnOpen, setAddOnOpen] = useState(false);
@@ -51,6 +55,7 @@ function ServiceSelectionPage() {
   const [addOns, setAddOns] = useState<AddOns[]>([]);
   const [services, setServices] = useState<ServicePackage[]>([]);
   const [selectedService, setSelectedService] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"quick" | "express">("quick");
   const [vehicleSpecs, setVehicleSpecs] = useState<any>({
     year: searchParams.get("year") ?? "",
     make: searchParams.get("make") ?? "",
@@ -94,19 +99,114 @@ function ServiceSelectionPage() {
   // HOLIDAY SALE: START - Remove all code between START and END when sale ends
   // ============================================
   const HOLIDAY_SALE_ACTIVE = true; // Set to false when sale ends
-  const HOLIDAY_SALE_DISCOUNT = 0.1; // 35% off
+  const HOLIDAY_SALE_DISCOUNT = 0.1; // 10% off
   // ============================================
   // HOLIDAY SALE: END
   // ============================================
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
-  const bodyType = (vehicleSpecs.body_type || "").toLowerCase();
+  // Helper functions to determine subscription type
+  const isSubscribedToQuickService = () => {
+    if (!subscription?.subscription_plans?.name) return false;
+    const planName = subscription.subscription_plans.name.toLowerCase();
+    return planName.includes("exterior") || planName.includes("quick service");
+  };
 
-  // Filter services by category matching body type
-  const filteredServices = services.filter((s) =>
-    bodyType ? s.category?.toLowerCase() === bodyType : true
-  );
+  const isSubscribedToExpressDetail = () => {
+    if (!subscription?.subscription_plans?.name) return false;
+    const planName = subscription.subscription_plans.name.toLowerCase();
+    return planName.includes("express detail") || planName.includes("express");
+  };
+
+  const isServiceFreeForSubscription = (serviceCategory: string) => {
+    if (!subscription?.subscription_plans?.name) return false;
+    const categoryLower = serviceCategory?.toLowerCase() || "";
+
+    // If subscribed to Quick Service, Quick Service category is free
+    if (isSubscribedToQuickService() && categoryLower === "quick service") {
+      return true;
+    }
+
+    // If subscribed to Express Detail, Express Detail category is free
+    if (isSubscribedToExpressDetail() && categoryLower === "express detail") {
+      return true;
+    }
+
+    return false;
+  };
+
+  // Determine which tabs to show based on subscription
+  const shouldShowQuickTab = () => {
+    if (!subscription?.subscription_plans?.name) return true; // Default: show both if no plan info
+    const planName = subscription.subscription_plans.name.toLowerCase();
+
+    // If plan is specifically for express detail, don't show quick tab
+    if (planName.includes("express detail") || planName.includes("express")) {
+      return false;
+    }
+
+    // If plan is for exterior, show quick tab
+    if (planName.includes("exterior")) {
+      return true;
+    }
+
+    // Default: show both tabs if plan doesn't match
+    return true;
+  };
+
+  const shouldShowExpressTab = () => {
+    if (!subscription?.subscription_plans?.name) return true; // Default: show both if no plan info
+    const planName = subscription.subscription_plans.name.toLowerCase();
+
+    // If plan is specifically for exterior, don't show express tab
+    if (planName.includes("exterior")) {
+      return false;
+    }
+
+    // If plan is for express detail, show express tab
+    if (planName.includes("express detail") || planName.includes("express")) {
+      return true;
+    }
+
+    // Default: show both tabs if plan doesn't match
+    return true;
+  };
+
+  // Filter services by category - Quick Service tab shows only quick service category
+  const quickServices = services.filter((s) => {
+    const categoryLower = s.category?.toLowerCase() || "";
+    return categoryLower === "quick service";
+  });
+
+  // Filter services by category - Express Detail tab shows only express detail category
+  const expressServices = services.filter((s) => {
+    const categoryLower = s.category?.toLowerCase() || "";
+    return categoryLower === "express detail";
+  });
+
+  // Update active tab when subscription changes
+  useEffect(() => {
+    if (!subscription?.subscription_plans?.name) {
+      setActiveTab("quick");
+      return;
+    }
+    const planName = subscription.subscription_plans.name.toLowerCase();
+
+    // If plan name contains "exterior", show Quick Service
+    if (planName.includes("exterior")) {
+      setActiveTab("quick");
+    }
+    // If plan name contains "express detail" or "express", show Express Detail
+    else if (
+      planName.includes("express detail") ||
+      planName.includes("express")
+    ) {
+      setActiveTab("express");
+    } else {
+      setActiveTab("quick");
+    }
+  }, [subscription]);
 
   const handlePackageSelect = (serviceId: string) => {
     setSelectedService(serviceId);
@@ -151,6 +251,7 @@ function ServiceSelectionPage() {
       console.log("error", error);
     }
   };
+
   const skipAddOns = () => {
     try {
       const params = new URLSearchParams(vehicleSpecs);
@@ -163,41 +264,6 @@ function ServiceSelectionPage() {
     } catch (error) {
       console.log("error", error);
     }
-  };
-
-  const calculateTotal = () => {
-    // ============================================
-    // HOLIDAY SALE: START
-    // ============================================
-    let basePrice = selectserv?.price || 0;
-
-    // Apply holiday sale discount
-    if (HOLIDAY_SALE_ACTIVE && basePrice > 0) {
-      basePrice = basePrice * (1 - HOLIDAY_SALE_DISCOUNT);
-    }
-
-    let total = basePrice;
-    selectedAddOnIds.forEach((addOnId) => {
-      const addOn = addOns.find((a) => a.id === addOnId);
-      if (addOn) {
-        let addOnPrice = addOn.price;
-        // Apply holiday sale to add-ons too
-        if (HOLIDAY_SALE_ACTIVE) {
-          addOnPrice = addOnPrice * (1 - HOLIDAY_SALE_DISCOUNT);
-        }
-        total += addOnPrice;
-      }
-    });
-    // ============================================
-    // HOLIDAY SALE: END - Replace above with original code:
-    // let total = selectserv?.price || 0;
-    // selectedAddOnIds.forEach((addOnId) => {
-    //   const addOn = addOns.find((a) => a.id === addOnId);
-    //   if (addOn) total += addOn.price;
-    // });
-    // ============================================
-    console.log("total price", total);
-    return total;
   };
 
   const fetchPackages = useCallback(async () => {
@@ -213,6 +279,7 @@ function ServiceSelectionPage() {
     setServices(data ?? []);
     setLoading(false);
   }, [supabase]);
+
   const fetchAddOns = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -231,8 +298,6 @@ function ServiceSelectionPage() {
     fetchPackages();
     fetchAddOns();
   }, [fetchPackages, fetchAddOns]);
-
-  const totalPrice = calculateTotal();
 
   if (loading) {
     return <LoadingDots />;
@@ -280,122 +345,248 @@ function ServiceSelectionPage() {
       <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-[800px_1fr] gap-8">
           <div className="space-y-6">
-            {filteredServices.length === 0 && (
-              <div className="text-center text-gray-500 py-10">
-                No services found for your vehicle type.
-              </div>
-            )}
-            {/* ============================================
-                HOLIDAY SALE: START - Remove discount display code when sale ends
-                ============================================ */}
-            {filteredServices.map((service) => {
-              const originalPrice = service.price;
-              const salePrice = HOLIDAY_SALE_ACTIVE
-                ? originalPrice * (1 - HOLIDAY_SALE_DISCOUNT)
-                : originalPrice;
-
-              return (
-                <Card
-                  key={service.id}
-                  onClick={() => handlePackageSelect(service.id)}
-                  className={`relative cursor-pointer transition-all duration-200 hover:shadow-md border-2 ${
-                    selectedService === service.id
-                      ? "border-blue-500 bg-blue-50/50"
-                      : "border-gray-200 hover:border-blue-300"
-                  }`}
-                >
-                  {/* Holiday Sale Badge */}
-                  {HOLIDAY_SALE_ACTIVE && (
-                    <div className="absolute -top-3 -right-3 z-10">
-                      <div className="bg-linear-to-r from-red-500 to-red-600 text-white px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
-                        10% OFF
-                      </div>
-                    </div>
-                  )}
-
-                  <CardHeader className="pb-4">
-                    <div className="flex flex-col sm:flex-row sm:items-start justify-between w-full gap-2">
-                      <div className="flex-1 min-w-0 space-y-1">
-                        <h3 className="text-lg sm:text-base font-semibold text-gray-900 truncate">
-                          {service.name}
-                        </h3>
-                        <div className="flex items-center space-x-2 text-gray-500 text-sm">
-                          <Hourglass className="w-4 h-4 shrink-0" />
-                          <span>{service.duration} mins</span>
-                        </div>
-                      </div>
-                      <div className="text-right shrink-0">
-                        {HOLIDAY_SALE_ACTIVE ? (
-                          <div className="flex flex-col items-end">
-                            <span className="text-sm text-gray-500 line-through">
-                              ${originalPrice.toFixed(2)}
-                            </span>
-                            <span className="text-xl sm:text-lg font-bold text-red-600">
-                              ${salePrice.toFixed(2)}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-xl sm:text-lg font-bold text-gray-900">
-                            ${service.price}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </CardHeader>
-                  {/* ============================================
-                HOLIDAY SALE: END - Replace above with original code:
-                {filteredServices.map((service) => (
-                  <Card
-                    key={service.id}
-                    onClick={() => handlePackageSelect(service.id)}
-                    className={`cursor-pointer transition-all duration-200 hover:shadow-md border-2 ${
-                      selectedService === service.id
-                        ? "border-blue-500 bg-blue-50/50"
-                        : "border-gray-200 hover:border-blue-300"
-                    }`}
+            {/* Tabs for Quick Service and Express Detail */}
+            <Tabs
+              value={activeTab}
+              onValueChange={(value) =>
+                setActiveTab(value as "quick" | "express")
+              }
+              className="w-full"
+            >
+              <TabsList
+                className={`grid w-full mb-4 ${
+                  shouldShowQuickTab() && shouldShowExpressTab()
+                    ? "grid-cols-2"
+                    : "grid-cols-1"
+                }`}
+              >
+                {shouldShowQuickTab() && (
+                  <TabsTrigger
+                    value="quick"
+                    className="flex items-center gap-2"
                   >
-                    <CardHeader className="pb-4">
-                      <div className="flex flex-col sm:flex-row sm:items-start justify-between w-full gap-2">
-                        <div className="flex-1 min-w-0 space-y-1">
-                          <h3 className="text-lg sm:text-base font-semibold text-gray-900 truncate">
-                            {service.name}
-                          </h3>
-                          <div className="flex items-center space-x-2 text-gray-500 text-sm">
-                            <Hourglass className="w-4 h-4 flex-shrink-0" />
-                            <span>{service.duration} mins</span>
-                          </div>
-                        </div>
-                        <div className="text-right flex-shrink-0">
-                          <span className="text-xl sm:text-lg font-bold text-gray-900">
-                            ${service.price}
-                          </span>
-                        </div>
-                      </div>
-                    </CardHeader>
+                    <Clock className="w-4 h-4" />
+                    Quick Service
+                  </TabsTrigger>
+                )}
+                {shouldShowExpressTab() && (
+                  <TabsTrigger
+                    value="express"
+                    className="flex items-center gap-2"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    Express Detail
+                  </TabsTrigger>
+                )}
+              </TabsList>
+
+              <TabsContent value="quick" className="mt-0">
+                {quickServices.length === 0 ? (
+                  <div className="text-center text-gray-500 py-10">
+                    No Quick Service packages available for your vehicle type.
+                  </div>
+                ) : (
+                  <>
+                    {/* ============================================
+                        HOLIDAY SALE: START - Remove discount display code when sale ends
+                        ============================================ */}
+                    {quickServices.map((service) => {
+                      const originalPrice = service.price;
+                      const salePrice = HOLIDAY_SALE_ACTIVE
+                        ? originalPrice * (1 - HOLIDAY_SALE_DISCOUNT)
+                        : originalPrice;
+
+                      return (
+                        <Card
+                          key={service.id}
+                          onClick={() => handlePackageSelect(service.id)}
+                          className={`relative cursor-pointer transition-all duration-200 hover:shadow-md border-2 mb-4 ${
+                            selectedService === service.id
+                              ? "border-blue-500 bg-blue-50/50"
+                              : "border-gray-200 hover:border-blue-300"
+                          }`}
+                        >
+                          {/* Holiday Sale Badge */}
+                          {HOLIDAY_SALE_ACTIVE && (
+                            <div className="absolute -top-3 -right-3 z-10">
+                              <div className="bg-linear-to-r from-red-500 to-red-600 text-white px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
+                                10% OFF
+                              </div>
+                            </div>
+                          )}
+
+                          <CardHeader className="pb-4">
+                            <div className="flex flex-col sm:flex-row sm:items-start justify-between w-full gap-2">
+                              <div className="flex-1 min-w-0 space-y-1">
+                                <h3 className="text-lg sm:text-base font-semibold text-gray-900 truncate">
+                                  {service.name}
+                                </h3>
+                                <div className="flex items-center space-x-2 text-gray-500 text-sm">
+                                  <Hourglass className="w-4 h-4 shrink-0" />
+                                  <span>{service.duration} mins</span>
+                                </div>
+                              </div>
+                              <div className="text-right shrink-0">
+                                {HOLIDAY_SALE_ACTIVE ? (
+                                  <div className="flex flex-col items-end">
+                                    <span className="text-sm text-gray-500 line-through">
+                                      ${originalPrice.toFixed(2)}
+                                    </span>
+                                    <span className="text-xl sm:text-lg font-bold text-red-600">
+                                      ${salePrice.toFixed(2)}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="text-xl sm:text-lg font-bold text-gray-900">
+                                    ${service.price}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="pt-0">
+                            <div className="space-y-3">
+                              <div className="grid gap-1">
+                                {service.features?.map((feature, index) => (
+                                  <div
+                                    key={index}
+                                    className="flex items-center text-sm text-gray-600 min-w-0"
+                                  >
+                                    <Check className="h-4 w-4 mr-2 text-green-500 shrink-0" />
+                                    <span className="truncate">{feature}</span>
+                                  </div>
+                                ))}
+                              </div>
+                              {service.description && (
+                                <p className="text-sm text-gray-500 pt-2 border-t border-gray-100 truncate">
+                                  {service.description}
+                                </p>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </>
+                )}
+              </TabsContent>
+
+              <TabsContent value="express" className="mt-0">
+                {expressServices.length === 0 ? (
+                  <div className="text-center text-gray-500 py-10">
+                    No Express Detail packages available for your vehicle type.
+                  </div>
+                ) : (
+                  <>
+                    {/* ============================================
+                        HOLIDAY SALE: START - Remove discount display code when sale ends
+                        ============================================ */}
+                    {expressServices.map((service) => {
+                      const originalPrice = service.price;
+                      const salePrice = HOLIDAY_SALE_ACTIVE
+                        ? originalPrice * (1 - HOLIDAY_SALE_DISCOUNT)
+                        : originalPrice;
+                      const isFree = isServiceFreeForSubscription(
+                        service.category || ""
+                      );
+
+                      return (
+                        <Card
+                          key={service.id}
+                          onClick={() => handlePackageSelect(service.id)}
+                          className={`relative cursor-pointer transition-all duration-200 hover:shadow-md border-2 mb-4 ${
+                            selectedService === service.id
+                              ? "border-blue-500 bg-blue-50/50"
+                              : "border-gray-200 hover:border-blue-300"
+                          }`}
+                        >
+                          {/* Holiday Sale Badge - only show if not free */}
+                          {HOLIDAY_SALE_ACTIVE && !isFree && (
+                            <div className="absolute -top-3 -right-3 z-10">
+                              <div className="bg-linear-to-r from-red-500 to-red-600 text-white px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
+                                10% OFF
+                              </div>
+                            </div>
+                          )}
+
+                          {/* FREE Badge for subscribed services */}
+                          {isFree && (
+                            <div className="absolute -top-3 -right-3 z-10">
+                              <div className="bg-green-500 text-white px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
+                                FREE
+                              </div>
+                            </div>
+                          )}
+
+                          <CardHeader className="pb-4">
+                            <div className="flex flex-col sm:flex-row sm:items-start justify-between w-full gap-2">
+                              <div className="flex-1 min-w-0 space-y-1">
+                                <h3 className="text-lg sm:text-base font-semibold text-gray-900 truncate">
+                                  {service.name}
+                                </h3>
+                                <div className="flex items-center space-x-2 text-gray-500 text-sm">
+                                  <Hourglass className="w-4 h-4 shrink-0" />
+                                  <span>{service.duration} mins</span>
+                                </div>
+                              </div>
+                              <div className="text-right shrink-0">
+                                {isFree ? (
+                                  <div className="flex flex-col items-end">
+                                    <span className="text-xl sm:text-lg font-bold text-green-600">
+                                      FREE
+                                    </span>
+                                    <span className="text-xs text-gray-500 line-through">
+                                      ${service.price.toFixed(2)}
+                                    </span>
+                                  </div>
+                                ) : HOLIDAY_SALE_ACTIVE ? (
+                                  <div className="flex flex-col items-end">
+                                    <span className="text-sm text-gray-500 line-through">
+                                      ${originalPrice.toFixed(2)}
+                                    </span>
+                                    <span className="text-xl sm:text-lg font-bold text-red-600">
+                                      ${salePrice.toFixed(2)}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="text-xl sm:text-lg font-bold text-gray-900">
+                                    ${service.price}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="pt-0">
+                            <div className="space-y-3">
+                              <div className="grid gap-1">
+                                {service.features?.map((feature, index) => (
+                                  <div
+                                    key={index}
+                                    className="flex items-center text-sm text-gray-600 min-w-0"
+                                  >
+                                    <Check className="h-4 w-4 mr-2 text-green-500 shrink-0" />
+                                    <span className="truncate">{feature}</span>
+                                  </div>
+                                ))}
+                              </div>
+                              {service.description && (
+                                <p className="text-sm text-gray-500 pt-2 border-t border-gray-100 truncate">
+                                  {service.description}
+                                </p>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </>
+                )}
+              </TabsContent>
+            </Tabs>
+
+            {/* ============================================
+                HOLIDAY SALE: END - Remove discount display code when sale ends
                 ============================================ */}
-                  <CardContent className="pt-0">
-                    <div className="space-y-3">
-                      <div className="grid gap-1">
-                        {service.features?.map((feature, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center text-sm text-gray-600 min-w-0"
-                          >
-                            <Check className="h-4 w-4 mr-2 text-green-500 shrink-0" />
-                            <span className="truncate">{feature}</span>
-                          </div>
-                        ))}
-                      </div>
-                      {service.description && (
-                        <p className="text-sm text-gray-500 pt-2 border-t border-gray-100 truncate">
-                          {service.description}
-                        </p>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
             <div
               ref={bottomRef}
               className="flex items-center justify-between border-t p-3 mt-10"
@@ -409,24 +600,41 @@ function ServiceSelectionPage() {
                     {/* ============================================
                         HOLIDAY SALE: START
                         ============================================ */}
-                    {HOLIDAY_SALE_ACTIVE ? (
-                      <div className="flex flex-col">
-                        <span className="text-sm text-gray-500 line-through">
-                          ${selectserv.price.toFixed(2)}
+                    {(() => {
+                      const isFree = isServiceFreeForSubscription(
+                        selectserv.category || ""
+                      );
+                      if (isFree) {
+                        return (
+                          <div className="flex flex-col">
+                            <span className="font-medium text-green-600 text-lg">
+                              FREE
+                            </span>
+                            <span className="text-xs text-gray-500 line-through">
+                              ${selectserv.price.toFixed(2)}
+                            </span>
+                          </div>
+                        );
+                      }
+                      return HOLIDAY_SALE_ACTIVE ? (
+                        <div className="flex flex-col">
+                          <span className="text-sm text-gray-500 line-through">
+                            ${selectserv.price.toFixed(2)}
+                          </span>
+                          <span className="font-medium text-red-600">
+                            $
+                            {(
+                              selectserv.price *
+                              (1 - HOLIDAY_SALE_DISCOUNT)
+                            ).toFixed(2)}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="font-medium text-accent-foreground">
+                          ${selectserv.price}
                         </span>
-                        <span className="font-medium text-red-600">
-                          $
-                          {(
-                            selectserv.price *
-                            (1 - HOLIDAY_SALE_DISCOUNT)
-                          ).toFixed(2)}
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="font-medium text-accent-foreground">
-                        ${selectserv.price}
-                      </span>
-                    )}
+                      );
+                    })()}
                     {/* ============================================
                         HOLIDAY SALE: END - Replace above with:
                         <span className="font-medium text-accent-foreground">
@@ -502,35 +710,83 @@ function ServiceSelectionPage() {
                               {/* ============================================
                                   HOLIDAY SALE: START
                                   ============================================ */}
-                              {HOLIDAY_SALE_ACTIVE ? (
-                                <div className="flex flex-col">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-sm text-gray-500 line-through">
-                                      $
-                                      {(
-                                        selectserv.price +
-                                        selectedAddOnIds.reduce((sum, id) => {
-                                          const addOn = addOns.find(
-                                            (a) => a.id === id
-                                          );
-                                          return sum + (addOn?.price || 0);
-                                        }, 0)
-                                      ).toFixed(2)}
-                                    </span>
-                                    <span className="text-xs text-red-600 font-semibold bg-red-50 px-2 py-0.5 rounded">
-                                      {Math.round(HOLIDAY_SALE_DISCOUNT * 100)}%
-                                      OFF
-                                    </span>
+                              {(() => {
+                                const isFree = isServiceFreeForSubscription(
+                                  selectserv.category || ""
+                                );
+                                const servicePrice = isFree
+                                  ? 0
+                                  : selectserv.price;
+                                const addOnsTotal = selectedAddOnIds.reduce(
+                                  (sum, id) => {
+                                    const addOn = addOns.find(
+                                      (a) => a.id === id
+                                    );
+                                    if (!addOn) return sum;
+                                    let addOnPrice = addOn.price;
+                                    if (HOLIDAY_SALE_ACTIVE) {
+                                      addOnPrice =
+                                        addOnPrice *
+                                        (1 - HOLIDAY_SALE_DISCOUNT);
+                                    }
+                                    return sum + addOnPrice;
+                                  },
+                                  0
+                                );
+
+                                let finalServicePrice = servicePrice;
+                                if (HOLIDAY_SALE_ACTIVE && !isFree) {
+                                  finalServicePrice =
+                                    servicePrice * (1 - HOLIDAY_SALE_DISCOUNT);
+                                }
+
+                                const finalTotal =
+                                  finalServicePrice + addOnsTotal;
+                                const originalTotal =
+                                  selectserv.price +
+                                  selectedAddOnIds.reduce((sum, id) => {
+                                    const addOn = addOns.find(
+                                      (a) => a.id === id
+                                    );
+                                    return sum + (addOn?.price || 0);
+                                  }, 0);
+
+                                if (isFree && addOnsTotal === 0) {
+                                  return (
+                                    <div className="flex flex-col">
+                                      <p className="text-xl font-bold text-green-600">
+                                        FREE
+                                      </p>
+                                      <span className="text-xs text-gray-500 line-through">
+                                        ${originalTotal.toFixed(2)}
+                                      </span>
+                                    </div>
+                                  );
+                                }
+
+                                return HOLIDAY_SALE_ACTIVE ? (
+                                  <div className="flex flex-col">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm text-gray-500 line-through">
+                                        ${originalTotal.toFixed(2)}
+                                      </span>
+                                      <span className="text-xs text-red-600 font-semibold bg-red-50 px-2 py-0.5 rounded">
+                                        {Math.round(
+                                          HOLIDAY_SALE_DISCOUNT * 100
+                                        )}
+                                        % OFF
+                                      </span>
+                                    </div>
+                                    <p className="text-xl font-bold text-red-600">
+                                      ${finalTotal.toFixed(2)}
+                                    </p>
                                   </div>
-                                  <p className="text-xl font-bold text-red-600">
-                                    ${totalPrice.toFixed(2)}
+                                ) : (
+                                  <p className="text-xl font-bold text-gray-900">
+                                    ${finalTotal.toFixed(2)}
                                   </p>
-                                </div>
-                              ) : (
-                                <p className="text-xl font-bold text-gray-900">
-                                  ${totalPrice.toFixed(2)}
-                                </p>
-                              )}
+                                );
+                              })()}
                               {/* ============================================
                                   HOLIDAY SALE: END - Replace above with:
                                   <p className="text-xl font-bold text-gray-900">

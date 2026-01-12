@@ -39,7 +39,7 @@ const customerTypes = [
       "Tire shine & windows",
       "15-45 minute service",
     ],
-    price: "$30",
+    price: "$25",
     cta: "Book Express Detail",
     ctaLink: "/services",
     variant: "default" as const,

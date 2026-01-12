@@ -13,6 +13,7 @@ import {
   CreditCard,
   Crown,
   PackageCheck,
+  Loader2,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -41,7 +42,7 @@ function ConfirmationContent() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [vehicleSpecs, setVehicleSpecs] = useState<any>({
+  const [vehicleSpecs] = useState<any>({
     year: searchParams.get("year"),
     make: searchParams.get("make"),
     model: searchParams.get("model"),
@@ -62,6 +63,7 @@ function ConfirmationContent() {
 
   const [promoCode, setPromoCode] = useState("");
   const [discountPercent, setDiscountPercent] = useState(0);
+  const [subscription, setSubscription] = useState<any>(null);
 
   // ============================================
   // HOLIDAY SALE: START - Remove all code between START and END when sale ends
@@ -71,6 +73,36 @@ function ConfirmationContent() {
   // ============================================
   // HOLIDAY SALE: END
   // ============================================
+
+  // Helper functions to determine subscription type
+  const isSubscribedToQuickService = () => {
+    if (!subscription?.subscription_plans?.name) return false;
+    const planName = subscription.subscription_plans.name.toLowerCase();
+    return planName.includes("exterior") || planName.includes("quick service");
+  };
+
+  const isSubscribedToExpressDetail = () => {
+    if (!subscription?.subscription_plans?.name) return false;
+    const planName = subscription.subscription_plans.name.toLowerCase();
+    return planName.includes("express detail") || planName.includes("express");
+  };
+
+  const isServiceFreeForSubscription = (serviceCategory: string) => {
+    if (!subscription?.subscription_plans?.name) return false;
+    const categoryLower = serviceCategory?.toLowerCase() || "";
+    
+    // If subscribed to Quick Service, Quick Service category is free
+    if (isSubscribedToQuickService() && categoryLower === "quick service") {
+      return true;
+    }
+    
+    // If subscribed to Express Detail, Express Detail category is free
+    if (isSubscribedToExpressDetail() && categoryLower === "express detail") {
+      return true;
+    }
+    
+    return false;
+  };
 
   const dateParam = searchParams.get("date");
   const timeParam = searchParams.get("time");
@@ -82,7 +114,16 @@ function ConfirmationContent() {
       if (!user?.id) return;
       const { data, error } = await supabase
         .from("user_subscription")
-        .select("stripe_customer_id,stripe_subscription_id")
+        .select(`
+          stripe_customer_id,
+          stripe_subscription_id,
+          subscription_plan:subscription_plans (
+            name,
+            description,
+            monthly_price,
+            yearly_price
+          )
+        `)
         .eq("user_id", user?.id)
         .eq("status", "active")
         .maybeSingle();
@@ -90,8 +131,14 @@ function ConfirmationContent() {
       if (error) {
         console.error("❌ Error fetching subscription:", error);
       } else {
-        console.log("✅ Subscription data:", data);
+        // console.log("✅ Subscription data:", data);
         setUserSubscribe(data);
+        // Set full subscription data for category checking
+        if (data) {
+          setSubscription({
+            subscription_plans: data.subscription_plan,
+          });
+        }
       }
 
       if (serviceId) {
@@ -113,7 +160,7 @@ function ConfirmationContent() {
             .in("id", addonIds); // ✅ handle multiple add-ons
           if (error) console.error(error);
           else setSelectedAddOns(data);
-          console.log("add ons ids", data);
+          // console.log("add ons ids", data);
         }
       }
       if (dateParam) {
@@ -135,7 +182,7 @@ function ConfirmationContent() {
       .ilike("code", promoCode.trim())
       .maybeSingle();
 
-    console.log("Promo code data:", data, error);
+    // console.log("Promo code data:", data, error);
 
     if (error || !data) {
       toast.error("Invalid promo code");
@@ -160,7 +207,7 @@ function ConfirmationContent() {
       const { data, error } = await supabase.from("promo_codes").select("*");
       console.log("🔍 All promo codes:", data, error);
     })();
-  }, []);
+  }, [supabase]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -198,11 +245,19 @@ function ConfirmationContent() {
         }, 0)
       : 0;
 
-    if (isSubscribed) return addOnsTotal;
+    // Check if service is free for subscription
+    const serviceCategory = selectedPackages?.category || "";
+    const isServiceFree = isServiceFreeForSubscription(serviceCategory);
+    
+    // If subscribed and service matches subscription category, service is free
+    if (isServiceFree) {
+      return addOnsTotal;
+    }
 
+    // If subscribed but service doesn't match, charge full price
     let basePrice = Number(selectedPackages?.price) || 0;
-    // Apply holiday sale to base price
-    if (HOLIDAY_SALE_ACTIVE) {
+    // Apply holiday sale to base price (only if not free)
+    if (HOLIDAY_SALE_ACTIVE && basePrice > 0) {
       basePrice = basePrice * (1 - HOLIDAY_SALE_DISCOUNT);
     }
     return basePrice + addOnsTotal;
@@ -232,7 +287,14 @@ function ConfirmationContent() {
         )
       : 0;
 
-    if (isSubscribed) return addOnsTotal;
+    // Check if service is free for subscription
+    const serviceCategory = selectedPackages?.category || "";
+    const isServiceFree = isServiceFreeForSubscription(serviceCategory);
+    
+    // If service is free, only return add-ons total
+    if (isServiceFree) {
+      return addOnsTotal;
+    }
 
     const basePrice = Number(selectedPackages?.price) || 0;
     return basePrice + addOnsTotal;
@@ -249,16 +311,6 @@ function ConfirmationContent() {
       : total;
   };
 
-  function calculateDiscountedAddOnsTotal() {
-    const addOnsTotal = Array.isArray(selectedAddOns)
-      ? selectedAddOns.reduce((sum, a) => sum + Number(a.price), 0)
-      : 0;
-
-    if (!discountPercent || discountPercent <= 0) return addOnsTotal;
-
-    const discounted = addOnsTotal - addOnsTotal * (discountPercent / 100);
-    return Math.round(discounted * 100) / 100; // round to 2 decimals
-  }
 
   const formatTime = (time: string) => {
     const [hours, minutes] = time.split(":").map(Number);
@@ -269,9 +321,11 @@ function ConfirmationContent() {
 
   const handleConfirmBooking = async () => {
     const isSubscribed = !!userSubscribe?.stripe_subscription_id;
+    const serviceCategory = selectedPackages?.category || "";
+    const isServiceFree = isServiceFreeForSubscription(serviceCategory);
 
-    // If subscribed and no add-ons → book directly (free)
-    if (isSubscribed && !selectedAddOns) {
+    // If subscribed, service matches subscription, and no add-ons → book directly (free)
+    if (isSubscribed && isServiceFree && (!selectedAddOns || selectedAddOns.length === 0)) {
       setIsSubmitting(true);
       try {
         const booking = await createBooking({
@@ -309,26 +363,16 @@ function ConfirmationContent() {
       // ============================================
       // HOLIDAY SALE: START
       // ============================================
-      // Note: addOnsTotal calculation is handled in calculateTotal() with holiday sale
+      // Note: total calculation is handled in calculateTotal() with holiday sale
       const totalWithDiscount = Number(calculateTotalWithPromo().toFixed(2));
+      // ============================================
+      // HOLIDAY SALE: END
+      // ============================================
 
-      // For subscribed users, calculate add-ons total with holiday sale discount
-      const addOnsTotal = Array.isArray(selectedAddOns)
-        ? selectedAddOns.reduce((sum, a) => {
-            let price = Number(a.price);
-            if (HOLIDAY_SALE_ACTIVE) {
-              price = price * (1 - HOLIDAY_SALE_DISCOUNT);
-            }
-            return sum + price;
-          }, 0)
-        : 0;
-      // ============================================
-      // HOLIDAY SALE: END - Replace above with:
-      // const addOnsTotal = Array.isArray(selectedAddOns)
-      //   ? selectedAddOns.reduce((sum, a) => sum + Number(a.price), 0)
-      //   : 0;
-      // const totalWithDiscount = Number(calculateTotalWithPromo().toFixed(2));
-      // ============================================
+      // Check if service is free for subscription
+      const serviceCategory = selectedPackages?.category || "";
+      const isServiceFree = isServiceFreeForSubscription(serviceCategory);
+      const servicePrice = isServiceFree ? 0 : selectedPackages!.price;
 
       if (paymentMethod === "cash") {
         const booking = await createBooking({
@@ -337,7 +381,7 @@ function ConfirmationContent() {
           model: vehicleSpecs.model || "",
           body_type: vehicleSpecs.body_type || "",
           colors: [vehicleSpecs.color || ""],
-          servicePackage: { ...selectedPackages },
+          servicePackage: { ...selectedPackages, price: servicePrice },
           addOnsId: selectedAddOns
             ? selectedAddOns.map((a: { id: string }) => a.id)
             : [],
@@ -360,7 +404,7 @@ function ConfirmationContent() {
           vehicleSpecs,
           servicePackageId: selectedPackages!.id,
           servicePackageName: selectedPackages!.name,
-          servicePackagePrice: isSubscribed ? 0 : selectedPackages!.price, // 👈 zero if subscribed
+          servicePackagePrice: servicePrice, // Free if matches subscription, otherwise full price
           addOns:
             selectedAddOns?.map(
               (a: { id: string; name: string; price: number }) => ({
@@ -371,7 +415,7 @@ function ConfirmationContent() {
             ) ?? [],
           appointmentDate: appointmentDate,
           appointmentTime: appointmentTime!.toString(),
-          totalPrice: isSubscribed ? addOnsTotal : totalWithDiscount,
+          totalPrice: totalWithDiscount,
           totalDuration: calculateDuration(),
           payment_method: "card",
         };
@@ -392,8 +436,10 @@ function ConfirmationContent() {
     }
   };
 
+  const serviceCategory = selectedPackages?.category || "";
+  const isServiceFree = isServiceFreeForSubscription(serviceCategory);
   const isFreeForSubscriber =
-    isSubscribed && (!selectedAddOns || selectedAddOns.length === 0);
+    isSubscribed && isServiceFree && (!selectedAddOns || selectedAddOns.length === 0);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -567,15 +613,31 @@ function ConfirmationContent() {
             {/* ============================================
                 HOLIDAY SALE: END
                 ============================================ */}
-            {isSubscribed && (
-              <div className="flex items-center gap-1">
-                <Crown className="w-4 h-4 text-yellow-500" />
-                <p className=" text-sm text-green-600">
-                  You're subscribed — base wash is free! You only pay for
-                  add-ons.
-                </p>
-              </div>
-            )}
+            {(() => {
+              const serviceCategory = selectedPackages?.category || "";
+              const isServiceFree = isServiceFreeForSubscription(serviceCategory);
+              
+              if (isServiceFree) {
+                return (
+                  <div className="flex items-center gap-1">
+                    <Crown className="w-4 h-4 text-yellow-500" />
+                    <p className="text-sm text-green-600">
+                      You're subscribed to {isSubscribedToQuickService() ? "Quick Service" : "Express Detail"} — this service is free! You only pay for add-ons.
+                    </p>
+                  </div>
+                );
+              } else if (isSubscribed) {
+                return (
+                  <div className="flex items-center gap-1">
+                    <Crown className="w-4 h-4 text-yellow-500" />
+                    <p className="text-sm text-orange-600">
+                      You're subscribed to {isSubscribedToQuickService() ? "Quick Service" : "Express Detail"} — this {serviceCategory === "quick service" ? "Quick Service" : "Express Detail"} service requires payment.
+                    </p>
+                  </div>
+                );
+              }
+              return null;
+            })()}
             {discountPercent > 0 && (
               <p className="text-green-600 text-sm mt-2">
                 Promo applied: {discountPercent}% off — New Total: $
@@ -620,7 +682,7 @@ function ConfirmationContent() {
                 disabled={isSubmitting}
                 className="bg-blue-900 hover:bg-blue-800 px-8 py-3"
               >
-                {isSubmitting && <LoadingDots />}
+                {isSubmitting && <Loader2 />}
                 {isSubmitting ? "Redirecting..." : "Proceed to Payment"}
               </Button>
             </div>

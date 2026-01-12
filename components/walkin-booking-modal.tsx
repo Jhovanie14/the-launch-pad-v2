@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Calendar,
   Car,
@@ -21,6 +22,7 @@ import {
   User,
   CreditCard,
   Banknote,
+  Sparkles,
 } from "lucide-react";
 import { useBookingForm } from "@/hooks/useBookingForm";
 import { createClient } from "@/utils/supabase/client";
@@ -56,7 +58,6 @@ export default function WalkInBookingModal({
     handleSubmit,
     vehicleInfo,
     setVehicleInfo,
-    errors,
   } = useBookingForm(() => {
     onOpenChange(false);
     onBookingCreated?.();
@@ -68,6 +69,94 @@ export default function WalkInBookingModal({
   );
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "card">("cash");
   const [processingPayment, setProcessingPayment] = useState(false);
+  
+  // Determine which tab to show based on subscription plan
+  const getSubscriptionTab = () => {
+    if (!subscriber?.subscription_plan?.name) return "quick";
+    const planName = subscriber.subscription_plan.name.toLowerCase();
+    
+    // If plan name contains "exterior", show Quick Service
+    if (planName.includes("exterior")) {
+      return "quick";
+    }
+    // If plan name contains "express detail" or "express", show Express Detail
+    if (planName.includes("express detail") || planName.includes("express")) {
+      return "express";
+    }
+    // Default to quick
+    return "quick";
+  };
+
+  const [activeTab, setActiveTab] = useState<"quick" | "express">(() => 
+    getSubscriptionTab()
+  );
+
+  // Determine which tabs to show based on subscription
+  const shouldShowQuickTab = () => {
+    if (!subscriber?.subscription_plan?.name) return true; // Default: show both if no plan info
+    const planName = subscriber.subscription_plan.name.toLowerCase();
+    
+    // If plan is specifically for express detail, don't show quick tab
+    if (planName.includes("express detail") || planName.includes("express")) {
+      return false;
+    }
+    
+    // If plan is for exterior, show quick tab
+    if (planName.includes("exterior")) {
+      return true;
+    }
+    
+    // Default: show both tabs if plan doesn't match
+    return true;
+  };
+
+  const shouldShowExpressTab = () => {
+    if (!subscriber?.subscription_plan?.name) return true; // Default: show both if no plan info
+    const planName = subscriber.subscription_plan.name.toLowerCase();
+    
+    // If plan is specifically for exterior, don't show express tab
+    if (planName.includes("exterior")) {
+      return false;
+    }
+    
+    // If plan is for express detail, show express tab
+    if (planName.includes("express detail") || planName.includes("express")) {
+      return true;
+    }
+    
+    // Default: show both tabs if plan doesn't match
+    return true;
+  };
+
+  // Filter services by active tab
+  const quickServices = services.filter(
+    (s) => s.category?.toLowerCase() === "quick service"
+  );
+  const expressServices = services.filter(
+    (s) => s.category?.toLowerCase() === "express detail"
+  );
+  const currentTabServices =
+    activeTab === "quick" ? quickServices : expressServices;
+
+  // Update active tab when subscriber changes
+  useEffect(() => {
+    if (!subscriber?.subscription_plan?.name) {
+      setActiveTab("quick");
+      return;
+    }
+    const planName = subscriber.subscription_plan.name.toLowerCase();
+    
+    // If plan name contains "exterior", show Quick Service
+    if (planName.includes("exterior")) {
+      setActiveTab("quick");
+    }
+    // If plan name contains "express detail" or "express", show Express Detail
+    else if (planName.includes("express detail") || planName.includes("express")) {
+      setActiveTab("express");
+    } else {
+      setActiveTab("quick");
+    }
+  }, [subscriber]);
 
   // Auto-fill vehicle info when subscriber changes
   useEffect(() => {
@@ -106,6 +195,7 @@ export default function WalkInBookingModal({
     handleChange("customerName", subscriber.profiles.full_name);
     handleChange("customerEmail", subscriber.profiles.email);
     handleChange("customerPhone", subscriber.profiles.phone || "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subscriber, setVehicleInfo]);
 
   const calculateAddOnsTotal = () => {
@@ -124,17 +214,41 @@ export default function WalkInBookingModal({
     return { total, details };
   };
 
-  // Auto-select first service after services + vehicleInfo loaded
+  // Auto-select first service after services loaded (for universal categories)
   useEffect(() => {
-    if (!services.length || !vehicleInfo.body_type) return;
+    if (!services.length) return;
     if (!selectedService) {
-      const filtered = services.filter(
-        (s) =>
-          s.category?.toLowerCase() === vehicleInfo.body_type?.toLowerCase()
-      );
-      if (filtered.length) setSelectedService(filtered[0].id);
+      // Try to select first service from current tab
+      if (currentTabServices.length > 0) {
+        setSelectedService(currentTabServices[0].id);
+      }
     }
-  }, [services, vehicleInfo.body_type, selectedService, setSelectedService]);
+  }, [services, currentTabServices, selectedService, setSelectedService]);
+
+  // Reset selected service when tab changes if current selection is not in new tab
+  useEffect(() => {
+    if (selectedService) {
+      const currentService = services.find((s) => s.id === selectedService);
+      if (currentService) {
+        const serviceCategory = currentService.category?.toLowerCase() || "";
+        const isQuickService = serviceCategory === "quick service";
+        const isExpressDetail = serviceCategory === "express detail";
+
+        // If switching tabs and current service is not in new tab, select first service in new tab
+        if (
+          (activeTab === "quick" && !isQuickService) ||
+          (activeTab === "express" && !isExpressDetail)
+        ) {
+          if (currentTabServices.length > 0) {
+            setSelectedService(currentTabServices[0].id);
+          }
+        }
+      }
+    } else if (currentTabServices.length > 0) {
+      // If no service selected, select first in current tab
+      setSelectedService(currentTabServices[0].id);
+    }
+  }, [activeTab, currentTabServices, selectedService, services, setSelectedService]);
 
   const handleCreateBooking = async () => {
     const addOnsTotal = calculateAddOnsTotal().total;
@@ -280,51 +394,141 @@ export default function WalkInBookingModal({
               <Card className="border-dashed border-2 border-border/50 bg-muted/20">
                 <CardContent className="py-8 text-center">
                   <p className="text-sm text-muted-foreground">
-                    No services available for this vehicle type
+                    No services available
                   </p>
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-3">
-                {services.map((s) => (
-                  <Card
-                    key={s.id}
-                    className={`cursor-pointer transition-elegant hover:shadow-md ${
-                      selectedService === s.id
-                        ? "border-2 border-primary bg-accent/30 shadow-elegant"
-                        : "border border-border/50 hover:border-primary/50"
-                    }`}
-                    onClick={() => setSelectedService(s.id)}
-                  >
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base font-semibold flex items-center justify-between">
-                        <span>{s.name}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                            FREE
-                          </span>
-                          {selectedService === s.id && (
-                            <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                              <Check className="w-4 h-4 text-primary-foreground" />
-                            </div>
-                          )}
-                        </div>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-0 space-y-1.5">
-                      {s.features?.map((f: string, i: number) => (
-                        <div
-                          key={i}
-                          className="flex items-center gap-2 text-sm text-muted-foreground"
+              <Tabs
+                value={activeTab}
+                onValueChange={(value) => setActiveTab(value as "quick" | "express")}
+                className="w-full"
+              >
+                <TabsList className={`grid w-full mb-4 ${
+                  shouldShowQuickTab() && shouldShowExpressTab() 
+                    ? "grid-cols-2" 
+                    : "grid-cols-1"
+                }`}>
+                  {shouldShowQuickTab() && (
+                    <TabsTrigger value="quick" className="flex items-center gap-2">
+                      <Clock className="w-4 h-4" />
+                      Quick Service
+                    </TabsTrigger>
+                  )}
+                  {shouldShowExpressTab() && (
+                    <TabsTrigger value="express" className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4" />
+                      Express Detail
+                    </TabsTrigger>
+                  )}
+                </TabsList>
+
+                <TabsContent value="quick" className="mt-0">
+                  {quickServices.length === 0 ? (
+                    <Card className="border-dashed border-2 border-border/50 bg-muted/20">
+                      <CardContent className="py-8 text-center">
+                        <p className="text-sm text-muted-foreground">
+                          No Quick Service packages available
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <div className="grid gap-3">
+                      {quickServices.map((s) => (
+                        <Card
+                          key={s.id}
+                          className={`cursor-pointer transition-elegant hover:shadow-md ${
+                            selectedService === s.id
+                              ? "border-2 border-primary bg-accent/30 shadow-elegant"
+                              : "border border-border/50 hover:border-primary/50"
+                          }`}
+                          onClick={() => setSelectedService(s.id)}
                         >
-                          <Check className="w-3.5 h-3.5 text-primary shrink-0" />
-                          <span>{f}</span>
-                        </div>
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-base font-semibold flex items-center justify-between">
+                              <span>{s.name}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                                  FREE
+                                </span>
+                                {selectedService === s.id && (
+                                  <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                                    <Check className="w-4 h-4 text-primary-foreground" />
+                                  </div>
+                                )}
+                              </div>
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="pt-0 space-y-1.5">
+                            {s.features?.map((f: string, i: number) => (
+                              <div
+                                key={i}
+                                className="flex items-center gap-2 text-sm text-muted-foreground"
+                              >
+                                <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                                <span>{f}</span>
+                              </div>
+                            ))}
+                          </CardContent>
+                        </Card>
                       ))}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="express" className="mt-0">
+                  {expressServices.length === 0 ? (
+                    <Card className="border-dashed border-2 border-border/50 bg-muted/20">
+                      <CardContent className="py-8 text-center">
+                        <p className="text-sm text-muted-foreground">
+                          No Express Detail packages available
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <div className="grid gap-3">
+                      {expressServices.map((s) => (
+                        <Card
+                          key={s.id}
+                          className={`cursor-pointer transition-elegant hover:shadow-md ${
+                            selectedService === s.id
+                              ? "border-2 border-primary bg-accent/30 shadow-elegant"
+                              : "border border-border/50 hover:border-primary/50"
+                          }`}
+                          onClick={() => setSelectedService(s.id)}
+                        >
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-base font-semibold flex items-center justify-between">
+                              <span>{s.name}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                                  FREE
+                                </span>
+                                {selectedService === s.id && (
+                                  <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                                    <Check className="w-4 h-4 text-primary-foreground" />
+                                  </div>
+                                )}
+                              </div>
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="pt-0 space-y-1.5">
+                            {s.features?.map((f: string, i: number) => (
+                              <div
+                                key={i}
+                                className="flex items-center gap-2 text-sm text-muted-foreground"
+                              >
+                                <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                                <span>{f}</span>
+                              </div>
+                            ))}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
             )}
           </div>
 

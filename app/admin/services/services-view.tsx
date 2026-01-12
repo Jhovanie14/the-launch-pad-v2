@@ -86,7 +86,6 @@ export default function ServicesView() {
   const supabase = createClient();
   const [form, setForm] = useState<FormState>(initialFormState);
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState<string | null>(null);
   const [services, setServices] = useState<ServicePackage[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -99,15 +98,17 @@ export default function ServicesView() {
 
   //
   const getServiceIcon = (category: string) => {
-    switch (category) {
-      case "Self-Service":
-        return Car;
-      case "Handwash":
-        return Droplets;
-      case "Professional Detailing":
-        return Sparkles;
-      case "Quick Service":
+    switch (category.toLowerCase()) {
+      case "quick service":
         return Clock;
+      case "express detail":
+        return Sparkles;
+      case "self-service":
+        return Car;
+      case "handwash":
+        return Droplets;
+      case "professional detailing":
+        return Sparkles;
       default:
         return Wrench;
     }
@@ -218,7 +219,7 @@ export default function ServicesView() {
     };
 
     try {
-      let action = editingId ? "updated" : "created";
+      const action = editingId ? "updated" : "created";
       const { error } = editingId
         ? await supabase
             .from("service_packages")

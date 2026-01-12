@@ -85,8 +85,18 @@ export function useBookingForm(onSuccess: () => void, subscriber?: any) {
   // 🔹 Filter Services by Body Type
   // -----------------------------
   const bodyType = (vehicleInfo as any).body_type;
+  
+  // Categories that are NOT dependent on vehicle body_type
+  const UNIVERSAL_CATEGORIES = ["quick service", "express detail"];
+  
   const filteredServices = bodyType
-    ? services.filter((s) => s.category?.toLowerCase() === bodyType.toLowerCase())
+    ? services.filter((s) => {
+        const categoryLower = s.category?.toLowerCase() || "";
+        const isUniversalCategory = UNIVERSAL_CATEGORIES.includes(categoryLower);
+        
+        // Always show universal categories, or show body_type matched services
+        return isUniversalCategory || categoryLower === bodyType.toLowerCase();
+      })
     : services; // Show all services when no body type is provided
 
   // -----------------------------

@@ -1,6 +1,5 @@
 "use client";
 
-import { useAuth } from "@/context/auth-context";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useState } from "react";
 import { CheckCircle, Crown } from "lucide-react";
@@ -11,8 +10,6 @@ import { motion } from "framer-motion";
 
 export default function PricingContent() {
   const [pricing, setPricing] = useState<"monthly" | "yearly">("monthly");
-  const [authOpen, setAuthOpen] = useState(false);
-  const { user, userProfile } = useAuth();
   const { subscription } = useSubscription();
   const { plans, loading } = usePricingPlans();
 
@@ -77,7 +74,7 @@ export default function PricingContent() {
       </section>
       <div className="py-12 bg-linear-to-b from-white to-blue-50">
         <div className="container mx-auto px-4">
-         <motion.div
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}

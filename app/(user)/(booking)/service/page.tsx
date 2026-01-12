@@ -12,13 +12,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { createClient } from "@/utils/supabase/client";
 import {
   ArrowLeft,
   Car,
   Check,
+  Clock,
   Hourglass,
   PackageCheck,
+  Sparkles,
   X,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
@@ -80,9 +83,10 @@ function ServiceSelectionPage() {
   const [vehicleModalOpen, setVehicleModalOpen] = useState(false);
   const [showVehicleError, setShowVehicleError] = useState(false);
   const [showBanner, setShowBanner] = useState(true);
+  const [activeTab, setActiveTab] = useState<"quick" | "express">("quick");
 
   const selectedServiceParam = searchParams.get("service");
-  
+
   // Normalize body_type from URL to match BODY_TYPES array
   const normalizeBodyType = (bodyType: string | null): string => {
     if (!bodyType) return "";
@@ -109,8 +113,6 @@ function ServiceSelectionPage() {
 
   const selectserv = services.find((s) => s.id === selectedService);
 
-  const bodyType = (vehicleSpecs.body_type || "").toLowerCase();
-
   // ============================================
   // HOLIDAY SALE: START - Remove all code between START and END when sale ends
   // ============================================
@@ -120,10 +122,30 @@ function ServiceSelectionPage() {
   // HOLIDAY SALE: END
   // ============================================
 
+  // Categories that are NOT dependent on vehicle body_type
+  const UNIVERSAL_CATEGORIES = ["quick service", "express detail"];
+
   // Filter services by category matching body type
-  const filteredServices = services.filter((s) =>
-    bodyType ? s.category?.toLowerCase() === bodyType : true
-  );
+  // Services with universal categories are always shown
+  const filteredServices = services.filter((s) => {
+    const categoryLower = s.category?.toLowerCase() || "";
+    const isUniversalCategory = UNIVERSAL_CATEGORIES.includes(categoryLower);
+
+    // Always show universal categories, or show body_type matched services
+    return isUniversalCategory;
+  });
+
+  // Filter services by category - Quick Service tab shows only quick service category
+  const quickServices = services.filter((s) => {
+    const categoryLower = s.category?.toLowerCase() || "";
+    return categoryLower === "quick service";
+  });
+
+  // Filter services by category - Express Detail tab shows only express detail category
+  const expressServices = services.filter((s) => {
+    const categoryLower = s.category?.toLowerCase() || "";
+    return categoryLower === "express detail";
+  });
 
   const handlePackageSelect = (serviceId: string) => {
     setSelectedService(serviceId);
@@ -137,19 +159,26 @@ function ServiceSelectionPage() {
   };
 
   const handleContinue = () => {
-    if (
-      !vehicleSpecs.year ||
-      !vehicleSpecs.make ||
-      !vehicleSpecs.model ||
-      !vehicleSpecs.color
-    ) {
-      toast.error("Please add your vehicle information first.");
-      setShowVehicleError(true);
-      vehicleInfoRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
-      return;
+    // Check if selected service requires vehicle info
+    const requiresVehicle =
+      selectserv &&
+      !UNIVERSAL_CATEGORIES.includes(selectserv.category?.toLowerCase() || "");
+
+    if (requiresVehicle) {
+      if (
+        !vehicleSpecs.year ||
+        !vehicleSpecs.make ||
+        !vehicleSpecs.model ||
+        !vehicleSpecs.color
+      ) {
+        toast.error("Please add your vehicle information first.");
+        setShowVehicleError(true);
+        vehicleInfoRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+        return;
+      }
     }
 
     if (!selectserv) return;
@@ -399,144 +428,214 @@ function ServiceSelectionPage() {
             {/* ============================================
                 HOLIDAY SALE: START - Remove discount display code when sale ends
                 ============================================ */}
-            {filteredServices.map((service) => {
-              const originalPrice = service.price;
-              const salePrice = HOLIDAY_SALE_ACTIVE
-                ? originalPrice * (1 - HOLIDAY_SALE_DISCOUNT)
-                : originalPrice;
-
-              return (
-                <Card
-                  key={service.id}
-                  onClick={() => handlePackageSelect(service.id)}
-                  className={`relative cursor-pointer transition-all duration-200 hover:shadow-md border-2 ${
-                    selectedService === service.id
-                      ? "border-blue-500 bg-blue-50/50"
-                      : "border-gray-200 hover:border-blue-300"
-                  }`}
+            <Tabs
+              value={activeTab}
+              onValueChange={(value) =>
+                setActiveTab(value as "quick" | "express")
+              }
+              className="w-full"
+            >
+              <TabsList
+                className={`grid w-full mb-4 ${
+                  activeTab === "quick" || activeTab === "express"
+                    ? "grid-cols-2"
+                    : "grid-cols-1"
+                }`}
+              >
+                <TabsTrigger value="quick" className="flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  Quick Service
+                </TabsTrigger>
+                <TabsTrigger
+                  value="express"
+                  className="flex items-center gap-2"
                 >
-                  {/* Holiday Sale Badge */}
-                  {HOLIDAY_SALE_ACTIVE && (
-                    <div className="absolute -top-3 -right-3 z-10">
-                      <div className="bg-linear-to-r from-red-500 to-red-600 text-white px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
-                        5% OFF
-                      </div>
-                    </div>
-                  )}
+                  <Sparkles className="w-4 h-4" />
+                  Express Detail
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="quick" className="mt-0">
+                {quickServices.length === 0 ? (
+                  <div className="text-center text-gray-500 py-10">
+                    No Quick Service packages available for your vehicle type.
+                  </div>
+                ) : (
+                  <>
+                    {/* ============================================
+                        HOLIDAY SALE: START - Remove discount display code when sale ends
+                        ============================================ */}
+                    {quickServices.map((service) => {
+                      const originalPrice = service.price;
+                      const salePrice = HOLIDAY_SALE_ACTIVE
+                        ? originalPrice * (1 - HOLIDAY_SALE_DISCOUNT)
+                        : originalPrice;
 
-                  <CardHeader className="pb-4">
-                    <div className="flex flex-col sm:flex-row sm:items-start justify-between w-full gap-2">
-                      <div className="flex-1 min-w-0 space-y-1">
-                        <h3 className="text-lg sm:text-base font-semibold text-gray-900 truncate">
-                          {service.name}
-                        </h3>
-                        <div className="flex items-center space-x-2 text-gray-500 text-sm">
-                          <Hourglass className="w-4 h-4 shrink-0" />
-                          <span>{service.duration} mins</span>
-                        </div>
-                      </div>
-                      <div className="text-right shrink-0">
-                        {HOLIDAY_SALE_ACTIVE ? (
-                          <div className="flex flex-col items-end">
-                            <span className="text-sm text-gray-500 line-through">
-                              ${originalPrice.toFixed(2)}
-                            </span>
-                            <span className="text-xl sm:text-lg font-bold text-red-600">
-                              ${salePrice.toFixed(2)}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-xl sm:text-lg font-bold text-gray-900">
-                            ${service.price}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </CardHeader>
-                  {/* ============================================
-                HOLIDAY SALE: END - Replace above with original code:
-                {filteredServices.map((service) => (
-                  <Card
-                    key={service.id}
-                    onClick={() => handlePackageSelect(service.id)}
-                    className={`cursor-pointer transition-all duration-200 hover:shadow-md border-2 ${
-                      selectedService === service.id
-                        ? "border-blue-500 bg-blue-50/50"
-                        : "border-gray-200 hover:border-blue-300"
-                    }`}
-                  >
-                    <CardHeader className="pb-4">
-                      <div className="flex flex-col sm:flex-row sm:items-start justify-between w-full gap-2">
-                        <div className="flex-1 min-w-0 space-y-1">
-                          <h3 className="text-lg sm:text-base font-semibold text-gray-900 truncate">
-                            {service.name}
-                          </h3>
-                          <div className="flex items-center space-x-2 text-gray-500 text-sm">
-                            <Hourglass className="w-4 h-4 flex-shrink-0" />
-                            <span>{service.duration} mins</span>
-                          </div>
-                        </div>
-                        <div className="text-right flex-shrink-0">
-                          <span className="text-xl sm:text-lg font-bold text-gray-900">
-                            ${service.price}
-                          </span>
-                        </div>
-                      </div>
-                    </CardHeader>
-            {/* ============================================
-                HOLIDAY SALE: END - Replace above with original code:
-                {filteredServices.map((service) => (
-                  <Card
-                    key={service.id}
-                    onClick={() => handlePackageSelect(service.id)}
-                    className={`cursor-pointer transition-all duration-200 hover:shadow-md border-2 ${
-                      selectedService === service.id
-                        ? "border-blue-500 bg-blue-50/50"
-                        : "border-gray-200 hover:border-blue-300"
-                    }`}
-                  >
-                    <CardHeader className="pb-4">
-                      <div className="flex flex-col sm:flex-row sm:items-start justify-between w-full gap-2">
-                        <div className="flex-1 min-w-0 space-y-1">
-                          <h3 className="text-lg sm:text-base font-semibold text-gray-900 truncate">
-                            {service.name}
-                          </h3>
-                          <div className="flex items-center space-x-2 text-gray-500 text-sm">
-                            <Hourglass className="w-4 h-4 flex-shrink-0" />
-                            <span>{service.duration} mins</span>
-                          </div>
-                        </div>
-                        <div className="text-right flex-shrink-0">
-                          <span className="text-xl sm:text-lg font-bold text-gray-900">
-                            ${service.price}
-                          </span>
-                        </div>
-                      </div>
-                    </CardHeader>
-                ============================================ */}
-                  <CardContent className="pt-0">
-                    <div className="space-y-3">
-                      <div className="grid gap-1">
-                        {service.features?.map((feature, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center text-sm text-gray-600 min-w-0"
-                          >
-                            <Check className="h-4 w-4 mr-2 text-green-500 shrink-0" />
-                            <span className="truncate">{feature}</span>
-                          </div>
-                        ))}
-                      </div>
-                      {service.description && (
-                        <p className="text-sm text-gray-500 pt-2 border-t border-gray-100 truncate">
-                          {service.description}
-                        </p>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                      return (
+                        <Card
+                          key={service.id}
+                          onClick={() => handlePackageSelect(service.id)}
+                          className={`relative cursor-pointer transition-all duration-200 hover:shadow-md border-2 mb-4 ${
+                            selectedService === service.id
+                              ? "border-blue-500 bg-blue-50/50"
+                              : "border-gray-200 hover:border-blue-300"
+                          }`}
+                        >
+                          {/* Holiday Sale Badge */}
+                          {HOLIDAY_SALE_ACTIVE && (
+                            <div className="absolute -top-3 -right-3 z-10">
+                              <div className="bg-linear-to-r from-red-500 to-red-600 text-white px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
+                                10% OFF
+                              </div>
+                            </div>
+                          )}
+
+                          <CardHeader className="pb-4">
+                            <div className="flex flex-col sm:flex-row sm:items-start justify-between w-full gap-2">
+                              <div className="flex-1 min-w-0 space-y-1">
+                                <h3 className="text-lg sm:text-base font-semibold text-gray-900 truncate">
+                                  {service.name}
+                                </h3>
+                                <div className="flex items-center space-x-2 text-gray-500 text-sm">
+                                  <Hourglass className="w-4 h-4 shrink-0" />
+                                  <span>{service.duration} mins</span>
+                                </div>
+                              </div>
+                              <div className="text-right shrink-0">
+                                {HOLIDAY_SALE_ACTIVE ? (
+                                  <div className="flex flex-col items-end">
+                                    <span className="text-sm text-gray-500 line-through">
+                                      ${originalPrice.toFixed(2)}
+                                    </span>
+                                    <span className="text-xl sm:text-lg font-bold text-red-600">
+                                      ${salePrice.toFixed(2)}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="text-xl sm:text-lg font-bold text-gray-900">
+                                    ${service.price}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="pt-0">
+                            <div className="space-y-3">
+                              <div className="grid gap-1">
+                                {service.features?.map((feature, index) => (
+                                  <div
+                                    key={index}
+                                    className="flex items-center text-sm text-gray-600 min-w-0"
+                                  >
+                                    <Check className="h-4 w-4 mr-2 text-green-500 shrink-0" />
+                                    <span className="truncate">{feature}</span>
+                                  </div>
+                                ))}
+                              </div>
+                              {service.description && (
+                                <p className="text-sm text-gray-500 pt-2 border-t border-gray-100 truncate">
+                                  {service.description}
+                                </p>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </>
+                )}
+              </TabsContent>
+
+              <TabsContent value="express" className="mt-0">
+                {expressServices.length === 0 ? (
+                  <div className="text-center text-gray-500 py-10">
+                    No Express Detail packages available for your vehicle type.
+                  </div>
+                ) : (
+                  <>
+                    {/* ============================================
+                        HOLIDAY SALE: START - Remove discount display code when sale ends
+                        ============================================ */}
+                    {expressServices.map((service) => {
+                      const originalPrice = service.price;
+                      const salePrice = HOLIDAY_SALE_ACTIVE
+                        ? originalPrice * (1 - HOLIDAY_SALE_DISCOUNT)
+                        : originalPrice;
+
+                      return (
+                        <Card
+                          key={service.id}
+                          onClick={() => handlePackageSelect(service.id)}
+                          className={`relative cursor-pointer transition-all duration-200 hover:shadow-md border-2 mb-4 ${
+                            selectedService === service.id
+                              ? "border-blue-500 bg-blue-50/50"
+                              : "border-gray-200 hover:border-blue-300"
+                          }`}
+                        >
+                          {/* Holiday Sale Badge - only show if not free */}
+                          {HOLIDAY_SALE_ACTIVE && (
+                            <div className="absolute -top-3 -right-3 z-10">
+                              <div className="bg-linear-to-r from-red-500 to-red-600 text-white px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
+                                10% OFF
+                              </div>
+                            </div>
+                          )}
+
+                          <CardHeader className="pb-4">
+                            <div className="flex flex-col sm:flex-row sm:items-start justify-between w-full gap-2">
+                              <div className="flex-1 min-w-0 space-y-1">
+                                <h3 className="text-lg sm:text-base font-semibold text-gray-900 truncate">
+                                  {service.name}
+                                </h3>
+                                <div className="flex items-center space-x-2 text-gray-500 text-sm">
+                                  <Hourglass className="w-4 h-4 shrink-0" />
+                                  <span>{service.duration} mins</span>
+                                </div>
+                              </div>
+                              <div className="text-right shrink-0">
+                                {HOLIDAY_SALE_ACTIVE ? (
+                                  <div className="flex flex-col items-end">
+                                    <span className="text-sm text-gray-500 line-through">
+                                      ${originalPrice.toFixed(2)}
+                                    </span>
+                                    <span className="text-xl sm:text-lg font-bold text-red-600">
+                                      ${salePrice.toFixed(2)}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="text-xl sm:text-lg font-bold text-gray-900">
+                                    ${service.price}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="pt-0">
+                            <div className="space-y-3">
+                              <div className="grid gap-1">
+                                {service.features?.map((feature, index) => (
+                                  <div
+                                    key={index}
+                                    className="flex items-center text-sm text-gray-600 min-w-0"
+                                  >
+                                    <Check className="h-4 w-4 mr-2 text-green-500 shrink-0" />
+                                    <span className="truncate">{feature}</span>
+                                  </div>
+                                ))}
+                              </div>
+                              {service.description && (
+                                <p className="text-sm text-gray-500 pt-2 border-t border-gray-100 truncate">
+                                  {service.description}
+                                </p>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </>
+                )}
+              </TabsContent>
+            </Tabs>
             <div
               ref={bottomRef}
               className="flex items-center justify-between border-t p-3 mt-10"

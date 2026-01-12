@@ -88,37 +88,38 @@ export default function ServicePage() {
 
   useEffect(() => {
     fetchPackages();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const getServiceIcon = (category: string) => {
     switch (category.toLowerCase()) {
-      case "sedan":
-        return Car;
-      case "compact suv":
-        return CarFront;
-      case "suvs":
-        return CarFront;
-      case "truck":
-        return Truck;
-      case "small truck":
-        return Truck;
-      case "big truck":
-        return Truck;
-      case "van":
-        return Caravan;
+      case "quick service":
+        return Clock;
+      case "express detail":
+        return Sparkles;
+      // case "sedan":
+      //   return Car;
+      // case "compact suv":
+      //   return CarFront;
+      // case "suvs":
+      //   return CarFront;
+      // case "truck":
+      //   return Truck;
+      // case "small truck":
+      //   return Truck;
+      // case "big truck":
+      //   return Truck;
+      // case "van":
+      //   return Caravan;
       default:
         return Sparkles;
     }
   };
 
-  const categoryOrder = [
-    "sedan",
-    "compact suv",
-    "suvs",
-    "small truck",
-    "big truck",
-    "van",
-  ];
+  // Categories that are NOT dependent on vehicle body_type (shown first)
+  const UNIVERSAL_CATEGORIES = ["quick service", "express detail"];
+
+  const categoryOrder = [...UNIVERSAL_CATEGORIES];
 
   const groupedServices = services.reduce<Record<string, ServicePackage[]>>(
     (acc, service) => {
@@ -130,13 +131,36 @@ export default function ServicePage() {
     {}
   );
 
-  const orderedCategories = Object.entries(groupedServices).sort(
+  // Separate universal categories from vehicle-specific categories
+  const universalServices = Object.entries(groupedServices).filter(([cat]) =>
+    UNIVERSAL_CATEGORIES.includes(cat.toLowerCase())
+  );
+  const vehicleSpecificServices = Object.entries(groupedServices).filter(
+    ([cat]) => !UNIVERSAL_CATEGORIES.includes(cat.toLowerCase())
+  );
+
+  // Sort each group separately
+  const orderedUniversalCategories = universalServices.sort(
+    ([catA], [catB]) => {
+      const indexA = UNIVERSAL_CATEGORIES.indexOf(catA.toLowerCase());
+      const indexB = UNIVERSAL_CATEGORIES.indexOf(catB.toLowerCase());
+      return (indexA === -1 ? 99 : indexA) - (indexB === -1 ? 99 : indexB);
+    }
+  );
+
+  const orderedVehicleCategories = vehicleSpecificServices.sort(
     ([catA], [catB]) => {
       const indexA = categoryOrder.indexOf(catA);
       const indexB = categoryOrder.indexOf(catB);
       return (indexA === -1 ? 99 : indexA) - (indexB === -1 ? 99 : indexB);
     }
   );
+
+  // Combine: universal categories first, then vehicle-specific
+  const orderedCategories = [
+    ...orderedUniversalCategories,
+    ...orderedVehicleCategories,
+  ];
 
   const EASE_OUT: [number, number, number, number] = [0.16, 1, 0.3, 1];
   const popularServices = "Deluxe wash";
@@ -210,7 +234,7 @@ export default function ServicePage() {
         "Dashboard shine",
       ],
       time: "15-45 mins",
-      price: "$30",
+      price: "$25",
       color: "bg-purple-50 border-purple-200",
     },
     {
@@ -232,28 +256,28 @@ export default function ServicePage() {
 
   return (
     <section className="px-4 bg-background">
-      <div className="max-w-7xl mx-auto">
-        {/* ============================================
+      {/* ============================================
             HOLIDAY SALE: START - Remove this banner when sale ends
             ============================================ */}
-        {HOLIDAY_SALE_ACTIVE && (
-          <motion.div
-            className="bg-linear-to-r from-red-500 to-red-600 text-white text-center py-4 px-4 rounded-lg mb-8 shadow-lg"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <div className="flex items-center justify-center gap-2">
-              <span className="text-2xl md:text-3xl font-bold">
-                5% OFF ALL SERVICES!
-              </span>
-            </div>
-          </motion.div>
-        )}
-        {/* ============================================
+      {HOLIDAY_SALE_ACTIVE && (
+        <motion.div
+          className="bg-linear-to-r from-red-500 to-red-600 text-white text-center py-4 px-4 rounded-lg mb-8 shadow-lg"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <div className="flex items-center justify-center gap-2">
+            <span className="text-2xl md:text-3xl font-bold">
+              5% OFF ALL SERVICES!
+            </span>
+          </div>
+        </motion.div>
+      )}
+      {/* ============================================
             HOLIDAY SALE: END
             ============================================ */}
 
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
           className="text-center mb-16"
@@ -361,6 +385,210 @@ export default function ServicePage() {
         <div className="border-t border-border my-16"></div>
 
         <div ref={serviceRef}>
+          {/* Universal Service Categories (Quick Service & Express Detail) */}
+          {orderedCategories
+            .filter(([cat]) => UNIVERSAL_CATEGORIES.includes(cat.toLowerCase()))
+            .map(([category, items]) => (
+              <motion.div
+                key={category}
+                className="mb-12"
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-100px" }}
+                variants={containerVariants}
+              >
+                {/* Category Label */}
+                <motion.h3
+                  className="text-2xl font-semibold mb-8 flex items-center justify-center gap-2 capitalize text-blue-900"
+                  variants={itemVariants}
+                >
+                  {(() => {
+                    const Icon = getServiceIcon(category);
+                    return <Icon className="h-6 w-6 text-primary" />;
+                  })()}
+                  {category}
+                </motion.h3>
+
+                {/* Service Cards */}
+                <motion.div
+                  className="grid sm:grid-cols-2 md:grid-cols-3 gap-8 px-4"
+                  variants={containerVariants}
+                >
+                  {/* ============================================
+                    HOLIDAY SALE: START - Remove discount display code when sale ends
+                    ============================================ */}
+                  {items.map((service, index) => {
+                    const isPopular = popularServices.includes(service.name);
+                    const originalPrice = service.price;
+                    const salePrice = HOLIDAY_SALE_ACTIVE
+                      ? originalPrice * (1 - HOLIDAY_SALE_DISCOUNT)
+                      : originalPrice;
+
+                    return (
+                      <motion.div
+                        key={service.id}
+                        onClick={() => {
+                          router.push(`/service?service=${service.id}`);
+                        }}
+                        variants={cardVariants}
+                        whileHover="hover"
+                      >
+                        <Card
+                          className={`relative hover:shadow-lg transition-shadow border-border/50 h-full cursor-pointer ${
+                            isPopular
+                              ? "border-yellow-500/50 shadow-xl shadow-yellow-500/20 md:scale-105"
+                              : "border-gray-400"
+                          }`}
+                        >
+                          {/* Holiday Sale Badge */}
+                          {HOLIDAY_SALE_ACTIVE && (
+                            <motion.div
+                              className="absolute -top-3 -right-3 z-10"
+                              initial={{ scale: 0, rotate: -20 }}
+                              animate={{ scale: 1, rotate: 0 }}
+                              transition={{
+                                delay: 0.2 + index * 0.1,
+                                type: "spring",
+                                stiffness: 200,
+                              }}
+                            >
+                              <div className="bg-linear-to-r from-red-500 to-red-600 text-white px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
+                                5% OFF
+                              </div>
+                            </motion.div>
+                          )}
+
+                          {/* Popular Badge (only show if holiday sale is not active) */}
+                          {isPopular && !HOLIDAY_SALE_ACTIVE && (
+                            <motion.div
+                              className="absolute -top-3 -right-3 z-10"
+                              initial={{ scale: 0, rotate: -20 }}
+                              animate={{ scale: 1, rotate: 0 }}
+                              transition={{
+                                delay: 0.3 + index * 0.1,
+                                type: "spring",
+                                stiffness: 200,
+                              }}
+                            >
+                              <div className="bg-linear-to-r from-yellow-400 to-yellow-400 text-slate-900 px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
+                                Most Popular
+                              </div>
+                            </motion.div>
+                          )}
+
+                          <CardHeader>
+                            <div className="flex items-start gap-4 mb-2">
+                              <div className="bg-secondary/10 p-3 rounded-lg">
+                                {(() => {
+                                  const Icon = getServiceIcon(category);
+                                  return (
+                                    <Icon className="h-6 w-6 text-primary" />
+                                  );
+                                })()}
+                              </div>
+                              <div className="flex-1">
+                                <CardTitle className="text-xl font-semibold">
+                                  {service.name}
+                                </CardTitle>
+                                <CardDescription className="text-sm text-accent-foreground">
+                                  {service.duration} mins
+                                </CardDescription>
+                              </div>
+                            </div>
+                            <CardDescription className="text-muted-foreground text-sm leading-relaxed">
+                              {service.description}
+                            </CardDescription>
+                          </CardHeader>
+
+                          <CardContent className="flex-1">
+                            <div className="space-y-4 mb-6">
+                              <h4 className="font-medium text-accent-foreground mb-2">
+                                Features
+                              </h4>
+                              <div className="flex flex-col gap-2">
+                                {service.features?.map(
+                                  (feature, featureIndex) => (
+                                    <motion.p
+                                      key={featureIndex}
+                                      className="text-sm text-accent-foreground flex items-center"
+                                      initial={{ opacity: 0, x: -10 }}
+                                      whileInView={{ opacity: 1, x: 0 }}
+                                      transition={{
+                                        delay: featureIndex * 0.05,
+                                        duration: 0.4,
+                                      }}
+                                      viewport={{ once: true }}
+                                    >
+                                      <Check className="h-3 w-3 mr-1 text-primary" />
+                                      {feature}
+                                    </motion.p>
+                                  )
+                                )}
+                              </div>
+                            </div>
+                          </CardContent>
+
+                          <CardFooter>
+                            {/* ============================================
+                              HOLIDAY SALE: START
+                              ============================================ */}
+                            {HOLIDAY_SALE_ACTIVE ? (
+                              <div className="flex flex-col items-start w-full">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-lg text-gray-500 line-through">
+                                    ${originalPrice.toFixed(2)}
+                                  </span>
+                                  <span className="text-xs text-red-600 font-semibold bg-red-50 px-2 py-0.5 rounded">
+                                    Save{" "}
+                                    {Math.round(HOLIDAY_SALE_DISCOUNT * 100)}%
+                                  </span>
+                                </div>
+                                <p className="text-4xl font-bold ">
+                                  ${salePrice.toFixed(2)}
+                                </p>
+                              </div>
+                            ) : (
+                              <p className="text-4xl font-bold text-primary">
+                                ${service.price}
+                              </p>
+                            )}
+                            {/* ============================================
+                              HOLIDAY SALE: END - Replace above with:
+                              <p className="text-4xl font-bold text-primary">
+                                ${service.price}
+                              </p>
+                              ============================================ */}
+                          </CardFooter>
+                          <motion.div
+                            className="absolute -bottom-2 right-0 z-10"
+                            initial={{ scale: 0, rotate: -20 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            transition={{
+                              delay: 0.3 + index * 0.1,
+                              type: "spring",
+                              stiffness: 200,
+                            }}
+                          >
+                            <div className="bg-linear-to-r from-yellow-400 to-yellow-400 text-slate-900 px-3 py-1 text-xs font-bold rounded-lg transform shadow-lg">
+                              Promo runs until February 1st
+                            </div>
+                          </motion.div>
+                        </Card>
+                      </motion.div>
+                    );
+                  })}
+                </motion.div>
+              </motion.div>
+            ))}
+
+          {/* Divider between universal and vehicle-specific services */}
+          {orderedCategories.some(([cat]) =>
+            UNIVERSAL_CATEGORIES.includes(cat.toLowerCase())
+          ) &&
+            orderedCategories.some(
+              ([cat]) => !UNIVERSAL_CATEGORIES.includes(cat.toLowerCase())
+            ) && <div className="border-t border-border my-16"></div>}
+
           {/* Detailed Service Packages by Vehicle Type */}
           <motion.div
             initial="hidden"
@@ -382,94 +610,100 @@ export default function ServicePage() {
             </motion.p>
           </motion.div>
 
-          {orderedCategories.map(([category, items]) => (
-            <motion.div
-              key={category}
-              className="mb-12"
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-100px" }}
-              variants={containerVariants}
-            >
-              {/* Category Label */}
-              <motion.h3
-                className="text-2xl font-semibold mb-8 flex items-center justify-center gap-2 capitalize text-blue-900"
-                variants={itemVariants}
-              >
-                {(() => {
-                  const Icon = getServiceIcon(category);
-                  return <Icon className="h-6 w-6 text-primary" />;
-                })()}
-                {category}
-              </motion.h3>
-
-              {/* Service Cards */}
+          {orderedCategories
+            .filter(
+              ([cat]) => !UNIVERSAL_CATEGORIES.includes(cat.toLowerCase())
+            )
+            .map(([category, items]) => (
               <motion.div
-                className="grid sm:grid-cols-2 md:grid-cols-3 gap-8 px-4"
+                key={category}
+                className="mb-12"
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-100px" }}
                 variants={containerVariants}
               >
-                {/* ============================================
+                {/* Category Label */}
+                <motion.h3
+                  className="text-2xl font-semibold mb-8 flex items-center justify-center gap-2 capitalize text-blue-900"
+                  variants={itemVariants}
+                >
+                  {(() => {
+                    const Icon = getServiceIcon(category);
+                    return <Icon className="h-6 w-6 text-primary" />;
+                  })()}
+                  {category}
+                </motion.h3>
+
+                {/* Service Cards */}
+                <motion.div
+                  className="grid sm:grid-cols-2 md:grid-cols-3 gap-8 px-4"
+                  variants={containerVariants}
+                >
+                  {/* ============================================
                     HOLIDAY SALE: START - Remove discount display code when sale ends
                     ============================================ */}
-                {items.map((service, index) => {
-                  const isPopular = popularServices.includes(service.name);
-                  const originalPrice = service.price;
-                  const salePrice = HOLIDAY_SALE_ACTIVE
-                    ? originalPrice * (1 - HOLIDAY_SALE_DISCOUNT)
-                    : originalPrice;
+                  {items.map((service, index) => {
+                    const isPopular = popularServices.includes(service.name);
+                    const originalPrice = service.price;
+                    const salePrice = HOLIDAY_SALE_ACTIVE
+                      ? originalPrice * (1 - HOLIDAY_SALE_DISCOUNT)
+                      : originalPrice;
 
-                  return (
-                    <motion.div
-                      key={service.id}
-                      onClick={() => {
-                        router.push(`/service?service=${service.id}&body_type=${service.category}`);
-                      }}
-                      variants={cardVariants}
-                      whileHover="hover"
-                    >
-                      <Card
-                        className={`relative hover:shadow-lg transition-shadow border-border/50 h-full cursor-pointer ${
-                          isPopular
-                            ? "border-yellow-500/50 shadow-xl shadow-yellow-500/20 md:scale-105"
-                            : "border-gray-400"
-                        }`}
+                    return (
+                      <motion.div
+                        key={service.id}
+                        onClick={() => {
+                          router.push(
+                            `/service?service=${service.id}&body_type=${service.category}`
+                          );
+                        }}
+                        variants={cardVariants}
+                        whileHover="hover"
                       >
-                        {/* Holiday Sale Badge */}
-                        {HOLIDAY_SALE_ACTIVE && (
-                          <motion.div
-                            className="absolute -top-3 -right-3 z-10"
-                            initial={{ scale: 0, rotate: -20 }}
-                            animate={{ scale: 1, rotate: 0 }}
-                            transition={{
-                              delay: 0.2 + index * 0.1,
-                              type: "spring",
-                              stiffness: 200,
-                            }}
-                          >
-                            <div className="bg-linear-to-r from-red-500 to-red-600 text-white px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
-                              5% OFF
-                            </div>
-                          </motion.div>
-                        )}
+                        <Card
+                          className={`relative hover:shadow-lg transition-shadow border-border/50 h-full cursor-pointer ${
+                            isPopular
+                              ? "border-yellow-500/50 shadow-xl shadow-yellow-500/20 md:scale-105"
+                              : "border-gray-400"
+                          }`}
+                        >
+                          {/* Holiday Sale Badge */}
+                          {HOLIDAY_SALE_ACTIVE && (
+                            <motion.div
+                              className="absolute -top-3 -right-3 z-10"
+                              initial={{ scale: 0, rotate: -20 }}
+                              animate={{ scale: 1, rotate: 0 }}
+                              transition={{
+                                delay: 0.2 + index * 0.1,
+                                type: "spring",
+                                stiffness: 200,
+                              }}
+                            >
+                              <div className="bg-linear-to-r from-red-500 to-red-600 text-white px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
+                                5% OFF
+                              </div>
+                            </motion.div>
+                          )}
 
-                        {/* Popular Badge (only show if holiday sale is not active) */}
-                        {isPopular && !HOLIDAY_SALE_ACTIVE && (
-                          <motion.div
-                            className="absolute -top-3 -right-3 z-10"
-                            initial={{ scale: 0, rotate: -20 }}
-                            animate={{ scale: 1, rotate: 0 }}
-                            transition={{
-                              delay: 0.3 + index * 0.1,
-                              type: "spring",
-                              stiffness: 200,
-                            }}
-                          >
-                            <div className="bg-linear-to-r from-yellow-400 to-yellow-400 text-slate-900 px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
-                              Most Popular
-                            </div>
-                          </motion.div>
-                        )}
-                        {/* ============================================
+                          {/* Popular Badge (only show if holiday sale is not active) */}
+                          {isPopular && !HOLIDAY_SALE_ACTIVE && (
+                            <motion.div
+                              className="absolute -top-3 -right-3 z-10"
+                              initial={{ scale: 0, rotate: -20 }}
+                              animate={{ scale: 1, rotate: 0 }}
+                              transition={{
+                                delay: 0.3 + index * 0.1,
+                                type: "spring",
+                                stiffness: 200,
+                              }}
+                            >
+                              <div className="bg-linear-to-r from-yellow-400 to-yellow-400 text-slate-900 px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
+                                Most Popular
+                              </div>
+                            </motion.div>
+                          )}
+                          {/* ============================================
                     HOLIDAY SALE: END - Replace above with original code:
                     {items.map((service, index) => {
                       const isPopular = popularServices.includes(service.name);
@@ -509,110 +743,110 @@ export default function ServicePage() {
                             )}
                     ============================================ */}
 
-                        <CardHeader>
-                          <div className="flex items-start gap-4 mb-2">
-                            <div className="bg-secondary/10 p-3 rounded-lg">
-                              {(() => {
-                                const Icon = getServiceIcon(category);
-                                return (
-                                  <Icon className="h-6 w-6 text-primary" />
-                                );
-                              })()}
+                          <CardHeader>
+                            <div className="flex items-start gap-4 mb-2">
+                              <div className="bg-secondary/10 p-3 rounded-lg">
+                                {(() => {
+                                  const Icon = getServiceIcon(category);
+                                  return (
+                                    <Icon className="h-6 w-6 text-primary" />
+                                  );
+                                })()}
+                              </div>
+                              <div className="flex-1">
+                                <CardTitle className="text-xl font-semibold">
+                                  {service.name}
+                                </CardTitle>
+                                <CardDescription className="text-sm text-accent-foreground">
+                                  {service.duration} mins
+                                </CardDescription>
+                              </div>
                             </div>
-                            <div className="flex-1">
-                              <CardTitle className="text-xl font-semibold">
-                                {service.name}
-                              </CardTitle>
-                              <CardDescription className="text-sm text-accent-foreground">
-                                {service.duration} mins
-                              </CardDescription>
-                            </div>
-                          </div>
-                          <CardDescription className="text-muted-foreground text-sm leading-relaxed">
-                            {service.description}
-                          </CardDescription>
-                        </CardHeader>
+                            <CardDescription className="text-muted-foreground text-sm leading-relaxed">
+                              {service.description}
+                            </CardDescription>
+                          </CardHeader>
 
-                        <CardContent className="flex-1">
-                          <div className="space-y-4 mb-6">
-                            <h4 className="font-medium text-accent-foreground mb-2">
-                              Features
-                            </h4>
-                            <div className="flex flex-col gap-2">
-                              {service.features?.map(
-                                (feature, featureIndex) => (
-                                  <motion.p
-                                    key={featureIndex}
-                                    className="text-sm text-accent-foreground flex items-center"
-                                    initial={{ opacity: 0, x: -10 }}
-                                    whileInView={{ opacity: 1, x: 0 }}
-                                    transition={{
-                                      delay: featureIndex * 0.05,
-                                      duration: 0.4,
-                                    }}
-                                    viewport={{ once: true }}
-                                  >
-                                    <Check className="h-3 w-3 mr-1 text-primary" />
-                                    {feature}
-                                  </motion.p>
-                                )
-                              )}
+                          <CardContent className="flex-1">
+                            <div className="space-y-4 mb-6">
+                              <h4 className="font-medium text-accent-foreground mb-2">
+                                Features
+                              </h4>
+                              <div className="flex flex-col gap-2">
+                                {service.features?.map(
+                                  (feature, featureIndex) => (
+                                    <motion.p
+                                      key={featureIndex}
+                                      className="text-sm text-accent-foreground flex items-center"
+                                      initial={{ opacity: 0, x: -10 }}
+                                      whileInView={{ opacity: 1, x: 0 }}
+                                      transition={{
+                                        delay: featureIndex * 0.05,
+                                        duration: 0.4,
+                                      }}
+                                      viewport={{ once: true }}
+                                    >
+                                      <Check className="h-3 w-3 mr-1 text-primary" />
+                                      {feature}
+                                    </motion.p>
+                                  )
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        </CardContent>
+                          </CardContent>
 
-                        <CardFooter>
-                          {/* ============================================
+                          <CardFooter>
+                            {/* ============================================
                               HOLIDAY SALE: START
                               ============================================ */}
-                          {HOLIDAY_SALE_ACTIVE ? (
-                            <div className="flex flex-col items-start w-full">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="text-lg text-gray-500 line-through">
-                                  ${originalPrice.toFixed(2)}
-                                </span>
-                                <span className="text-xs text-red-600 font-semibold bg-red-50 px-2 py-0.5 rounded">
-                                  Save {Math.round(HOLIDAY_SALE_DISCOUNT * 100)}
-                                  %
-                                </span>
+                            {HOLIDAY_SALE_ACTIVE ? (
+                              <div className="flex flex-col items-start w-full">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-lg text-gray-500 line-through">
+                                    ${originalPrice.toFixed(2)}
+                                  </span>
+                                  <span className="text-xs text-red-600 font-semibold bg-red-50 px-2 py-0.5 rounded">
+                                    Save{" "}
+                                    {Math.round(HOLIDAY_SALE_DISCOUNT * 100)}%
+                                  </span>
+                                </div>
+                                <p className="text-4xl font-bold ">
+                                  ${salePrice.toFixed(2)}
+                                </p>
                               </div>
-                              <p className="text-4xl font-bold ">
-                                ${salePrice.toFixed(2)}
+                            ) : (
+                              <p className="text-4xl font-bold text-primary">
+                                ${service.price}
                               </p>
-                            </div>
-                          ) : (
-                            <p className="text-4xl font-bold text-primary">
-                              ${service.price}
-                            </p>
-                          )}
-                          {/* ============================================
+                            )}
+                            {/* ============================================
                               HOLIDAY SALE: END - Replace above with:
                               <p className="text-4xl font-bold text-primary">
                                 ${service.price}
                               </p>
                               ============================================ */}
-                        </CardFooter>
-                        <motion.div
-                          className="absolute -bottom-2 right-0 z-10"
-                          initial={{ scale: 0, rotate: -20 }}
-                          animate={{ scale: 1, rotate: 0 }}
-                          transition={{
-                            delay: 0.3 + index * 0.1,
-                            type: "spring",
-                            stiffness: 200,
-                          }}
-                        >
-                          <div className="bg-linear-to-r from-yellow-400 to-yellow-400 text-slate-900 px-3 py-1 text-xs font-bold rounded-lg transform shadow-lg">
-                            Promo runs until February 1st
-                          </div>
-                        </motion.div>
-                      </Card>
-                    </motion.div>
-                  );
-                })}
+                          </CardFooter>
+                          <motion.div
+                            className="absolute -bottom-2 right-0 z-10"
+                            initial={{ scale: 0, rotate: -20 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            transition={{
+                              delay: 0.3 + index * 0.1,
+                              type: "spring",
+                              stiffness: 200,
+                            }}
+                          >
+                            <div className="bg-linear-to-r from-yellow-400 to-yellow-400 text-slate-900 px-3 py-1 text-xs font-bold rounded-lg transform shadow-lg">
+                              Promo runs until February 1st
+                            </div>
+                          </motion.div>
+                        </Card>
+                      </motion.div>
+                    );
+                  })}
+                </motion.div>
               </motion.div>
-            </motion.div>
-          ))}
+            ))}
         </div>
         {/* Bottom CTA */}
         <motion.div

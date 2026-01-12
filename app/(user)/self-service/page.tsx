@@ -8,6 +8,7 @@ import {
   DollarSign,
   Sparkles,
   Zap,
+  X,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -64,8 +65,8 @@ export default function SelfServicePage() {
               Self-Service Bay Membership
             </h1>
             <p className="text-xl md:text-2xl text-slate-600 mb-4">
-              DIY car wash — pay-per-use $10 per visit, or get daily
-              access for just $19.99/month
+              DIY car wash — pay-per-use $10 per visit, or get daily access for
+              just $19.99/month
             </p>
             <p className="text-lg text-blue-900 font-bold mb-8">
               That's only ¢0.67 per day when you subscribe! 🎉
@@ -186,19 +187,27 @@ export default function SelfServicePage() {
                 <ul className="space-y-3">
                   <li className="flex items-start gap-2">
                     <CheckCircle className="w-5 h-5 text-yellow-400 mt-0.5 shrink-0" />
-                    <span className="text-white">Daily access</span>
+                    <span className="text-white">One wash per day</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle className="w-5 h-5 text-yellow-400 mt-0.5 shrink-0" />
-                    <span className="text-white">Use once per day</span>
+                    <span className="text-white">Up to 10 minutes per bay use</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle className="w-5 h-5 text-yellow-400 mt-0.5 shrink-0" />
-                    <span className="text-white">Anything in the bay</span>
+                    <span className="text-white">Access to self-service equipment</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle className="w-5 h-5 text-yellow-400 mt-0.5 shrink-0" />
                     <span className="text-white">Cancel anytime</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <X className="w-5 h-5 text-red-400 mt-0.5 shrink-0" />
+                    <span className="text-white">Vacuum not included</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <X className="w-5 h-5 text-red-400 mt-0.5 shrink-0" />
+                    <span className="text-white">Not valid for detailing services</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Zap className="w-5 h-5 text-yellow-400 mt-0.5 shrink-0" />
@@ -216,7 +225,7 @@ export default function SelfServicePage() {
                     </span>
                     <br />
                     <span className="text-yellow-400 text-xs">
-                      no vacuum included
+                      Membership limited to one vehicle per day
                     </span>
                   </p>
                 </div>
