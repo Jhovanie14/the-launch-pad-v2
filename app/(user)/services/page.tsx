@@ -848,30 +848,6 @@ export default function ServicePage() {
               </motion.div>
             ))}
         </div>
-        {/* Bottom CTA */}
-        <motion.div
-          className="text-center my-16 pt-12 border-t"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-        >
-          <h3 className="text-2xl font-bold mb-4 text-blue-900">
-            Ready to Get Started?
-          </h3>
-          <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
-            Book your service online in just a few clicks. Choose your date,
-            time, and service package.
-          </p>
-          <Button
-            size="lg"
-            className="text-lg px-8 py-6 bg-primary hover:bg-primary/90"
-            onClick={() => openBookingModal()}
-          >
-            Book Your Service Now
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
-        </motion.div>
       </div>
     </section>
   );

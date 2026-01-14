@@ -50,7 +50,7 @@ export function useBookingRealtime(
               .select(
                 `
                 *,
-                vehicle:vehicles ( year, make, model, body_type, colors ),
+                vehicle:vehicles ( year, make, model, body_type, colors, license_plate ),
                 booking_add_ons (
                   add_ons ( id, name, price, duration, is_active )
                 )

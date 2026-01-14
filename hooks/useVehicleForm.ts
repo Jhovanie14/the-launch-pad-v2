@@ -5,24 +5,24 @@ import { z } from "zod";
 
 // Vehicle schema
 export const vehicleSchema = z.object({
-  make: z.string().min(1, "Make is required"),
-  model: z.string().min(1, "Model is required"),
-  year: z.string().regex(/^\d{4}$/, "Year must be a 4-digit number"),
-  body_type: z.string().optional(),
-  color: z.string().min(1, "Color is required"),
-  licensePlate: z.string().optional(),
+  // make: z.string().min(1, "Make is required"),
+  // model: z.string().min(1, "Model is required"),
+  // year: z.string().regex(/^\d{4}$/, "Year must be a 4-digit number"),
+  // body_type: z.string().optional(),
+  // color: z.string().min(1, "Color is required"),
+  license_plate: z.string().min(1, "License plate is required"),
 });
 
 export type VehicleFormData = z.infer<typeof vehicleSchema>;
 
 export function useVehicleForm(initialValues?: Partial<VehicleFormData>) {
   const [vehicleInfo, setVehicleInfo] = useState<VehicleFormData>({
-    year: initialValues?.year ?? "",
-    make: initialValues?.make ?? "",
-    model: initialValues?.model ?? "",
-    body_type: initialValues?.body_type ?? "",
-    color: initialValues?.color ?? "",
-    licensePlate: initialValues?.licensePlate ?? "",
+    // year: initialValues?.year ?? "",
+    // make: initialValues?.make ?? "",
+    // model: initialValues?.model ?? "",
+    // body_type: initialValues?.body_type ?? "",
+    // color: initialValues?.color ?? "",
+    license_plate: initialValues?.license_plate ?? "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -60,11 +60,11 @@ export function useVehicleFlock(initialVehicles?: VehicleFormData[]) {
       ? initialVehicles
       : [
           {
-            year: "",
-            make: "",
-            model: "",
-            color: "",
-            licensePlate: "",
+            // year: "",
+            // make: "",
+            // model: "",
+            // color: "",
+            license_plate: "",
           },
         ]
   );
@@ -80,12 +80,12 @@ export function useVehicleFlock(initialVehicles?: VehicleFormData[]) {
       setVehicles([
         ...vehicles,
         {
-          year: "",
-          make: "",
-          model: "",
-          body_type: "",
-          color: "",
-          licensePlate: "",
+          // year: "",
+          // make: "",
+          // model: "",
+          // body_type: "",
+          // color: "",
+          license_plate: "",
         },
       ]);
     }

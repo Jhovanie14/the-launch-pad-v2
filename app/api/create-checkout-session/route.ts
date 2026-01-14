@@ -11,19 +11,10 @@ export async function POST(req: Request) {
       billingCycle: "monthly" | "yearly";
       userId?: string | null;
       vehicle?: {
-        year: number;
-        make: string;
-        model: string;
-        body_type?: string;
-        color?: string;
+        license_plate?: string;
       };
       vehicles?: Array<{
-        year: number;
-        make: string;
-        model: string;
-        body_type?: string;
-        color?: string;
-        licensePlate?: string;
+        license_plate?: string;
         planId?: string;
       }>;
       couponId?: string;
@@ -51,12 +42,7 @@ export async function POST(req: Request) {
   const vehicleIds: (string | null)[] = [];
   for (const vehicle of vehiclesList) {
     const vehicleId = await ensureVehicle({
-      user_id: user?.id ?? userId ?? null,
-      year: Number(vehicle.year),
-      make: vehicle.make,
-      model: vehicle.model,
-      body_type: vehicle.body_type,
-      colors: [vehicle.color ?? ""],
+      license_plate: vehicle.license_plate ?? "",
     });
     vehicleIds.push(vehicleId);
   }
@@ -104,7 +90,10 @@ export async function POST(req: Request) {
       );
     }
 
-    let rawId = billingCycle === "monthly" ? vPlan.stripe_price_id_monthly : vPlan.stripe_price_id_yearly;
+    let rawId =
+      billingCycle === "monthly"
+        ? vPlan.stripe_price_id_monthly
+        : vPlan.stripe_price_id_yearly;
     let vPriceId: string | null = rawId ?? null;
     if (vPriceId && vPriceId.startsWith("prod_")) {
       const prices = await stripe.prices.list({

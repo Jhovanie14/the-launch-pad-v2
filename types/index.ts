@@ -16,6 +16,7 @@ export interface Vehicle {
   model: string | null;
   body_type: string | null;
   colors: string | null;
+  license_plate: string;
 }
 
 export interface Booking {
@@ -93,6 +94,7 @@ export interface Subscription {
     model: string;
     body_type?: string;
     colors?: string[];
+    license_plate: string;
   }>;
 }
 

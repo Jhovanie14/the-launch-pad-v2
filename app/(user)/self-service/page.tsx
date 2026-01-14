@@ -102,20 +102,22 @@ export default function SelfServicePage() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 }}
-                className="p-6 bg-slate-50 rounded-xl border-2 border-slate-200"
+                className="p-6 bg-slate-50 rounded-xl border-2 border-slate-200 flex flex-col" // Add flex flex-col
               >
                 <div className="text-center mb-4">
                   <h3 className="text-2xl font-bold text-slate-900 mb-2">
-                    Average Pay Per Use
+                    Average customer spend
                   </h3>
                   <div className="text-4xl font-bold text-slate-900">$10</div>
                   <p className="text-slate-600 text-sm">per visit</p>
                 </div>
-                <ul className="space-y-3">
+                <ul className="flex-1 space-y-3">
+                  {" "}
+                  {/* flex-1 makes this grow */}
                   <li className="flex items-start gap-2">
                     <CheckCircle className="w-5 h-5 text-gray-600 mt-0.5 shrink-0" />
                     <span className="text-slate-700">
-                      Access to all equipment
+                      Access to self-service equipment
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
@@ -128,176 +130,86 @@ export default function SelfServicePage() {
                       Pay only when you use
                     </span>
                   </li>
+                  <li className="flex items-start gap-2">
+                    <X className="w-5 h-5 text-red-400 mt-0.5 shrink-0" />
+                    <span className="text-slate-700">Higher cost per wash</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <X className="w-5 h-5 text-red-400 mt-0.5 shrink-0" />
+                    <span className="text-slate-700">
+                      No daily wash guarantee
+                    </span>
+                  </li>
                 </ul>
-                <div className="mt-6 p-4 bg-white rounded-lg border border-slate-200">
-                  <p className="text-sm text-slate-600">
-                    <strong>Monthly cost if used 4x:</strong> $40
+                <div className="mt-6 p-4 bg-red-50 rounded-lg border border-red-200">
+                  <p className="text-sm text-slate-800">
+                    <strong className="text-red-600">
+                      Monthly cost if used 4x: $40.00
+                    </strong>
+                    <br />
+                    <span className="text-red-600 text-xs font-semibold">
+                      That's $20.01 MORE than membership!
+                    </span>
                   </p>
                 </div>
               </motion.div>
 
               {/* Membership - Highlighted */}
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3 }}
-                className="p-6 bg-linear-to-br from-blue-900 to-blue-800 rounded-xl border-4 border-yellow-400 relative overflow-hidden shadow-xl"
-              >
-                <div className="absolute top-0 right-0 bg-yellow-400 text-slate-900 px-4 py-1 text-xs font-bold rounded-bl-lg">
-                  BEST VALUE
-                </div>
-                <div className="text-center mb-4 mt-4">
-                  <h3 className="text-2xl font-bold text-white mb-2">
-                    Monthly Membership
-                  </h3>
-                  {/* ============================================
-                      PROMO CODE DISCOUNT DISPLAY (COMMENT OUT WHEN PROMO ENDS)
-                      ============================================ */}
-                  {/* <div className="flex items-center justify-center gap-2 mb-2">
-                    <span className="text-lg text-blue-200 line-through">
-                      $19.99
-                    </span>
-                    <span className="text-xs text-yellow-400 font-semibold bg-yellow-400/20 px-2 py-0.5 rounded">
-                      Save 20%
-                    </span>
+              {loading ? (
+                <LoadingDots />
+              ) : plan ? (
+                <>
+                  <div className="border-4 rounded-xl border-yellow-400 shadow-xl">
+                    <PricingCard
+                      plan={plan}
+                      pricing="monthly"
+                      subscription={subscription}
+                      handleCheckout={handleCheckout}
+                    />
                   </div>
-                  <div className="text-4xl font-bold text-yellow-400">
-                    $15.99
-                  </div>
-                  <p className="text-blue-200 text-sm">per month</p>
-                  <div className="mt-2 inline-block bg-yellow-400/20 px-3 py-1 rounded-full">
-                    <p className="text-yellow-400 font-bold text-lg">
-                      Only ¢0.53/day
-                    </p>
-                  </div> */}
-                  {/* ============================================
-                      ORIGINAL PRICE DISPLAY (UNCOMMENT WHEN PROMO ENDS)
-                      ============================================ */}
-                  <div className="text-4xl font-bold text-yellow-400">
-                    $19.99
-                  </div>
-                  <p className="text-blue-200 text-sm">per month</p>
-                  <div className="mt-2 inline-block bg-yellow-400/20 px-3 py-1 rounded-full">
-                    <p className="text-yellow-400 font-bold text-lg">
-                      Only ¢0.67/day
-                    </p>
-                  </div>
-                  {/* ============================================ */}
-                </div>
-                <ul className="space-y-3">
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-5 h-5 text-yellow-400 mt-0.5 shrink-0" />
-                    <span className="text-white">One wash per day</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-5 h-5 text-yellow-400 mt-0.5 shrink-0" />
-                    <span className="text-white">Up to 10 minutes per bay use</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-5 h-5 text-yellow-400 mt-0.5 shrink-0" />
-                    <span className="text-white">Access to self-service equipment</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-5 h-5 text-yellow-400 mt-0.5 shrink-0" />
-                    <span className="text-white">Cancel anytime</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <X className="w-5 h-5 text-red-400 mt-0.5 shrink-0" />
-                    <span className="text-white">Vacuum not included</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <X className="w-5 h-5 text-red-400 mt-0.5 shrink-0" />
-                    <span className="text-white">Not valid for detailing services</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Zap className="w-5 h-5 text-yellow-400 mt-0.5 shrink-0" />
-                    <span className="text-white font-semibold">
-                      Save up to 75%!
-                    </span>
-                  </li>
-                </ul>
-                <div className="mt-6 p-4 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
-                  <p className="text-sm text-white">
-                    <strong>Savings vs. pay-per-use:</strong> $21.01/month
-                    <br />
-                    <span className="text-yellow-400 text-xs">
-                      (Based on 4 washes per month)
-                    </span>
-                    <br />
-                    <span className="text-yellow-400 text-xs">
-                      Membership limited to one vehicle per day
-                    </span>
-                  </p>
-                </div>
-              </motion.div>
+                  <AuthPromptModal
+                    open={authOpen}
+                    onClose={() => setAuthOpen(false)}
+                    next={`/dashboard/pricing/self-service-cart`}
+                  />
+                  {/* Daily usage info below the card - only show for logged in users with active subscription */}
+                  {user && subscription && (
+                    <div className="mt-6 p-6 bg-white rounded-lg border border-slate-200 shadow-sm">
+                      <p className="font-semibold text-slate-900 mb-2">
+                        Status: <span className="text-green-600">Active</span>
+                      </p>
+                      <p className="text-slate-600 text-sm mb-2">
+                        Started:{" "}
+                        {new Date(subscription.started_at).toLocaleDateString()}
+                      </p>
+                      <p className="text-slate-600 text-sm mb-4">
+                        {usedToday ? (
+                          <span className="text-green-600 font-medium">
+                            ✓ Used today
+                          </span>
+                        ) : (
+                          <span className="text-slate-500">
+                            Not used yet today
+                          </span>
+                        )}
+                      </p>
+                      <Button
+                        variant="outline"
+                        className="w-full border-blue-900 text-blue-900 hover:bg-blue-50"
+                        onClick={() =>
+                          router.push("/dashboard/selfservice/use")
+                        }
+                      >
+                        Log a Visit
+                      </Button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-slate-600">Loading plan information...</p>
+              )}
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* Pricing Card Section */}
-      <section className="py-16 bg-linear-to-b from-white to-blue-50">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            className="max-w-xl mx-auto text-center space-y-6"
-          >
-            <h2 className="text-3xl font-bold text-center text-blue-900 mb-8">
-              Get Started Today
-            </h2>
-
-            {loading ? (
-              <LoadingDots />
-            ) : plan ? (
-              <>
-                <PricingCard
-                  plan={plan}
-                  pricing="monthly"
-                  subscription={subscription}
-                  handleCheckout={handleCheckout}
-                />
-                <AuthPromptModal
-                  open={authOpen}
-                  onClose={() => setAuthOpen(false)}
-                  next={`/dashboard/pricing/self-service-cart`}
-                />
-                {/* Daily usage info below the card - only show for logged in users with active subscription */}
-                {user && subscription && (
-                  <div className="mt-6 p-6 bg-white rounded-lg border border-slate-200 shadow-sm">
-                    <p className="font-semibold text-slate-900 mb-2">
-                      Status: <span className="text-green-600">Active</span>
-                    </p>
-                    <p className="text-slate-600 text-sm mb-2">
-                      Started:{" "}
-                      {new Date(subscription.started_at).toLocaleDateString()}
-                    </p>
-                    <p className="text-slate-600 text-sm mb-4">
-                      {usedToday ? (
-                        <span className="text-green-600 font-medium">
-                          ✓ Used today
-                        </span>
-                      ) : (
-                        <span className="text-slate-500">
-                          Not used yet today
-                        </span>
-                      )}
-                    </p>
-                    <Button
-                      variant="outline"
-                      className="w-full border-blue-900 text-blue-900 hover:bg-blue-50"
-                      onClick={() => router.push("/dashboard/selfservice/use")}
-                    >
-                      Log a Visit
-                    </Button>
-                  </div>
-                )}
-              </>
-            ) : (
-              <p className="text-slate-600">Loading plan information...</p>
-            )}
-          </motion.div>
         </div>
       </section>
 

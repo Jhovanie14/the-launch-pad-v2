@@ -36,7 +36,8 @@ export async function getActiveSubscription(
         make,
         model,
         body_type,
-        colors
+        colors,
+        license_plate
       )
     `
     )

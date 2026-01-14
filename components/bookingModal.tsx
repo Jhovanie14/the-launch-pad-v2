@@ -80,7 +80,8 @@ export default function BookingModal() {
           make,
           model,
           body_type,
-          colors
+          colors,
+          license_plate
           )
           `
         )
@@ -115,11 +116,7 @@ export default function BookingModal() {
         return;
       }
       params = new URLSearchParams({
-        year: String(selected.year),
-        make: selected.make,
-        model: selected.model,
-        body_type: selected.body_type,
-        color: selected.colors?.[0] ?? "",
+        license_plate: selected.license_plate,
       });
     } else {
       // Build URL with vehicle specs
@@ -181,15 +178,15 @@ export default function BookingModal() {
                 <SelectContent>
                   {subscriptionVehicles.map((v) => (
                     <SelectItem key={v.id} value={v.id}>
-                      {v.year} {v.make} {v.model} {v.trim}
+                      License Plate: {v.license_plate}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
           ) : (
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
+            <div className="">
+              {/* <div className="space-y-2">
                 <Label>Make</Label>
                 <Input
                   value={vehicleInfo.make}
@@ -260,26 +257,9 @@ export default function BookingModal() {
                 {errors.color && (
                   <p className="text-red-500 text-sm">{errors.color}</p>
                 )}
-              </div>
-
-              {/* <div>
-                <Label>Trim</Label>
-                <Input
-                  value={vehicleInfo.trim}
-                  onChange={(e) =>
-                    setVehicleInfo((prev) => ({
-                      ...prev,
-                      trim: e.target.value,
-                    }))
-                  }
-                  placeholder="e.g., XLE or leave it blank"
-                />
-                {errors.trim && (
-                  <p className="text-red-500 text-sm">{errors.trim}</p>
-                )}
               </div> */}
 
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label>Body Type</Label>
                 <Select
                   value={vehicleInfo.body_type}
@@ -301,22 +281,23 @@ export default function BookingModal() {
                 {errors.body_type && (
                   <p className="text-red-500 text-sm">{errors.body_type}</p>
                 )}
-              </div>
+              </div> */}
 
               <div className="space-y-2">
                 <Label>License Plate</Label>
                 <Input
-                  value={vehicleInfo.licensePlate}
+                  value={vehicleInfo.license_plate}
                   onChange={(e) =>
                     setVehicleInfo((prev) => ({
                       ...prev,
-                      licensePlate: e.target.value,
+                      license_plate: e.target.value.toUpperCase(),
                     }))
                   }
                   placeholder="e.g., ABC123 or leave it blank"
+                  className="text-lg font-mono uppercase"
                 />
-                {errors.licensePlate && (
-                  <p className="text-red-500 text-sm">{errors.licensePlate}</p>
+                {errors.license_plate && (
+                  <p className="text-red-500 text-sm">{errors.license_plate}</p>
                 )}
               </div>
             </div>

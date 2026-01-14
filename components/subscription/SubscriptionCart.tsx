@@ -5,13 +5,6 @@ import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Check, Plus, X, Tag } from "lucide-react";
@@ -99,22 +92,6 @@ export default function SubscriptionCart({
 
   // Flat pricing model: no per-body-type pricing. All vehicles use the selected plan price.
   // Body type selection is for record only (no pricing effect).
-
-  const BODY_TYPES = [
-    "Sedan",
-    "Hatchback",
-    "Coupe",
-    "Convertible",
-    "Wagon",
-    "SUV",
-    "Compact SUV",
-    "Crossover",
-    "Minivan",
-    "Van",
-    "Pickup Truck",
-    "Cargo Van",
-    "Other",
-  ];
 
   useEffect(() => {
     if (!planId) return;
@@ -240,12 +217,12 @@ export default function SubscriptionCart({
       setLoadingCheckout(true);
 
       const vehiclesPayload = vehicles.map((vehicle) => ({
-        year: Number(vehicle.year),
-        make: vehicle.make,
-        model: vehicle.model,
-        body_type: vehicle.body_type,
-        color: vehicle.color,
-        licensePlate: vehicle.licensePlate,
+        // year: Number(vehicle.year),
+        // make: vehicle.make,
+        // model: vehicle.model,
+        // body_type: vehicle.body_type,
+        // color: vehicle.color,
+        license_plate: vehicle.license_plate,
       }));
 
       // Select the appropriate coupon based on plan type
@@ -329,8 +306,8 @@ export default function SubscriptionCart({
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
+              <div className="">
+                {/* <div className="space-y-2">
                   <Label>Year</Label>
                   <Input
                     type="number"
@@ -419,17 +396,18 @@ export default function SubscriptionCart({
                     One price covers all vehicles — no upcharges for size. (A
                     10% family discount is applied to additional vehicles.)
                   </p>
-                </div>
+                </div> */}
 
                 <div className="space-y-2">
                   <Label htmlFor={`licensePlate-${index}`}>License Plate</Label>
                   <Input
                     id={`licensePlate-${index}`}
                     placeholder="e.g., ABC123 (optional)"
-                    value={vehicle.licensePlate ?? ""}
+                    value={vehicle.license_plate ?? ""}
                     onChange={(e) =>
-                      updateVehicle(index, { licensePlate: e.target.value })
+                      updateVehicle(index, { license_plate: e.target.value })
                     }
+                    className="uppercase text-lg font-mono "
                   />
                   {errors[index]?.licensePlate && (
                     <p className="text-red-500 text-sm">
@@ -444,7 +422,10 @@ export default function SubscriptionCart({
 
         {canAddMore && (
           <>
-            <Label className="text-xl">+ Add Family Vehicles</Label>
+            <Label className="text-xl">
+              + Add Family Vehicles{" "}
+              <span className="text-green-500"> 10% discount</span>
+            </Label>
             <Button
               variant="outline"
               onClick={addVehicle}

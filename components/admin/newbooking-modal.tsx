@@ -71,9 +71,10 @@ export default function NewBookingModal({
     addOns
   );
 
-  const totalAmount = discountPercent > 0
-    ? baseTotal - (baseTotal * discountPercent) / 100
-    : baseTotal;
+  const totalAmount =
+    discountPercent > 0
+      ? baseTotal - (baseTotal * discountPercent) / 100
+      : baseTotal;
 
   // Track previous open state to reset only when modal closes
   const prevOpenRef = useRef(open);
@@ -131,12 +132,7 @@ export default function NewBookingModal({
       return;
     }
 
-    if (
-      !vehicleInfo.make ||
-      !vehicleInfo.model ||
-      !vehicleInfo.year ||
-      !vehicleInfo.body_type
-    ) {
+    if (!vehicleInfo.license_plate) {
       toast.error("Please fill in all required vehicle information");
       return;
     }
@@ -169,12 +165,8 @@ export default function NewBookingModal({
             customer_name: form.customerName,
             customer_email: form.customerEmail,
             customer_phone: form.customerPhone || "",
-            vehicle_make: vehicleInfo.make,
-            vehicle_model: vehicleInfo.model,
-            vehicle_year: vehicleInfo.year,
-            vehicle_color: vehicleInfo.color,
-            vehicle_body_type: vehicleInfo.body_type,
-            vehicle_license_plate: vehicleInfo.licensePlate || "",
+
+            vehicle_license_plate: vehicleInfo.license_plate || "",
             service_package_id: selectedService || "",
             add_on_ids: JSON.stringify(selectedAddOns),
             appointment_date: form.appointmentDate,
@@ -235,78 +227,13 @@ export default function NewBookingModal({
           <SectionTitle title="Vehicle Info" />
           <div className="grid md:grid-cols-2 gap-4">
             <VehicleField
-              label="Make *"
-              placeholder="e.g., Toyota"
-              value={vehicleInfo.make}
-              onChange={(val) => setVehicleInfo((p) => ({ ...p, make: val }))}
-              error={errors.make}
-            />
-
-            <VehicleField
-              label="Model *"
-              placeholder="e.g., Camry"
-              value={vehicleInfo.model}
-              onChange={(val) => setVehicleInfo((p) => ({ ...p, model: val }))}
-              error={errors.model}
-            />
-
-            <VehicleField
-              label="Year *"
-              placeholder="e.g., 2020"
-              type="number"
-              value={vehicleInfo.year}
-              onChange={(val) => setVehicleInfo((p) => ({ ...p, year: val }))}
-              error={errors.year}
-            />
-
-            <VehicleField
-              label="Color *"
-              placeholder="e.g., Black, Red"
-              value={vehicleInfo.color}
-              onChange={(val) => setVehicleInfo((p) => ({ ...p, color: val }))}
-              error={errors.color}
-              helper="Separate multiple colors with commas."
-            />
-
-            <div className="space-y-2">
-              <Label>Body Type *</Label>
-              <Select
-                value={vehicleInfo.body_type}
-                onValueChange={(val) =>
-                  setVehicleInfo((p) => ({ ...p, body_type: val }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Body Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {[
-                    "Sedan",
-                    "Compact Suv",
-                    "Suvs",
-                    "Small Truck",
-                    "Big Truck",
-                    "Van",
-                  ].map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.body_type && (
-                <p className="text-red-500 text-sm">{errors.body_type}</p>
-              )}
-            </div>
-
-            <VehicleField
               label="License Plate"
               placeholder="e.g., ABC123"
-              value={vehicleInfo.licensePlate ?? ""}
+              value={vehicleInfo.license_plate ?? ""}
               onChange={(val) =>
-                setVehicleInfo((p) => ({ ...p, licensePlate: val }))
+                setVehicleInfo((p) => ({ ...p, license_plate: val }))
               }
-              error={errors.licensePlate}
+              error={errors.license_plate}
             />
           </div>
 
@@ -483,7 +410,7 @@ export default function NewBookingModal({
             <div className="bg-green-50 border border-green-200 rounded-lg p-3">
               <p className="text-sm text-green-700 font-semibold">
                 Promo applied: {discountPercent}% off — You save $
-                {(baseTotal * discountPercent / 100).toFixed(2)}
+                {((baseTotal * discountPercent) / 100).toFixed(2)}
               </p>
             </div>
           )}
@@ -574,6 +501,7 @@ function VehicleField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
+        className="uppercase text-lg"
       />
       {helper && <p className="text-[11px] text-muted-foreground">{helper}</p>}
       {error && <p className="text-red-500 text-sm">{error}</p>}

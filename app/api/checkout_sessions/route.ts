@@ -11,15 +11,9 @@ export async function POST(req: Request) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Insert or fetch vehicle
   const vehicleId = body.vehicleSpecs
     ? await ensureVehicle({
-        user_id: user?.id ?? null,
-        year: Number(body.vehicleSpecs.year),
-        make: body.vehicleSpecs.make,
-        model: body.vehicleSpecs.model,
-        body_type: body.vehicleSpecs.body_type,
-        colors: [body.vehicleSpecs.color],
+        license_plate: body.vehicleSpecs.license_plate,
       })
     : null;
 
@@ -48,8 +42,9 @@ export async function POST(req: Request) {
   // Calculate discount factor based on discounted totalPrice vs original prices
 
   const originalTotal =
+    body.originalTotalPrice ??
     body.servicePackagePrice +
-    (body.addOns?.reduce((s: number, a: any) => s + a.price, 0) || 0);
+      (body.addOns?.reduce((s: number, a: any) => s + a.price, 0) || 0);
 
   // Safety check: avoid division by zero
   const discountFactor =
@@ -85,23 +80,16 @@ export async function POST(req: Request) {
     body.addOnsId?.join(",") ??
     body.addOns?.map((a: any) => a.id).join(",") ??
     "";
-
-  const year = body.vehicleSpecs?.year?.toString() || "";
-  const make = body.vehicleSpecs?.make || "";
-  const model = body.vehicleSpecs?.model || "";
-  const body_type = body.vehicleSpecs?.body_type || "";
-  const color = body.vehicleSpecs?.color || "";
+  const license_plate = body.vehicleSpecs
+    ? body.vehicleSpecs.license_plate
+    : "";
   const service = body.servicePackageId || "";
   const addons = aids || "";
   const date = body.appointmentDate || "";
   const time = body.appointmentTime || "";
 
   const currentParams = new URLSearchParams({
-    year,
-    make,
-    model,
-    body_type,
-    color,
+    license_plate,
     service,
     addons,
     date,

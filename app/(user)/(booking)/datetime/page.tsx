@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DayPicker } from "react-day-picker";
@@ -52,15 +52,38 @@ function DateTimeSelectionPage() {
   const [selectedAddOns, setSelectedAddOns] = useState<any>();
 
   const [vehicleSpecs, setVehicleSpecs] = useState<any>({
-    year: searchParams.get("year"),
-    make: searchParams.get("make"),
-    model: searchParams.get("model"),
-    body_type: searchParams.get("body_type"),
-    color: searchParams.get("color"),
+    license_plate: searchParams.get("license_plate") ?? "",
   });
 
   const serviceId = searchParams.get("service");
   const addonsParam = searchParams.get("addons");
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const summaryRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (selectedDate && bottomRef.current) {
+      setTimeout(() => {
+        bottomRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 100);
+    }
+  }, [selectedDate]);
+
+  useEffect(() => {
+    if (selectedTime && summaryRef.current) {
+      // Only scroll on mobile/tablet screens
+      if (window.innerWidth < 1024) {
+        setTimeout(() => {
+          summaryRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }, 100);
+      }
+    }
+  }, [selectedTime]);
 
   useEffect(() => {
     (async () => {
@@ -144,9 +167,7 @@ function DateTimeSelectionPage() {
 
   const isToday = (date: Date) => {
     const chicagoNow = getChicagoTime();
-    const chicagoDate = new Date(
-      date.toLocaleString("en-US")
-    );
+    const chicagoDate = new Date(date.toLocaleString("en-US"));
 
     return (
       chicagoNow.getFullYear() === chicagoDate.getFullYear() &&
@@ -162,9 +183,7 @@ function DateTimeSelectionPage() {
     const chicagoNow = getChicagoTime();
 
     // Extract year, month, and day from selected date in Chicago
-    const chicagoDate = new Date(
-      selectedDate.toLocaleString("en-US")
-    );
+    const chicagoDate = new Date(selectedDate.toLocaleString("en-US"));
 
     // Build the time slot in the same Chicago timezone context
     const [hours, minutes] = time.split(":").map(Number);
@@ -296,7 +315,7 @@ function DateTimeSelectionPage() {
               </CardContent>
             </Card>
 
-            <Card className="border-border shadow-sm">
+            <Card ref={bottomRef} className="border-border shadow-sm">
               <CardHeader className="pb-4">
                 <CardTitle className="text-xl font-semibold text-foreground flex items-center gap-2">
                   <Clock className="w-5 h-5 text-primary" />
@@ -348,7 +367,7 @@ function DateTimeSelectionPage() {
             </Card>
           </div>
 
-          <div className="space-y-6">
+          <div ref={summaryRef} className="space-y-6">
             {/* Progress Indicator */}
             <Card className="border-border shadow-sm">
               <CardHeader className="pb-4">

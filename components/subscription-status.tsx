@@ -42,11 +42,14 @@ export default function SubscriptionStatus({
         price,
         discount,
         isDiscounted: !isFirstVehicle,
-        displayName: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
+        displayName: `${vehicle.license_plate}`,
       };
     });
 
-    const totalPrice = vehiclePricing.reduce((sum, item) => sum + item.price, 0);
+    const totalPrice = vehiclePricing.reduce(
+      (sum, item) => sum + item.price,
+      0
+    );
     const totalSavings = vehiclePricing.reduce(
       (sum, item) => sum + item.discount,
       0
@@ -215,13 +218,8 @@ export default function SubscriptionStatus({
                     <Car className="w-5 h-5 text-gray-400" />
                     <div>
                       <p className="text-sm font-medium text-gray-900">
-                        {item.displayName}
+                        {item.displayName} - (License plate)
                       </p>
-                      {item.vehicle.body_type && (
-                        <p className="text-xs text-gray-500">
-                          {item.vehicle.body_type}
-                        </p>
-                      )}
                       {item.isDiscounted && (
                         <span className="text-xs text-green-600 font-medium mt-1 inline-block">
                           10% Family Discount
@@ -306,14 +304,14 @@ export default function SubscriptionStatus({
           <div>
             <p className="text-sm font-medium text-gray-500">Current Period</p>
             <p className="text-sm text-gray-900 mt-1">
-              {new Date(
-                subscription.current_period_start
-              ).toLocaleDateString()}{" "}
+              {new Date(subscription.current_period_start).toLocaleDateString()}{" "}
               - {new Date(subscription.current_period_end).toLocaleDateString()}
             </p>
           </div>
           <div>
-            <p className="text-sm font-medium text-gray-500">Next Billing Date</p>
+            <p className="text-sm font-medium text-gray-500">
+              Next Billing Date
+            </p>
             <p className="text-sm text-gray-900 mt-1">
               {new Date(subscription.current_period_end).toLocaleDateString()}
             </p>

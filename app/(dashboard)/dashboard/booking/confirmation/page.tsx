@@ -43,11 +43,7 @@ function ConfirmationContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [vehicleSpecs] = useState<any>({
-    year: searchParams.get("year"),
-    make: searchParams.get("make"),
-    model: searchParams.get("model"),
-    body_type: searchParams.get("body_type"),
-    color: searchParams.get("color"),
+    license_plate: searchParams.get("license_plate"),
   });
   const [selectedPackages, setSelectedPackages] = useState<any>(null);
   const [userSubscribe, setUserSubscribe] = useState<any>(null);
@@ -69,7 +65,7 @@ function ConfirmationContent() {
   // HOLIDAY SALE: START - Remove all code between START and END when sale ends
   // ============================================
   const HOLIDAY_SALE_ACTIVE = true; // Set to false when sale ends
-  const HOLIDAY_SALE_DISCOUNT = 0.10; // 10% off
+  const HOLIDAY_SALE_DISCOUNT = 0.1; // 10% off
   // ============================================
   // HOLIDAY SALE: END
   // ============================================
@@ -90,17 +86,17 @@ function ConfirmationContent() {
   const isServiceFreeForSubscription = (serviceCategory: string) => {
     if (!subscription?.subscription_plans?.name) return false;
     const categoryLower = serviceCategory?.toLowerCase() || "";
-    
+
     // If subscribed to Quick Service, Quick Service category is free
     if (isSubscribedToQuickService() && categoryLower === "quick service") {
       return true;
     }
-    
+
     // If subscribed to Express Detail, Express Detail category is free
     if (isSubscribedToExpressDetail() && categoryLower === "express detail") {
       return true;
     }
-    
+
     return false;
   };
 
@@ -114,7 +110,8 @@ function ConfirmationContent() {
       if (!user?.id) return;
       const { data, error } = await supabase
         .from("user_subscription")
-        .select(`
+        .select(
+          `
           stripe_customer_id,
           stripe_subscription_id,
           subscription_plan:subscription_plans (
@@ -123,7 +120,8 @@ function ConfirmationContent() {
             monthly_price,
             yearly_price
           )
-        `)
+        `
+        )
         .eq("user_id", user?.id)
         .eq("status", "active")
         .maybeSingle();
@@ -248,7 +246,7 @@ function ConfirmationContent() {
     // Check if service is free for subscription
     const serviceCategory = selectedPackages?.category || "";
     const isServiceFree = isServiceFreeForSubscription(serviceCategory);
-    
+
     // If subscribed and service matches subscription category, service is free
     if (isServiceFree) {
       return addOnsTotal;
@@ -290,7 +288,7 @@ function ConfirmationContent() {
     // Check if service is free for subscription
     const serviceCategory = selectedPackages?.category || "";
     const isServiceFree = isServiceFreeForSubscription(serviceCategory);
-    
+
     // If service is free, only return add-ons total
     if (isServiceFree) {
       return addOnsTotal;
@@ -311,7 +309,6 @@ function ConfirmationContent() {
       : total;
   };
 
-
   const formatTime = (time: string) => {
     const [hours, minutes] = time.split(":").map(Number);
     const period = hours >= 12 ? "PM" : "AM";
@@ -325,15 +322,15 @@ function ConfirmationContent() {
     const isServiceFree = isServiceFreeForSubscription(serviceCategory);
 
     // If subscribed, service matches subscription, and no add-ons → book directly (free)
-    if (isSubscribed && isServiceFree && (!selectedAddOns || selectedAddOns.length === 0)) {
+    if (
+      isSubscribed &&
+      isServiceFree &&
+      (!selectedAddOns || selectedAddOns.length === 0)
+    ) {
       setIsSubmitting(true);
       try {
         const booking = await createBooking({
-          year: parseInt(vehicleSpecs.year || "0"),
-          make: vehicleSpecs.make || "",
-          model: vehicleSpecs.model || "",
-          body_type: vehicleSpecs.body_type || "",
-          colors: [vehicleSpecs.color || ""],
+          license_plate: vehicleSpecs.license_plate ?? "",
           servicePackage: { ...selectedPackages, price: 0 },
           addOnsId: [],
           appointmentDate: new Date(appointmentDate!),
@@ -376,11 +373,8 @@ function ConfirmationContent() {
 
       if (paymentMethod === "cash") {
         const booking = await createBooking({
-          year: parseInt(vehicleSpecs.year || "0"),
-          make: vehicleSpecs.make || "",
-          model: vehicleSpecs.model || "",
-          body_type: vehicleSpecs.body_type || "",
-          colors: [vehicleSpecs.color || ""],
+          license_plate: vehicleSpecs.license_plate ?? "",
+
           servicePackage: { ...selectedPackages, price: servicePrice },
           addOnsId: selectedAddOns
             ? selectedAddOns.map((a: { id: string }) => a.id)
@@ -396,11 +390,6 @@ function ConfirmationContent() {
       } else {
         // Card payment (via Stripe)
         const payload = {
-          year: parseInt(vehicleSpecs.year || "0"),
-          make: vehicleSpecs.make || "",
-          model: vehicleSpecs.model || "",
-          body_type: vehicleSpecs.body_type || "",
-          colors: [vehicleSpecs.color || ""],
           vehicleSpecs,
           servicePackageId: selectedPackages!.id,
           servicePackageName: selectedPackages!.name,
@@ -439,7 +428,9 @@ function ConfirmationContent() {
   const serviceCategory = selectedPackages?.category || "";
   const isServiceFree = isServiceFreeForSubscription(serviceCategory);
   const isFreeForSubscriber =
-    isSubscribed && isServiceFree && (!selectedAddOns || selectedAddOns.length === 0);
+    isSubscribed &&
+    isServiceFree &&
+    (!selectedAddOns || selectedAddOns.length === 0);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -475,7 +466,7 @@ function ConfirmationContent() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  <div className="flex justify-between">
+                  {/* <div className="flex justify-between">
                     <span className="text-gray-600">Year:</span>
                     <span className="font-medium">{vehicleSpecs.year}</span>
                   </div>
@@ -496,6 +487,14 @@ function ConfirmationContent() {
                   <div className="flex justify-between">
                     <span className="text-gray-600">Color:</span>
                     <span className="font-medium">{vehicleSpecs.color}</span>
+                  </div> */}
+                  <div className="flex justify-between">
+                    <span className="text-slate-900 font-medium">
+                      License Plate:
+                    </span>
+                    <span className="font-medium">
+                      {vehicleSpecs.license_plate || "N/A"}
+                    </span>
                   </div>
                 </div>
               </CardContent>
@@ -512,13 +511,13 @@ function ConfirmationContent() {
               <CardContent>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Date:</span>
+                    <span className="text-slate-800 font-medium">Date:</span>
                     <span className="font-medium">
                       {appointmentDate && formatDate(appointmentDate)}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Time:</span>
+                    <span className="text-slate-800 font-medium">Time:</span>
                     {appointmentTime && (
                       <span className="font-medium">
                         {formatTime(appointmentTime)}
@@ -526,7 +525,7 @@ function ConfirmationContent() {
                     )}
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Service:</span>
+                    <span className="text-slate-800 font-medium">Service:</span>
                     <span className="font-medium">
                       {selectedPackages?.name}
                     </span>
@@ -540,7 +539,7 @@ function ConfirmationContent() {
                     </span>
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-gray-600">Add Ons:</span>
+                    <span className="text-slate-800 font-medium">Add Ons:</span>
                     {Array.isArray(selectedAddOns) &&
                     selectedAddOns.length > 0 ? (
                       selectedAddOns.map((addon: any) => (
@@ -560,13 +559,17 @@ function ConfirmationContent() {
                     )}
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Whole Duration:</span>
+                    <span className="text-slate-800 font-medium">
+                      Whole Duration:
+                    </span>
                     <span className="font-medium">
                       {calculateDuration()} minutes
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Total Price:</span>
+                    <span className="text-slate-800 font-medium">
+                      Total Price:
+                    </span>
                     {/* ============================================
                         HOLIDAY SALE: START
                         ============================================ */}
@@ -615,14 +618,19 @@ function ConfirmationContent() {
                 ============================================ */}
             {(() => {
               const serviceCategory = selectedPackages?.category || "";
-              const isServiceFree = isServiceFreeForSubscription(serviceCategory);
-              
+              const isServiceFree =
+                isServiceFreeForSubscription(serviceCategory);
+
               if (isServiceFree) {
                 return (
                   <div className="flex items-center gap-1">
                     <Crown className="w-4 h-4 text-yellow-500" />
                     <p className="text-sm text-green-600">
-                      You're subscribed to {isSubscribedToQuickService() ? "Quick Service" : "Express Detail"} — this service is free! You only pay for add-ons.
+                      You're subscribed to{" "}
+                      {isSubscribedToQuickService()
+                        ? "Quick Service"
+                        : "Express Detail"}{" "}
+                      — this service is free! You only pay for add-ons.
                     </p>
                   </div>
                 );
@@ -631,7 +639,15 @@ function ConfirmationContent() {
                   <div className="flex items-center gap-1">
                     <Crown className="w-4 h-4 text-yellow-500" />
                     <p className="text-sm text-orange-600">
-                      You're subscribed to {isSubscribedToQuickService() ? "Quick Service" : "Express Detail"} — this {serviceCategory === "quick service" ? "Quick Service" : "Express Detail"} service requires payment.
+                      You're subscribed to{" "}
+                      {isSubscribedToQuickService()
+                        ? "Quick Service"
+                        : "Express Detail"}{" "}
+                      — this{" "}
+                      {serviceCategory === "quick service"
+                        ? "Quick Service"
+                        : "Express Detail"}{" "}
+                      service requires payment.
                     </p>
                   </div>
                 );

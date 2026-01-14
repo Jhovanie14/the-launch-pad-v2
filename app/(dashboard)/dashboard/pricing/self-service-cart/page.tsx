@@ -7,20 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Check } from "lucide-react";
+import { Check, Car, CreditCard } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { useVehicleForm } from "@/hooks/useVehicleForm";
 import { createClient } from "@/utils/supabase/client";
 import TermsModal from "@/components/terms-modal";
 import LoadingDots from "@/components/loading";
-import { motion } from "framer-motion";
 
 export default function SelfServiceCart() {
   const supabase = createClient();
@@ -35,14 +27,6 @@ export default function SelfServiceCart() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const { vehicleInfo, setVehicleInfo, errors, validate } = useVehicleForm();
-
-  const bodyTypeOptions = [
-    "Sedan",
-    "SUV",
-    "Big Pickup Truck",
-    "Van",
-    "Compact SUV",
-  ];
 
   // Fetch active self-service plan
   useEffect(() => {
@@ -69,10 +53,6 @@ export default function SelfServiceCart() {
     };
   }, [supabase]);
 
-  const handleBodyTypeChange = (val: string) => {
-    setVehicleInfo({ ...vehicleInfo, body_type: val });
-  };
-
   const startCheckout = async () => {
     try {
       setError("");
@@ -85,11 +65,7 @@ export default function SelfServiceCart() {
       setLoadingCheckout(true);
 
       const vehiclePayload = {
-        year: Number(vehicleInfo.year),
-        make: vehicleInfo.make,
-        model: vehicleInfo.model,
-        body_type: vehicleInfo.body_type,
-        color: vehicleInfo.color,
+        license_plate: vehicleInfo.license_plate,
       };
 
       const res = await fetch("/api/create-selfservice-checkout-session", {
@@ -124,208 +100,185 @@ export default function SelfServiceCart() {
   if (loadingPlan) return <LoadingDots />;
 
   return (
-    <div className="space-y-8">
-      {/* Promo Banner */}
-      {/* <motion.div
-        className="bg-linear-to-r from-red-500 to-red-600 text-white text-center py-4 px-4 rounded-lg shadow-lg"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        <div className="flex items-center justify-center gap-2">
-          <span className="text-2xl md:text-3xl font-bold">
-            Get 20% Off When You Apply Promo Code LAUNCHPAD20 at Checkout
-          </span>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+            Self-Service Membership
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Complete your subscription to get started
+          </p>
         </div>
-      </motion.div> */}
-      <div className="grid lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
-        <Card>
-          <CardHeader>
-            <CardTitle>Vehicle Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Year</Label>
-                <Input
-                  type="number"
-                  value={vehicleInfo.year ?? ""}
-                  onChange={(e) =>
-                    setVehicleInfo({ ...vehicleInfo, year: e.target.value })
-                  }
-                  placeholder="e.g. 2022"
-                />
-                {errors.year && (
-                  <p className="text-red-600 text-sm">{errors.year}</p>
-                )}
-              </div>
+      </div>
 
-              <div className="space-y-2">
-                <Label>Make</Label>
-                <Input
-                  value={vehicleInfo.make}
-                  onChange={(e) =>
-                    setVehicleInfo({ ...vehicleInfo, make: e.target.value })
-                  }
-                  placeholder="e.g. Toyota"
-                />
-                {errors.make && (
-                  <p className="text-red-600 text-sm">{errors.make}</p>
-                )}
-              </div>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-6">
+          {/* Plan Details Card */}
+          <Card className="border-2 border-blue-200 shadow-lg">
+            <div className="bg-gradient-to-r from-blue-900 to-blue-800 text-white p-6 rounded-t-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold">{plan?.name}</h2>
+                  <p className="text-blue-100 mt-1">{plan?.description}</p>
+                </div>
+                <div className="text-right">
+                  {/* ============================================
+                      PROMO CODE DISCOUNT DISPLAY (COMMENT OUT WHEN PROMO ENDS)
+                      ============================================ */}
+                  {/* <div className="flex flex-col items-end">
+                    <span className="text-lg text-blue-200 line-through">
+                      ${plan?.monthly_price}
+                    </span>
+                    <div className="text-4xl font-bold text-yellow-400">
+                      ${((plan?.monthly_price || 0) * 0.8).toFixed(2)}
+                    </div>
+                    <span className="text-xs bg-yellow-400 text-slate-900 px-2 py-1 rounded-full font-semibold mt-1">
+                      Save 20%
+                    </span>
+                  </div> */}
 
-              <div className="space-y-2">
-                <Label>Model</Label>
-                <Input
-                  value={vehicleInfo.model}
-                  onChange={(e) =>
-                    setVehicleInfo({ ...vehicleInfo, model: e.target.value })
-                  }
-                  placeholder="e.g. Camry"
-                />
-                {errors.model && (
-                  <p className="text-red-600 text-sm">{errors.model}</p>
-                )}
+                  {/* ============================================
+                      ORIGINAL PRICE DISPLAY (UNCOMMENT WHEN PROMO ENDS)
+                      ============================================ */}
+                  <div className="text-4xl font-bold text-yellow-400">
+                    ${plan?.monthly_price}
+                  </div>
+                  {/* ============================================ */}
+                  <p className="text-blue-200 text-sm mt-1">per month</p>
+                </div>
               </div>
+            </div>
 
-              <div className="space-y-2">
-                <Label>Color</Label>
-                <Input
-                  value={vehicleInfo.color}
-                  onChange={(e) =>
-                    setVehicleInfo({ ...vehicleInfo, color: e.target.value })
-                  }
-                  placeholder="e.g. White"
-                />
-                {errors.color && (
-                  <p className="text-red-600 text-sm">{errors.color}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label>Body Type</Label>
-                <Select
-                  value={vehicleInfo.body_type}
-                  onValueChange={handleBodyTypeChange}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select Body Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {bodyTypeOptions.map((option) => (
-                      <SelectItem key={option} value={option}>
-                        {option}
-                      </SelectItem>
+            <CardContent className="p-6">
+              {plan?.features?.length && (
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-lg text-gray-900 mb-4">
+                    What's Included
+                  </h3>
+                  <div className="grid md:grid-cols-2 gap-3">
+                    {plan.features.map((feature: string, i: number) => (
+                      <div key={i} className="flex items-start gap-3">
+                        <div className="mt-0.5">
+                          <Check className="w-5 h-5 text-green-600" />
+                        </div>
+                        <p className="text-gray-700">{feature}</p>
+                      </div>
                     ))}
-                  </SelectContent>
-                </Select>
-                {errors.body_type && (
-                  <p className="text-red-600 text-sm">{errors.body_type}</p>
-                )}
-              </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
+          {/* Vehicle Information Card */}
+          <Card>
+            <CardHeader className="border-b">
+              <CardTitle className="flex items-center gap-2">
+                <Car className="w-5 h-5" />
+                Vehicle License Plate
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
               <div className="space-y-2">
-                <Label>License Plate</Label>
+                <Label className="text-base">
+                  License Plate Number <span className="text-red-500">*</span>
+                </Label>
                 <Input
-                  placeholder="e.g., ABC123 (optional)"
-                  value={vehicleInfo.licensePlate}
+                  placeholder="Enter your license plate (e.g., ABC123)"
+                  value={vehicleInfo.license_plate}
                   onChange={(e) =>
                     setVehicleInfo({
                       ...vehicleInfo,
-                      licensePlate: e.target.value,
+                      license_plate: e.target.value.toUpperCase(),
                     })
                   }
+                  className="text-lg font-mono uppercase"
                 />
-                {errors.licensePlate && (
-                  <p className="text-red-600 text-sm">{errors.licensePlate}</p>
+                {errors.license_plate && ( // ✅ Correct - matches the field name
+                  <p className="text-red-600 text-sm flex items-center gap-1">
+                    <span>⚠</span> {errors.license_plate}
+                  </p>
                 )}
+                <p className="text-sm text-gray-500">
+                  This will be used to identify your vehicle at our facilities
+                </p>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{plan?.name}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-muted-foreground">{plan?.description}</p>
-            {/* ============================================
-              PROMO CODE DISCOUNT DISPLAY (COMMENT OUT WHEN PROMO ENDS)
-              ============================================ */}
-            {/* <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="text-lg text-slate-500 line-through">
-                ${plan?.monthly_price}/month
-              </span>
-              <span className="text-xs text-red-600 font-semibold bg-red-50 px-2 py-0.5 rounded">
-                Save 20%
-              </span>
-            </div>
-            <p className="text-2xl font-semibold">
-              ${((plan?.monthly_price || 0) * 0.8).toFixed(2)}/month
-            </p>
-          </div> */}
-
-            {/* ============================================
-              ORIGINAL PRICE DISPLAY (UNCOMMENT WHEN PROMO ENDS)
-              ============================================ */}
-            <p className="text-2xl font-semibold">
-              ${plan?.monthly_price}/month
-            </p>
-            {/* ============================================ */}
-
-            {plan?.features?.length && (
-              <div className="space-y-2">
-                <h3 className="font-semibold text-lg">What's Included</h3>
-                {plan.features.map((feature: string, i: number) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-green-500" />
-                    <p>{feature}</p>
+          {/* Terms and Checkout Card */}
+          <Card>
+            <CardHeader className="border-b">
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="w-5 h-5" />
+                Complete Subscription
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              {/* Terms Checkbox */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    checked={isAuthorized}
+                    onCheckedChange={(checked) => {
+                      setIsAuthorized(!!checked);
+                      if (checked) setError("");
+                    }}
+                    className="mt-1"
+                  />
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      I authorize automatic monthly charges for this membership
+                      until cancelled. I have read and agree to the{" "}
+                      <button
+                        type="button"
+                        onClick={() => setIsModalOpen(true)}
+                        className="text-blue-700 underline font-medium hover:text-blue-800"
+                      >
+                        Terms of Service
+                      </button>
+                      .
+                    </p>
                   </div>
-                ))}
+                </div>
               </div>
-            )}
 
-            <div className="flex items-start gap-3 mt-4">
-              <Checkbox
-                checked={isAuthorized}
-                onCheckedChange={(checked) => {
-                  setIsAuthorized(!!checked);
-                  if (checked) setError("");
-                }}
-              />
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                I authorize automatic monthly charges for this membership until
-                cancelled.
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(true)}
-                  className="text-blue-700 underline ml-1"
-                >
-                  Terms of Service
-                </button>
+              {/* Error Message */}
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <p className="text-red-700 text-sm flex items-center gap-2">
+                    <span>⚠</span> {error}
+                  </p>
+                </div>
+              )}
+
+              {/* Checkout Button */}
+              <Button
+                className="w-full bg-blue-900 hover:bg-blue-800 text-white py-6 text-lg font-semibold"
+                onClick={handleCheckoutClick}
+                disabled={loadingCheckout || !plan}
+              >
+                {loadingCheckout ? (
+                  <div className="flex items-center gap-2">
+                    <LoadingDots />
+                    <span>Processing...</span>
+                  </div>
+                ) : (
+                  <span>Subscribe Now - ${plan?.monthly_price}/month</span>
+                )}
+              </Button>
+
+              <p className="text-xs text-center text-gray-500">
+                You can cancel anytime from your account dashboard
               </p>
-            </div>
-
-            {error && <p className="text-red-600 text-sm">{error}</p>}
-
-            <Button
-              className="w-full bg-blue-900 hover:bg-blue-700"
-              onClick={handleCheckoutClick}
-              disabled={loadingCheckout || !plan}
-            >
-              {loadingCheckout ? "Redirecting..." : "Subscribe"}
-              {loadingCheckout && <LoadingDots />}
-            </Button>
-          </CardContent>
-        </Card>
-
-        <TermsModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-        />
+            </CardContent>
+          </Card>
+        </div>
       </div>
+
+      <TermsModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </div>
   );
 }

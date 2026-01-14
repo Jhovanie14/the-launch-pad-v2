@@ -37,7 +37,8 @@ export async function getActiveSelfServiceSubscription(
       make,
       model,
       body_type,
-      colors
+      colors,
+      license_plate
     )
   `
     )

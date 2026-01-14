@@ -30,15 +30,6 @@ export default function PricingCard({
         ? "monthly"
         : subscription?.billing_cycle;
 
-  // const isCurrentPlan =
-  //   subscription?.plan_id === plan.id && normalizedBillingCycle === pricing;
-
-  // const buttonText = !subscription
-  //   ? `Select ${plan.name}`
-  //   : isCurrentPlan
-  //     ? "Current Plan"
-  //     : "Upgrade";
-
   // Detect if this is the self-service card
   const isSelfServicePlan = plan.name === "Self-Service Bay Membership";
 
@@ -56,22 +47,22 @@ export default function PricingCard({
 
   if (hasSubscription) {
     if (isSelfServicePlan) {
-      buttonText = "Add more vehicle"; // self-service rule
+      buttonText = "Add more vehicle";
     } else if (isCurrentPlan) {
-      buttonText = "Current Plan"; // normal plans
+      buttonText = "Current Plan";
     } else {
-      buttonText = "Upgrade"; // user has a plan → add vehicle
+      buttonText = "Upgrade";
     }
   }
 
   // Popular plans
-  const popularPlans = "Deluxe Wash";
+  const popularPlans = "Express Detail";
   const isPopular = popularPlans.includes(plan.name);
 
   // Calculate pricing with discount for yearly
   const monthlyPrice = Number(plan.monthly_price) || 0;
   const yearlyPrice = Number(plan.yearly_price) || 0;
-  const monthlyEquivalent = monthlyPrice * 12; // What yearly would cost if paid monthly
+  const monthlyEquivalent = monthlyPrice * 12;
   const isYearly = pricing === "yearly";
   const showDiscount = isYearly && monthlyEquivalent > 0;
   const discountPercentage = showDiscount
@@ -83,178 +74,185 @@ export default function PricingCard({
   // ============================================
   // PROMO CODE DISCOUNT (COMMENT OUT WHEN PROMO ENDS)
   // ============================================
-  // Discount for promo code: 20% for self-service, 35% for subscriptions
-  const promoDiscountPercent = isSelfServicePlan ? 0 : 0.1; // 20% off for self-service, 35% off for subscriptions
+  const promoDiscountPercent = isSelfServicePlan ? 0 : 0.1;
   const originalPriceWithPromo = currentPrice;
   const discountedPriceWithPromo = currentPrice * (1 - promoDiscountPercent);
+  
+  // Calculate daily cost
+  const dailyCost = isYearly 
+    ? (discountedPriceWithPromo / 365).toFixed(2)
+    : (discountedPriceWithPromo / 30).toFixed(2);
   // ============================================
 
   return (
     <div className={`relative ${isPopular ? "md:scale-105" : ""}`}>
-      {/* Popular badge */}
-      {isPopular && (
-        <div className="absolute -top-3 -right-3 z-10">
-          <div className="bg-linear-to-r from-yellow-400 to-yellow-500 text-slate-900 px-3 py-1 text-xs font-bold rounded-full transform rotate-24 shadow-lg">
-            POPULAR
-          </div>
-        </div>
-      )}
-
-      {/* Current plan badge */}
-      {isCurrentPlan && (
-        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
-          <div className="bg-linear-to-r from-yellow-400 to-yellow-500 text-slate-900 px-3 py-1 text-xs font-bold rounded-full transform shadow-lg">
-            CURRENT PLAN
-          </div>
-        </div>
-      )}
-
-      {/* 20% Discount badge for yearly */}
-      {showDiscount && discountPercentage > 0 && (
-        <div className="absolute -top-3 -left-3 z-10">
-          <div className="bg-linear-to-r from-green-500 to-green-600 text-white px-3 py-1 text-xs font-bold rounded-full shadow-lg">
-            {discountPercentage}% OFF
-          </div>
-        </div>
-      )}
-
-      {/* Popular side bar */}
-      {isPopular && (
-        <div className="absolute -right-1 top-0 bottom-0 w-1 bg-linear-to-b from-yellow-400 to-yellow-500 rounded-r-lg" />
-      )}
-
-      <Card
-        className={`relative flex flex-col overflow-hidden transition-all duration-300 p-0 ${
+      <div
+        className={`relative overflow-hidden rounded-xl border-4 transition-all duration-300 ${
           isPopular
-            ? "border-yellow-400/50 shadow-xl shadow-yellow-400/20"
+            ? "border-yellow-400 shadow-xl"
             : isCurrentPlan
               ? "border-accent shadow-lg shadow-accent/20"
               : ""
         }`}
       >
-        <div className="bg-blue-900 px-6 pt-6 pb-8 relative">
-          <div className="mb-4 flex justify-center">
+        {/* Header Section with Gradient Background */}
+        <div className="relative bg-linear-to-br from-blue-900 to-blue-800 p-6 overflow-hidden">
+          {/* Popular Badge */}
+          {isPopular && (
+            <div className="absolute top-0 right-0 bg-yellow-400 text-slate-900 px-4 py-1 text-xs font-bold rounded-bl-lg z-10">
+              BEST VALUE
+            </div>
+          )}
+
+          {/* Current Plan Badge */}
+          {isCurrentPlan && (
+            <div className="absolute top-0 right-0 bg-linear-to-r from-yellow-400 to-yellow-500 text-slate-900 px-4 py-1 text-xs font-bold rounded-bl-lg z-10">
+              CURRENT PLAN
+            </div>
+          )}
+
+          {/* Yearly Discount Badge */}
+          {showDiscount && discountPercentage > 0 && !promoDiscountPercent && (
+            <div className="absolute top-0 left-0 bg-linear-to-r from-green-500 to-green-600 text-white px-3 py-1 text-xs font-bold rounded-br-lg z-10">
+              {discountPercentage}% OFF
+            </div>
+          )}
+
+          {/* Icon/Image */}
+          <div className="mb-4 flex justify-center mt-4">
             {plan.image_url ? (
               <Image
                 src={plan.image_url}
                 alt={plan.name}
-                width={100}
-                height={100}
-                className="w-full h-32 object-cover"
+                width={80}
+                height={80}
+                className="w-20 h-20 object-cover rounded-full border-4 border-white/20"
               />
             ) : (
-              <Crown className="w-full h-32 text-white stroke-1" />
+              <Crown className="w-20 h-20 text-yellow-400 stroke-1" />
             )}
           </div>
-          <CardTitle className="text-center text-white text-xl md:text-2xl font-semibold">
+
+          {/* Plan Name */}
+          <h3 className="text-2xl font-bold text-white text-center mb-4">
             {plan.name}
-          </CardTitle>
+          </h3>
 
-          {/* Inverted triangle pointer */}
-          <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-24 border-l-transparent border-r-24 border-r-transparent border-t-24 border-t-blue-900" />
-        </div>
-
-        <div className="bg-white px-6 py-6 text-center border-b border-slate-200">
-          <div className="flex flex-col items-center gap-2 mb-3">
+          {/* Pricing Section */}
+          <div className="text-center mb-4">
             {/* ============================================
                 PROMO CODE DISCOUNT DISPLAY (COMMENT OUT WHEN PROMO ENDS)
                 ============================================ */}
-            {/* Original price with strikethrough (promo code discount) */}
-            <div className="flex items-center gap-2">
-              <span className="text-lg text-slate-500 line-through">
-                {!isSelfServicePlan
-                  ? `$${originalPriceWithPromo.toFixed(2)}`
-                  : ""}
-              </span>
-              <span className="text-xs text-red-600 font-semibold bg-red-50 px-2 py-0.5 rounded">
-                {!isSelfServicePlan
-                  ? `Save ${(promoDiscountPercent * 100).toFixed(0)}% `
-                  : ""}
-              </span>
+            {promoDiscountPercent > 0 && !isSelfServicePlan && (
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <span className="text-lg text-blue-200 line-through">
+                  ${originalPriceWithPromo.toFixed(2)}
+                </span>
+                <span className="text-xs text-yellow-400 font-semibold bg-yellow-400/20 px-2 py-0.5 rounded">
+                  Save {(promoDiscountPercent * 100).toFixed(0)}%
+                </span>
+              </div>
+            )}
+            
+            <div className="text-4xl font-bold text-yellow-400">
+              ${discountedPriceWithPromo.toFixed(2)}
             </div>
-            {/* Discounted price */}
-            <div className="flex items-baseline justify-center gap-1">
-              <span className="text-4xl font-bold text-slate-900">
-                ${discountedPriceWithPromo.toFixed(2)}
-              </span>
-              <span className="text-slate-600 font-medium">
-                /{pricing === "monthly" ? "mo" : "yr"}
-              </span>
+            <p className="text-blue-200 text-sm">
+              per {pricing === "monthly" ? "month" : "year"}
+            </p>
+
+            {/* Daily Cost Breakdown */}
+            <div className="mt-2 inline-block bg-yellow-400/20 px-3 py-1 rounded-full">
+              <p className="text-yellow-400 font-bold text-lg">
+                Only ${dailyCost}/day
+              </p>
             </div>
+
             {/* Equivalent monthly price for yearly */}
             {isYearly && (
-              <p className="text-xs text-slate-500">
-                ${(discountedPriceWithPromo / 12).toFixed(2)}/month billed
-                annually
+              <p className="text-blue-200 text-xs mt-2">
+                ${(discountedPriceWithPromo / 12).toFixed(2)}/month billed annually
               </p>
             )}
             {/* ============================================
                 ORIGINAL PRICE DISPLAY (UNCOMMENT WHEN PROMO ENDS)
                 ============================================ */}
-            {/* Original price with strikethrough (for yearly) */}
             {/* {showDiscount && originalPrice && (
-              <div className="flex items-center gap-2">
-                <span className="text-lg text-slate-500 line-through">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <span className="text-lg text-blue-200 line-through">
                   ${originalPrice.toFixed(2)}
                 </span>
                 <span className="text-xs text-green-600 font-semibold bg-green-50 px-2 py-0.5 rounded">
                   Save ${(originalPrice - currentPrice).toFixed(2)}
                 </span>
               </div>
-            )} */}
-            {/* Current price */}
-            {/* <div className="flex items-baseline justify-center gap-1">
-              <span className="text-4xl font-bold text-slate-900">
-                ${currentPrice.toFixed(2)}
-              </span>
-              <span className="text-slate-600 font-medium">
-                /{pricing === "monthly" ? "mo" : "yr"}
-              </span>
-            </div> */}
-            {/* Equivalent monthly price for yearly */}
-            {/* {isYearly && (
-              <p className="text-xs text-slate-500">
+            )}
+            <div className="text-4xl font-bold text-yellow-400">
+              ${currentPrice.toFixed(2)}
+            </div>
+            <p className="text-blue-200 text-sm">
+              per {pricing === "monthly" ? "month" : "year"}
+            </p>
+            <div className="mt-2 inline-block bg-yellow-400/20 px-3 py-1 rounded-full">
+              <p className="text-yellow-400 font-bold text-lg">
+                Only ${dailyCost}/day
+              </p>
+            </div>
+            {isYearly && (
+              <p className="text-blue-200 text-xs mt-2">
                 ${(currentPrice / 12).toFixed(2)}/month billed annually
               </p>
             )} */}
             {/* ============================================ */}
           </div>
-          <Separator />
-          <div className="my-6 flex justify-center">
-            <Check className="w-6 h-6 text-slate-900" />
-          </div>
-          <Separator />
         </div>
 
-        <CardContent className="flex-1 px-6 bg-white">
-          <CardDescription className="text-sm font-medium text-accent-foreground leading-relaxed mb-8">
+        {/* Features Section */}
+        <div className="bg-white p-6">
+          {/* Description */}
+          <CardDescription className="text-base font-medium text-slate-700 leading-relaxed mb-6 text-center">
             {plan.description}
           </CardDescription>
+
+          {/* Features List */}
           <ul className="space-y-3" role="list">
             {plan.features.map((feature: string, index: number) => (
               <li key={index} className="flex items-start gap-3">
                 {feature.toLowerCase().includes("not") ? (
-                  <X className="h-5 w-5 shrink-0 text-slate-400 mt-0.5" />
+                  <X className="h-5 w-5 shrink-0 text-red-400 mt-0.5" />
                 ) : (
-                  <CheckCircle className="h-5 w-5 shrink-0 text-green-600 mt-0.5" />
+                  <CheckCircle className="h-5 w-5 shrink-0 text-yellow-400 mt-0.5" />
                 )}
-                <span className="text-sm text-accent-foreground">
+                <span className="text-sm md:text-base text-slate-800 font-medium">
                   {feature}
                 </span>
               </li>
             ))}
           </ul>
-        </CardContent>
 
-        <CardFooter className="flex flex-col space-y-2 px-3 py-3 bg-white border-t border-slate-200">
+          {/* Savings Box (if applicable) */}
+          {plan.savings_info && (
+            <div className="mt-6 p-4 bg-blue-50 backdrop-blur-sm rounded-lg border border-blue-200">
+              <p className="text-sm text-slate-800">
+                <strong>Savings vs. pay-per-use:</strong> {plan.savings_info}
+                <br />
+                <span className="text-blue-600 text-xs">
+                  {plan.savings_note}
+                </span>
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Footer/CTA */}
+        <div className="bg-white px-6 pb-6 pt-0">
           <Button
-            variant="outline"
-            className={`w-full font-semibold transition-all cursor-pointer ${
+            className={`w-full font-semibold transition-all cursor-pointer py-6 text-base ${
               isPopular
-                ? "bg-slate-900 text-white border-slate-900 hover:bg-slate-800"
+                ? "bg-yellow-400 text-slate-900 hover:bg-yellow-500 border-2 border-yellow-500"
                 : isCurrentPlan
-                  ? "bg-accent text-accent-foreground border-accent hover:bg-accent/90"
-                  : "border-slate-900 text-slate-900 hover:bg-slate-50"
+                  ? "bg-accent text-accent-foreground hover:bg-accent/90"
+                  : "bg-blue-900 text-white hover:bg-blue-800"
             }`}
             onClick={() => handleCheckout(plan.id)}
             aria-label={`Select ${plan.name} plan`}
@@ -262,11 +260,11 @@ export default function PricingCard({
           >
             {buttonText}
           </Button>
-          <span className="text-xs text-blue-900">
+          <p className="text-xs text-center text-slate-500 mt-3">
             1 Vehicle per subscription
-          </span>
-        </CardFooter>
-      </Card>
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

@@ -3,71 +3,52 @@ import { createClient } from "@/utils/supabase/server";
 
 export async function ensureVehicle(vehicle: {
   user_id?: string | null;
-  year: number;
-  make: string;
-  model: string;
-  body_type?: string;
-  colors: string[];
+  license_plate: string;
+  // Optional fields that admin can fill in later
+  year?: number | null;
+  make?: string | null;
+  model?: string | null;
+  body_type?: string | null;
+  colors?: string[] | null;
 }) {
   const supabase = await createClient();
 
-  // Build query
-  let query = supabase
-    .from("vehicles")
-    .select("id")
-    .eq("year", vehicle.year)
-    .eq("make", vehicle.make)
-    .eq("model", vehicle.model);
+  // Normalize license plate (uppercase, trim whitespace)
+  const normalizedPlate = vehicle.license_plate.trim().toUpperCase();
 
-  // Only match user if logged in
-  if (vehicle.user_id) {
-    query = query.eq("user_id", vehicle.user_id);
-  } else {
-    // For guests, do not search globally — skip lookup entirely
-    // to always create a fresh "guest" vehicle entry
-    const { data: inserted, error: insertError } = await supabase
-      .from("vehicles")
-      .insert({
-        user_id: null,
-        year: vehicle.year,
-        make: vehicle.make,
-        model: vehicle.model,
-        body_type: vehicle.body_type || "",
-        colors: vehicle.colors || [],
-      })
-      .select("id")
-      .single();
-
-    if (insertError) {
-      console.error("Error inserting guest vehicle:", insertError);
-      throw insertError;
-    }
-
-    return inserted.id;
+  if (!normalizedPlate) {
+    throw new Error("License plate is required");
   }
 
-  // For logged-in users: check if exists
-  const { data: existing, error: selectError } = await query.limit(1);
+  // Check if vehicle with this license plate already exists
+  const { data: existing, error: selectError } = await supabase
+    .from("vehicles")
+    .select("id")
+    .eq("license_plate", normalizedPlate)
+    .limit(1)
+    .maybeSingle();
 
   if (selectError) {
     console.error("Error selecting vehicle:", selectError);
     throw selectError;
   }
 
-  if (existing && existing.length > 0) {
-    return existing[0].id;
+  // If vehicle exists, return its ID
+  if (existing) {
+    return existing.id;
   }
 
-  // Insert new vehicle for user
+  // Insert new vehicle with license plate
   const { data: inserted, error: insertError } = await supabase
     .from("vehicles")
     .insert({
-      user_id: vehicle.user_id,
-      year: vehicle.year,
-      make: vehicle.make,
-      model: vehicle.model,
-      body_type: vehicle.body_type || "",
-      colors: vehicle.colors || [],
+      user_id: vehicle.user_id || null,
+      license_plate: normalizedPlate,
+      year: vehicle.year || null,
+      make: vehicle.make || null,
+      model: vehicle.model || null,
+      body_type: vehicle.body_type || null,
+      colors: vehicle.colors || null,
     })
     .select("id")
     .single();

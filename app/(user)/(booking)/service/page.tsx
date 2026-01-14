@@ -98,11 +98,7 @@ function ServiceSelectionPage() {
   };
 
   const [vehicleSpecs, setVehicleSpecs] = useState<any>({
-    year: searchParams.get("year"),
-    make: searchParams.get("make"),
-    model: searchParams.get("model"),
-    body_type: normalizeBodyType(searchParams.get("body_type")),
-    color: searchParams.get("color"),
+    license_plate: searchParams.get("license_plate") ?? "",
   });
   const [selectedService, setSelectedService] = useState<string | null>(
     selectedServiceParam
@@ -165,12 +161,7 @@ function ServiceSelectionPage() {
       !UNIVERSAL_CATEGORIES.includes(selectserv.category?.toLowerCase() || "");
 
     if (requiresVehicle) {
-      if (
-        !vehicleSpecs.year ||
-        !vehicleSpecs.make ||
-        !vehicleSpecs.model ||
-        !vehicleSpecs.color
-      ) {
+      if (!vehicleSpecs.license_plate) {
         toast.error("Please add your vehicle information first.");
         setShowVehicleError(true);
         vehicleInfoRef.current?.scrollIntoView({
@@ -346,7 +337,7 @@ function ServiceSelectionPage() {
                 <li className="flex items-start">
                   <Check className="w-4 h-4 text-green-600 mr-2 shrink-0" />
                   <div>
-                    Get <span className="font-semibold">10% OFF </span>
+                    Get <span className="font-semibold">5% OFF </span>
                     on your first booking with promo code{" "}
                     <span className="font-mono bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">
                       WELCOME10
@@ -436,21 +427,24 @@ function ServiceSelectionPage() {
               className="w-full"
             >
               <TabsList
-                className={`grid w-full mb-4 ${
+                className={`grid w-full mb-12 ${
                   activeTab === "quick" || activeTab === "express"
                     ? "grid-cols-2"
                     : "grid-cols-1"
                 }`}
               >
-                <TabsTrigger value="quick" className="flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
+                <TabsTrigger
+                  value="quick"
+                  className="flex items-center justify-center gap-2 data-[state=active]:bg-linear-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-700 data-[state=active]:text-white data-[state=active]:shadow-xl data-[state=active]:scale-105 data-[state=inactive]:bg-white data-[state=inactive]:text-gray-700 data-[state=inactive]:hover:bg-blue-50 data-[state=inactive]:border-2 data-[state=inactive]:border-blue-100 rounded-xl transition-all duration-300 py-4 font-bold text-base"
+                >
+                  <Clock className="w-5 h-5" />
                   Quick Service
                 </TabsTrigger>
                 <TabsTrigger
                   value="express"
-                  className="flex items-center gap-2"
+                  className="flex items-center justify-center gap-2 data-[state=active]:bg-linear-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-xl data-[state=active]:scale-105 data-[state=inactive]:bg-white data-[state=inactive]:text-gray-700 data-[state=inactive]:hover:bg-purple-50 data-[state=inactive]:border-2 data-[state=inactive]:border-purple-100 rounded-xl transition-all duration-300 py-4 font-bold text-base"
                 >
-                  <Sparkles className="w-4 h-4" />
+                  <Sparkles className="w-5 h-5" />
                   Express Detail
                 </TabsTrigger>
               </TabsList>
@@ -484,7 +478,7 @@ function ServiceSelectionPage() {
                           {HOLIDAY_SALE_ACTIVE && (
                             <div className="absolute -top-3 -right-3 z-10">
                               <div className="bg-linear-to-r from-red-500 to-red-600 text-white px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
-                                10% OFF
+                                5% OFF
                               </div>
                             </div>
                           )}
@@ -575,7 +569,7 @@ function ServiceSelectionPage() {
                           {HOLIDAY_SALE_ACTIVE && (
                             <div className="absolute -top-3 -right-3 z-10">
                               <div className="bg-linear-to-r from-red-500 to-red-600 text-white px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
-                                10% OFF
+                                5% OFF
                               </div>
                             </div>
                           )}
@@ -822,121 +816,27 @@ function ServiceSelectionPage() {
 
                   {/* Form */}
                   <div className="p-6 space-y-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div className="">
                       <div className="space-y-2">
                         <Label
                           htmlFor="year"
                           className="text-sm font-medium text-gray-700"
                         >
-                          Year
+                          License Plate
                         </Label>
                         <Input
                           id="year"
-                          type="number"
-                          placeholder="e.g. 2020"
-                          value={vehicleSpecs.year || ""}
-                          onChange={(e) =>
-                            setVehicleSpecs((prev: any) => ({
-                              ...prev,
-                              year: e.target.value,
-                            }))
-                          }
-                          className="rounded focus-visible:ring-blue-900"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label
-                          htmlFor="make"
-                          className="text-sm font-medium text-gray-700"
-                        >
-                          Make
-                        </Label>
-                        <Input
-                          id="make"
                           type="text"
-                          placeholder="e.g. Toyota"
-                          value={vehicleSpecs.make || ""}
+                          placeholder="e.g.ABC123"
+                          value={vehicleSpecs.license_plate || ""}
                           onChange={(e) =>
                             setVehicleSpecs((prev: any) => ({
                               ...prev,
-                              make: e.target.value,
+                              license_plate: e.target.value,
                             }))
                           }
-                          className="rounded focus-visible:ring-blue-900"
+                          className="rounded-lg uppercase text-lg focus-visible:ring-blue-900"
                         />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label
-                          htmlFor="model"
-                          className="text-sm font-medium text-gray-700"
-                        >
-                          Model
-                        </Label>
-                        <Input
-                          id="model"
-                          type="text"
-                          placeholder="e.g. Camry"
-                          value={vehicleSpecs.model || ""}
-                          onChange={(e) =>
-                            setVehicleSpecs((prev: any) => ({
-                              ...prev,
-                              model: e.target.value,
-                            }))
-                          }
-                          className="rounded focus-visible:ring-blue-900"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label
-                          htmlFor="color"
-                          className="text-sm font-medium text-gray-700"
-                        >
-                          Color
-                        </Label>
-                        <Input
-                          id="color"
-                          type="text"
-                          placeholder="e.g. Black"
-                          value={vehicleSpecs.color || ""}
-                          onChange={(e) =>
-                            setVehicleSpecs((prev: any) => ({
-                              ...prev,
-                              color: e.target.value,
-                            }))
-                          }
-                          className="rounded focus-visible:ring-blue-900"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label
-                          htmlFor="color"
-                          className="text-sm font-medium text-gray-700"
-                        >
-                          Body Type
-                        </Label>
-                        <Select
-                          value={vehicleSpecs.body_type || ""}
-                          onValueChange={(val) =>
-                            setVehicleSpecs((prev: any) => ({
-                              ...prev,
-                              body_type: val,
-                            }))
-                          }
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select Body Type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {BODY_TYPES.map((type) => (
-                              <SelectItem key={type} value={type}>
-                                {type}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
                       </div>
                     </div>
 

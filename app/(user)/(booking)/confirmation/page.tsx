@@ -4,15 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/context/auth-context";
 import { createClient } from "@/utils/supabase/client";
-import { createBooking } from "../../../(dashboard)/dashboard/booking/action";
 import {
   ArrowLeft,
-  Banknote,
   Calendar,
   Car,
   CheckCircle2,
-  CreditCard,
-  Crown,
   PackageCheck,
 } from "lucide-react";
 import {
@@ -24,21 +20,31 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import z from "zod";
-import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import LoadingDots from "@/components/loading";
 
-const guestSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().optional(),
-});
+const validateGuestInfo = (info: {
+  name: string;
+  email: string;
+  phone: string;
+}) => {
+  const errors: Record<string, string> = {};
+
+  if (!info.name || info.name.trim().length === 0) {
+    errors.name = "Name is required";
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!info.email || !emailRegex.test(info.email)) {
+    errors.email = "Invalid email address";
+  }
+
+  return errors;
+};
 
 function ConfirmationContent() {
   const router = useRouter();
@@ -47,9 +53,7 @@ function ConfirmationContent() {
   const { user } = useAuth();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showGuestModal, setShowGuestModal] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<"card" | "cash">("card");
 
   const [guestInfo, setGuestInfo] = useState({
     name: "",
@@ -57,11 +61,7 @@ function ConfirmationContent() {
     phone: "",
   });
   const [vehicleSpecs, setVehicleSpecs] = useState<any>({
-    year: searchParams.get("year"),
-    make: searchParams.get("make"),
-    model: searchParams.get("model"),
-    body_type: searchParams.get("body_type"),
-    color: searchParams.get("color"),
+    license_plate: searchParams.get("license_plate") ?? "",
   });
 
   const [selectedPackages, setSelectedPackages] = useState<any>(null);
@@ -82,14 +82,8 @@ function ConfirmationContent() {
     timeParam
   );
 
-  // ============================================
-  // HOLIDAY SALE: START - Remove all code between START and END when sale ends
-  // ============================================
-  const HOLIDAY_SALE_ACTIVE = true; // Set to false when sale ends
-  const HOLIDAY_SALE_DISCOUNT = 0.10; // 15% off
-  // ============================================
-  // HOLIDAY SALE: END
-  // ============================================
+  const HOLIDAY_SALE_ACTIVE = true;
+  const HOLIDAY_SALE_DISCOUNT = 0.1;
 
   const isSubscribed = user ? !!userSubscribe?.stripe_subscription_id : false;
 
@@ -158,46 +152,25 @@ function ConfirmationContent() {
   };
 
   const calculateTotal = () => {
-    // ============================================
-    // HOLIDAY SALE: START
-    // ============================================
     let addOnsTotal = Array.isArray(selectedAddOns)
-      ? selectedAddOns.reduce(
-          (sum: number, a: any) => {
-            let price = Number(a.price);
-            // Apply holiday sale to add-ons
-            if (HOLIDAY_SALE_ACTIVE) {
-              price = price * (1 - HOLIDAY_SALE_DISCOUNT);
-            }
-            return sum + price;
-          },
-          0
-        )
+      ? selectedAddOns.reduce((sum: number, a: any) => {
+          let price = Number(a.price);
+          if (HOLIDAY_SALE_ACTIVE) {
+            price = price * (1 - HOLIDAY_SALE_DISCOUNT);
+          }
+          return sum + price;
+        }, 0)
       : 0;
-    
+
     if (isSubscribed) return addOnsTotal;
-    
+
     let basePrice = Number(selectedPackages?.price) || 0;
-    // Apply holiday sale to base price
     if (HOLIDAY_SALE_ACTIVE) {
       basePrice = basePrice * (1 - HOLIDAY_SALE_DISCOUNT);
     }
     return basePrice + addOnsTotal;
-    // ============================================
-    // HOLIDAY SALE: END - Replace above with original code:
-    // const addOnsTotal = Array.isArray(selectedAddOns)
-    //   ? selectedAddOns.reduce((sum: number, a: any) => sum + Number(a.price), 0)
-    //   : 0;
-    // if (isSubscribed) return addOnsTotal;
-    // const basePrice = Number(selectedPackages?.price) || 0;
-    // return basePrice + addOnsTotal;
-    // ============================================
   };
 
-  // ============================================
-  // HOLIDAY SALE: START - Remove this function when sale ends
-  // ============================================
-  // Calculate original price before any discounts (for display)
   const calculateOriginalTotal = () => {
     const addOnsTotal = Array.isArray(selectedAddOns)
       ? selectedAddOns.reduce((sum: number, a: any) => sum + Number(a.price), 0)
@@ -206,55 +179,18 @@ function ConfirmationContent() {
     const basePrice = Number(selectedPackages?.price) || 0;
     return basePrice + addOnsTotal;
   };
-  // ============================================
-  // HOLIDAY SALE: END
-  // ============================================
 
   const handleConfirmBooking = async () => {
     if (!user) {
       setShowGuestModal(true);
       return;
     }
-
-    // Subscribed users without add-ons
-    if (isSubscribed && (!selectedAddOns || selectedAddOns.length === 0)) {
-      setIsSubmitting(true);
-      try {
-        const booking = await createBooking({
-          year: parseInt(vehicleSpecs.year || "0"),
-          make: vehicleSpecs.make || "",
-          model: vehicleSpecs.model || "",
-          body_type: vehicleSpecs.body_type || "",
-          colors: [vehicleSpecs.color || ""],
-
-          servicePackage: { ...selectedPackages, price: 0 },
-          addOnsId: [],
-          appointmentDate: new Date(appointmentDate!),
-          appointmentTime: appointmentTime!,
-          totalPrice: 0,
-          totalDuration: calculateDuration(),
-          payment_method: "subscription",
-        });
-        window.location.href = `/dashboard/bookings/success?booking_id=${booking.id}`;
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setIsSubmitting(false);
-      }
-      return;
-    }
-
-    setShowPaymentModal(true);
+    await proceedToCheckout();
   };
 
-  const confirmPaymentChoice = async (guestBooking?: boolean) => {
+  const proceedToCheckout = async (guestBooking?: boolean) => {
     try {
       setIsSubmitting(true);
-      setShowPaymentModal(false);
-
-      // const addOnsTotal = Array.isArray(selectedAddOns)
-      //   ? selectedAddOns.reduce((sum, a) => sum + Number(a.price), 0)
-      //   : 0;
 
       const customerName = guestBooking
         ? guestInfo.name
@@ -264,53 +200,11 @@ function ConfirmationContent() {
         : (user?.email ?? "");
       const customerPhone = guestBooking ? guestInfo.phone : undefined;
 
-      if (paymentMethod === "cash") {
-        const booking = await createBooking({
-          year: parseInt(vehicleSpecs.year || "0"),
-          make: vehicleSpecs.make || "",
-          model: vehicleSpecs.model || "",
-          body_type: vehicleSpecs.body_type || "",
-          colors: [vehicleSpecs.color || ""],
-          servicePackage: { ...selectedPackages },
-          addOnsId: selectedAddOns
-            ? selectedAddOns.map((a: { id: string }) => a.id)
-            : [],
-          // addOnsId:
-          //   selectedAddOns?.map(
-          //     (a: { id: string; name: string; price: number }) => ({
-          //       id: a.id,
-          //       name: a.name,
-          //       price: a.price,
-          //     })
-          //   ) ?? [],
-          appointmentDate: new Date(appointmentDate!),
-          appointmentTime: appointmentTime!.toString(),
-          totalPrice: calculateTotal(),
-          totalDuration: calculateDuration(),
-          payment_method: "cash",
-          customerName,
-          customerEmail,
-          customerPhone,
-        });
-
-        const successUrl = user
-          ? `/dashboard/bookings/success?booking_id=${booking.id}`
-          : `/success?booking_id=${booking.id}`;
-        window.location.href = successUrl;
-        return;
-      }
-
-      // Card payment (Stripe)
       const payload = {
-        year: parseInt(vehicleSpecs.year || "0"),
-        make: vehicleSpecs.make || "",
-        model: vehicleSpecs.model || "",
-        body_type: vehicleSpecs.body_type || "",
-        colors: [vehicleSpecs.color || ""],
         vehicleSpecs,
         servicePackageId: selectedPackages!.id,
         servicePackageName: selectedPackages!.name,
-        servicePackagePrice: selectedPackages!.price, // 👈 zero if subscribed
+        servicePackagePrice: selectedPackages!.price,
         addOns:
           selectedAddOns?.map(
             (a: { id: string; name: string; price: number }) => ({
@@ -322,6 +216,7 @@ function ConfirmationContent() {
         appointmentDate: appointmentDate,
         appointmentTime: appointmentTime!.toString(),
         totalPrice: calculateTotal(),
+        originalTotalPrice: calculateOriginalTotal(),
         totalDuration: calculateDuration(),
         payment_method: "card",
         customerName,
@@ -329,26 +224,31 @@ function ConfirmationContent() {
         customerPhone,
       };
 
-      // console.log(payload);
-
-      // Card payment
       const res = await fetch("/api/checkout_sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+
+      if (!res.ok) {
+        throw new Error("Failed to create checkout session");
+      }
+
       const { url } = await res.json();
-      if (url) window.location.href = url;
+      if (url) {
+        window.location.href = url;
+      } else {
+        throw new Error("No checkout URL received");
+      }
     } catch (err) {
       console.error(err);
-    } finally {
+      alert("Failed to proceed to checkout. Please try again.");
       setIsSubmitting(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
@@ -369,7 +269,6 @@ function ConfirmationContent() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Left: Vehicle & Appointment */}
         <div className="space-y-6">
           <Card>
             <CardHeader>
@@ -381,24 +280,12 @@ function ConfirmationContent() {
             <CardContent className="space-y-2">
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Year:</span>
-                  <span className="font-medium">{vehicleSpecs.year}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Make:</span>
-                  <span className="font-medium">{vehicleSpecs.make}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Model:</span>
-                  <span className="font-medium">{vehicleSpecs.model}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Body Type:</span>
-                  <span className="font-medium">{vehicleSpecs.body_type}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Color:</span>
-                  <span className="font-medium">{vehicleSpecs.color}</span>
+                  <span className="text-slate-900 font-medium">
+                    License Plate:
+                  </span>
+                  <span className="font-medium font-mono text-lg uppercase">
+                    {vehicleSpecs.license_plate || "N/A"}
+                  </span>
                 </div>
               </div>
             </CardContent>
@@ -467,9 +354,6 @@ function ConfirmationContent() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Total Price:</span>
-                  {/* ============================================
-                      HOLIDAY SALE: START
-                      ============================================ */}
                   <div className="flex flex-col items-end">
                     {HOLIDAY_SALE_ACTIVE && (
                       <span className="text-sm text-gray-500 line-through">
@@ -480,43 +364,43 @@ function ConfirmationContent() {
                       ${calculateTotal().toFixed(2)}
                     </span>
                   </div>
-                  {/* ============================================
-                      HOLIDAY SALE: END - Replace above with:
-                      <span className="font-medium">${calculateTotal()}</span>
-                      ============================================ */}
                 </div>
               </div>
             </CardContent>
           </Card>
-          {/* ============================================
-              HOLIDAY SALE: START - Remove this badge when sale ends
-              ============================================ */}
+
           {HOLIDAY_SALE_ACTIVE && (
             <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg p-3">
               <div className="bg-linear-to-r from-red-500 to-red-600 text-white px-3 py-1 text-xs font-bold rounded-full">
                 🎄 HOLIDAY SALE
               </div>
               <p className="text-sm text-red-700 font-semibold">
-                10% OFF Applied! Save ${(calculateOriginalTotal() - calculateTotal()).toFixed(2)}
+                5% OFF Applied! Save $
+                {(calculateOriginalTotal() - calculateTotal()).toFixed(2)}
               </p>
             </div>
           )}
-          {/* ============================================
-              HOLIDAY SALE: END
-              ============================================ */}
+
           <Button
             onClick={handleConfirmBooking}
             disabled={isSubmitting}
-            className="bg-blue-900 hover:bg-blue-800 px-8 py-3 w-full"
+            className="bg-blue-900 hover:bg-blue-800 px-8 py-3 w-full text-lg font-semibold"
           >
             {isSubmitting ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white inline-block mr-2" />
-            ) : null}
-            {isSubmitting ? "Processing..." : "Proceed to Payment"}
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white inline-block mr-2" />
+                Processing...
+              </>
+            ) : (
+              "Proceed to Payment"
+            )}
           </Button>
+
+          <p className="text-xs text-center text-gray-500">
+            You will be redirected to secure payment powered by Stripe
+          </p>
         </div>
 
-        {/* Right: Progress */}
         <div className="space-y-4">
           <Card>
             <CardHeader className="pb-4">
@@ -544,81 +428,6 @@ function ConfirmationContent() {
         </div>
       </div>
 
-      {/* Payment Modal */}
-      <AlertDialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Choose Payment Method</AlertDialogTitle>
-            <AlertDialogDescription>
-              Please select how you’d like to pay for your booking.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="grid grid-cols-2 gap-4 mt-4">
-            {/* Card */}
-            <label
-              className={`flex items-center justify-center gap-1 p-2 border rounded-2xl cursor-pointer transition-all ${
-                paymentMethod === "card"
-                  ? "border-blue-600 bg-blue-50 shadow-sm"
-                  : "border-gray-200 hover:border-gray-400"
-              }`}
-            >
-              <input
-                type="radio"
-                name="payment"
-                value="card"
-                checked={paymentMethod === "card"}
-                onChange={() => setPaymentMethod("card")}
-                className="hidden"
-              />
-              <CreditCard
-                className={`w-6 h-6 ${paymentMethod === "card" ? "text-blue-600" : "text-gray-500"}`}
-              />
-              <span
-                className={`text-sm font-medium ${paymentMethod === "card" ? "text-blue-700" : "text-gray-700"}`}
-              >
-                Card
-              </span>
-            </label>
-
-            {/* Cash */}
-            <label
-              className={`flex items-center justify-center gap-1 p-2 border rounded-2xl cursor-pointer transition-all ${
-                paymentMethod === "cash"
-                  ? "border-green-600 bg-green-50 shadow-sm"
-                  : "border-gray-200 hover:border-gray-400"
-              }`}
-            >
-              <input
-                type="radio"
-                name="payment"
-                value="cash"
-                checked={paymentMethod === "cash"}
-                onChange={() => setPaymentMethod("cash")}
-                className="hidden"
-              />
-              <Banknote
-                className={`w-6 h-6 ${paymentMethod === "cash" ? "text-green-600" : "text-gray-500"}`}
-              />
-              <span
-                className={`text-sm font-medium ${paymentMethod === "cash" ? "text-green-700" : "text-gray-700"}`}
-              >
-                Cash
-              </span>
-            </label>
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-blue-900 hover:bg-blue-800"
-              onClick={() => confirmPaymentChoice(!user)}
-            >
-              Confirm
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Guest Info Modal */}
       <AlertDialog open={showGuestModal} onOpenChange={setShowGuestModal}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -628,7 +437,6 @@ function ConfirmationContent() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-4 mt-4">
-            {/* Name */}
             <div className="space-y-2">
               <Label htmlFor="guest-name">Name</Label>
               <Input
@@ -645,7 +453,6 @@ function ConfirmationContent() {
               )}
             </div>
 
-            {/* Email */}
             <div className="space-y-2">
               <Label htmlFor="guest-email">Email</Label>
               <Input
@@ -665,12 +472,11 @@ function ConfirmationContent() {
               )}
             </div>
 
-            {/* Phone */}
             <div className="space-y-2">
               <Label htmlFor="guest-phone">Phone (optional)</Label>
               <Input
                 id="guest-phone"
-                type="number"
+                type="tel"
                 placeholder="Enter your phone number"
                 value={guestInfo.phone}
                 onChange={(e) =>
@@ -693,24 +499,18 @@ function ConfirmationContent() {
                 onClick={(e) => {
                   e.preventDefault();
 
-                  const validation = guestSchema.safeParse(guestInfo);
-                  if (!validation.success) {
-                    const fieldErrors: Record<string, string> = {};
-                    validation.error.issues.forEach((issue) => {
-                      if (issue.path[0])
-                        fieldErrors[issue.path[0] as string] = issue.message;
-                    });
-                    setGuestErrors(fieldErrors); // Show errors under inputs
-                    return; // Stop modal from closing
+                  const errors = validateGuestInfo(guestInfo);
+                  if (Object.keys(errors).length > 0) {
+                    setGuestErrors(errors);
+                    return;
                   }
 
-                  // Clear errors and proceed
                   setGuestErrors({});
                   setShowGuestModal(false);
-                  setShowPaymentModal(true);
+                  proceedToCheckout(true);
                 }}
               >
-                Continue
+                Continue to Payment
               </Button>
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -6,15 +6,20 @@ import { sendBookingConfirmationEmail } from "@/lib/email/sendConfirmation";
 import { createAdminClient } from "@/utils/supabase/admin";
 
 type CarData = {
-  year: number;
-  make: string;
-  model: string;
-  series?: string;
+  // License plate is REQUIRED
+  license_plate: string;
+
+  // Optional vehicle details
+  year?: number;
+  make?: string;
+  model?: string;
   body_type?: string;
-  colors: string[];
+  colors?: string[];
+
+  // Booking details
   price?: number;
   servicePackage?: ServicePackage;
-  addOnsId?: string[] | null; // array of add-on UUIDs
+  addOnsId?: string[] | null;
   appointmentDate?: Date;
   appointmentTime?: string;
   totalPrice?: number;
@@ -29,6 +34,13 @@ type CarData = {
 
 export async function createBooking(car: CarData, subscriberId?: string) {
   const supabase = subscriberId ? createAdminClient() : await createClient();
+
+  if (!car.license_plate || !car.license_plate.trim()) {
+    throw new Error("License plate is required");
+  }
+
+  // Normalize license plate
+  const normalizedPlate = car.license_plate.trim().toUpperCase();
 
   // Get current user (only needed for non-subscriber bookings)
   let currentUser = null;
@@ -52,12 +64,7 @@ export async function createBooking(car: CarData, subscriberId?: string) {
   const { data: existing } = await supabase
     .from("vehicles")
     .select("id")
-    .eq("user_id", targetUserId)
-    .eq("year", car.year)
-    .eq("make", car.make)
-    .eq("model", car.model)
-    .eq("body_type", car.body_type)
-    .contains("colors", car.colors)
+    .eq("license_plate", normalizedPlate)
     .maybeSingle();
 
   let vehicleId = existing?.id;
@@ -66,26 +73,13 @@ export async function createBooking(car: CarData, subscriberId?: string) {
       .from("vehicles")
       .insert({
         user_id: targetUserId || null,
-        year: car.year,
-        make: car.make,
-        model: car.model,
-        body_type: car.body_type || "",
-        colors: car.colors || [],
+        license_plate: normalizedPlate,
       })
       .select("id")
       .single();
 
     vehicleId = inserted?.id;
   }
-
-  // Update user profile if authenticated
-  // if (user) {
-  //   await supabase.from("profiles").upsert({
-  //     id: user.id,
-  //     full_name: car.customerName || user.user_metadata?.full_name,
-  //     updated_at: new Date().toISOString(),
-  //   });
-  // }
 
   // Insert booking
   const { data: booking, error } = await supabase

@@ -328,7 +328,7 @@ export default function SubscriptionView() {
                     Avg. Subscription
                   </p>
                   <p className="text-3xl font-bold text-foreground">
-                    {avgSubscription}
+                    {avgSubscription.toFixed(2)}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Per customer value

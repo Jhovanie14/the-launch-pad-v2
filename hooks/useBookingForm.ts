@@ -55,12 +55,7 @@ export function useBookingForm(onSuccess: () => void, subscriber?: any) {
     setSelectedService(null);
     setSelectedAddOns([]);
     setVehicleInfo({
-      year: "",
-      make: "",
-      model: "",
-      body_type: "",
-      color: "",
-      licensePlate: "",
+      license_plate: "",
     });
   }, [setVehicleInfo]);
 
@@ -85,15 +80,16 @@ export function useBookingForm(onSuccess: () => void, subscriber?: any) {
   // 🔹 Filter Services by Body Type
   // -----------------------------
   const bodyType = (vehicleInfo as any).body_type;
-  
+
   // Categories that are NOT dependent on vehicle body_type
   const UNIVERSAL_CATEGORIES = ["quick service", "express detail"];
-  
+
   const filteredServices = bodyType
     ? services.filter((s) => {
         const categoryLower = s.category?.toLowerCase() || "";
-        const isUniversalCategory = UNIVERSAL_CATEGORIES.includes(categoryLower);
-        
+        const isUniversalCategory =
+          UNIVERSAL_CATEGORIES.includes(categoryLower);
+
         // Always show universal categories, or show body_type matched services
         return isUniversalCategory || categoryLower === bodyType.toLowerCase();
       })
@@ -102,10 +98,10 @@ export function useBookingForm(onSuccess: () => void, subscriber?: any) {
   // -----------------------------
   // 🔹 Handle Submit
   // -----------------------------
-  const handleSubmit = async ({ 
+  const handleSubmit = async ({
     skipVehicleValidation = false,
     paymentMethod = "cash",
-    discountPercent = 0
+    discountPercent = 0,
   } = {}) => {
     // ✅ Validate vehicle form
     if (!skipVehicleValidation && !validate()) {
@@ -164,11 +160,6 @@ export function useBookingForm(onSuccess: () => void, subscriber?: any) {
           {
             ...form,
             ...vehicleInfo,
-            year: Number(vehicleInfo.year),
-            colors: vehicleInfo.color
-              .split(",")
-              .map((c) => c.trim())
-              .filter(Boolean),
             addOnsId: selectedAddOns,
             appointmentDate: new Date(form.appointmentDate),
             servicePackage: selectedServiceObj || null,

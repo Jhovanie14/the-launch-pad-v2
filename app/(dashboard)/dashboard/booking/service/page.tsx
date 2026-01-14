@@ -15,10 +15,12 @@ import {
   X,
   Clock,
   Sparkles,
+  Loader2Icon,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { is } from "zod/v4/locales";
 
 type ServicePackage = {
   id: string;
@@ -57,32 +59,18 @@ function ServiceSelectionPage() {
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"quick" | "express">("quick");
   const [vehicleSpecs, setVehicleSpecs] = useState<any>({
-    year: searchParams.get("year") ?? "",
-    make: searchParams.get("make") ?? "",
-    model: searchParams.get("model") ?? "",
-    body_type: searchParams.get("body_type") ?? "",
-    color: searchParams.get("color") ?? "",
+    license_plate: searchParams.get("license_plate") ?? "",
   });
 
   // Keep vehicleSpecs in sync with URL search params so the page updates when
   // the booking modal or other parts of the app navigate here with params.
   useEffect(() => {
     const newSpecs = {
-      year: searchParams.get("year") ?? "",
-      make: searchParams.get("make") ?? "",
-      model: searchParams.get("model") ?? "",
-      body_type: searchParams.get("body_type") ?? "",
-      color: searchParams.get("color") ?? "",
+      license_plate: searchParams.get("license_plate") ?? "",
     };
     setVehicleSpecs((prev: any) => {
       // Only update state if something changed to avoid unnecessary re-renders
-      if (
-        prev.year === newSpecs.year &&
-        prev.make === newSpecs.make &&
-        prev.model === newSpecs.model &&
-        prev.body_type === newSpecs.body_type &&
-        prev.color === newSpecs.color
-      ) {
+      if (prev.license_plate === newSpecs.license_plate) {
         return prev;
       }
       return newSpecs;
@@ -300,7 +288,7 @@ function ServiceSelectionPage() {
   }, [fetchPackages, fetchAddOns]);
 
   if (loading) {
-    return <LoadingDots />;
+    return <Loader2Icon />;
   }
 
   return (
@@ -312,7 +300,7 @@ function ServiceSelectionPage() {
         <div className="bg-linear-to-r from-red-500 to-red-600 text-white text-center py-3 px-4">
           <div className="max-w-7xl mx-auto flex items-center justify-center gap-2">
             <span className="text-lg font-bold">
-              🎄 HOLIDAY SALE - 10% OFF ALL SERVICES!
+              🎄 HOLIDAY SALE - 5% OFF ALL SERVICES!
             </span>
           </div>
         </div>
@@ -354,7 +342,7 @@ function ServiceSelectionPage() {
               className="w-full"
             >
               <TabsList
-                className={`grid w-full mb-4 ${
+                className={`grid w-full mb-12 ${
                   shouldShowQuickTab() && shouldShowExpressTab()
                     ? "grid-cols-2"
                     : "grid-cols-1"
@@ -363,18 +351,18 @@ function ServiceSelectionPage() {
                 {shouldShowQuickTab() && (
                   <TabsTrigger
                     value="quick"
-                    className="flex items-center gap-2"
+                    className="flex items-center justify-center gap-2 data-[state=active]:bg-linear-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-700 data-[state=active]:text-white data-[state=active]:shadow-xl data-[state=active]:scale-105 data-[state=inactive]:bg-white data-[state=inactive]:text-gray-700 data-[state=inactive]:hover:bg-blue-50 data-[state=inactive]:border-2 data-[state=inactive]:border-blue-100 rounded-xl transition-all duration-300 py-4 font-bold text-base"
                   >
-                    <Clock className="w-4 h-4" />
+                    <Clock className="w-5 h-5" />
                     Quick Service
                   </TabsTrigger>
                 )}
                 {shouldShowExpressTab() && (
                   <TabsTrigger
                     value="express"
-                    className="flex items-center gap-2"
+                    className="flex items-center justify-center gap-2 data-[state=active]:bg-linear-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-xl data-[state=active]:scale-105 data-[state=inactive]:bg-white data-[state=inactive]:text-gray-700 data-[state=inactive]:hover:bg-purple-50 data-[state=inactive]:border-2 data-[state=inactive]:border-purple-100 rounded-xl transition-all duration-300 py-4 font-bold text-base"
                   >
-                    <Sparkles className="w-4 h-4" />
+                    <Sparkles className="w-5 h-5" />
                     Express Detail
                   </TabsTrigger>
                 )}
@@ -407,13 +395,35 @@ function ServiceSelectionPage() {
                           }`}
                         >
                           {/* Holiday Sale Badge */}
-                          {HOLIDAY_SALE_ACTIVE && (
-                            <div className="absolute -top-3 -right-3 z-10">
-                              <div className="bg-linear-to-r from-red-500 to-red-600 text-white px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
-                                10% OFF
-                              </div>
-                            </div>
-                          )}
+                          {(() => {
+                            const isFree = isServiceFreeForSubscription(
+                              service.category || ""
+                            );
+
+                            // Show FREE badge if service matches subscription
+                            if (isFree) {
+                              return (
+                                <div className="absolute -top-3 -right-3 z-10">
+                                  <div className="bg-green-500 text-white px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
+                                    FREE
+                                  </div>
+                                </div>
+                              );
+                            }
+
+                            // Show 5% OFF badge if holiday sale is active and service is not free
+                            if (HOLIDAY_SALE_ACTIVE) {
+                              return (
+                                <div className="absolute -top-3 -right-3 z-10">
+                                  <div className="bg-linear-to-r from-red-500 to-red-600 text-white px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
+                                    5% OFF
+                                  </div>
+                                </div>
+                              );
+                            }
+
+                            return null;
+                          })()}
 
                           <CardHeader className="pb-4">
                             <div className="flex flex-col sm:flex-row sm:items-start justify-between w-full gap-2">
@@ -504,7 +514,7 @@ function ServiceSelectionPage() {
                           {HOLIDAY_SALE_ACTIVE && !isFree && (
                             <div className="absolute -top-3 -right-3 z-10">
                               <div className="bg-linear-to-r from-red-500 to-red-600 text-white px-3 py-1 text-xs font-bold rounded-full transform rotate-12 shadow-lg">
-                                10% OFF
+                                5% OFF
                               </div>
                             </div>
                           )}

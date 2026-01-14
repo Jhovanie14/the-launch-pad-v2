@@ -172,13 +172,13 @@ export default function SelfServiceSubscriptionStatus({
           </div>
           <div>
             <h4 className="text-md font-semibold text-gray-900">
-              Linked Vehicles
+              Linked Vehicles Plate Numbers
             </h4>
 
             {subscription.vehicles.length > 0 ? (
               subscription.vehicles.map((v) => (
                 <p key={v.id}>
-                  {v.year} {v.make} {v.model} {v.colors} - {v.body_type}
+                  {v.license_plate}
                 </p>
               ))
             ) : (

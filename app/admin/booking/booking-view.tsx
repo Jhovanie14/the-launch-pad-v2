@@ -111,7 +111,7 @@ export default function BookingsView() {
         .from("bookings")
         .select(
           `*,
-          vehicle:vehicles ( year, make, model, body_type, colors ),
+          vehicle:vehicles ( year, make, model, body_type, colors, license_plate ),
            booking_add_ons (
           add_ons (
             id, name, price, duration, is_active
@@ -147,7 +147,7 @@ export default function BookingsView() {
         .from("bookings")
         .select(
           `*,
-          vehicle:vehicles ( year, make, model, body_type, colors ),
+          vehicle:vehicles ( year, make, model, body_type, colors, license_plate ),
            booking_add_ons (
           add_ons (
             id, name, price, duration, is_active
@@ -244,7 +244,7 @@ export default function BookingsView() {
     // Auto-dismiss after 10 seconds (optional)
     setTimeout(() => {
       setNewBookingNotification(null);
-    }, 120000 );
+    }, 120000);
   }, []);
   useBookingRealtime(setBookings, handleNewBooking);
   // const handleNewBooking = useCallback(
@@ -519,6 +519,7 @@ export default function BookingsView() {
       booking.id.toLowerCase() ?? "",
       booking.vehicle?.make?.toLowerCase() ?? "",
       booking.vehicle?.model?.toLowerCase() ?? "",
+      booking.vehicle?.license_plate?.toLowerCase() ?? "",
     ];
 
     const matchesSearch =
@@ -831,6 +832,7 @@ export default function BookingsView() {
                             {booking.vehicle?.year} {booking.vehicle?.make}{" "}
                             {booking.vehicle?.model} {" - "}
                             {booking.vehicle?.colors}
+                            {booking.vehicle?.license_plate}
                           </p>
                           <p className="text-sm text-accent-foreground">
                             <strong> Booking # </strong>
