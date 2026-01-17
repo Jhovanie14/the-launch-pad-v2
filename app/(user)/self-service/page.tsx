@@ -7,7 +7,6 @@ import {
   Clock,
   DollarSign,
   Sparkles,
-  Zap,
   X,
 } from "lucide-react";
 import { motion } from "framer-motion";

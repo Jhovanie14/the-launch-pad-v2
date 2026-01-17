@@ -27,6 +27,7 @@ import {
   Sparkles,
   Trash2,
   Wrench,
+  X,
 } from "lucide-react";
 import {
   Card,
@@ -537,8 +538,14 @@ export default function ServicesView() {
                           key={index}
                           className="text-sm text-muted-foreground flex items-center"
                         >
-                          <CheckCircle className="h-3 w-3 mr-1 text-green-500" />
-                          {feature}
+                          {feature.toLowerCase().includes("not") ? (
+                            <X className="h-5 w-5 shrink-0 text-red-400 mx-1" />
+                          ) : (
+                            <CheckCircle className="h-5 w-5 shrink-0 text-yellow-400 mx-1" />
+                          )}
+                          <span className="text-sm md:text-base text-slate-800 font-medium">
+                            {feature}
+                          </span>
                         </p>
                       ))}
                     </div>

@@ -5,13 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { createClient } from "@/utils/supabase/client";
 import {
@@ -483,7 +476,7 @@ function ServiceSelectionPage() {
                             </div>
                           )}
 
-                          <CardHeader className="pb-4">
+                          <CardHeader>
                             <div className="flex flex-col sm:flex-row sm:items-start justify-between w-full gap-2">
                               <div className="flex-1 min-w-0 space-y-1">
                                 <h3 className="text-lg sm:text-base font-semibold text-gray-900 truncate">
@@ -518,10 +511,16 @@ function ServiceSelectionPage() {
                                 {service.features?.map((feature, index) => (
                                   <div
                                     key={index}
-                                    className="flex items-center text-sm text-gray-600 min-w-0"
+                                    className="flex items-center text-xs text-gray-600 min-w-0"
                                   >
-                                    <Check className="h-4 w-4 mr-2 text-green-500 shrink-0" />
-                                    <span className="truncate">{feature}</span>
+                                    {feature.toLowerCase().includes("not") ? (
+                                      <X className="h-5 w-5 shrink-0 text-red-400 mx-1" />
+                                    ) : (
+                                      <Check className="h-5 w-5 shrink-0 text-yellow-400 mx-1" />
+                                    )}
+                                    <span className="text-xs md:base text-slate-800 font-medium">
+                                      {feature}
+                                    </span>
                                   </div>
                                 ))}
                               </div>

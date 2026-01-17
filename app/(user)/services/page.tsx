@@ -22,6 +22,7 @@ import {
   Clock,
   DollarSign,
   ArrowRight,
+  X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
@@ -329,7 +330,7 @@ export default function ServicePage() {
                           {category.title}
                         </CardTitle>
                       </div>
-                      <CardDescription className="text-base leading-relaxed">
+                      <CardDescription className="text-base text-accent-foreground font-medium leading-relaxed">
                         {category.description}
                       </CardDescription>
                     </CardHeader>
@@ -339,7 +340,7 @@ export default function ServicePage() {
                         {category.features.map((feature, idx) => (
                           <div key={idx} className="flex items-start gap-2">
                             <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                            <span className="text-sm text-muted-foreground">
+                            <span className="text-sm text-accent-foreground">
                               {feature}
                             </span>
                           </div>
@@ -519,8 +520,14 @@ export default function ServicePage() {
                                       }}
                                       viewport={{ once: true }}
                                     >
-                                      <Check className="h-3 w-3 mr-1 text-primary" />
-                                      {feature}
+                                      {feature.toLowerCase().includes("not") ? (
+                                        <X className="h-5 w-5 shrink-0 text-red-400 mx-1" />
+                                      ) : (
+                                        <Check className="h-5 w-5 shrink-0 text-yellow-400 mx-1" />
+                                      )}
+                                      <span className="text-sm md:text-base text-slate-800 font-medium">
+                                        {feature}
+                                      </span>
                                     </motion.p>
                                   )
                                 )}

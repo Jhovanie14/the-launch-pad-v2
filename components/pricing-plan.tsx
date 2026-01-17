@@ -8,8 +8,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check, CheckCircle, Crown, Gem, X } from "lucide-react";
-import { Separator } from "./ui/separator";
+import { CheckCircle, Crown, X } from "lucide-react";
 import Image from "next/image";
 
 export default function PricingCard({
@@ -77,9 +76,9 @@ export default function PricingCard({
   const promoDiscountPercent = isSelfServicePlan ? 0 : 0.1;
   const originalPriceWithPromo = currentPrice;
   const discountedPriceWithPromo = currentPrice * (1 - promoDiscountPercent);
-  
+
   // Calculate daily cost
-  const dailyCost = isYearly 
+  const dailyCost = isYearly
     ? (discountedPriceWithPromo / 365).toFixed(2)
     : (discountedPriceWithPromo / 30).toFixed(2);
   // ============================================
@@ -153,7 +152,7 @@ export default function PricingCard({
                 </span>
               </div>
             )}
-            
+
             <div className="text-4xl font-bold text-yellow-400">
               ${discountedPriceWithPromo.toFixed(2)}
             </div>
@@ -171,7 +170,8 @@ export default function PricingCard({
             {/* Equivalent monthly price for yearly */}
             {isYearly && (
               <p className="text-blue-200 text-xs mt-2">
-                ${(discountedPriceWithPromo / 12).toFixed(2)}/month billed annually
+                ${(discountedPriceWithPromo / 12).toFixed(2)}/month billed
+                annually
               </p>
             )}
             {/* ============================================

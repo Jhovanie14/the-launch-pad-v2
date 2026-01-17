@@ -74,8 +74,40 @@ export default function SubscriptionCart({
     errors,
     validate,
     canAddMore,
+    setVehicles,
   } = useVehicleFlock();
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    const savedCart = localStorage.getItem("pendingSubscriptionCart");
+    if (savedCart && user) {
+      try {
+        const cartData = JSON.parse(savedCart);
+
+        // Restore vehicles data
+        if (cartData.vehicles && cartData.vehicles.length > 0) {
+          setVehicles(cartData.vehicles);
+        }
+
+        // Restore authorization checkbox
+        if (cartData.isAuthorized) {
+          setIsAuthorized(true);
+        }
+
+        // Clear the saved cart after restoring
+        localStorage.removeItem("pendingSubscriptionCart");
+
+        // Auto-start checkout if auto flag was set
+        if (cartData.autoCheckout) {
+          setTimeout(() => {
+            startCheckout();
+          }, 500);
+        }
+      } catch (error) {
+        console.error("Error restoring cart:", error);
+      }
+    }
+  }, [user]);
 
   // ============================================
   // PROMO CONFIGURATION (UPDATE THESE SETTINGS)
@@ -84,7 +116,7 @@ export default function SubscriptionCart({
     enabled: true, // Set to false when promo ends
     // You need TWO separate Stripe coupons:
     // stripeCouponId_SelfService: "JQn39l5R", // 20% off coupon for self-service
-    stripeCouponId_Subscription: "pbau1m2G", // 10% off coupon for subscriptions
+    stripeCouponId_Subscription: "w8jaH8ZL", // 10% off coupon for subscriptions
     // isSelfServicePercent: 0, // Self-service discount percentage
     isSubscriptionPercent: 10, // Subscription discount percentage
   };
@@ -258,6 +290,23 @@ export default function SubscriptionCart({
 
   const handleCheckoutClick = async () => {
     if (!user) {
+      // Save cart state before showing auth modal
+      const cartData = {
+        vehicles: vehicles.map((v) => ({
+          license_plate: v.license_plate,
+        })),
+        isAuthorized,
+        planId,
+        billingCycle,
+        autoCheckout: true, // Flag to auto-checkout after login
+      };
+
+      localStorage.setItem("pendingSubscriptionCart", JSON.stringify(cartData));
+      localStorage.setItem(
+        "pendingSubscriptionIntent",
+        JSON.stringify({ planId, billing: billingCycle })
+      );
+
       onRequireAuth?.();
       return;
     }
@@ -672,7 +721,7 @@ export default function SubscriptionCart({
                   if (checked) setError("");
                 }}
               />
-              <p className="text-xs text-muted-foreground leading-relaxed">
+              <p className="text-xs text-accent-foreground leading-relaxed">
                 I authorized The Launch Pad to automatically charge the selected
                 payment method{" "}
                 <span className="font-semibold">
@@ -694,7 +743,7 @@ export default function SubscriptionCart({
                 until I cancel or terminate my membership{" "}
                 <button
                   onClick={() => setIsModalOpen(true)}
-                  className="text-primary hover:underline"
+                  className="text-blue-900 hover:underline"
                 >
                   Terms of Service Agreement
                 </button>

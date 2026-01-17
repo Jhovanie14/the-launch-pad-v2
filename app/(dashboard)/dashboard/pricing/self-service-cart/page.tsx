@@ -117,7 +117,7 @@ export default function SelfServiceCart() {
         <div className="space-y-6">
           {/* Plan Details Card */}
           <Card className="border-2 border-blue-200 shadow-lg">
-            <div className="bg-gradient-to-r from-blue-900 to-blue-800 text-white p-6 rounded-t-lg">
+            <div className="bg-linear-to-r from-blue-900 to-blue-800 text-white p-6 rounded-t-lg">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-2xl font-bold">{plan?.name}</h2>

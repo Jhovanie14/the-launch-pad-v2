@@ -33,16 +33,27 @@ export default function SignUpPage() {
 
     const formData = new FormData(e.currentTarget);
     const form = e.currentTarget;
-    const result = await signUp(formData);
+    const pendingIntent = localStorage.getItem("pendingSubscriptionIntent");
 
+    
+    const result = await signUp(formData);
     if (result?.errors) {
       setErrors(result.errors);
     } else if (result?.message) {
       if (result?.success) {
         setIsSuccess(true);
         form.reset();
+
+        // If there's a pending subscription, show different message
+        if (pendingIntent) {
+          setErrors({
+            message:
+              "Account created! Please check your email to verify your account before proceeding with checkout.",
+          });
+        }
+      } else {
+        setErrors({ message: result.message });
       }
-      setErrors({ message: result.message });
     }
 
     setIsLoading(false);

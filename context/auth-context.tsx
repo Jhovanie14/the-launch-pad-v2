@@ -188,12 +188,25 @@ export function AuthContextProvider({
       };
     }
 
+    const pendingIntentRaw = localStorage.getItem("pendingSubscriptionIntent");
+
+    let nextPath = "/dashboard";
+
+    if (pendingIntentRaw) {
+      const { planId, billing } = JSON.parse(pendingIntentRaw);
+      nextPath = `/dashboard/pricing/subscription?plan=${planId}&billing=${billing}`;
+    }
+
+    const emailRedirectTo = `${siteUrl}/auth/confirm?next=${encodeURIComponent(
+      nextPath
+    )}`;
+
     // If no existing user, proceed with signup
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${siteUrl}/auth/confirm`,
+        emailRedirectTo: emailRedirectTo,
         data: { full_name: fullName, terms_version: "v1.0" },
       },
     });
