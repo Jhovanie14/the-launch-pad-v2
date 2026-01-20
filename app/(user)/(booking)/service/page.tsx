@@ -153,16 +153,14 @@ function ServiceSelectionPage() {
       selectserv &&
       !UNIVERSAL_CATEGORIES.includes(selectserv.category?.toLowerCase() || "");
 
-    if (requiresVehicle) {
-      if (!vehicleSpecs.license_plate) {
-        toast.error("Please add your vehicle information first.");
-        setShowVehicleError(true);
-        vehicleInfoRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
-        return;
-      }
+    if (!vehicleSpecs.license_plate) {
+      toast.error("Please add your vehicle information first.");
+      setShowVehicleError(true);
+      vehicleInfoRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+      return;
     }
 
     if (!selectserv) return;
@@ -182,6 +180,7 @@ function ServiceSelectionPage() {
     // example: push to datetime with params or save in context
     try {
       const params = new URLSearchParams(vehicleSpecs);
+
       if (selectedService) {
         params.set("service", selectedService);
       }
@@ -196,9 +195,20 @@ function ServiceSelectionPage() {
       console.log("error", error);
     }
   };
+
   const skipAddOns = () => {
     try {
       const params = new URLSearchParams(vehicleSpecs);
+
+      if (!vehicleSpecs.license_plate) {
+        toast.error("Please add your vehicle information first.");
+        setShowVehicleError(true);
+        vehicleInfoRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+        return;
+      }
       if (selectedService) {
         params.set("service", selectedService);
       }
