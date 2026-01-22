@@ -520,7 +520,7 @@ export default function ServicePage() {
                                       }}
                                       viewport={{ once: true }}
                                     >
-                                      {feature.toLowerCase().includes("not") ? (
+                                      {feature.toLowerCase().includes("no") ? (
                                         <X className="h-5 w-5 shrink-0 text-red-400 mx-1" />
                                       ) : (
                                         <Check className="h-5 w-5 shrink-0 text-yellow-400 mx-1" />

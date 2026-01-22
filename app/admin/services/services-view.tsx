@@ -538,7 +538,7 @@ export default function ServicesView() {
                           key={index}
                           className="text-sm text-muted-foreground flex items-center"
                         >
-                          {feature.toLowerCase().includes("not") ? (
+                          {feature.toLowerCase().includes("no") ? (
                             <X className="h-5 w-5 shrink-0 text-red-400 mx-1" />
                           ) : (
                             <CheckCircle className="h-5 w-5 shrink-0 text-yellow-400 mx-1" />

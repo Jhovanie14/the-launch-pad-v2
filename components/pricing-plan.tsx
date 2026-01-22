@@ -218,7 +218,7 @@ export default function PricingCard({
           <ul className="space-y-3" role="list">
             {plan.features.map((feature: string, index: number) => (
               <li key={index} className="flex items-start gap-3">
-                {feature.toLowerCase().includes("not") ? (
+                {feature.toLowerCase().includes("no") ? (
                   <X className="h-5 w-5 shrink-0 text-red-400 mt-0.5" />
                 ) : (
                   <CheckCircle className="h-5 w-5 shrink-0 text-yellow-400 mt-0.5" />
