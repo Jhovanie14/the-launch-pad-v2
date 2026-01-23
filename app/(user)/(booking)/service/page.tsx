@@ -38,6 +38,7 @@ type ServicePackage = {
 type AddOns = {
   id: string;
   name: string;
+  description: string | null;
   price: number;
   duration: number;
   is_active: boolean;
@@ -85,7 +86,7 @@ function ServiceSelectionPage() {
     if (!bodyType) return "";
     // Try to find a case-insensitive match in BODY_TYPES
     const normalized = BODY_TYPES.find(
-      (type) => type.toLowerCase() === bodyType.toLowerCase()
+      (type) => type.toLowerCase() === bodyType.toLowerCase(),
     );
     return normalized || bodyType; // Return matched value or original if no match
   };
@@ -94,7 +95,7 @@ function ServiceSelectionPage() {
     license_plate: searchParams.get("license_plate") ?? "",
   });
   const [selectedService, setSelectedService] = useState<string | null>(
-    selectedServiceParam
+    selectedServiceParam,
   );
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -171,7 +172,7 @@ function ServiceSelectionPage() {
     setSelectedAddOnIds((prev) =>
       prev.includes(addOnId)
         ? prev.filter((id) => id !== addOnId)
-        : [...prev, addOnId]
+        : [...prev, addOnId],
     );
   };
 
@@ -697,22 +698,28 @@ function ServiceSelectionPage() {
                           <div className="divide-y divide-gray-100">
                             {addOns.map((a) => {
                               const isSelected = selectedAddOnIds.includes(
-                                a.id
+                                a.id,
                               );
                               return (
                                 <label
                                   key={a.id}
                                   className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 cursor-pointer"
                                 >
-                                  <div className="flex-1">
-                                    <h4 className="font-medium text-gray-900">
-                                      {a.name}
-                                    </h4>
-                                    <p className="text-lg font-semibold text-gray-700">
-                                      ${a.price.toFixed(2)}
+                                  <div className="flex-1 space-y-1">
+                                    <div className="flex items-center space-x-3">
+                                      <h4 className="text-2xl font-medium text-black">
+                                        {a.name}
+                                      </h4>
+                                      <p className="text-sm font-semibold text-yellow-500">
+                                      {a.duration} (min) 
+                                      </p>
+                                    </div>
+                                    <p className="font-light text-black text-sm">
+                                      {a.description}
                                     </p>
-                                    <p className="text-sm font-semibold text-gray-700">
-                                      {a.duration} (min)
+
+                                    <p className="text-xl font-semibold text-gray-700">
+                                      ${a.price.toFixed(2)}
                                     </p>
                                   </div>
                                   <input
@@ -745,7 +752,7 @@ function ServiceSelectionPage() {
                                         selectserv.price +
                                         selectedAddOnIds.reduce((sum, id) => {
                                           const addOn = addOns.find(
-                                            (a) => a.id === id
+                                            (a) => a.id === id,
                                           );
                                           return sum + (addOn?.price || 0);
                                         }, 0)

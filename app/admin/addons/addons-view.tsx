@@ -30,6 +30,7 @@ import LoadingDots from "@/components/loading";
 type AddOns = {
   id: string;
   name: string;
+  description: string | null;
   price: number;
   duration: number;
   is_active: boolean;
@@ -40,6 +41,7 @@ export default function AddOnsView() {
   const supabase = createClient();
   const [form, setForm] = useState({
     name: "",
+    description: "",
     price: "",
     duration: "",
     is_active: true,
@@ -58,6 +60,7 @@ export default function AddOnsView() {
   const resetForm = () => {
     setForm({
       name: "",
+      description: "",
       price: "",
       duration: "",
       is_active: true,
@@ -85,7 +88,7 @@ export default function AddOnsView() {
     } else {
       // refresh list or update state
       setAddOns((prev) =>
-        prev.map((a) => (a.id === id ? { ...a, is_active: newStatus } : a))
+        prev.map((a) => (a.id === id ? { ...a, is_active: newStatus } : a)),
       );
     }
   };
@@ -126,12 +129,13 @@ export default function AddOnsView() {
       setOpen(false);
       resetForm();
     },
-    [form, supabase, resetForm, setOpen, fetchAddOns]
+    [form, supabase, resetForm, setOpen, fetchAddOns],
   );
   const handleEditClick = (addon: AddOns) => {
     setEditAddOn(addon);
     setForm({
       name: addon.name,
+      description: addon.description ?? "",
       price: addon.price.toString(),
       duration: addon.duration.toString(),
       is_active: addon.is_active,
@@ -148,6 +152,7 @@ export default function AddOnsView() {
       .from("add_ons")
       .update({
         name: form.name,
+        description: form.description,
         price: Number(form.price),
         duration: Number(form.duration),
         is_active: form.is_active,
@@ -218,7 +223,15 @@ export default function AddOnsView() {
                   onChange={handleChange}
                 />
               </div>
-
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Input
+                  id="description"
+                  placeholder="Short description of the add-on"
+                  value={form.description}
+                  onChange={handleChange}
+                />
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="price">Price</Label>
                 <Input
@@ -298,11 +311,10 @@ export default function AddOnsView() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   {/* <ServiceIcon className="h-6 w-6 text-accent" /> */}
-                  <div>
-                    <CardTitle className="text-card-foreground">
-                      {addon.name}
-                    </CardTitle>
-                  </div>
+
+                  <CardTitle className="text-card-foreground">
+                    {addon.name}
+                  </CardTitle>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Switch
@@ -326,6 +338,9 @@ export default function AddOnsView() {
             <CardContent>
               <div className="space-y-4">
                 {/* Pricing and Duration */}
+                <CardDescription className="text-sm text-muted-foreground">
+                  {addon.description}
+                </CardDescription>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-2xl font-bold text-accent-foreground">
@@ -369,6 +384,15 @@ export default function AddOnsView() {
               <div className="space-y-2">
                 <Label htmlFor="name">Name</Label>
                 <Input id="name" value={form.name} onChange={handleChange} />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Input
+                  id="description"
+                  value={form.description}
+                  onChange={handleChange}
+                />
               </div>
 
               <div className="space-y-2">

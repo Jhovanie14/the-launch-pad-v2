@@ -38,6 +38,7 @@ type ServicePackage = {
 type AddOns = {
   id: string;
   name: string;
+  description: string | null;
   price: number;
   duration: number;
   is_active: boolean;
@@ -216,7 +217,7 @@ function ServiceSelectionPage() {
     setSelectedAddOnIds((prev) =>
       prev.includes(addOnId)
         ? prev.filter((id) => id !== addOnId)
-        : [...prev, addOnId]
+        : [...prev, addOnId],
     );
   };
 
@@ -397,7 +398,7 @@ function ServiceSelectionPage() {
                           {/* Holiday Sale Badge */}
                           {(() => {
                             const isFree = isServiceFreeForSubscription(
-                              service.category || ""
+                              service.category || "",
                             );
 
                             // Show FREE badge if service matches subscription
@@ -497,7 +498,7 @@ function ServiceSelectionPage() {
                         ? originalPrice * (1 - HOLIDAY_SALE_DISCOUNT)
                         : originalPrice;
                       const isFree = isServiceFreeForSubscription(
-                        service.category || ""
+                        service.category || "",
                       );
 
                       return (
@@ -612,7 +613,7 @@ function ServiceSelectionPage() {
                         ============================================ */}
                     {(() => {
                       const isFree = isServiceFreeForSubscription(
-                        selectserv.category || ""
+                        selectserv.category || "",
                       );
                       if (isFree) {
                         return (
@@ -681,22 +682,28 @@ function ServiceSelectionPage() {
                           <div className="divide-y divide-gray-100">
                             {addOns.map((a) => {
                               const isSelected = selectedAddOnIds.includes(
-                                a.id
+                                a.id,
                               );
                               return (
                                 <label
                                   key={a.id}
                                   className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 cursor-pointer"
                                 >
-                                  <div className="flex-1">
-                                    <h4 className="font-medium text-gray-900">
-                                      {a.name}
-                                    </h4>
-                                    <p className="text-lg font-semibold text-gray-700">
-                                      ${a.price.toFixed(2)}
+                                  <div className="flex-1 space-y-1">
+                                    <div className="flex items-center space-x-3">
+                                      <h4 className="text-2xl font-medium text-black">
+                                        {a.name}
+                                      </h4>
+                                      <p className="text-sm font-semibold text-yellow-500">
+                                        {a.duration} (min)
+                                      </p>
+                                    </div>
+                                    <p className="font-light text-black text-sm">
+                                      {a.description}
                                     </p>
-                                    <p className="text-sm font-semibold text-gray-700">
-                                      {a.duration} (min)
+
+                                    <p className="text-xl font-semibold text-gray-700">
+                                      ${a.price.toFixed(2)}
                                     </p>
                                   </div>
                                   <input
@@ -722,7 +729,7 @@ function ServiceSelectionPage() {
                                   ============================================ */}
                               {(() => {
                                 const isFree = isServiceFreeForSubscription(
-                                  selectserv.category || ""
+                                  selectserv.category || "",
                                 );
                                 const servicePrice = isFree
                                   ? 0
@@ -730,7 +737,7 @@ function ServiceSelectionPage() {
                                 const addOnsTotal = selectedAddOnIds.reduce(
                                   (sum, id) => {
                                     const addOn = addOns.find(
-                                      (a) => a.id === id
+                                      (a) => a.id === id,
                                     );
                                     if (!addOn) return sum;
                                     let addOnPrice = addOn.price;
@@ -741,7 +748,7 @@ function ServiceSelectionPage() {
                                     }
                                     return sum + addOnPrice;
                                   },
-                                  0
+                                  0,
                                 );
 
                                 let finalServicePrice = servicePrice;
@@ -756,7 +763,7 @@ function ServiceSelectionPage() {
                                   selectserv.price +
                                   selectedAddOnIds.reduce((sum, id) => {
                                     const addOn = addOns.find(
-                                      (a) => a.id === id
+                                      (a) => a.id === id,
                                     );
                                     return sum + (addOn?.price || 0);
                                   }, 0);
@@ -782,7 +789,7 @@ function ServiceSelectionPage() {
                                       </span>
                                       <span className="text-xs text-red-600 font-semibold bg-red-50 px-2 py-0.5 rounded">
                                         {Math.round(
-                                          HOLIDAY_SALE_DISCOUNT * 100
+                                          HOLIDAY_SALE_DISCOUNT * 100,
                                         )}
                                         % OFF
                                       </span>
