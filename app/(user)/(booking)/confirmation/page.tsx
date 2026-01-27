@@ -76,10 +76,10 @@ function ConfirmationContent() {
   const [guestErrors, setGuestErrors] = useState<Record<string, string>>({});
 
   const [appointmentDate, setAppointmentDate] = useState<string | null>(
-    dateParam
+    dateParam,
   );
   const [appointmentTime, setAppointmentTime] = useState<string | null>(
-    timeParam
+    timeParam,
   );
 
   const HOLIDAY_SALE_ACTIVE = true;
@@ -145,7 +145,7 @@ function ConfirmationContent() {
     const addOnsTotal = Array.isArray(selectedAddOns)
       ? selectedAddOns.reduce(
           (sum: number, a: any) => sum + Number(a.duration),
-          0
+          0,
         )
       : 0;
     return base + addOnsTotal;
@@ -201,7 +201,7 @@ function ConfirmationContent() {
       const customerPhone = guestBooking ? guestInfo.phone : undefined;
 
       const payload = {
-        vehicleSpecs,
+        vehicleSpecs: vehicleSpecs.license_plate ?? null,
         servicePackageId: selectedPackages!.id,
         servicePackageName: selectedPackages!.name,
         servicePackagePrice: selectedPackages!.price,
@@ -211,7 +211,7 @@ function ConfirmationContent() {
               id: a.id,
               name: a.name,
               price: a.price,
-            })
+            }),
           ) ?? [],
         appointmentDate: appointmentDate,
         appointmentTime: appointmentTime!.toString(),

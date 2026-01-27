@@ -154,15 +154,15 @@ function ServiceSelectionPage() {
       selectserv &&
       !UNIVERSAL_CATEGORIES.includes(selectserv.category?.toLowerCase() || "");
 
-    if (!vehicleSpecs.license_plate) {
-      toast.error("Please add your vehicle information first.");
-      setShowVehicleError(true);
-      vehicleInfoRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
-      return;
-    }
+    // if (!vehicleSpecs.license_plate) {
+    //   toast.error("Please add your vehicle information first.");
+    //   setShowVehicleError(true);
+    //   vehicleInfoRef.current?.scrollIntoView({
+    //     behavior: "smooth",
+    //     block: "center",
+    //   });
+    //   return;
+    // }
 
     if (!selectserv) return;
     setAddOnOpen(true);
@@ -201,15 +201,15 @@ function ServiceSelectionPage() {
     try {
       const params = new URLSearchParams(vehicleSpecs);
 
-      if (!vehicleSpecs.license_plate) {
-        toast.error("Please add your vehicle information first.");
-        setShowVehicleError(true);
-        vehicleInfoRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
-        return;
-      }
+      // if (!vehicleSpecs.license_plate) {
+      //   toast.error("Please add your vehicle information first.");
+      //   setShowVehicleError(true);
+      //   vehicleInfoRef.current?.scrollIntoView({
+      //     behavior: "smooth",
+      //     block: "center",
+      //   });
+      //   return;
+      // }
       if (selectedService) {
         params.set("service", selectedService);
       }

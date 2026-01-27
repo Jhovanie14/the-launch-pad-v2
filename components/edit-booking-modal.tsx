@@ -92,23 +92,53 @@ export default function EditBookingModal({
     try {
       setLoading(true);
 
+      const hasVehicle = !!booking.vehicle_id;
+
+      let vehicleId = booking.vehicle_id;
       // Update vehicle
       const colors = vehicleColor.split(",").map((c) => c.trim());
 
-      const { error: vehicleError } = await supabase
-        .from("vehicles")
-        .update({
-          make: vehicleMake,
-          model: vehicleModel,
-          year: parseInt(vehicleYear),
-          colors: colors,
-        })
-        .eq("id", booking.vehicle_id);
+      if (hasVehicle) {
+        // UPDATE existing vehicle
+        const { error } = await supabase
+          .from("vehicles")
+          .update({
+            make: vehicleMake,
+            model: vehicleModel,
+            year: parseInt(vehicleYear),
+            colors,
+            license_plate: licensePlate,
+            body_type: vehicleBodyType,
+          })
+          .eq("id", vehicleId);
 
-      if (vehicleError) {
-        console.error("Error updating vehicle:", vehicleError);
-        toast.error("Failed to update vehicle information");
-        return;
+        if (error) throw error;
+      } else {
+        // CREATE new vehicle
+        const { data, error } = await supabase
+          .from("vehicles")
+          .insert({
+            make: vehicleMake,
+            model: vehicleModel,
+            year: parseInt(vehicleYear),
+            colors,
+            license_plate: licensePlate,
+            body_type: vehicleBodyType,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        vehicleId = data.id;
+
+        // Attach vehicle to booking
+        const { error: bookingUpdateError } = await supabase
+          .from("bookings")
+          .update({ vehicle_id: vehicleId })
+          .eq("id", booking.id);
+
+        if (bookingUpdateError) throw bookingUpdateError;
       }
 
       // Update booking

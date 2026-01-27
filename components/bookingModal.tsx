@@ -162,8 +162,9 @@ export default function BookingModal() {
           </div>
 
           <p className="text-sm text-muted-foreground mb-6">
-            Provide your car details to see pricing for your vehicle type
+           Add your car information to help our team prepare for your service.
           </p>
+          {/* Vehicle details help us serve you faster */}
 
           {subscriptionVehicles.length > 0 ? (
             <div className="space-y-3">

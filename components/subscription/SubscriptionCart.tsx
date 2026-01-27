@@ -41,7 +41,7 @@ export default function SubscriptionCart({
     () =>
       (billingProp ?? (searchParams.get("billing") as Billing)) || "monthly",
     [billingProp, searchParams]
-  );
+  ); 
 
   const [plan, setPlan] = useState<{
     id: string;
@@ -116,7 +116,7 @@ export default function SubscriptionCart({
     enabled: true, // Set to false when promo ends
     // You need TWO separate Stripe coupons:
     // stripeCouponId_SelfService: "JQn39l5R", // 20% off coupon for self-service
-    stripeCouponId_Subscription: "w8jaH8ZL", // 10% off coupon for subscriptions
+    stripeCouponId_Subscription: "pbau1m2G", // 10% off coupon for subscriptions
     // isSelfServicePercent: 0, // Self-service discount percentage
     isSubscriptionPercent: 10, // Subscription discount percentage
   };

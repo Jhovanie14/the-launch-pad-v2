@@ -120,7 +120,7 @@ function ConfirmationContent() {
             monthly_price,
             yearly_price
           )
-        `
+        `,
         )
         .eq("user_id", user?.id)
         .eq("status", "active")
@@ -221,7 +221,7 @@ function ConfirmationContent() {
     const addOnsTotal = Array.isArray(selectedAddOns)
       ? selectedAddOns.reduce(
           (sum: number, addOn: any) => sum + Number(addOn.duration),
-          0
+          0,
         )
       : 0;
 
@@ -281,7 +281,7 @@ function ConfirmationContent() {
     const addOnsTotal = Array.isArray(selectedAddOns)
       ? selectedAddOns.reduce(
           (sum: number, addOn: any) => sum + Number(addOn.price),
-          0
+          0,
         )
       : 0;
 
@@ -390,7 +390,7 @@ function ConfirmationContent() {
       } else {
         // Card payment (via Stripe)
         const payload = {
-          vehicleSpecs,
+          vehicleSpecs: vehicleSpecs.license_plate ?? null,
           servicePackageId: selectedPackages!.id,
           servicePackageName: selectedPackages!.name,
           servicePackagePrice: servicePrice, // Free if matches subscription, otherwise full price
@@ -400,7 +400,7 @@ function ConfirmationContent() {
                 id: a.id,
                 name: a.name,
                 price: a.price,
-              })
+              }),
             ) ?? [],
           appointmentDate: appointmentDate,
           appointmentTime: appointmentTime!.toString(),
