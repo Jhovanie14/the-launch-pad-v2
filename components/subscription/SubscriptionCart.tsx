@@ -451,7 +451,7 @@ export default function SubscriptionCart({
                   <Label htmlFor={`licensePlate-${index}`}>License Plate</Label>
                   <Input
                     id={`licensePlate-${index}`}
-                    placeholder="e.g., ABC123 (optional)"
+                    placeholder="e.g., ABC123"
                     value={vehicle.license_plate ?? ""}
                     onChange={(e) =>
                       updateVehicle(index, { license_plate: e.target.value })
