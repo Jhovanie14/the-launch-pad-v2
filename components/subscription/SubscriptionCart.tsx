@@ -7,9 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Check, Plus, X, Tag } from "lucide-react";
+import { Check, Loader2, Tag } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
-import { useVehicleFlock } from "@/hooks/useVehicleForm";
 import { createClient } from "@/utils/supabase/client";
 import TermsModal from "../terms-modal";
 import LoadingDots from "../loading";
@@ -21,6 +20,10 @@ interface SubscriptionCartProps {
   billingCycle?: Billing | null;
   auto?: boolean;
   onRequireAuth?: () => void;
+}
+
+interface Vehicle {
+  license_plate: string;
 }
 
 export default function SubscriptionCart({
@@ -41,7 +44,7 @@ export default function SubscriptionCart({
     () =>
       (billingProp ?? (searchParams.get("billing") as Billing)) || "monthly",
     [billingProp, searchParams]
-  ); 
+  );
 
   const [plan, setPlan] = useState<{
     id: string;
@@ -52,30 +55,13 @@ export default function SubscriptionCart({
     stripe_price_id_monthly?: string;
     stripe_price_id_yearly?: string;
   } | null>(null);
-  const [allPlans, setAllPlans] = useState<
-    Array<{
-      id: string;
-      name: string;
-      monthly_price: number | string;
-      yearly_price: number | string;
-      stripe_price_id_monthly?: string;
-      stripe_price_id_yearly?: string;
-    }>
-  >([]);
   const [loadingPlan, setLoadingPlan] = useState(true);
   const [loadingCheckout, setLoadingCheckout] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [error, setError] = useState("");
-  const {
-    vehicles,
-    addVehicle,
-    removeVehicle,
-    updateVehicle,
-    errors,
-    validate,
-    canAddMore,
-    setVehicles,
-  } = useVehicleFlock();
+  const [vehicleCount, setVehicleCount] = useState(1);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([{ license_plate: "" }]);
+  const [errors, setErrors] = useState<Record<number, { licensePlate?: string }>>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
@@ -84,20 +70,17 @@ export default function SubscriptionCart({
       try {
         const cartData = JSON.parse(savedCart);
 
-        // Restore vehicles data
         if (cartData.vehicles && cartData.vehicles.length > 0) {
           setVehicles(cartData.vehicles);
+          setVehicleCount(cartData.vehicles.length);
         }
 
-        // Restore authorization checkbox
         if (cartData.isAuthorized) {
           setIsAuthorized(true);
         }
 
-        // Clear the saved cart after restoring
         localStorage.removeItem("pendingSubscriptionCart");
 
-        // Auto-start checkout if auto flag was set
         if (cartData.autoCheckout) {
           setTimeout(() => {
             startCheckout();
@@ -109,21 +92,12 @@ export default function SubscriptionCart({
     }
   }, [user]);
 
-  // ============================================
-  // PROMO CONFIGURATION (UPDATE THESE SETTINGS)
-  // ============================================
+  // Promo configuration
   const PROMO_CONFIG = {
-    enabled: true, // Set to false when promo ends
-    // You need TWO separate Stripe coupons:
-    // stripeCouponId_SelfService: "JQn39l5R", // 20% off coupon for self-service
-    stripeCouponId_Subscription: "pbau1m2G", // 10% off coupon for subscriptions
-    // isSelfServicePercent: 0, // Self-service discount percentage
-    isSubscriptionPercent: 10, // Subscription discount percentage
+    enabled: true,
+    stripeCouponId_Subscription: "pbau1m2G",
+    isSubscriptionPercent: 10,
   };
-  // ============================================
-
-  // Flat pricing model: no per-body-type pricing. All vehicles use the selected plan price.
-  // Body type selection is for record only (no pricing effect).
 
   useEffect(() => {
     if (!planId) return;
@@ -145,42 +119,66 @@ export default function SubscriptionCart({
       }
     })();
 
-    // Also fetch all plans so we can show per-vehicle plan info
-    (async () => {
-      try {
-        const { data: plans } = await supabase
-          .from("subscription_plans")
-          .select(
-            "id,name,monthly_price,yearly_price,stripe_price_id_monthly,stripe_price_id_yearly"
-          );
-        if (plans && active) setAllPlans(plans as any);
-      } catch (err) {
-        // ignore
-      }
-    })();
-
     return () => {
       active = false;
     };
   }, [planId, supabase]);
 
-  // No body-type mapping required under flat pricing.
+  // Handle vehicle count change
+  const handleVehicleCountChange = (count: number) => {
+    setVehicleCount(count);
+    setVehicles((prev) => {
+      const newVehicles = Array(count).fill(null).map((_, i) => 
+        prev[i] || { license_plate: "" }
+      );
+      return newVehicles;
+    });
+    setErrors({});
+  };
 
-  // Detect if this is self-service plan
-  const isSelfServicePlan = plan?.name === "Self-Service Bay Membership";
+  // Update vehicle license plate
+  const updateVehicle = (index: number, licensePlate: string) => {
+    setVehicles((prev) => {
+      const updated = [...prev];
+      updated[index] = { license_plate: licensePlate };
+      return updated;
+    });
+    // Clear error for this field
+    setErrors((prev) => {
+      const updated = { ...prev };
+      if (updated[index]) {
+        delete updated[index].licensePlate;
+      }
+      return updated;
+    });
+  };
 
-  // Get the appropriate discount percentage for display
+  // Validate vehicles
+  const validate = () => {
+    const newErrors: Record<number, { licensePlate?: string }> = {};
+    let isValid = true;
+
+    vehicles.forEach((vehicle, index) => {
+      if (!vehicle.license_plate || vehicle.license_plate.trim() === "") {
+        newErrors[index] = { licensePlate: "License plate is required" };
+        isValid = false;
+      }
+    });
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
   const promoDiscountPercent = PROMO_CONFIG.enabled
     ? PROMO_CONFIG.isSubscriptionPercent
     : 0;
 
-  // Calculate base price (WITHOUT discount - Stripe will handle it)
+  // Calculate base price
   const basePrice = useMemo(() => {
     const price =
       billingCycle === "monthly" ? plan?.monthly_price : plan?.yearly_price;
     const originalPrice = price ? Number(price) : 0;
 
-    // Calculate what the price WOULD be with discount (for display only)
     const estimatedDiscount = originalPrice * (promoDiscountPercent / 100);
     const estimatedDiscountedPrice = originalPrice - estimatedDiscount;
 
@@ -191,11 +189,11 @@ export default function SubscriptionCart({
     };
   }, [plan, billingCycle, promoDiscountPercent]);
 
-  // Calculate pricing for each vehicle (flat pricing — all vehicles use plan price)
+  // Calculate pricing for each vehicle
   const vehiclePricing = useMemo(() => {
     return vehicles.map((v, index) => {
       const isFirstVehicle = index === 0;
-      const vehicleBase = basePrice.original; // flat price regardless of vehicle size
+      const vehicleBase = basePrice.original;
 
       const price = isFirstVehicle ? vehicleBase : vehicleBase * 0.9;
       const flockDiscount = isFirstVehicle ? 0 : vehicleBase * 0.1;
@@ -232,8 +230,6 @@ export default function SubscriptionCart({
       .reduce((sum, v) => sum + v.flockDiscount, 0);
   }, [vehiclePricing]);
 
-  // Body type selection removed under flat pricing; no handler required.
-
   const startCheckout = async () => {
     try {
       setError("");
@@ -249,15 +245,9 @@ export default function SubscriptionCart({
       setLoadingCheckout(true);
 
       const vehiclesPayload = vehicles.map((vehicle) => ({
-        // year: Number(vehicle.year),
-        // make: vehicle.make,
-        // model: vehicle.model,
-        // body_type: vehicle.body_type,
-        // color: vehicle.color,
         license_plate: vehicle.license_plate,
       }));
 
-      // Select the appropriate coupon based on plan type
       const couponId = PROMO_CONFIG.enabled
         ? PROMO_CONFIG.stripeCouponId_Subscription
         : undefined;
@@ -270,7 +260,6 @@ export default function SubscriptionCart({
           billingCycle,
           userId: user?.id,
           vehicles: vehiclesPayload,
-          // Send the appropriate Stripe coupon ID based on plan type
           couponId: couponId,
         }),
       });
@@ -290,7 +279,6 @@ export default function SubscriptionCart({
 
   const handleCheckoutClick = async () => {
     if (!user) {
-      // Save cart state before showing auth modal
       const cartData = {
         vehicles: vehicles.map((v) => ({
           license_plate: v.license_plate,
@@ -298,7 +286,7 @@ export default function SubscriptionCart({
         isAuthorized,
         planId,
         billingCycle,
-        autoCheckout: true, // Flag to auto-checkout after login
+        autoCheckout: true,
       };
 
       localStorage.setItem("pendingSubscriptionCart", JSON.stringify(cartData));
@@ -325,173 +313,97 @@ export default function SubscriptionCart({
   return (
     <div className="grid lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
       <div className="space-y-6">
-        {vehicles.map((vehicle, index) => (
-          <Card key={index}>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>
-                  Vehicle {index + 1}
-                  {index === 0 && (
-                    <span className="ml-2 text-sm font-normal text-muted-foreground">
-                      (Primary)
-                    </span>
-                  )}
-                  {index > 0 && (
-                    <span className="ml-2 text-sm font-normal text-green-600">
-                      (10% Family Discount)
-                    </span>
-                  )}
-                </CardTitle>
-                {vehicles.length > 1 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeVehicle(index)}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="">
-                {/* <div className="space-y-2">
-                  <Label>Year</Label>
-                  <Input
-                    type="number"
-                    value={vehicle.year ?? ""}
-                    onChange={(e) =>
-                      updateVehicle(index, { year: e.target.value })
-                    }
-                    placeholder="e.g. 2022"
-                  />
-                  {errors[index]?.year && (
-                    <p className="text-red-600 text-sm mt-1">
-                      {errors[index].year}
-                    </p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label>Make</Label>
-                  <Input
-                    value={vehicle.make}
-                    onChange={(e) =>
-                      updateVehicle(index, { make: e.target.value })
-                    }
-                    placeholder="e.g. Toyota"
-                  />
-                  {errors[index]?.make && (
-                    <p className="text-red-600 text-sm mt-1">
-                      {errors[index].make}
-                    </p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label>Model</Label>
-                  <Input
-                    value={vehicle.model}
-                    onChange={(e) =>
-                      updateVehicle(index, { model: e.target.value })
-                    }
-                    placeholder="e.g. Camry"
-                  />
-                  {errors[index]?.model && (
-                    <p className="text-red-600 text-sm mt-1">
-                      {errors[index].model}
-                    </p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label>Color</Label>
-                  <Input
-                    value={vehicle.color}
-                    onChange={(e) =>
-                      updateVehicle(index, { color: e.target.value })
-                    }
-                    placeholder="e.g. White"
-                  />
-                  {errors[index]?.color && (
-                    <p className="text-red-500 text-sm">
-                      {errors[index].color}
-                    </p>
-                  )}
-                </div>
+        {/* Primary Vehicle Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              Vehicle 1
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                (Primary)
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="vehicle-0" className="text-base">
+                License Plate
+              </Label>
+              <Input
+                id="vehicle-0"
+                placeholder="Your vehicle"
+                value={vehicles[0]?.license_plate || ""}
+                onChange={(e) => updateVehicle(0, e.target.value.toUpperCase())}
+                className="text-lg font-mono uppercase"
+              />
+              {errors[0]?.licensePlate && (
+                <p className="text-red-500 text-sm">
+                  {errors[0].licensePlate}
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
-                <div className="space-y-2">
-                  <Label>Body Type</Label>
-                  <Select
-                    value={vehicle.body_type}
-                    onValueChange={(val) =>
-                      updateVehicle(index, { body_type: val })
-                    }
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue
-                        placeholder={
-                          plan ? "Select Body Type" : "Loading plan..."
-                        }
+        {/* Family Vehicles Card - Always visible */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-start justify-between">
+              <CardTitle className="text-2xl">How many vehicles</CardTitle>
+              <span className="text-sm text-green-600 font-medium">
+                Multi-Vehicle Benefits
+              </span>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Vehicle Count Selector - Shows 1-4 for family vehicles */}
+            <div className="flex gap-3">
+              {[1, 2, 3, 4].map((count) => (
+                <button
+                  key={count}
+                  onClick={() => handleVehicleCountChange(count + 1)} // +1 because we have primary vehicle
+                  className={`flex-1 py-4 rounded-lg border-2 text-xl font-semibold transition-all ${
+                    vehicleCount === count + 1
+                      ? "bg-green-600 text-white border-green-600"
+                      : "bg-white text-gray-700 border-gray-300 hover:border-green-600"
+                  }`}
+                >
+                  {count}
+                </button>
+              ))}
+            </div>
+
+            {/* Family Vehicle License Plate Inputs (vehicles 2-5) */}
+            {vehicleCount > 1 && (
+              <div className="space-y-4">
+                {vehicles.slice(1).map((vehicle, index) => {
+                  const actualIndex = index + 1;
+                  return (
+                    <div key={actualIndex} className="space-y-2">
+                      <Label htmlFor={`vehicle-${actualIndex}`} className="text-base font-semibold">
+                        Vehicle {index + 1}: License Plate
+                        <span className="ml-2 text-sm font-normal text-green-600">
+                          (10% Family Discount)
+                        </span>
+                      </Label>
+                      <Input
+                        id={`vehicle-${actualIndex}`}
+                        placeholder="Your vehicle"
+                        value={vehicle.license_plate}
+                        onChange={(e) => updateVehicle(actualIndex, e.target.value.toUpperCase())}
+                        className="text-lg font-mono uppercase"
                       />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {BODY_TYPES.map((option) => (
-                        <SelectItem key={option} value={option}>
-                          {option}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    One price covers all vehicles — no upcharges for size. (A
-                    10% family discount is applied to additional vehicles.)
-                  </p>
-                </div> */}
-
-                <div className="space-y-2">
-                  <Label htmlFor={`licensePlate-${index}`}>License Plate</Label>
-                  <Input
-                    id={`licensePlate-${index}`}
-                    placeholder="e.g., ABC123"
-                    value={vehicle.license_plate ?? ""}
-                    onChange={(e) =>
-                      updateVehicle(index, { license_plate: e.target.value })
-                    }
-                    className="uppercase text-lg font-mono "
-                  />
-                  {errors[index]?.licensePlate && (
-                    <p className="text-red-500 text-sm">
-                      {errors[index].licensePlate}
-                    </p>
-                  )}
-                </div>
+                      {errors[actualIndex]?.licensePlate && (
+                        <p className="text-red-500 text-sm">
+                          {errors[actualIndex].licensePlate}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-            </CardContent>
-          </Card>
-        ))}
-
-        {canAddMore && (
-          <>
-            <Label className="text-xl">
-              + Add Family Vehicles{" "}
-              <span className="text-green-500"> 10% discount</span>
-            </Label>
-            <Button
-              variant="outline"
-              onClick={addVehicle}
-              className="w-full"
-              disabled={!canAddMore}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Another Family Vehicle
-            </Button>
-          </>
-        )}
-
-        {!canAddMore && vehicles.length >= 5 && (
-          <p className="text-sm text-muted-foreground text-center">
-            Maximum of 5 vehicles per subscription
-          </p>
-        )}
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       <div className="space-y-6">
@@ -605,7 +517,7 @@ export default function SubscriptionCart({
                     </p>
                     {totalFlockSavings > 0 && (
                       <p className="text-xs text-green-700">
-                        {/* Flock */}• Family Discount: $
+                        • Family Discount: $
                         {totalFlockSavings.toFixed(2)}
                       </p>
                     )}
@@ -760,7 +672,7 @@ export default function SubscriptionCart({
               disabled={loadingCheckout || loadingPlan || !planId}
             >
               {loadingCheckout ? "Redirecting..." : "Checkout"}
-              {loadingCheckout && <LoadingDots />}
+              {loadingCheckout && <Loader2 className="ml-2 w-4 h-4 animate-spin" />}
             </Button>
           </CardContent>
         </Card>

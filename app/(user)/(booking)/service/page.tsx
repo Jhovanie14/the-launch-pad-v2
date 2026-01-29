@@ -388,26 +388,25 @@ function ServiceSelectionPage() {
         {/* Vehicle Info Card */}
         <div ref={vehicleInfoRef} className="mb-6">
           <Card
-            className={`mb-6 shadow-sm border ${showVehicleError ? "border-red-500" : "border-gray-200"}`}
+            className={`mb-6 shadow-sm border-2 ${showVehicleError ? "border-red-500" : "border-blue-600"}`}
           >
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle className="text-lg font-semibold text-gray-900">
+                <CardTitle className="text-xl font-semibold text-gray-900">
                   Vehicle Information
                 </CardTitle>
                 <p className="text-sm text-gray-500">
-                  {vehicleSpecs.year
-                    ? `${vehicleSpecs.year} ${vehicleSpecs.make} ${vehicleSpecs.model} (${vehicleSpecs.color}) - ${vehicleSpecs.body_type}`
+                  {vehicleSpecs.license_plate
+                    ? `${vehicleSpecs.license_plate}`
                     : "No vehicle information added yet"}
                 </p>
               </div>
 
               <Button
-                variant="outline"
-                className={`border-blue-900 text-blue-900 hover:bg-blue-900 hover:text-white transition-all ${showVehicleError ? "border-red-500 text-red-500 hover:bg-red-500 hover:text-white" : ""}`}
+                className={`bg-blue-900 text-white hover:bg-blue-800 transition-all ${showVehicleError ? "border-red-500 text-red-500 hover:bg-red-500 hover:text-white" : ""}`}
                 onClick={() => setVehicleModalOpen(true)}
               >
-                {vehicleSpecs.year ? "Edit Vehicle" : "Add Vehicle"}
+                {vehicleSpecs.license_plate ? "Edit Vehicle" : "Add Vehicle"}
               </Button>
             </CardHeader>
           </Card>
@@ -711,7 +710,7 @@ function ServiceSelectionPage() {
                                         {a.name}
                                       </h4>
                                       <p className="text-sm font-semibold text-yellow-500">
-                                      {a.duration} (min) 
+                                        {a.duration} (min)
                                       </p>
                                     </div>
                                     <p className="font-light text-black text-sm">
@@ -860,8 +859,8 @@ function ServiceSelectionPage() {
                     <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-900 flex items-start space-x-3">
                       <Car className="w-5 h-5 mt-0.5 text-blue-700 shrink-0" />
                       <p>
-                        These details ensure accurate service duration and
-                        pricing for your specific vehicle type.
+                        These details ensure accurate service and information to
+                        help our team prepare for your service.
                       </p>
                     </div>
                   </div>
