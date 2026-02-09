@@ -100,6 +100,7 @@ export default function BookingModal() {
     let params: URLSearchParams;
 
     // ✅ Only run validate() if no subscribed vehicle is selected
+    // Note: Validation will pass because license_plate is now optional
     if (subscriptionVehicles.length === 0) {
       if (!validate()) {
         // console.log("Validation failed for manual vehicle input");

@@ -43,7 +43,7 @@ function ConfirmationContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [vehicleSpecs] = useState<any>({
-    license_plate: searchParams.get("license_plate"),
+    license_plate: searchParams.get("license_plate") ?? "",
   });
   const [selectedPackages, setSelectedPackages] = useState<any>(null);
   const [userSubscribe, setUserSubscribe] = useState<any>(null);
@@ -374,7 +374,6 @@ function ConfirmationContent() {
       if (paymentMethod === "cash") {
         const booking = await createBooking({
           license_plate: vehicleSpecs.license_plate ?? "",
-
           servicePackage: { ...selectedPackages, price: servicePrice },
           addOnsId: selectedAddOns
             ? selectedAddOns.map((a: { id: string }) => a.id)
@@ -390,8 +389,9 @@ function ConfirmationContent() {
       } else {
         // Card payment (via Stripe)
         const payload = {
-          vehicleSpecs: vehicleSpecs.license_plate ?? null,
-          servicePackageId: selectedPackages!.id,
+          vehicleSpecs: {
+            license_plate: vehicleSpecs.license_plate ?? "",
+          },
           servicePackageName: selectedPackages!.name,
           servicePackagePrice: servicePrice, // Free if matches subscription, otherwise full price
           addOns:
@@ -608,7 +608,7 @@ function ConfirmationContent() {
                   🎄 HOLIDAY SALE
                 </div>
                 <p className="text-sm text-red-700 font-semibold">
-                  10% OFF Applied! Save $
+                  5% OFF Applied! Save $
                   {(calculateOriginalTotal() - calculateTotal()).toFixed(2)}
                 </p>
               </div>

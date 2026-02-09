@@ -3,24 +3,23 @@ import { createClient } from "@/utils/supabase/server";
 
 export async function ensureVehicle(vehicle: {
   user_id?: string | null;
-  license_plate: string;
+  license_plate?: string | null;
   // Optional fields that admin can fill in later
   year?: number | null;
   make?: string | null;
   model?: string | null;
   body_type?: string | null;
   colors?: string[] | null;
-}) {
+}): Promise<string | null> {
   const supabase = await createClient();
 
-  // Normalize license plate (uppercase, trim whitespace)
-  const normalizedPlate = vehicle.license_plate.trim().toUpperCase();
+  // Normalize license plate (uppercase, trim whitespace) - optional
+  const normalizedPlate = vehicle.license_plate?.trim().toUpperCase();
 
+  // If no license plate provided, return null (vehicle won't be created)
   if (!normalizedPlate) {
-    throw new Error("License plate is required");
+    return null;
   }
-
-  // Check if vehicle with this license plate already exists
   const { data: existing, error: selectError } = await supabase
     .from("vehicles")
     .select("id")

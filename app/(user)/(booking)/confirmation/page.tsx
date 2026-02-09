@@ -201,7 +201,9 @@ function ConfirmationContent() {
       const customerPhone = guestBooking ? guestInfo.phone : undefined;
 
       const payload = {
-        vehicleSpecs: vehicleSpecs.license_plate ?? null,
+        vehicleSpecs: {
+          license_plate: vehicleSpecs.license_plate ?? "",
+        },
         servicePackageId: selectedPackages!.id,
         servicePackageName: selectedPackages!.name,
         servicePackagePrice: selectedPackages!.price,

@@ -6,8 +6,8 @@ import { sendBookingConfirmationEmail } from "@/lib/email/sendConfirmation";
 import { createAdminClient } from "@/utils/supabase/admin";
 
 type CarData = {
-  // License plate is REQUIRED
-  license_plate: string;
+  // License plate is OPTIONAL
+  license_plate?: string;
 
   // Optional vehicle details
   year?: number;
@@ -35,12 +35,8 @@ type CarData = {
 export async function createBooking(car: CarData, subscriberId?: string) {
   const supabase = subscriberId ? createAdminClient() : await createClient();
 
-  if (!car.license_plate || !car.license_plate.trim()) {
-    throw new Error("License plate is required");
-  }
-
-  // Normalize license plate
-  const normalizedPlate = car.license_plate.trim().toUpperCase();
+  // Normalize license plate (optional - only process if provided)
+  const normalizedPlate = car.license_plate?.trim().toUpperCase();
 
   // Get current user (only needed for non-subscriber bookings)
   let currentUser = null;
@@ -60,25 +56,31 @@ export async function createBooking(car: CarData, subscriberId?: string) {
     currentUser: currentUser?.id,
   });
 
-  // Ensure vehicle exists or insert
-  const { data: existing } = await supabase
-    .from("vehicles")
-    .select("id")
-    .eq("license_plate", normalizedPlate)
-    .maybeSingle();
-
-  let vehicleId = existing?.id;
-  if (!vehicleId) {
-    const { data: inserted } = await supabase
+  // Only process vehicle if license plate is provided
+  let vehicleId: string | null = null;
+  
+  if (normalizedPlate) {
+    // Ensure vehicle exists or insert
+    const { data: existing } = await supabase
       .from("vehicles")
-      .insert({
-        user_id: targetUserId || null,
-        license_plate: normalizedPlate,
-      })
       .select("id")
-      .single();
+      .eq("license_plate", normalizedPlate)
+      .maybeSingle();
 
-    vehicleId = inserted?.id;
+    vehicleId = existing?.id || null;
+    
+    if (!vehicleId) {
+      const { data: inserted } = await supabase
+        .from("vehicles")
+        .insert({
+          user_id: targetUserId || null,
+          license_plate: normalizedPlate,
+        })
+        .select("id")
+        .single();
+
+      vehicleId = inserted?.id || null;
+    }
   }
 
   // Insert booking

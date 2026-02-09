@@ -160,6 +160,7 @@ export function useBookingForm(onSuccess: () => void, subscriber?: any) {
           {
             ...form,
             ...vehicleInfo,
+            // license_plate is now optional - can be empty string or undefined
             addOnsId: selectedAddOns,
             appointmentDate: new Date(form.appointmentDate),
             servicePackage: selectedServiceObj || null,
