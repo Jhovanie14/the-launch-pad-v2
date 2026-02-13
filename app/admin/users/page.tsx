@@ -83,7 +83,8 @@ export default function AdminUsersPage() {
             make,
             model,
             body_type,
-            colors
+            colors,
+            license_plate
           )
         ),
         subscription_plan:subscription_plans (
@@ -252,6 +253,9 @@ export default function AdminUsersPage() {
                                         {" - "}
                                         <span className="italic">
                                           {sv.vehicle.colors?.join(", ")}
+                                        </span>
+                                        <span className="italic">
+                                          {sv.vehicle.license_plate}
                                         </span>
                                       </span>
                                     </div>

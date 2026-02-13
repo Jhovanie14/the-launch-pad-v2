@@ -36,7 +36,7 @@ type WalkInBookingModalProps = {
 };
 
 const stripePromise = loadStripe(
-  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
 );
 
 export default function WalkInBookingModal({
@@ -65,16 +65,16 @@ export default function WalkInBookingModal({
 
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(
-    null
+    null,
   );
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "card">("cash");
   const [processingPayment, setProcessingPayment] = useState(false);
-  
+
   // Determine which tab to show based on subscription plan
   const getSubscriptionTab = () => {
     if (!subscriber?.subscription_plan?.name) return "quick";
     const planName = subscriber.subscription_plan.name.toLowerCase();
-    
+
     // If plan name contains "exterior", show Quick Service
     if (planName.includes("exterior")) {
       return "quick";
@@ -87,25 +87,25 @@ export default function WalkInBookingModal({
     return "quick";
   };
 
-  const [activeTab, setActiveTab] = useState<"quick" | "express">(() => 
-    getSubscriptionTab()
+  const [activeTab, setActiveTab] = useState<"quick" | "express">(() =>
+    getSubscriptionTab(),
   );
 
   // Determine which tabs to show based on subscription
   const shouldShowQuickTab = () => {
     if (!subscriber?.subscription_plan?.name) return true; // Default: show both if no plan info
     const planName = subscriber.subscription_plan.name.toLowerCase();
-    
+
     // If plan is specifically for express detail, don't show quick tab
     if (planName.includes("express detail") || planName.includes("express")) {
       return false;
     }
-    
+
     // If plan is for exterior, show quick tab
     if (planName.includes("exterior")) {
       return true;
     }
-    
+
     // Default: show both tabs if plan doesn't match
     return true;
   };
@@ -113,27 +113,27 @@ export default function WalkInBookingModal({
   const shouldShowExpressTab = () => {
     if (!subscriber?.subscription_plan?.name) return true; // Default: show both if no plan info
     const planName = subscriber.subscription_plan.name.toLowerCase();
-    
+
     // If plan is specifically for exterior, don't show express tab
     if (planName.includes("exterior")) {
       return false;
     }
-    
+
     // If plan is for express detail, show express tab
     if (planName.includes("express detail") || planName.includes("express")) {
       return true;
     }
-    
+
     // Default: show both tabs if plan doesn't match
     return true;
   };
 
   // Filter services by active tab
   const quickServices = services.filter(
-    (s) => s.category?.toLowerCase() === "quick service"
+    (s) => s.category?.toLowerCase() === "quick service",
   );
   const expressServices = services.filter(
-    (s) => s.category?.toLowerCase() === "express detail"
+    (s) => s.category?.toLowerCase() === "express detail",
   );
   const currentTabServices =
     activeTab === "quick" ? quickServices : expressServices;
@@ -145,13 +145,16 @@ export default function WalkInBookingModal({
       return;
     }
     const planName = subscriber.subscription_plan.name.toLowerCase();
-    
+
     // If plan name contains "exterior", show Quick Service
     if (planName.includes("exterior")) {
       setActiveTab("quick");
     }
     // If plan name contains "express detail" or "express", show Express Detail
-    else if (planName.includes("express detail") || planName.includes("express")) {
+    else if (
+      planName.includes("express detail") ||
+      planName.includes("express")
+    ) {
       setActiveTab("express");
     } else {
       setActiveTab("quick");
@@ -171,7 +174,7 @@ export default function WalkInBookingModal({
 
       const vehicleList =
         data?.map((v: any) => ({
-          subscription_vehicle_id: v.id,
+          subscription_vehicle_id: String(v.id),
           ...v.vehicles,
         })) || [];
 
@@ -179,13 +182,14 @@ export default function WalkInBookingModal({
 
       if (vehicleList.length) {
         const firstVehicle = vehicleList[0];
-        setSelectedVehicleId(firstVehicle.subscription_vehicle_id);
+        setSelectedVehicleId(String(firstVehicle.subscription_vehicle_id));
         setVehicleInfo({
           year: firstVehicle.year,
           make: firstVehicle.make,
           model: firstVehicle.model,
           body_type: firstVehicle.body_type,
-          color: firstVehicle.colors.join(","),
+          color: (firstVehicle.colors || []).join(","),
+          license_plate: firstVehicle.license_plate,
         });
       }
     }
@@ -200,11 +204,11 @@ export default function WalkInBookingModal({
 
   const calculateAddOnsTotal = () => {
     const selectedAddOnObjs = addOns.filter((a) =>
-      selectedAddOns.includes(a.id)
+      selectedAddOns.includes(a.id),
     );
     const total = selectedAddOnObjs.reduce(
       (sum, a) => sum + Number(a.price || 0),
-      0
+      0,
     );
     const details = selectedAddOnObjs.map((a) => ({
       name: a.name,
@@ -248,7 +252,13 @@ export default function WalkInBookingModal({
       // If no service selected, select first in current tab
       setSelectedService(currentTabServices[0].id);
     }
-  }, [activeTab, currentTabServices, selectedService, services, setSelectedService]);
+  }, [
+    activeTab,
+    currentTabServices,
+    selectedService,
+    services,
+    setSelectedService,
+  ]);
 
   const handleCreateBooking = async () => {
     const addOnsTotal = calculateAddOnsTotal().total;
@@ -351,7 +361,7 @@ export default function WalkInBookingModal({
                   value={selectedVehicleId ?? ""}
                   onChange={(e) => {
                     const vehicle = vehicles.find(
-                      (v) => v.subscription_vehicle_id === e.target.value
+                      (v) => String(v.subscription_vehicle_id) === e.target.value,
                     );
                     if (!vehicle) return;
 
@@ -361,7 +371,8 @@ export default function WalkInBookingModal({
                       make: vehicle.make,
                       model: vehicle.model,
                       body_type: vehicle.body_type,
-                      color: vehicle.colors.join(","),
+                      color: (vehicle.colors || []).join(","),
+                      license_plate: vehicle.license_plate,
                     });
                   }}
                   className="w-full h-11 rounded-md bg-muted/30 border border-border/50 px-3 text-sm"
@@ -371,7 +382,7 @@ export default function WalkInBookingModal({
                       key={v.subscription_vehicle_id}
                       value={v.subscription_vehicle_id}
                     >
-                      {v.year} {v.make} {v.model} ({v.colors.join(", ")})
+                      {v.year} {v.make} {v.model} ({(v.colors || []).join(", ")})
                     </option>
                   ))}
                 </select>
@@ -380,7 +391,8 @@ export default function WalkInBookingModal({
             <div className="flex items-center gap-2 bg-gray-300/20 py-2 px-3 rounded-md text-sm">
               <span>
                 {vehicleInfo.year} {vehicleInfo.make} {vehicleInfo.model} -{" "}
-                {vehicleInfo.body_type || "-"} ({vehicleInfo.color || "-"})
+                {vehicleInfo.body_type || "-"} ({vehicleInfo.color || "-"}) -{" "}
+                {vehicleInfo.license_plate || "No Plate"}
               </span>
             </div>
           </div>
@@ -401,22 +413,32 @@ export default function WalkInBookingModal({
             ) : (
               <Tabs
                 value={activeTab}
-                onValueChange={(value) => setActiveTab(value as "quick" | "express")}
+                onValueChange={(value) =>
+                  setActiveTab(value as "quick" | "express")
+                }
                 className="w-full"
               >
-                <TabsList className={`grid w-full mb-4 ${
-                  shouldShowQuickTab() && shouldShowExpressTab() 
-                    ? "grid-cols-2" 
-                    : "grid-cols-1"
-                }`}>
+                <TabsList
+                  className={`grid w-full mb-4 ${
+                    shouldShowQuickTab() && shouldShowExpressTab()
+                      ? "grid-cols-2"
+                      : "grid-cols-1"
+                  }`}
+                >
                   {shouldShowQuickTab() && (
-                    <TabsTrigger value="quick" className="flex items-center gap-2">
+                    <TabsTrigger
+                      value="quick"
+                      className="flex items-center gap-2"
+                    >
                       <Clock className="w-4 h-4" />
                       Quick Service
                     </TabsTrigger>
                   )}
                   {shouldShowExpressTab() && (
-                    <TabsTrigger value="express" className="flex items-center gap-2">
+                    <TabsTrigger
+                      value="express"
+                      className="flex items-center gap-2"
+                    >
                       <Sparkles className="w-4 h-4" />
                       Express Detail
                     </TabsTrigger>

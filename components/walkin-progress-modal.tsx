@@ -78,11 +78,11 @@ export default function WalkInProgressModal({
           .select(
             `
             *,
-            vehicle:vehicles (year, make, model, body_type, colors),
+            vehicle:vehicles (year, make, model, body_type, colors,license_plate),
             booking_add_ons (
               add_ons (id, name, price, duration, is_active)
             )
-          `
+          `,
           )
           .eq("user_id", subscriber.user_id)
           .order("appointment_date", { ascending: false })
@@ -247,7 +247,7 @@ export default function WalkInProgressModal({
 
       // Update local state
       setBookings((prev) =>
-        prev.map((b) => (b.id === bookingId ? { ...b, ...updates } : b))
+        prev.map((b) => (b.id === bookingId ? { ...b, ...updates } : b)),
       );
 
       toast.success(`Booking ${newStatus}`);
@@ -336,7 +336,7 @@ export default function WalkInProgressModal({
                         <span className="font-medium">
                           {format(
                             new Date(booking.appointment_date),
-                            "MMM dd, yyyy"
+                            "MMM dd, yyyy",
                           )}
                         </span>
                         <Clock className="w-4 h-4 text-muted-foreground ml-2" />
@@ -349,6 +349,8 @@ export default function WalkInProgressModal({
                           {booking.vehicle?.year} {booking.vehicle?.make}{" "}
                           {booking.vehicle?.model} -{" "}
                           {booking.vehicle?.body_type}
+                          {booking.vehicle?.colors}
+                          {booking.vehicle?.license_plate}
                         </span>
                       </div>
 

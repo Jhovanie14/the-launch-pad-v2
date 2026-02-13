@@ -48,7 +48,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import LoadingDots from "@/components/loading";
+// import LoadingDots from "@/components/loading";
 
 type ServicePackage = {
   id: string;
