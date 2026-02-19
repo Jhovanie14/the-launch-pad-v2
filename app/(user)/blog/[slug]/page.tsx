@@ -27,12 +27,13 @@ export default async function BlogPostPage({
                     {new Date(post.created_at).toLocaleDateString()}
                   </p>
                   {post.cover_image && (
-                    <div className="relative w-full h-96 mb-6">
+                    <div className="flex items-center justify-center mb-6">
                       <Image
                         src={post.cover_image}
                         alt={post.title}
-                        fill
-                        className="rounded-lg"
+                        height={500}
+                        width={500}
+                        className="rounded-lg object-cover"
                       />
                     </div>
                   )}

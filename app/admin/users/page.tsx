@@ -7,12 +7,13 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { User, Mail, Car, Calendar, Crown } from "lucide-react";
+import { User, Mail, Car, Calendar, Crown, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import WalkInBookingModal from "@/components/walkin-booking-modal";
 import WalkInProgressModal from "@/components/walkin-progress-modal";
 import SelfServiceCheckInModal from "@/components/self-service-checkin-modal";
 import SelfServiceUsageModal from "@/components/self-service-useage-modal";
+import UpdateVehicleModal from "@/components/update-vehicle-modal";
 import { toast } from "sonner";
 
 export default function AdminUsersPage() {
@@ -55,12 +56,27 @@ export default function AdminUsersPage() {
   const [selectedSelfServiceSub, setSelectedSelfServiceSub] =
     useState<any>(null);
 
+  // Update Vehicle Modal
+  const [showUpdateVehicle, setShowUpdateVehicle] = useState(false);
+  const [updateVehicleSub, setUpdateVehicleSub] = useState<any>(null);
+  const [updateVehicleType, setUpdateVehicleType] = useState<"express" | "selfservice">("express");
+
+  // Monthly usage counts
+  const [expressUsage, setExpressUsage] = useState<Record<string, number>>({});
+  const [selfServiceUsage, setSelfServiceUsage] = useState<Record<string, number>>({});
+
   useEffect(() => {
     loadAll();
   }, []);
 
   async function loadAll() {
-    await Promise.all([loadUsers(), loadExpressSubs(), loadSelfServiceSubs()]);
+    await Promise.all([
+      loadUsers(),
+      loadExpressSubs(),
+      loadSelfServiceSubs(),
+      loadExpressUsageCounts(),
+      loadSelfServiceUsageCounts(),
+    ]);
   }
 
   async function loadUsers() {
@@ -113,6 +129,43 @@ export default function AdminUsersPage() {
     setSelfServiceSubs(data || []);
   }
 
+  // --- Monthly usage count loaders ---
+  async function loadExpressUsageCounts() {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const { data } = await supabase
+      .from("bookings")
+      .select("user_id")
+      .gte("appointment_date", startOfMonth);
+    const counts: Record<string, number> = {};
+    (data || []).forEach((b: any) => {
+      counts[b.user_id] = (counts[b.user_id] || 0) + 1;
+    });
+    setExpressUsage(counts);
+  }
+
+  async function loadSelfServiceUsageCounts() {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const { data } = await supabase
+      .from("self_service_usage_logs")
+      .select("subscription_id")
+      .gte("check_in_time", startOfMonth);
+    const counts: Record<string, number> = {};
+    (data || []).forEach((l: any) => {
+      counts[l.subscription_id] = (counts[l.subscription_id] || 0) + 1;
+    });
+    setSelfServiceUsage(counts);
+  }
+
+  // Pulse color helper
+  function getUsagePulseColor(count: number) {
+    if (count >= 5) return { bg: "bg-red-500", ring: "bg-red-400" };
+    if (count === 4) return { bg: "bg-yellow-400", ring: "bg-yellow-300" };
+    if (count >= 2) return { bg: "bg-lime-500", ring: "bg-lime-400" };
+    return { bg: "bg-green-500", ring: "bg-green-400" };
+  }
+
   const handleManageWalkIn = (subscriber: any) => {
     setSelectedSubscriber(subscriber);
     setShowProgressModal(true);
@@ -131,6 +184,12 @@ export default function AdminUsersPage() {
   const handleViewSelfServiceUsage = (subscriber: any) => {
     setSelectedSelfServiceSub(subscriber);
     setShowSelfServiceUsage(true);
+  };
+
+  const handleUpdateVehicle = (subscriber: any, type: "express" | "selfservice") => {
+    setUpdateVehicleSub(subscriber);
+    setUpdateVehicleType(type);
+    setShowUpdateVehicle(true);
   };
 
   function filterList(list: any[], key?: string) {
@@ -264,11 +323,27 @@ export default function AdminUsersPage() {
                               </div>
                             )}
                         </div>
-                        <Badge className="bg-green-500 text-white">
-                          {sub.status === "active"
-                            ? "Express Active"
-                            : "Inactive"}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge className="bg-green-500 text-white">
+                            {sub.status === "active"
+                              ? "Express Active"
+                              : "Inactive"}
+                          </Badge>
+                          {/* Usage Pulse */}
+                          {(() => {
+                            const count = expressUsage[sub.user_id] || 0;
+                            const pulse = getUsagePulseColor(count);
+                            return (
+                              <div className="flex items-center gap-1.5" title={`${count} booking(s) this month`}>
+                                <span className="relative flex h-3 w-3">
+                                  <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${pulse.ring}`} />
+                                  <span className={`relative inline-flex rounded-full h-3 w-3 ${pulse.bg}`} />
+                                </span>
+                                <span className="text-xs text-muted-foreground">{count}/mo</span>
+                              </div>
+                            );
+                          })()}
+                        </div>
                       </div>
 
                       {/* Subscription Details */}
@@ -301,6 +376,15 @@ export default function AdminUsersPage() {
                         >
                           <Car size={16} />
                           Manage Bookings
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleUpdateVehicle(sub, "express")}
+                          className="flex items-center gap-2"
+                        >
+                          <Pencil size={16} />
+                          Update Vehicle
                         </Button>
                       </div>
                     </div>
@@ -393,9 +477,25 @@ export default function AdminUsersPage() {
                               </div>
                             )}
                         </div>
-                        <Badge className="bg-green-500 text-white">
-                          Self-Service Active
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge className="bg-green-500 text-white">
+                            Self-Service Active
+                          </Badge>
+                          {/* Usage Pulse */}
+                          {(() => {
+                            const count = selfServiceUsage[selfSub.id] || 0;
+                            const pulse = getUsagePulseColor(count);
+                            return (
+                              <div className="flex items-center gap-1.5" title={`${count} session(s) this month`}>
+                                <span className="relative flex h-3 w-3">
+                                  <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${pulse.ring}`} />
+                                  <span className={`relative inline-flex rounded-full h-3 w-3 ${pulse.bg}`} />
+                                </span>
+                                <span className="text-xs text-muted-foreground">{count}/mo</span>
+                              </div>
+                            );
+                          })()}
+                        </div>
                       </div>
 
                       {/* Action Buttons */}
@@ -415,6 +515,15 @@ export default function AdminUsersPage() {
                           className="flex items-center gap-2"
                         >
                           📊 View Usage
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleUpdateVehicle(selfSub, "selfservice")}
+                          className="flex items-center gap-2"
+                        >
+                          <Pencil size={16} />
+                          Update Vehicle
                         </Button>
                       </div>
                     </div>
@@ -478,6 +587,27 @@ export default function AdminUsersPage() {
           onClose={() => setShowSelfServiceUsage(false)}
           onStatusChange={() => {
             toast.success("Session updated!");
+          }}
+        />
+      )}
+
+      {/* Update Vehicle Modal */}
+      {showUpdateVehicle && updateVehicleSub && (
+        <UpdateVehicleModal
+          open={showUpdateVehicle}
+          onClose={() => setShowUpdateVehicle(false)}
+          subscriberName={updateVehicleSub.profiles?.full_name || "Subscriber"}
+          vehicles={
+            updateVehicleType === "express"
+              ? (updateVehicleSub.subscription_vehicles || []).map((sv: any) => sv.vehicle)
+              : (updateVehicleSub.self_service_subscription_vehicles || []).map((sv: any) => sv.vehicles)
+          }
+          onUpdated={() => {
+            if (updateVehicleType === "express") {
+              loadExpressSubs();
+            } else {
+              loadSelfServiceSubs();
+            }
           }}
         />
       )}
