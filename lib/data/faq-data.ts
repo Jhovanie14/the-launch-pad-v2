@@ -11,7 +11,7 @@ export const faqData = [
     category: "Account & Login",
     question: "Can I change my email address?",
     answer:
-      "Yes, you can update your email in your account settings. Go to Settings > Account > Email and follow the verification process.",
+      "No, you can't change your email address. Please contact our support team for assistance.",
   },
   // {
   //   id: "billing-1",
