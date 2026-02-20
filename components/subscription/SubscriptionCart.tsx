@@ -360,7 +360,7 @@ export default function SubscriptionCart({
               {[1, 2, 3, 4].map((count) => (
                 <button
                   key={count}
-                  onClick={() => handleVehicleCountChange(count + 1)} // +1 because we have primary vehicle
+                  onClick={() => handleVehicleCountChange(vehicleCount === count + 1 ? 1 : count + 1)} // Toggle: unselect if already selected, otherwise +1 because we have primary vehicle
                   className={`flex-1 py-4 rounded-lg border-2 text-xl font-semibold transition-all ${
                     vehicleCount === count + 1
                       ? "bg-green-600 text-white border-green-600"
