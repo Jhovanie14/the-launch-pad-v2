@@ -65,6 +65,8 @@ export interface SubscriptionPlans {
   description: string;
   monthly_price: string;
   yearly_price: string;
+  stripe_price_id_monthly: string;
+  stripe_price_id_yearly: string;
   features: string[];
   is_active: boolean;
   image_url: string;

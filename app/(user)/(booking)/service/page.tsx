@@ -78,6 +78,7 @@ function ServiceSelectionPage() {
   const [showVehicleError, setShowVehicleError] = useState(false);
   const [showBanner, setShowBanner] = useState(true);
   const [activeTab, setActiveTab] = useState<"quick" | "express">("quick");
+  const [recommendModalOpen, setRecommendModalOpen] = useState(false);
 
   const selectedServiceParam = searchParams.get("service");
 
@@ -168,6 +169,12 @@ function ServiceSelectionPage() {
     setAddOnOpen(true);
   };
 
+  const isCompleteService =
+    selectserv?.name.toLowerCase().includes("complete") || false;
+
+  const shouldShowRecommendation =
+    !isCompleteService && selectedAddOnIds.length >= 4;
+
   const toggleAddOn = (addOnId: string) => {
     setSelectedAddOnIds((prev) =>
       prev.includes(addOnId)
@@ -177,9 +184,14 @@ function ServiceSelectionPage() {
   };
 
   // wire to your next step route
-  const goNext = () => {
+  const goNext = (force: boolean = false) => {
     // example: push to datetime with params or save in context
     try {
+      if (!force && shouldShowRecommendation) {
+        setRecommendModalOpen(true);
+        return;
+      }
+
       const params = new URLSearchParams(vehicleSpecs);
 
       if (selectedService) {
@@ -695,7 +707,16 @@ function ServiceSelectionPage() {
 
                         <div className="overflow-y-auto max-h-96">
                           <div className="divide-y divide-gray-100">
-                            {addOns.map((a) => {
+                            {addOns
+                              .filter((a) => {
+                                // Filter out add-ons that are already included as features in the selected service
+                                const serviceFeatures = selectserv?.features ?? [];
+                                return !serviceFeatures.some(
+                                  (feature) =>
+                                    feature.toLowerCase().trim() === a.name.toLowerCase().trim()
+                                );
+                              })
+                              .map((a) => {
                               const isSelected = selectedAddOnIds.includes(
                                 a.id,
                               );
@@ -788,13 +809,73 @@ function ServiceSelectionPage() {
                               </Button>
                             ) : (
                               <Button
-                                onClick={goNext}
+                                onClick={() => goNext()}
                                 size="lg"
                                 className="bg-blue-900 hover:bg-blue-800"
                               >
                                 Next
                               </Button>
                             )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {recommendModalOpen && (
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                      <div className="bg-white rounded-3xl max-w-md w-full shadow-xl overflow-hidden animate-in fade-in zoom-in duration-300">
+                        <div className="bg-linear-to-r from-blue-900 to-blue-800 p-6 text-white text-center">
+                          <div className="bg-white/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Sparkles className="w-8 h-8 text-yellow-300" />
+                          </div>
+                          <h3 className="text-xl font-bold mb-2">Smart Recommendation</h3>
+                          <p className="text-blue-100 text-sm">
+                            We noticed you've selected several add-ons!
+                          </p>
+                        </div>
+                        <div className="p-6 space-y-4">
+                          <p className="text-gray-700 text-center leading-relaxed">
+                            You might get better value by choosing one of our{" "}
+                            <span className="font-bold text-blue-900">
+                              Complete Detail
+                            </span>{" "}
+                            packages. They already include most of these features at a
+                            bundled price!
+                          </p>
+                          <div className="space-y-3 pt-2">
+                            <Button
+                              className="w-full bg-blue-900 hover:bg-blue-800 h-12 rounded-xl text-base font-semibold"
+                              onClick={() => {
+                                setRecommendModalOpen(false);
+                                setAddOnOpen(false);
+                                
+                                // Find Express Complete Detail or similar
+                                const completeService = services.find(s => 
+                                  s.name.toLowerCase().trim().includes("express complete")
+                                );
+                                
+                                if (completeService) {
+                                  handlePackageSelect(completeService.id);
+                                  setActiveTab("express");
+                                }
+                                
+                                // Scroll back up to the express tab contents
+                                bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+                              }}
+                            >
+                              Check Complete Detail Plans
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              className="w-full text-gray-500 hover:text-gray-700 h-10"
+                              onClick={() => {
+                                setRecommendModalOpen(false);
+                                goNext(true); // force go next
+                              }}
+                            >
+                              I'll stick with my current selection
+                            </Button>
                           </div>
                         </div>
                       </div>

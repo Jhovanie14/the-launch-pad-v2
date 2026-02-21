@@ -56,6 +56,8 @@ export default function SubscriptionView() {
     name: "",
     monthly_price: "",
     yearly_price: "",
+    stripe_price_id_monthly: "",
+    stripe_price_id_yearly: "",
     description: "",
     image_url: "",
   });
@@ -130,6 +132,8 @@ export default function SubscriptionView() {
         name: plan.name,
         monthly_price: plan.monthly_price || "",
         yearly_price: plan.yearly_price || "",
+        stripe_price_id_monthly: plan.stripe_price_id_monthly || "",
+        stripe_price_id_yearly: plan.stripe_price_id_yearly || "",
         description: plan.description || "",
         image_url: plan.image_url || "",
       });
@@ -139,6 +143,8 @@ export default function SubscriptionView() {
         name: "",
         monthly_price: "",
         yearly_price: "",
+        stripe_price_id_monthly: "",
+        stripe_price_id_yearly: "",
         description: "",
         image_url: "",
       });
@@ -197,6 +203,8 @@ export default function SubscriptionView() {
         name: form.name,
         monthly_price: form.monthly_price,
         yearly_price: form.yearly_price,
+        stripe_price_id_monthly: form.stripe_price_id_monthly,
+        stripe_price_id_yearly: form.stripe_price_id_yearly,
         description: form.description,
         image_url: form.image_url, // already set by handleImageUpload
       };
@@ -523,6 +531,38 @@ export default function SubscriptionView() {
                     className="pl-7 h-11"
                   />
                 </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">
+                  Stripe Monthly Price ID
+                </label>
+                <Input
+                  type="text"
+                  placeholder="price_..."
+                  value={form.stripe_price_id_monthly}
+                  onChange={(e) =>
+                    setForm({ ...form, stripe_price_id_monthly: e.target.value })
+                  }
+                  className="h-11 font-mono text-xs"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">
+                  Stripe Yearly Price ID
+                </label>
+                <Input
+                  type="text"
+                  placeholder="price_..."
+                  value={form.stripe_price_id_yearly}
+                  onChange={(e) =>
+                    setForm({ ...form, stripe_price_id_yearly: e.target.value })
+                  }
+                  className="h-11 font-mono text-xs"
+                />
               </div>
             </div>
 
