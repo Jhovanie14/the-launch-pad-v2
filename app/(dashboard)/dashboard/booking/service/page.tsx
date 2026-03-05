@@ -89,7 +89,7 @@ function ServiceSelectionPage() {
   // HOLIDAY SALE: START - Remove all code between START and END when sale ends
   // ============================================
   const HOLIDAY_SALE_ACTIVE = true; // Set to false when sale ends
-  const HOLIDAY_SALE_DISCOUNT = 0.1; // 10% off
+  const HOLIDAY_SALE_DISCOUNT = 0.05; // 5% off
   // ============================================
   // HOLIDAY SALE: END
   // ============================================

@@ -119,10 +119,10 @@ export async function POST(req: Request) {
       // Use the full price for the first vehicle
       lineItems.push({ price: vPriceId, quantity: 1 });
     } else {
-      // Additional vehicles receive 10% discount
+      // Additional vehicles receive 35% discount
       const basePriceObj = await stripe.prices.retrieve(vPriceId);
       const baseAmount = basePriceObj.unit_amount ?? 0;
-      const discountedAmount = Math.round(baseAmount * 0.9);
+      const discountedAmount = Math.round(baseAmount * 0.65);
       const discountedPrice = await stripe.prices.create({
         currency: basePriceObj.currency,
         unit_amount: discountedAmount,

@@ -457,7 +457,7 @@ function ServiceSelectionPage() {
                 </TabsTrigger>
                 <TabsTrigger
                   value="express"
-                  className="flex items-center justify-center gap-2 data-[state=active]:bg-linear-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-xl data-[state=active]:scale-105 data-[state=inactive]:bg-white data-[state=inactive]:text-gray-700 data-[state=inactive]:hover:bg-purple-50 data-[state=inactive]:border-2 data-[state=inactive]:border-purple-100 rounded-xl transition-all duration-300 py-4 font-bold text-base"
+                  className="flex items-center justify-center gap-2 data-[state=active]:bg-linear-to-r data-[state=active]:from-purple-600 data-[state=active]:to-pink-600 data-[state=active]:text-white data-[state=active]:shadow-xl data-[state=active]:scale-105 data-[state=inactive]:bg-white data-[state=inactive]:text-gray-700 data-[state=inactive]:hover:bg-purple-100 data-[state=inactive]:hover:border-purple-200 data-[state=inactive]:border-2 data-[state=inactive]:border-purple-400 rounded-xl transition-all duration-300 py-4 font-bold text-base"
                 >
                   <Sparkles className="w-5 h-5" />
                   Express Detail
