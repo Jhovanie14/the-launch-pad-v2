@@ -218,7 +218,7 @@ function ServiceSelectionPage() {
     selectserv?.name.toLowerCase().includes("complete") || false;
 
   const shouldShowRecommendation =
-    !isCompleteService && selectedAddOnIds.length >= 4;
+    !isCompleteService && selectedAddOnIds.length >= 3;
 
   const toggleAddOn = (addOnId: string) => {
     setSelectedAddOnIds((prev) =>
@@ -355,11 +355,10 @@ function ServiceSelectionPage() {
               className="w-full"
             >
               <TabsList
-                className={`grid w-full mb-12 ${
-                  shouldShowQuickTab() && shouldShowExpressTab()
-                    ? "grid-cols-2"
-                    : "grid-cols-1"
-                }`}
+                className={`grid w-full mb-12 ${shouldShowQuickTab() && shouldShowExpressTab()
+                  ? "grid-cols-2"
+                  : "grid-cols-1"
+                  }`}
               >
                 {shouldShowQuickTab() && (
                   <TabsTrigger
@@ -401,11 +400,10 @@ function ServiceSelectionPage() {
                         <Card
                           key={service.id}
                           onClick={() => handlePackageSelect(service.id)}
-                          className={`relative cursor-pointer transition-all duration-200 hover:shadow-md border-2 mb-4 ${
-                            selectedService === service.id
-                              ? "border-blue-500 bg-blue-50/50"
-                              : "border-gray-200 hover:border-blue-300"
-                          }`}
+                          className={`relative cursor-pointer transition-all duration-200 hover:shadow-md border-2 mb-4 ${selectedService === service.id
+                            ? "border-blue-500 bg-blue-50/50"
+                            : "border-gray-200 hover:border-blue-300"
+                            }`}
                         >
                           {/* Holiday Sale Badge */}
                           {(() => {
@@ -517,11 +515,10 @@ function ServiceSelectionPage() {
                         <Card
                           key={service.id}
                           onClick={() => handlePackageSelect(service.id)}
-                          className={`relative cursor-pointer transition-all duration-200 hover:shadow-md border-2 mb-4 ${
-                            selectedService === service.id
-                              ? "border-blue-500 bg-blue-50/50"
-                              : "border-gray-200 hover:border-blue-300"
-                          }`}
+                          className={`relative cursor-pointer transition-all duration-200 hover:shadow-md border-2 mb-4 ${selectedService === service.id
+                            ? "border-blue-500 bg-blue-50/50"
+                            : "border-gray-200 hover:border-blue-300"
+                            }`}
                         >
                           {/* Holiday Sale Badge - only show if not free */}
                           {HOLIDAY_SALE_ACTIVE && !isFree && (
@@ -702,40 +699,40 @@ function ServiceSelectionPage() {
                                 );
                               })
                               .map((a) => {
-                              const isSelected = selectedAddOnIds.includes(
-                                a.id,
-                              );
-                              return (
-                                <label
-                                  key={a.id}
-                                  className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 cursor-pointer"
-                                >
-                                  <div className="flex-1 space-y-1">
-                                    <div className="flex items-center space-x-3">
-                                      <h4 className="text-2xl font-medium text-black">
-                                        {a.name}
-                                      </h4>
-                                      <p className="text-sm font-semibold text-yellow-500">
-                                        {a.duration} (min)
+                                const isSelected = selectedAddOnIds.includes(
+                                  a.id,
+                                );
+                                return (
+                                  <label
+                                    key={a.id}
+                                    className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 cursor-pointer"
+                                  >
+                                    <div className="flex-1 space-y-1">
+                                      <div className="flex items-center space-x-3">
+                                        <h4 className="text-2xl font-medium text-black">
+                                          {a.name}
+                                        </h4>
+                                        <p className="text-sm font-semibold text-yellow-500">
+                                          {a.duration} (min)
+                                        </p>
+                                      </div>
+                                      <p className="font-light text-black text-sm">
+                                        {a.description}
+                                      </p>
+
+                                      <p className="text-xl font-semibold text-gray-700">
+                                        ${a.price.toFixed(2)}
                                       </p>
                                     </div>
-                                    <p className="font-light text-black text-sm">
-                                      {a.description}
-                                    </p>
-
-                                    <p className="text-xl font-semibold text-gray-700">
-                                      ${a.price.toFixed(2)}
-                                    </p>
-                                  </div>
-                                  <input
-                                    type="checkbox"
-                                    checked={isSelected}
-                                    onChange={() => toggleAddOn(a.id)}
-                                    className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                  />
-                                </label>
-                              );
-                            })}
+                                    <input
+                                      type="checkbox"
+                                      checked={isSelected}
+                                      onChange={() => toggleAddOn(a.id)}
+                                      className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                    />
+                                  </label>
+                                );
+                              })}
                           </div>
                         </div>
 
@@ -882,12 +879,12 @@ function ServiceSelectionPage() {
                               onClick={() => {
                                 setRecommendModalOpen(false);
                                 setAddOnOpen(false);
-                                
+
                                 // Find Express Complete Detail or similar
-                                const completeService = services.find(s => 
+                                const completeService = services.find(s =>
                                   s.name.toLowerCase().trim().includes("express complete")
                                 );
-                                
+
                                 if (completeService) {
                                   handlePackageSelect(completeService.id);
                                   setActiveTab("express");

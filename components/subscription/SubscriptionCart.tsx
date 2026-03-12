@@ -130,7 +130,7 @@ export default function SubscriptionCart({
   const handleVehicleCountChange = (count: number) => {
     setVehicleCount(count);
     setVehicles((prev) => {
-      const newVehicles = Array(count).fill(null).map((_, i) => 
+      const newVehicles = Array(count).fill(null).map((_, i) =>
         prev[i] || { license_plate: "" }
       );
       return newVehicles;
@@ -378,7 +378,7 @@ export default function SubscriptionCart({
               </button>
             </div>
             <p className="text-sm text-muted-foreground">
-              Select how many family vehicles to add. Each extra vehicle saves
+              Select how many total vehicles to include. Each extra vehicle saves
               you <span className="font-semibold text-green-600">35% every month</span>.
             </p>
           </CardHeader>
@@ -398,23 +398,21 @@ export default function SubscriptionCart({
                         vehicleCount === totalVehicles ? 1 : totalVehicles
                       )
                     }
-                    className={`relative flex flex-col items-center py-3 px-2 rounded-xl border-2 text-center transition-all ${
-                      isSelected
-                        ? "bg-green-600 text-white border-green-600 shadow-md"
-                        : "bg-white text-gray-700 border-gray-200 hover:border-green-400"
-                    }`}
+                    className={`relative flex flex-col items-center py-3 px-2 rounded-xl border-2 text-center transition-all ${isSelected
+                      ? "bg-green-600 text-white border-green-600 shadow-md"
+                      : "bg-white text-gray-700 border-gray-200 hover:border-green-400"
+                      }`}
                   >
-                    <span className="text-2xl font-bold">{count}</span>
+                    <span className="text-2xl font-bold">{totalVehicles}</span>
                     <span className={`text-xs mt-0.5 font-medium ${isSelected ? "text-green-100" : "text-gray-400"}`}>
-                      {count === 1 ? "vehicle" : "vehicles"}
+                      vehicles
                     </span>
                     {totalSavings > 0 && (
                       <span
-                        className={`text-xs mt-1.5 font-semibold px-1.5 py-0.5 rounded-full ${
-                          isSelected
-                            ? "bg-green-500 text-white"
-                            : "bg-green-50 text-green-700"
-                        }`}
+                        className={`text-xs mt-1.5 font-semibold px-1.5 py-0.5 rounded-full ${isSelected
+                          ? "bg-green-500 text-white"
+                          : "bg-green-50 text-green-700"
+                          }`}
                       >
                         save ${totalSavings.toFixed(0)}/mo
                       </span>
@@ -432,7 +430,7 @@ export default function SubscriptionCart({
                   return (
                     <div key={actualIndex} className="space-y-2">
                       <Label htmlFor={`vehicle-${actualIndex}`} className="text-base font-semibold">
-                        Vehicle {actualIndex + 0}: License Plate
+                        Vehicle {actualIndex + 1}: License Plate
                         <span className="ml-2 text-sm font-normal text-green-600">
                           (35% Family Discount)
                         </span>
@@ -549,13 +547,12 @@ export default function SubscriptionCart({
                           </p>
                         )}
                         <p
-                          className={`font-semibold ${
-                            pricing.isDiscounted
-                              ? "text-green-700"
-                              : PROMO_CONFIG.enabled && vehicleCount === 1
+                          className={`font-semibold ${pricing.isDiscounted
+                            ? "text-green-700"
+                            : PROMO_CONFIG.enabled && vehicleCount === 1
                               ? "text-red-600"
                               : ""
-                          }`}
+                            }`}
                         >
                           $
                           {pricing.estimatedPrice.toFixed(2)}
@@ -571,30 +568,30 @@ export default function SubscriptionCart({
 
               {/* Total Savings Summary */}
               {(totalFlockSavings > 0 || (vehicleCount === 1 && totalPromoSavings > 0)) && (
-                  <div className="bg-green-50 rounded-lg p-3 space-y-1">
-                    <p className="text-xs font-semibold text-green-900">
-                      💰 Your Estimated Savings:
+                <div className="bg-green-50 rounded-lg p-3 space-y-1">
+                  <p className="text-xs font-semibold text-green-900">
+                    💰 Your Estimated Savings:
+                  </p>
+                  {totalFlockSavings > 0 && (
+                    <p className="text-xs text-green-700">
+                      • Family Discount: $
+                      {totalFlockSavings.toFixed(2)}
                     </p>
-                    {totalFlockSavings > 0 && (
-                      <p className="text-xs text-green-700">
-                        • Family Discount: $
-                        {totalFlockSavings.toFixed(2)}
-                      </p>
-                    )}
-                    {vehicleCount === 1 && totalPromoSavings > 0 && (
-                      <p className="text-xs text-green-700">
-                        • Promo Discount: ${totalPromoSavings.toFixed(2)}
-                      </p>
-                    )}
-                    <p className="text-xs font-bold text-green-900 pt-1 border-t border-green-200">
-                      Total Estimated Savings: $
-                      {(totalPromoSavings + totalFlockSavings).toFixed(2)}
-                      <span className="text-muted-foreground ml-1">
-                        {billingCycle === "monthly" ? "/month" : "/year"}
-                      </span>
+                  )}
+                  {vehicleCount === 1 && totalPromoSavings > 0 && (
+                    <p className="text-xs text-green-700">
+                      • Promo Discount: ${totalPromoSavings.toFixed(2)}
                     </p>
-                  </div>
-                )}
+                  )}
+                  <p className="text-xs font-bold text-green-900 pt-1 border-t border-green-200">
+                    Total Estimated Savings: $
+                    {(totalPromoSavings + totalFlockSavings).toFixed(2)}
+                    <span className="text-muted-foreground ml-1">
+                      {billingCycle === "monthly" ? "/month" : "/year"}
+                    </span>
+                  </p>
+                </div>
+              )}
 
               {/* Total Price */}
               <div className="flex items-center justify-between pt-3 border-t border-border">
