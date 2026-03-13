@@ -57,7 +57,7 @@ const customerTypes = [
       "15% off all detailing",
       "Exclusive member benefits",
     ],
-    price: "Basic $39.99/mo",
+    price: "Quick $39.99/mo",
     cta: "Learn More",
     ctaLink: "/pricing",
     variant: "outline" as const,

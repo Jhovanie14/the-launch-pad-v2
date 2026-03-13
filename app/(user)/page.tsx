@@ -51,7 +51,7 @@ const services = [
     id: 2,
     title: "Professional Express Car Detailing",
     description:
-      "Give your vehicle the ultimate refresh with our professional detailing services. We go beyond a basic wash — deep interior cleaning, premium waxing, and polishing to bring back your car's showroom shine.",
+      "Give your vehicle the ultimate refresh with our professional detailing services. We go beyond a express wash — deep interior cleaning, premium waxing, and polishing to bring back your car's showroom shine.",
     image: "/professional-express-car-detailing.png",
     images: [
       "/professional-express-car-detailing.png",
@@ -66,7 +66,7 @@ const services = [
       "Professional-grade finish",
     ],
     fullDescription:
-      "Give your vehicle the ultimate refresh with our professional detailing services. We go beyond a basic wash — deep interior cleaning, premium waxing, and polishing to bring back your car's showroom shine. Our expert team uses only the finest products and techniques to ensure your vehicle looks and feels brand new.",
+      "Give your vehicle the ultimate refresh with our professional detailing services. We go beyond a express wash — deep interior cleaning, premium waxing, and polishing to bring back your car's showroom shine. Our expert team uses only the finest products and techniques to ensure your vehicle looks and feels brand new.",
     details: [
       "Comprehensive exterior detailing and polishing",
       "Deep interior cleaning and vacuuming",
@@ -187,7 +187,7 @@ export default function Home() {
                 className="w-full h-full object-contain rounded-md"
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               />
-              <Card className="absolute -bottom-6 md:bottom-6 -right-3 md:-right-6 bg-gradient-to-r from-red-600 to-blue-600 text-white rounded-xl p-4 soft-shadow">
+              <Card className="absolute -bottom-6 md:bottom-6 -right-3 md:-right-6 bg-linear-to-r from-red-600 to-blue-600 text-white rounded-xl p-4 soft-shadow">
                 <div className="flex items-center gap-2">
                   <Star />
                   <div>
