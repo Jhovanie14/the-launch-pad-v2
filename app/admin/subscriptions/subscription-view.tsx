@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -35,23 +36,20 @@ import {
   Loader2,
 } from "lucide-react";
 import type { SubscriptionPlans } from "@/types";
-import LoadingDots from "@/components/loading";
+
 
 export default function SubscriptionView() {
   const supabase = createClient();
   const [loading, setLoading] = useState(false);
-  const [subscriptionPlans, setSubscriptionPlans] = useState<
-    SubscriptionPlans[]
-  >([]);
+  const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlans[]>([]);
   const [monthlyRevenue, setMonthlyRevenue] = useState(0);
   const [avgSubscription, setAvgSubscription] = useState(0);
   const [activeSubscribers, setActiveSubscribers] = useState(0);
 
   const [modalOpen, setModalOpen] = useState(false);
-  const [currentPlan, setCurrentPlan] = useState<SubscriptionPlans | null>(
-    null
-  );
+  const [currentPlan, setCurrentPlan] = useState<SubscriptionPlans | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [isCommercial, setIsCommercial] = useState(false);
   const [form, setForm] = useState({
     name: "",
     monthly_price: "",
@@ -61,6 +59,8 @@ export default function SubscriptionView() {
     description: "",
     image_url: "",
   });
+  const [features, setFeatures] = useState<string[]>([]);
+  const [featureInput, setFeatureInput] = useState("");
 
   const fetchRevenue = useCallback(async () => {
     setLoading(true);
@@ -82,16 +82,12 @@ export default function SubscriptionView() {
 
       if (data && data.length > 0) {
         setActiveSubscribers(data.length);
-        // calculate total revenue based on monthly_price for simplicity
         const totalRevenue = data.reduce((acc, sub: any) => {
           const price = Number(sub.subscription_plan?.monthly_price || 0);
           return acc + price;
         }, 0);
-
-        const avg = totalRevenue / data.length;
-
         setMonthlyRevenue(totalRevenue);
-        setAvgSubscription(avg);
+        setAvgSubscription(totalRevenue / data.length);
       } else {
         setMonthlyRevenue(0);
         setAvgSubscription(0);
@@ -105,7 +101,6 @@ export default function SubscriptionView() {
     }
   }, [supabase]);
 
-  // Fetch subscription plans
   const fetchSubscription = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -124,10 +119,12 @@ export default function SubscriptionView() {
     fetchRevenue();
   }, [fetchSubscription, fetchRevenue]);
 
-  // Open modal
   const openModal = (plan?: SubscriptionPlans) => {
     if (plan) {
       setCurrentPlan(plan);
+      setIsCommercial(false);
+      setFeatures(plan.features || []);
+      setFeatureInput("");
       setForm({
         name: plan.name,
         monthly_price: plan.monthly_price || "",
@@ -139,6 +136,9 @@ export default function SubscriptionView() {
       });
     } else {
       setCurrentPlan(null);
+      setIsCommercial(false);
+      setFeatures([]);
+      setFeatureInput("");
       setForm({
         name: "",
         monthly_price: "",
@@ -152,14 +152,36 @@ export default function SubscriptionView() {
     setModalOpen(true);
   };
 
-  // Upload image
+  const handleCommercialToggle = (checked: boolean) => {
+    setIsCommercial(checked);
+    setForm((prev) => {
+      const monthly = Number(prev.monthly_price);
+      const yearly = Number(prev.yearly_price);
+      return {
+        ...prev,
+        monthly_price:
+          monthly > 0
+            ? checked
+              ? (monthly + 30).toFixed(2)
+              : (monthly - 30).toFixed(2)
+            : prev.monthly_price,
+        yearly_price:
+          yearly > 0
+            ? checked
+              ? (yearly + 360).toFixed(2)
+              : (yearly - 360).toFixed(2)
+            : prev.yearly_price,
+      };
+    });
+  };
+
   const handleImageUpload = async (file: File) => {
     try {
       setUploading(true);
 
       if (!file.type.startsWith("image/")) {
         toast.error("Only image files are allowed.");
-        return "";
+        return;
       }
 
       const fileExt = file.name.split(".").pop();
@@ -182,23 +204,19 @@ export default function SubscriptionView() {
     } catch (error) {
       console.error("Error uploading plan image:", error);
       toast.error("Failed to upload image.");
-      return "";
     } finally {
       setUploading(false);
     }
   };
 
-  // Remove image
   const handleRemoveImage = () => {
     setForm((prev) => ({ ...prev, image_url: "" }));
   };
 
-  // Submit form
   const handleSubmit = async () => {
     try {
       setUploading(true);
 
-      // Upload image if file provided
       const payload = {
         name: form.name,
         monthly_price: form.monthly_price,
@@ -206,7 +224,8 @@ export default function SubscriptionView() {
         stripe_price_id_monthly: form.stripe_price_id_monthly,
         stripe_price_id_yearly: form.stripe_price_id_yearly,
         description: form.description,
-        image_url: form.image_url, // already set by handleImageUpload
+        image_url: form.image_url,
+        features,
       };
 
       if (currentPlan) {
@@ -269,15 +288,9 @@ export default function SubscriptionView() {
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Active Plans
-                  </p>
-                  <p className="text-3xl font-bold text-foreground">
-                    {subscriptionPlans.length}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Total subscription tiers
-                  </p>
+                  <p className="text-sm font-medium text-muted-foreground">Active Plans</p>
+                  <p className="text-3xl font-bold text-foreground">{subscriptionPlans.length}</p>
+                  <p className="text-xs text-muted-foreground">Total subscription tiers</p>
                 </div>
                 <div className="p-3 bg-chart-2/10 rounded-xl">
                   <Crown className="h-6 w-6 text-chart-2" />
@@ -290,15 +303,9 @@ export default function SubscriptionView() {
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Monthly Revenue
-                  </p>
-                  <p className="text-3xl font-bold text-foreground">
-                    {monthlyRevenue}
-                  </p>
-                  <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                    +12.5% from last month
-                  </p>
+                  <p className="text-sm font-medium text-muted-foreground">Monthly Revenue</p>
+                  <p className="text-3xl font-bold text-foreground">{monthlyRevenue}</p>
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">+12.5% from last month</p>
                 </div>
                 <div className="p-3 bg-chart-1/10 rounded-xl">
                   <DollarSign className="h-6 w-6 text-chart-1" />
@@ -311,15 +318,9 @@ export default function SubscriptionView() {
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Active Subscribers
-                  </p>
-                  <p className="text-3xl font-bold text-foreground">
-                    {activeSubscribers}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Currently subscribed users
-                  </p>
+                  <p className="text-sm font-medium text-muted-foreground">Active Subscribers</p>
+                  <p className="text-3xl font-bold text-foreground">{activeSubscribers}</p>
+                  <p className="text-xs text-muted-foreground">Currently subscribed users</p>
                 </div>
                 <div className="p-3 bg-chart-4/10 rounded-xl">
                   <TrendingUp className="h-6 w-6 text-chart-4" />
@@ -332,15 +333,9 @@ export default function SubscriptionView() {
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Avg. Subscription
-                  </p>
-                  <p className="text-3xl font-bold text-foreground">
-                    {avgSubscription.toFixed(2)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Per customer value
-                  </p>
+                  <p className="text-sm font-medium text-muted-foreground">Avg. Subscription</p>
+                  <p className="text-3xl font-bold text-foreground">{avgSubscription.toFixed(2)}</p>
+                  <p className="text-xs text-muted-foreground">Per customer value</p>
                 </div>
                 <div className="p-3 bg-chart-3/10 rounded-xl">
                   <Star className="h-6 w-6 text-chart-3" />
@@ -356,12 +351,9 @@ export default function SubscriptionView() {
               <div className="p-4 bg-muted/50 rounded-full mb-4">
                 <Sparkles className="h-8 w-8 text-muted-foreground" />
               </div>
-              <h3 className="text-xl font-semibold text-foreground mb-2">
-                No subscription plans yet
-              </h3>
+              <h3 className="text-xl font-semibold text-foreground mb-2">No subscription plans yet</h3>
               <p className="text-muted-foreground text-center mb-6 max-w-md">
-                Create your first subscription plan to start offering premium
-                features to your customers
+                Create your first subscription plan to start offering premium features to your customers
               </p>
               <Button onClick={() => openModal()} size="lg" className="gap-2">
                 <Plus className="h-5 w-5" />
@@ -371,14 +363,14 @@ export default function SubscriptionView() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {subscriptionPlans.map((plan, index) => (
+            {subscriptionPlans.map((plan) => (
               <Card
                 key={plan.id}
                 className="relative border-border/50 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-linear-to-br from-card to-card/80 overflow-hidden group"
               >
                 <div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
-                <div className="absolute top-4 right-4 z-10 ">
+                <div className="absolute top-4 right-4 z-10">
                   <Button
                     variant="ghost"
                     size="icon"
@@ -392,7 +384,6 @@ export default function SubscriptionView() {
                 <CardHeader className="py-6 relative">
                   <div className="flex flex-col items-start gap-3">
                     <div className="p-2 bg-primary/10 rounded-lg">
-                      {/* <Crown className="h-5 w-5 text-primary" /> */}
                       {plan.image_url && (
                         <img
                           src={plan.image_url}
@@ -402,9 +393,7 @@ export default function SubscriptionView() {
                       )}
                     </div>
                     <div className="flex-1">
-                      <CardTitle className="text-2xl font-bold">
-                        {plan.name}
-                      </CardTitle>
+                      <CardTitle className="text-2xl font-bold">{plan.name}</CardTitle>
                       <CardDescription className="mt-2 text-base leading-relaxed">
                         {plan.description || "No description provided"}
                       </CardDescription>
@@ -415,13 +404,9 @@ export default function SubscriptionView() {
                 <CardContent className="space-y-6 relative">
                   <div className="space-y-4">
                     <div className="p-4 bg-muted/50 rounded-xl border border-border/50">
-                      <p className="text-sm font-medium text-muted-foreground mb-1">
-                        Monthly
-                      </p>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Monthly</p>
                       <div className="flex items-baseline gap-1">
-                        <span className="text-4xl font-bold text-foreground">
-                          ${plan.monthly_price}
-                        </span>
+                        <span className="text-4xl font-bold text-foreground">${plan.monthly_price}</span>
                         <span className="text-muted-foreground">/month</span>
                       </div>
                     </div>
@@ -429,20 +414,13 @@ export default function SubscriptionView() {
                     {plan.yearly_price && (
                       <div className="p-4 bg-primary/5 rounded-xl border border-primary/20">
                         <div className="flex items-center justify-between mb-1">
-                          <p className="text-sm font-medium text-muted-foreground">
-                            Yearly
-                          </p>
-                          <Badge
-                            variant="secondary"
-                            className="bg-primary/10 text-primary border-primary/20"
-                          >
+                          <p className="text-sm font-medium text-muted-foreground">Yearly</p>
+                          <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
                             Best Value
                           </Badge>
                         </div>
                         <div className="flex items-baseline gap-1">
-                          <span className="text-4xl font-bold text-foreground">
-                            ${plan.yearly_price}
-                          </span>
+                          <span className="text-4xl font-bold text-foreground">${plan.yearly_price}</span>
                           <span className="text-muted-foreground">/year</span>
                         </div>
                       </div>
@@ -457,12 +435,8 @@ export default function SubscriptionView() {
                           : "bg-muted text-muted-foreground"
                       }`}
                     >
-                      <div
-                        className={`h-2 w-2 rounded-full ${plan.is_active ? "bg-emerald-500" : "bg-muted-foreground"}`}
-                      />
-                      <span className="text-sm font-medium">
-                        {plan.is_active ? "Active" : "Inactive"}
-                      </span>
+                      <div className={`h-2 w-2 rounded-full ${plan.is_active ? "bg-emerald-500" : "bg-muted-foreground"}`} />
+                      <span className="text-sm font-medium">{plan.is_active ? "Active" : "Inactive"}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -473,7 +447,7 @@ export default function SubscriptionView() {
       </div>
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold">
               {currentPlan ? "Edit Subscription Plan" : "Create New Plan"}
@@ -481,9 +455,7 @@ export default function SubscriptionView() {
           </DialogHeader>
           <div className="space-y-5 py-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">
-                Plan Name
-              </label>
+              <label className="text-sm font-medium text-foreground">Plan Name</label>
               <Input
                 placeholder="e.g., Premium, Enterprise"
                 value={form.name}
@@ -494,40 +466,28 @@ export default function SubscriptionView() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">
-                  Monthly Price
-                </label>
+                <label className="text-sm font-medium text-foreground">Monthly Price</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    $
-                  </span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                   <Input
                     type="text"
                     placeholder="29.99"
                     value={form.monthly_price}
-                    onChange={(e) =>
-                      setForm({ ...form, monthly_price: e.target.value })
-                    }
+                    onChange={(e) => setForm({ ...form, monthly_price: e.target.value })}
                     className="pl-7 h-11"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">
-                  Yearly Price
-                </label>
+                <label className="text-sm font-medium text-foreground">Yearly Price</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    $
-                  </span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                   <Input
                     type="text"
                     placeholder="299.99"
                     value={form.yearly_price}
-                    onChange={(e) =>
-                      setForm({ ...form, yearly_price: e.target.value })
-                    }
+                    onChange={(e) => setForm({ ...form, yearly_price: e.target.value })}
                     className="pl-7 h-11"
                   />
                 </div>
@@ -536,101 +496,154 @@ export default function SubscriptionView() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">
-                  Stripe Monthly Price ID
-                </label>
+                <label className="text-sm font-medium text-foreground">Stripe Monthly Price ID</label>
                 <Input
                   type="text"
                   placeholder="price_..."
                   value={form.stripe_price_id_monthly}
-                  onChange={(e) =>
-                    setForm({ ...form, stripe_price_id_monthly: e.target.value })
-                  }
+                  onChange={(e) => setForm({ ...form, stripe_price_id_monthly: e.target.value })}
                   className="h-11 font-mono text-xs"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">
-                  Stripe Yearly Price ID
-                </label>
+                <label className="text-sm font-medium text-foreground">Stripe Yearly Price ID</label>
                 <Input
                   type="text"
                   placeholder="price_..."
                   value={form.stripe_price_id_yearly}
-                  onChange={(e) =>
-                    setForm({ ...form, stripe_price_id_yearly: e.target.value })
-                  }
+                  onChange={(e) => setForm({ ...form, stripe_price_id_yearly: e.target.value })}
                   className="h-11 font-mono text-xs"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">
-                Description
-              </label>
+              <label className="text-sm font-medium text-foreground">Description</label>
               <Textarea
                 placeholder="Describe what's included in this plan..."
                 value={form.description}
-                onChange={(e) =>
-                  setForm({ ...form, description: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
                 className="min-h-[100px] resize-none"
               />
             </div>
+
+            {/* Features */}
             <div className="space-y-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">
-                  Plan Image
-                </label>
-                {form.image_url ? (
-                  <div className="relative w-full max-w-md">
-                    <img
-                      src={form.image_url}
-                      alt="Plan Preview"
-                      className="w-full h-48 object-cover rounded-lg"
-                    />
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      type="button"
-                      className="absolute top-2 right-2"
-                      onClick={handleRemoveImage}
-                    >
-                      <Trash2 className="w-4 h-4" /> Remove
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="border border-dashed rounded-xl p-4 flex flex-col items-center justify-center text-sm text-muted-foreground">
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      id="planImage"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleImageUpload(file);
-                      }}
-                    />
-                    <label
-                      htmlFor="planImage"
-                      className="flex flex-col items-center cursor-pointer"
-                    >
-                      <Upload className="w-6 h-6 mb-2" />
-                      {uploading ? "Uploading..." : "Click to upload image"}
-                    </label>
-                  </div>
-                )}
+              <label className="text-sm font-medium text-foreground">Features</label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="e.g. Unlimited washes"
+                  value={featureInput}
+                  onChange={(e) => setFeatureInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && featureInput.trim()) {
+                      e.preventDefault();
+                      setFeatures((prev) => [...prev, featureInput.trim()]);
+                      setFeatureInput("");
+                    }
+                  }}
+                  className="h-10"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    if (featureInput.trim()) {
+                      setFeatures((prev) => [...prev, featureInput.trim()]);
+                      setFeatureInput("");
+                    }
+                  }}
+                >
+                  Add
+                </Button>
               </div>
+              {features.length > 0 && (
+                <ul className="space-y-1 mt-2">
+                  {features.map((f, i) => (
+                    <li key={i} className="flex items-center justify-between bg-muted/50 rounded-md px-3 py-1.5 text-sm">
+                      <span>{f}</span>
+                      <button
+                        type="button"
+                        onClick={() => setFeatures((prev) => prev.filter((_, idx) => idx !== i))}
+                        className="text-muted-foreground hover:text-red-500 ml-2 text-xs"
+                      >
+                        ✕
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Commercial Vehicle Checkbox */}
+            {!currentPlan && (
+              <div className={`rounded-lg border-2 p-4 transition-colors ${isCommercial ? "border-amber-400 bg-amber-50" : "border-border bg-muted/30"}`}>
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    id="isCommercial"
+                    checked={isCommercial}
+                    onCheckedChange={(checked) => handleCommercialToggle(!!checked)}
+                    className="mt-0.5"
+                  />
+                  <div>
+                    <label htmlFor="isCommercial" className="text-sm font-semibold text-foreground cursor-pointer">
+                      Commercial Vehicle Plan
+                    </label>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Check this if the plan is for commercial vehicles (tow trucks, 8 ft/9 ft bed trucks, sprinter vans). Enter the final price and Stripe ID directly — no auto-calculation.
+                    </p>
+                    {isCommercial && (
+                      <p className="text-xs text-amber-700 font-semibold mt-2">
+                        ⚠️ Remember: enter the final price (e.g. $89.99) and make sure your Stripe Price ID matches that exact amount.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Plan Image</label>
+              {form.image_url ? (
+                <div className="relative w-full max-w-md">
+                  <img
+                    src={form.image_url}
+                    alt="Plan Preview"
+                    className="w-full h-48 object-cover rounded-lg"
+                  />
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    type="button"
+                    className="absolute top-2 right-2"
+                    onClick={handleRemoveImage}
+                  >
+                    <Trash2 className="w-4 h-4" /> Remove
+                  </Button>
+                </div>
+              ) : (
+                <div className="border border-dashed rounded-xl p-4 flex flex-col items-center justify-center text-sm text-muted-foreground">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    id="planImage"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleImageUpload(file);
+                    }}
+                  />
+                  <label htmlFor="planImage" className="flex flex-col items-center cursor-pointer">
+                    <Upload className="w-6 h-6 mb-2" />
+                    {uploading ? "Uploading..." : "Click to upload image"}
+                  </label>
+                </div>
+              )}
             </div>
           </div>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setModalOpen(false)}
-              className="mr-2"
-            >
+            <Button variant="outline" onClick={() => setModalOpen(false)} className="mr-2">
               Cancel
             </Button>
             <Button onClick={handleSubmit} className="gap-2">

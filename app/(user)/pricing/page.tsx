@@ -78,7 +78,7 @@ export default function PricingContent() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            className="max-w-4xl mx-auto text-center space-y-6"
+            className="max-w-7xl mx-auto text-center space-y-6"
           >
             {/* Pricing Toggle */}
             <div className="flex justify-center mb-12">
@@ -107,7 +107,7 @@ export default function PricingContent() {
             </div>
 
             {/* Pricing Cards */}
-            <section className="grid grid-cols-1 md:grid-cols-2 gap-10 px-6 md:px-3">
+            <section className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-8 px-6 md:px-3">
               {plans.map((plan) => (
                 <PricingCard
                   key={plan.id}

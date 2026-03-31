@@ -216,14 +216,14 @@ export default function PricingCard({
 
           {/* Features List */}
           <ul className="space-y-3" role="list">
-            {plan.features.map((feature: string, index: number) => (
+            {(plan.features ?? []).map((feature: string, index: number) => (
               <li key={index} className="flex items-start gap-3">
                 {feature.toLowerCase().includes("no") ? (
                   <X className="h-5 w-5 shrink-0 text-red-400 mt-0.5" />
                 ) : (
                   <CheckCircle className="h-5 w-5 shrink-0 text-yellow-400 mt-0.5" />
                 )}
-                <span className="text-sm md:text-base text-slate-800 font-medium">
+                <span className="text-sm md:text-start text-slate-800 font-medium">
                   {feature}
                 </span>
               </li>
@@ -263,6 +263,14 @@ export default function PricingCard({
           <p className="text-xs text-center text-slate-500 mt-3">
             1 Vehicle per subscription
           </p>
+          {!isSelfServicePlan && !plan.name?.toLowerCase().includes("commercial") && (
+            <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
+              <p className="font-semibold mb-1">⚠️ Personal vehicles only</p>
+              <p className="leading-relaxed">
+                Commercial vehicles excluded — tow trucks, 8 ft/9 ft bed trucks, and sprinter vans require a separate commercial plan.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -39,12 +39,12 @@ export default function SubscriptionCart({
 
   const planId = useMemo(
     () => planIdProp ?? searchParams.get("plan"),
-    [planIdProp, searchParams]
+    [planIdProp, searchParams],
   );
   const billingCycle = useMemo(
     () =>
       (billingProp ?? (searchParams.get("billing") as Billing)) || "monthly",
-    [billingProp, searchParams]
+    [billingProp, searchParams],
   );
 
   const [plan, setPlan] = useState<{
@@ -62,7 +62,9 @@ export default function SubscriptionCart({
   const [error, setError] = useState("");
   const [vehicleCount, setVehicleCount] = useState(1);
   const [vehicles, setVehicles] = useState<Vehicle[]>([{ license_plate: "" }]);
-  const [errors, setErrors] = useState<Record<number, { licensePlate?: string }>>({});
+  const [errors, setErrors] = useState<
+    Record<number, { licensePlate?: string }>
+  >({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isBenefitsOpen, setIsBenefitsOpen] = useState(false);
 
@@ -130,9 +132,9 @@ export default function SubscriptionCart({
   const handleVehicleCountChange = (count: number) => {
     setVehicleCount(count);
     setVehicles((prev) => {
-      const newVehicles = Array(count).fill(null).map((_, i) =>
-        prev[i] || { license_plate: "" }
-      );
+      const newVehicles = Array(count)
+        .fill(null)
+        .map((_, i) => prev[i] || { license_plate: "" });
       return newVehicles;
     });
     setErrors({});
@@ -302,7 +304,7 @@ export default function SubscriptionCart({
       localStorage.setItem("pendingSubscriptionCart", JSON.stringify(cartData));
       localStorage.setItem(
         "pendingSubscriptionIntent",
-        JSON.stringify({ planId, billing: billingCycle })
+        JSON.stringify({ planId, billing: billingCycle }),
       );
 
       onRequireAuth?.();
@@ -338,7 +340,8 @@ export default function SubscriptionCart({
               </CardTitle>
             </div>
             <p className="text-sm text-muted-foreground mt-1">
-              Enter the license plate for the vehicle you want to subscribe with.
+              Enter the license plate for the vehicle you want to subscribe
+              with.
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -378,8 +381,12 @@ export default function SubscriptionCart({
               </button>
             </div>
             <p className="text-sm text-muted-foreground">
-              Select how many total vehicles to include. Each extra vehicle saves
-              you <span className="font-semibold text-green-600">35% every month</span>.
+              Select how many total vehicles to include. Each extra vehicle
+              saves you{" "}
+              <span className="font-semibold text-green-600">
+                35% every month
+              </span>
+              .
             </p>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -395,24 +402,28 @@ export default function SubscriptionCart({
                     key={count}
                     onClick={() =>
                       handleVehicleCountChange(
-                        vehicleCount === totalVehicles ? 1 : totalVehicles
+                        vehicleCount === totalVehicles ? 1 : totalVehicles,
                       )
                     }
-                    className={`relative flex flex-col items-center py-3 px-2 rounded-xl border-2 text-center transition-all ${isSelected
-                      ? "bg-green-600 text-white border-green-600 shadow-md"
-                      : "bg-white text-gray-700 border-gray-200 hover:border-green-400"
-                      }`}
+                    className={`relative flex flex-col items-center py-3 px-2 rounded-xl border-2 text-center transition-all ${
+                      isSelected
+                        ? "bg-green-600 text-white border-green-600 shadow-md"
+                        : "bg-white text-gray-700 border-gray-200 hover:border-green-400"
+                    }`}
                   >
                     <span className="text-2xl font-bold">{totalVehicles}</span>
-                    <span className={`text-xs mt-0.5 font-medium ${isSelected ? "text-green-100" : "text-gray-400"}`}>
+                    <span
+                      className={`text-xs mt-0.5 font-medium ${isSelected ? "text-green-100" : "text-gray-400"}`}
+                    >
                       vehicles
                     </span>
                     {totalSavings > 0 && (
                       <span
-                        className={`text-xs mt-1.5 font-semibold px-1.5 py-0.5 rounded-full ${isSelected
-                          ? "bg-green-500 text-white"
-                          : "bg-green-50 text-green-700"
-                          }`}
+                        className={`text-xs mt-1.5 font-semibold px-1.5 py-0.5 rounded-full ${
+                          isSelected
+                            ? "bg-green-500 text-white"
+                            : "bg-green-50 text-green-700"
+                        }`}
                       >
                         save ${totalSavings.toFixed(0)}/mo
                       </span>
@@ -429,7 +440,10 @@ export default function SubscriptionCart({
                   const actualIndex = index + 1;
                   return (
                     <div key={actualIndex} className="space-y-2">
-                      <Label htmlFor={`vehicle-${actualIndex}`} className="text-base font-semibold">
+                      <Label
+                        htmlFor={`vehicle-${actualIndex}`}
+                        className="text-base font-semibold"
+                      >
                         Vehicle {actualIndex + 1}: License Plate
                         <span className="ml-2 text-sm font-normal text-green-600">
                           (35% Family Discount)
@@ -439,7 +453,12 @@ export default function SubscriptionCart({
                         id={`vehicle-${actualIndex}`}
                         placeholder="e.g. ABC 1234"
                         value={vehicle.license_plate}
-                        onChange={(e) => updateVehicle(actualIndex, e.target.value.toUpperCase())}
+                        onChange={(e) =>
+                          updateVehicle(
+                            actualIndex,
+                            e.target.value.toUpperCase(),
+                          )
+                        }
                         className="text-lg font-mono uppercase tracking-widest h-12"
                       />
                       {errors[actualIndex]?.licensePlate ? (
@@ -458,6 +477,30 @@ export default function SubscriptionCart({
             )}
           </CardContent>
         </Card>
+        {/* Commercial Vehicle Disclaimer — hide on commercial plans */}
+        {!plan?.name?.toLowerCase().includes("commercial") && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-900">
+            <p className="font-semibold mb-1">
+              ⚠️ Commercial Vehicles Excluded
+            </p>
+            <p className="text-xs leading-relaxed">
+              This subscription plan is for personal passenger vehicles only.
+              The following vehicle types are{" "}
+              <span className="font-semibold">not eligible</span> for this plan
+              and require a separate commercial vehicle subscription:
+            </p>
+            <ul className="mt-2 text-xs space-y-0.5 list-disc list-inside text-amber-800">
+              <li>Tow trucks</li>
+              <li>Trucks with 8 ft or 9 ft beds</li>
+              <li>Sprinter vans &amp; cargo vans</li>
+              <li>Other commercial or oversized vehicles</li>
+            </ul>
+            <p className="text-xs mt-2 text-amber-700">
+              If you operate a commercial vehicle, please contact us or ask
+              about our commercial vehicle plan.
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="space-y-6">
@@ -479,28 +522,30 @@ export default function SubscriptionCart({
             </div>
 
             {/* Promo Code Applied Banner — primary vehicle only */}
-            {PROMO_CONFIG.enabled && promoDiscountPercent > 0 && vehicleCount === 1 && (
-              <div className="bg-linear-to-r from-red-50 to-orange-50 border-2 border-red-300 rounded-lg p-4 mb-4">
-                <div className="flex items-start gap-3">
-                  <div className="bg-red-600 rounded-full p-2 shrink-0">
-                    <Tag className="h-4 w-4 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-base font-bold text-red-900 mb-1">
-                      🎉 Promo Code Auto-Applied!
-                    </p>
-                    <p className="text-sm font-semibold text-red-800">
-                      {promoDiscountPercent}% OFF your first month of
-                      subscription. After the first month, your subscription
-                      will renew at the regular price.
-                    </p>
-                    <p className="text-xs text-red-700 mt-1">
-                      Discount applied automatically at checkout via Stripe
-                    </p>
+            {PROMO_CONFIG.enabled &&
+              promoDiscountPercent > 0 &&
+              vehicleCount === 1 && (
+                <div className="bg-linear-to-r from-red-50 to-orange-50 border-2 border-red-300 rounded-lg p-4 mb-4">
+                  <div className="flex items-start gap-3">
+                    <div className="bg-red-600 rounded-full p-2 shrink-0">
+                      <Tag className="h-4 w-4 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-base font-bold text-red-900 mb-1">
+                        🎉 Promo Code Auto-Applied!
+                      </p>
+                      <p className="text-sm font-semibold text-red-800">
+                        {promoDiscountPercent}% OFF your first month of
+                        subscription. After the first month, your subscription
+                        will renew at the regular price.
+                      </p>
+                      <p className="text-xs text-red-700 mt-1">
+                        Discount applied automatically at checkout via Stripe
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
             <div className="space-y-3 mb-6 pb-6 border-b border-border">
               {/* Vehicle Breakdown */}
@@ -541,21 +586,24 @@ export default function SubscriptionCart({
                       </div>
                       <div className="text-right">
                         {/* Show strikethrough only when there's a real discount to display */}
-                        {(pricing.isDiscounted || (PROMO_CONFIG.enabled && vehicleCount === 1 && pricing.promoSavings > 0)) && (
+                        {(pricing.isDiscounted ||
+                          (PROMO_CONFIG.enabled &&
+                            vehicleCount === 1 &&
+                            pricing.promoSavings > 0)) && (
                           <p className="text-xs text-muted-foreground line-through">
                             ${pricing.fullBasePrice.toFixed(2)}
                           </p>
                         )}
                         <p
-                          className={`font-semibold ${pricing.isDiscounted
-                            ? "text-green-700"
-                            : PROMO_CONFIG.enabled && vehicleCount === 1
-                              ? "text-red-600"
-                              : ""
-                            }`}
+                          className={`font-semibold ${
+                            pricing.isDiscounted
+                              ? "text-green-700"
+                              : PROMO_CONFIG.enabled && vehicleCount === 1
+                                ? "text-red-600"
+                                : ""
+                          }`}
                         >
-                          $
-                          {pricing.estimatedPrice.toFixed(2)}
+                          ${pricing.estimatedPrice.toFixed(2)}
                           <span className="text-xs text-muted-foreground ml-1">
                             {billingCycle === "monthly" ? "/mo" : "/yr"}
                           </span>
@@ -567,15 +615,15 @@ export default function SubscriptionCart({
               </div>
 
               {/* Total Savings Summary */}
-              {(totalFlockSavings > 0 || (vehicleCount === 1 && totalPromoSavings > 0)) && (
+              {(totalFlockSavings > 0 ||
+                (vehicleCount === 1 && totalPromoSavings > 0)) && (
                 <div className="bg-green-50 rounded-lg p-3 space-y-1">
                   <p className="text-xs font-semibold text-green-900">
                     💰 Your Estimated Savings:
                   </p>
                   {totalFlockSavings > 0 && (
                     <p className="text-xs text-green-700">
-                      • Family Discount: $
-                      {totalFlockSavings.toFixed(2)}
+                      • Family Discount: ${totalFlockSavings.toFixed(2)}
                     </p>
                   )}
                   {vehicleCount === 1 && totalPromoSavings > 0 && (
@@ -729,7 +777,9 @@ export default function SubscriptionCart({
               disabled={loadingCheckout || loadingPlan || !planId}
             >
               {loadingCheckout ? "Redirecting..." : "Checkout"}
-              {loadingCheckout && <Loader2 className="ml-2 w-4 h-4 animate-spin" />}
+              {loadingCheckout && (
+                <Loader2 className="ml-2 w-4 h-4 animate-spin" />
+              )}
             </Button>
           </CardContent>
         </Card>
@@ -737,6 +787,7 @@ export default function SubscriptionCart({
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
         />
+
         <MultiVehicleBenefitsDialog
           isOpen={isBenefitsOpen}
           onClose={() => setIsBenefitsOpen(false)}
