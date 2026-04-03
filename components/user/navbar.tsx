@@ -12,6 +12,7 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "../ui/navigation-menu";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import {
   Sheet,
   SheetContent,
@@ -43,33 +44,33 @@ const services: {
   description: string;
   icon?: React.ComponentType<any>;
 }[] = [
-  {
-    icon: CircleQuestionMark,
-    title: "FAQ",
-    href: "/faq",
-    description:
-      "Got question? Our FAQs has answers to make your Launch Pad experience smooth and easy.",
-  },
-  {
-    icon: NotebookPen,
-    title: "Blog",
-    href: "/blog",
-    description:
-      "Quick and efficient exterior wash perfect for busy schedules.",
-  },
-  {
-    icon: Phone,
-    title: "Contact Us",
-    href: "/contact",
-    description: "We provide exceptional customer service.",
-  },
-  {
-    icon: Users,
-    title: "About Us",
-    href: "/about",
-    description: "Learn more about the team of the launch pad.",
-  },
-];
+    {
+      icon: CircleQuestionMark,
+      title: "FAQ",
+      href: "/faq",
+      description:
+        "Got question? Our FAQs has answers to make your Launch Pad experience smooth and easy.",
+    },
+    {
+      icon: NotebookPen,
+      title: "Blog",
+      href: "/blog",
+      description:
+        "Quick and efficient exterior wash perfect for busy schedules.",
+    },
+    {
+      icon: Phone,
+      title: "Contact Us",
+      href: "/contact",
+      description: "We provide exceptional customer service.",
+    },
+    {
+      icon: Users,
+      title: "About Us",
+      href: "/about",
+      description: "Learn more about the team of the launch pad.",
+    },
+  ];
 
 function ListItem({
   title,
@@ -124,11 +125,10 @@ export function UserNavbar() {
 
   return (
     <nav
-      className={`sticky top-0 w-full z-50 transition-all duration-300 ${
-        isMounted && isScrolled
-          ? "bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm dark:bg-gray-900/95"
-          : "bg-transparent"
-      }`}
+      className={`sticky top-0 w-full z-50 transition-all duration-300 ${isMounted && isScrolled
+        ? "bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm dark:bg-gray-900/95"
+        : "bg-transparent"
+        }`}
     >
       <div className="mx-auto max-w-11/12 px-4 sm:px-6 lg:px-8">
         <div className="flex h-32 justify-between">
@@ -319,16 +319,14 @@ export function UserNavbar() {
                 >
                   <span>About Launch Pad</span>
                   <ChevronDown
-                    className={`w-4 h-4 transition-transform ${
-                      isAboutDropdownOpen ? "rotate-180" : ""
-                    }`}
+                    className={`w-4 h-4 transition-transform ${isAboutDropdownOpen ? "rotate-180" : ""
+                      }`}
                   />
                 </button>
 
                 <div
-                  className={`ml-4 overflow-hidden space-y-2 transition-all ${
-                    isAboutDropdownOpen ? "max-h-screen mt-2" : "max-h-0"
-                  }`}
+                  className={`ml-4 overflow-hidden space-y-2 transition-all ${isAboutDropdownOpen ? "max-h-screen mt-2" : "max-h-0"
+                    }`}
                 >
                   <Link
                     href="/blog"
@@ -392,15 +390,19 @@ export function UserNavbar() {
                 Book Online
               </Button>
 
-              <a href="tel:8322198320" className="flex items-center space-x-3 text-muted-foreground group">
-                <Phone className="w-4 h-4 text-blue-900 group-hover:text-blue-800 transition-colors" />
-                <p>
-                  or call{" "}
-                  <span className="text-muted-foreground group-hover:text-blue-900 group-hover:underline transition-colors">
-                    (832) 219-8320
-                  </span>
-                </p>
-              </a>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <a href="tel:8322198320" className="flex items-center space-x-4 text-blue-400 hover:text-blue-300 font-semibold underline underline-offset-4 transition-colors active:scale-95">
+                    <Phone className="w-5 h-5" />
+                    <span className="font-medium group-hover:underline transition-colors hover:text-blue-900">
+                      Tap to Call: (832) 219-8320
+                    </span>
+                  </a>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Click here to call immediately!</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
           </SheetContent>
         </Sheet>

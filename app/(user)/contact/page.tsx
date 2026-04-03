@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Mail, Phone, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { HelpForm } from "@/components/user/help-form";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function Contact() {
   const [concern, setConcern] = useState("");
@@ -61,7 +62,7 @@ export default function Contact() {
               </p>
             </div>
 
-            <div>
+            <div className="flex flex-col gap-4 items-start">
               <div className="flex items-center space-x-4">
                 <Mail className="w-6 h-6 text-muted-foreground" />
                 <a
@@ -71,12 +72,19 @@ export default function Contact() {
                   info@thelaunchpadwash.com
                 </a>
               </div>
-              <a href="tel:+1-832-219-8320" className="flex items-center space-x-4 text-muted-foreground hover:text-blue-900 group">
-                <Phone className="w-6 h-6" />
-                <span className="font-medium group-hover:underline transition-colors hover:text-blue-900" >
-                  832-219-8320
-                </span>
-              </a>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <a href="tel:8322198320" className="flex items-center space-x-4 text-blue-400 hover:text-blue-300 font-semibold underline underline-offset-4 transition-colors active:scale-95">
+                    <Phone className="w-5 h-5" />
+                    <span className="font-medium group-hover:underline transition-colors hover:text-blue-900">
+                      Tap to Call: (832) 219-8320
+                    </span>
+                  </a>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Click to call directly</p>
+                </TooltipContent>
+              </Tooltip>
               <div className="flex items-center space-x-4">
                 <MapPin className="w-6 h-6 text-muted-foreground" />
                 <span className="text-foreground font-medium">

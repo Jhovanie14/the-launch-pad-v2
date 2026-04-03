@@ -11,6 +11,7 @@ import {
   Calendar,
 } from "lucide-react";
 import Image from "next/image";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 export function Footer() {
   return (
@@ -198,10 +199,18 @@ export function Footer() {
                 <span>10410 S Main St, Houston, TX 77025</span>
               </li>
               <li>
-                <a href="tel:8322198320" className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors group">
-                  <Phone className="w-4 h-4 shrink-0" />
-                  <span className="group-hover:underline">(832) 219-8320</span>
-                </a>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <a href="tel:8322198320" className="inline-flex items-center gap-2 text-sm md:text-base text-blue-400 hover:text-blue-300 font-semibold underline underline-offset-4 transition-colors active:scale-95">
+                      <Phone className="w-4 h-4 md:w-5 md:h-5 shrink-0" />
+                      <span>Tap to Call: (832) 219-8320</span>
+                    </a>
+
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Click to call directly</p>
+                  </TooltipContent>
+                </Tooltip>
               </li>
               <li className="flex items-center gap-2 text-sm">
                 <Mail className="w-4 h-4 shrink-0" />
