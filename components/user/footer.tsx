@@ -197,10 +197,10 @@ export function Footer() {
                 <MapPin className="w-4 h-4 mt-0.5 shrink-0" />
                 <span>10410 S Main St, Houston, TX 77025</span>
               </li>
-              <li className="flex items-center gap-2 text-sm">
-                <Phone className="w-4 h-4 shrink-0" />
-                <a href="tel:8322198320" className="hover:text-white transition-colors">
-                  (832) 219-8320
+              <li>
+                <a href="tel:8322198320" className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors group">
+                  <Phone className="w-4 h-4 shrink-0" />
+                  <span className="group-hover:underline">(832) 219-8320</span>
                 </a>
               </li>
               <li className="flex items-center gap-2 text-sm">

@@ -392,15 +392,15 @@ export function UserNavbar() {
                 Book Online
               </Button>
 
-              <div className="flex items-center space-x-3 text-muted-foreground">
-                <Phone className="w-4 h-4 text-blue-900" />
+              <a href="tel:8322198320" className="flex items-center space-x-3 text-muted-foreground group">
+                <Phone className="w-4 h-4 text-blue-900 group-hover:text-blue-800 transition-colors" />
                 <p>
                   or call{" "}
-                  <a href="tel:8322198320" className="hover:text-blue-900 hover:underline transition-colors">
+                  <span className="text-muted-foreground group-hover:text-blue-900 group-hover:underline transition-colors">
                     (832) 219-8320
-                  </a>
+                  </span>
                 </p>
-              </div>
+              </a>
             </div>
           </SheetContent>
         </Sheet>

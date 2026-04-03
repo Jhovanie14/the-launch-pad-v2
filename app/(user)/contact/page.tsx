@@ -71,15 +71,12 @@ export default function Contact() {
                   info@thelaunchpadwash.com
                 </a>
               </div>
-              <div className="flex items-center space-x-4">
-                <Phone className="w-6 h-6 text-muted-foreground" />
-                <a
-                  href="tel:+1-832-219-8320"
-                  className="text-muted-foreground hover:text-blue-900 font-medium"
-                >
+              <a href="tel:+1-832-219-8320" className="flex items-center space-x-4 text-muted-foreground hover:text-blue-900 group">
+                <Phone className="w-6 h-6" />
+                <span className="font-medium group-hover:underline transition-colors hover:text-blue-900" >
                   832-219-8320
-                </a>
-              </div>
+                </span>
+              </a>
               <div className="flex items-center space-x-4">
                 <MapPin className="w-6 h-6 text-muted-foreground" />
                 <span className="text-foreground font-medium">
