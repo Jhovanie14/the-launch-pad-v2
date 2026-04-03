@@ -123,7 +123,11 @@ const products = [
   },
 ];
 
+import { notFound } from "next/navigation";
+
 function Products() {
+  notFound();
+
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
