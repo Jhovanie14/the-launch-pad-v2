@@ -394,7 +394,12 @@ export function UserNavbar() {
 
               <div className="flex items-center space-x-3 text-muted-foreground">
                 <Phone className="w-4 h-4 text-blue-900" />
-                <p>or call (832) 219-8320</p>
+                <p>
+                  or call{" "}
+                  <a href="tel:8322198320" className="hover:text-blue-900 hover:underline transition-colors">
+                    (832) 219-8320
+                  </a>
+                </p>
               </div>
             </div>
           </SheetContent>

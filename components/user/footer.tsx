@@ -199,7 +199,9 @@ export function Footer() {
               </li>
               <li className="flex items-center gap-2 text-sm">
                 <Phone className="w-4 h-4 shrink-0" />
-                <span>(832) 219-8320</span>
+                <a href="tel:8322198320" className="hover:text-white transition-colors">
+                  (832) 219-8320
+                </a>
               </li>
               <li className="flex items-center gap-2 text-sm">
                 <Mail className="w-4 h-4 shrink-0" />
@@ -246,7 +248,7 @@ export function Footer() {
             </div>
           </div>
           <p className="text-center text-sm text-gray-400 mt-4">
-            © 2025 The Launch Pad. All rights reserved.
+            © 2026 The Launch Pad. All rights reserved.
           </p>
         </div>
       </div>
