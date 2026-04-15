@@ -201,20 +201,34 @@ export function Footer() {
               <li>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <a href="tel:8322198320" className="inline-flex items-center gap-2 text-sm md:text-base text-blue-400 hover:text-blue-300 font-semibold underline underline-offset-4 transition-colors active:scale-95">
+                    <a
+                      href="tel:8322198320"
+                      className="inline-flex items-center gap-2 text-sm md:text-base text-blue-400 hover:text-blue-300"
+                    >
                       <Phone className="w-4 h-4 md:w-5 md:h-5 shrink-0" />
                       <span>Tap to Call: (832) 219-8320</span>
                     </a>
-
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>Click to call directly</p>
                   </TooltipContent>
                 </Tooltip>
               </li>
-              <li className="flex items-center gap-2 text-sm">
-                <Mail className="w-4 h-4 shrink-0" />
-                <span>info@thelaunchpadwash.com</span>
+              <li className="">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <a
+                      href="mailto:info@thelaunchpadwash.com"
+                      className="inline-flex items-center gap-2 text-sm md:text-base cursor-pointer text-blue-400"
+                    >
+                      <Mail className="w-4 h-4 shrink-0" />
+                      <span>info@thelaunchpadwash.com</span>
+                    </a>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Send us an email</p>
+                  </TooltipContent>
+                </Tooltip>
               </li>
             </ul>
             <div className="mt-6 pt-4 border-t border-gray-600">
