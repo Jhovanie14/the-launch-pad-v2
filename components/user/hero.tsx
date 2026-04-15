@@ -1,6 +1,5 @@
 "use client";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
@@ -9,239 +8,224 @@ import {
   Sparkles,
   Calendar,
   Check,
+  MapPin,
+  Clock,
 } from "lucide-react";
+import { useBooking } from "@/context/bookingContext";
 
-const customerTypes = [
+const cards = [
   {
     icon: Droplets,
-    label: "DIY Self-Service Bays",
-    whoFor: "For hands-on car owners who prefer to wash their own vehicle",
-    whatTheyGet: [
-      "24/7 access to premium bays",
+    eyebrow: "DIY",
+    label: "Self-Service Bays",
+    desc: "Premium bays open around the clock — bring your own touch.",
+    perks: [
+      "24/7 open access",
       "High-pressure wash system",
       "Spot-free rinse & foam brush",
-      "Vacuum stations available",
+      "Vacuum stations",
     ],
-    price: "Average customer spend $10",
-    cta: "See Self-Service Options",
-    ctaLink: "/self-service",
-    variant: "outline" as const,
-    gradient: "from-blue-500/20 to-cyan-500/20",
-    borderColor: "border-blue-500/30 hover:border-blue-400/50",
+    price: "~$10",
+    priceSub: "avg. spend",
+    cta: "View Bays",
+    href: "/self-service",
+    accent: "from-sky-400 to-cyan-500",
+    glow: "shadow-sky-500/30",
+    ring: "ring-sky-400/40",
   },
   {
     icon: Sparkles,
-    label: "Full Service Express Detail",
-    whoFor: "For busy professionals who want expert results without the wait",
-    whatTheyGet: [
-      "Professional hand wash & wax",
+    eyebrow: "Most Popular",
+    label: "Express Detail",
+    desc: "Expert hands, show-room results — done in under an hour.",
+    perks: [
+      "Hand wash, wax & tire shine",
       "Interior vacuum & detail",
-      "Tire shine & windows",
-      "15-45 minute service",
+      "Window clean & dashboard",
+      "15 – 45 min turnaround",
     ],
-    price: "$25",
-    cta: "Book Express Detail",
-    ctaLink: "/services",
-    variant: "default" as const,
-    gradient: "from-amber-500/20 to-orange-500/20",
-    borderColor: "border-amber-500/50 hover:border-amber-400/70",
+    price: "from $25",
+    priceSub: "per visit",
+    cta: "Book Now",
+    href: "/services",
+    accent: "from-amber-400 to-orange-500",
+    glow: "shadow-amber-500/40",
+    ring: "ring-amber-400/50",
     featured: true,
   },
   {
     icon: Calendar,
-    label: "Monthly Memberships",
-    whoFor: "For regular customers who want unlimited washes and premium perks",
-    whatTheyGet: [
+    eyebrow: "Best Value",
+    label: "Memberships",
+    desc: "Unlimited washes, priority booking and exclusive member perks.",
+    perks: [
       "Unlimited express washes",
       "Priority scheduling",
       "15% off all detailing",
-      "Exclusive member benefits",
+      "Cancel anytime",
     ],
-    price: "Quick $39.99/mo",
-    cta: "Learn More",
-    ctaLink: "/pricing",
-    variant: "outline" as const,
-    gradient: "from-purple-500/20 to-pink-500/20",
-    borderColor: "border-purple-500/30 hover:border-purple-400/50",
+    price: "$39.99",
+    priceSub: "per month",
+    cta: "See Plans",
+    href: "/pricing",
+    accent: "from-violet-400 to-purple-500",
+    glow: "shadow-violet-500/30",
+    ring: "ring-violet-400/40",
   },
 ];
 
 export function Hero() {
+  const { openBookingModal } = useBooking();
+
   return (
     <section
-      className="min-h-screen relative overflow-hidden rounded-xl"
-      style={{
-        backgroundImage: "url(/self-service.png)",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
-      aria-label="Self-service car wash bays at The Launch Pad Houston"
+      className="relative min-h-screen overflow-hidden rounded-2xl"
+      aria-label="The Launch Pad — Houston car wash and detailing"
     >
-      <div className="absolute inset-0 opacity-30">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-slate-700/10 rounded-full blur-3xl"></div>
+      {/* Background */}
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: "url(/self-service.png)" }}
+      />
+      {/* Dark overlay — stronger at top, lighter at bottom */}
+      <div className="absolute inset-0 bg-gradient-to-b from-slate-950/85 via-slate-900/70 to-slate-950/80" />
+
+      {/* Ambient colour orbs */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-32 left-1/4 h-[500px] w-[500px] rounded-full bg-amber-500/10 blur-[120px]" />
+        <div className="absolute bottom-0 right-1/4 h-[400px] w-[400px] rounded-full bg-sky-500/10 blur-[100px]" />
       </div>
 
-      <div className="relative z-10">
-        <div className="container mx-auto px-4 py-20">
-          <div className="max-w-6xl mx-auto">
-            {/* Header Badge */}
-            <div className="flex justify-center mb-6">
-              <Badge
-                variant="outline"
-                className="px-4 py-2 bg-blue-400 border-white text-blue-100"
-              >
-                <span className="text-sm font-medium text-[#ffffff]">
-                  🚀 Houston's Premier Car Care
-                </span>
-              </Badge>
-            </div>
+      <div className="relative z-10 container mx-auto max-w-6xl px-4 py-24 md:py-32">
 
-            {/* Main Heading */}
-            <div className="text-center mb-8 space-y-6">
-              <h1 className="text-3xl md:text-6xl font-extrabold text-white leading-tight tracking-tight">
-                <span className="bg-linear-to-r from-white via-amber-100 to-amber-200 bg-clip-text text-transparent">
-                  24/7 Self-Service Car Wash + Professional Detailing in Houston
-                </span>
-              </h1>
+        {/* ── Eyebrow pill ── */}
+        <div className="flex justify-center mb-8">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-amber-300 backdrop-blur-sm">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+            Houston's Premier Car Care
+          </span>
+        </div>
 
-              <p className="text-lg md:text-2xl text-white font-semibold max-w-2xl mx-auto leading-relaxed">
-                Wash it yourself in our premium bays or let our team handle a
-                full express detail — all at 10410 S Main St.
-              </p>
-            </div>
+        {/* ── Headline ── */}
+        <div className="text-center space-y-5 mb-8">
+          <h1 className="text-4xl sm:text-5xl md:text-7xl font-black text-white leading-[1.05] tracking-tight">
+            Your Car Deserves{" "}
+            <span className="bg-gradient-to-r from-amber-300 via-orange-400 to-amber-300 bg-clip-text text-transparent">
+              Better.
+            </span>
+          </h1>
 
-            {/* Customer Type Selector - NEW */}
-            <div className="mb-16 mt-12">
-              <h2 className="text-3xl font-bold text-center text-white mb-8">
-                Which Service Is Right for You?
-              </h2>
+          <p className="text-base md:text-xl text-white/70 max-w-xl mx-auto leading-relaxed">
+            24/7 self-service bays or a full professional detail — we have
+            everything your car needs at{" "}
+            <span className="text-white font-medium">10410 S Main St, Houston.</span>
+          </p>
+        </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {customerTypes.map((type, idx) => {
-                  const Icon = type.icon;
-                  return (
-                    <div
-                      key={idx}
-                      className={`relative group p-6 rounded-xl bg-linear-to-br ${type.gradient} backdrop-blur-sm border-2 ${type.borderColor} transition-all duration-300 hover:scale-[1.02] ${
-                        type.featured
-                          ? "md:scale-105 shadow-2xl shadow-amber-500/20"
-                          : ""
-                      }`}
-                    >
-                      {type.featured && (
-                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
-                          <Badge className="bg-amber-500 text-slate-900 font-bold px-4 py-1">
-                            Most Popular
-                          </Badge>
-                        </div>
-                      )}
+        {/* ── Primary CTAs ── */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6">
+          <Button
+            size="lg"
+            onClick={openBookingModal}
+            className="h-12 px-8 bg-amber-400 hover:bg-amber-300 text-slate-900 font-bold text-base shadow-lg shadow-amber-500/30 transition-all hover:scale-[1.03]"
+          >
+            Book Online
+            <ArrowRight className="ml-2 w-4 h-4" />
+          </Button>
+          <Link href="/self-service">
+            <Button
+              size="lg"
+              variant="outline"
+              className="h-12 px-8 border-white/20 bg-white/5 text-white hover:bg-white/10 font-semibold text-base backdrop-blur-sm"
+            >
+              Self-Service Bays
+            </Button>
+          </Link>
+        </div>
 
-                      {/* Icon & Label */}
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="p-3 rounded-lg bg-white/10 backdrop-blur-sm">
-                          <Icon className="w-6 h-6 text-white" />
-                        </div>
-                        <h3 className="text-xl font-bold text-white">
-                          {type.label}
-                        </h3>
-                      </div>
+        {/* ── Quick trust badges ── */}
+        <div className="flex flex-wrap items-center justify-center gap-4 mb-20 text-white/50 text-xs">
+          <span className="flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5" /> Open 24 / 7
+          </span>
+          <span className="w-px h-3 bg-white/20" />
+          <span className="flex items-center gap-1.5">
+            <MapPin className="w-3.5 h-3.5" /> 10410 S Main St
+          </span>
+          <span className="w-px h-3 bg-white/20" />
+          <span className="flex items-center gap-1.5">
+            {[...Array(5)].map((_, i) => (
+              <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
+            ))}
+            <span className="ml-0.5">4.4 · 31+ reviews</span>
+          </span>
+        </div>
 
-                      {/* Who It's For */}
-                      <p className="text-sm text-white/90 mb-4 leading-relaxed">
-                        {type.whoFor}
-                      </p>
+        {/* ── Service cards ── */}
+        <div className="mb-10">
+          <p className="text-center text-xs font-semibold uppercase tracking-widest text-white/40 mb-8">
+            Choose your experience
+          </p>
 
-                      {/* What They Get */}
-                      <div className="space-y-2 mb-6">
-                        {type.whatTheyGet.map((item, i) => (
-                          <div key={i} className="flex items-start gap-2">
-                            <Check className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
-                            <span className="text-sm text-white/80">
-                              {item}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Price */}
-                      <div className="mb-4 pt-4 border-t border-white/20">
-                        <p className="text-2xl font-bold text-white">
-                          {type.price}
-                        </p>
-                      </div>
-
-                      {/* CTA Button */}
-                      <Link href={type.ctaLink} className="block">
-                        <Button
-                          variant={type.variant}
-                          className={`w-full ${
-                            type.variant === "default"
-                              ? "bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold"
-                              : "bg-white/10 hover:bg-white/20 text-white border-white/30"
-                          }`}
-                        >
-                          {type.cta}
-                          <ArrowRight className="w-4 h-4 ml-2" />
-                        </Button>
-                      </Link>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {cards.map((card) => {
+              const Icon = card.icon;
+              return (
+                <Link
+                  key={card.label}
+                  href={card.href}
+                  className={`group relative flex flex-col rounded-2xl border bg-white/5 backdrop-blur-md p-6 ring-1 ${card.ring} border-white/10 transition-all duration-300 hover:bg-white/10 hover:-translate-y-1 hover:shadow-xl ${card.glow} ${
+                    card.featured ? "md:-translate-y-2 shadow-2xl " + card.glow : ""
+                  }`}
+                >
+                  {/* Featured ribbon */}
+                  {card.featured && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                      <span className={`inline-flex items-center gap-1 rounded-full bg-gradient-to-r ${card.accent} px-3 py-0.5 text-[11px] font-bold text-slate-900 shadow`}>
+                        ★ {card.eyebrow}
+                      </span>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
+                  )}
 
-            {/* Features Grid */}
-            {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
-              {features.map((feature, idx) => {
-                const Icon = feature.icon;
-                return (
-                  <div
-                    key={idx}
-                    className="group p-6 rounded-xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-700/50 hover:border-amber-500/30 transition-all duration-300 hover:bg-slate-800/70"
-                  >
-                    <div className="mb-4 inline-flex p-3 rounded-lg bg-amber-500/10 group-hover:bg-amber-500/20 transition-colors">
-                      <Icon className="w-6 h-6 text-amber-400" />
-                    </div>
-                    <h3 className="text-xl font-semibold text-white mb-2">
-                      {feature.title}
-                    </h3>
-                    <p className="text-white text-sm">{feature.description}</p>
+                  {/* Icon */}
+                  <div className={`mb-4 inline-flex w-fit rounded-xl bg-gradient-to-br ${card.accent} p-3 shadow-lg`}>
+                    <Icon className="w-5 h-5 text-white" />
                   </div>
-                );
-              })}
-            </div> */}
 
-            {/* Social Proof */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-8 border-t border-slate-700/50">
-              <div className="flex items-center gap-3">
-                <div className="flex -space-x-2">
-                  {[...Array(3)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="w-8 h-8 rounded-full bg-linear-to-br from-amber-400 to-amber-600 border-2 border-slate-900"
-                    />
-                  ))}
-                </div>
-                <span className="text-sm text-slate-300">
-                  <span className="font-semibold text-white">31+</span>{" "}
-                  satisfied customers
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-amber-400">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-4 h-4 fill-current" />
-                ))}
+                  {/* Eyebrow (non-featured) */}
+                  {!card.featured && (
+                    <span className="mb-1 text-[11px] font-bold uppercase tracking-widest text-white/40">
+                      {card.eyebrow}
+                    </span>
+                  )}
 
-                <span className="text-sm text-slate-300 ml-2">4.4 rating</span>
-              </div>
-              <Link
-                href="/reviews"
-                className="underline font-medium text-amber-400"
-              >
-                See our reviews
-              </Link>
-            </div>
+                  <h3 className="text-xl font-bold text-white mb-2">{card.label}</h3>
+                  <p className="text-sm text-white/60 leading-relaxed mb-5">{card.desc}</p>
+
+                  {/* Perks */}
+                  <ul className="space-y-1.5 mb-6 flex-1">
+                    {card.perks.map((p) => (
+                      <li key={p} className="flex items-start gap-2">
+                        <Check className="w-3.5 h-3.5 text-emerald-400 mt-0.5 shrink-0" />
+                        <span className="text-sm text-white/70">{p}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* Price */}
+                  <div className="border-t border-white/10 pt-4 mb-4">
+                    <span className="text-2xl font-black text-white">{card.price}</span>
+                    <span className="ml-1.5 text-xs text-white/40">{card.priceSub}</span>
+                  </div>
+
+                  {/* CTA row */}
+                  <div className={`inline-flex items-center gap-1.5 text-sm font-semibold bg-gradient-to-r ${card.accent} bg-clip-text text-transparent group-hover:gap-2.5 transition-all`}>
+                    {card.cta}
+                    <ArrowRight className={`w-4 h-4 bg-gradient-to-r ${card.accent} rounded-full text-white p-0.5`} />
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </div>
