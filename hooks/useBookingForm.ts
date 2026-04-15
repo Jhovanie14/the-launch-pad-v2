@@ -79,7 +79,7 @@ export function useBookingForm(onSuccess: () => void, subscriber?: any) {
   // -----------------------------
   // 🔹 Filter Services by Body Type
   // -----------------------------
-  const bodyType = (vehicleInfo as any).body_type;
+  const bodyType = vehicleInfo.body_type;
 
   // Categories that are NOT dependent on vehicle body_type
   const UNIVERSAL_CATEGORIES = ["quick service", "express detail"];
@@ -160,6 +160,7 @@ export function useBookingForm(onSuccess: () => void, subscriber?: any) {
           {
             ...form,
             ...vehicleInfo,
+            year: vehicleInfo.year ? Number(vehicleInfo.year) : undefined,
             // license_plate is now optional - can be empty string or undefined
             addOnsId: selectedAddOns,
             appointmentDate: new Date(form.appointmentDate),

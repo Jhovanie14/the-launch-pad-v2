@@ -5,23 +5,23 @@ import { z } from "zod";
 
 // Vehicle schema
 export const vehicleSchema = z.object({
-  // make: z.string().min(1, "Make is required"),
-  // model: z.string().min(1, "Model is required"),
-  // year: z.string().regex(/^\d{4}$/, "Year must be a 4-digit number"),
-  // body_type: z.string().optional(),
-  // color: z.string().min(1, "Color is required"),
-  license_plate: z.optional(z.string()), // License plate is completely optional
+  make: z.string().optional(),
+  model: z.string().optional(),
+  year: z.string().optional(),
+  body_type: z.string().optional(),
+  color: z.string().optional(),
+  license_plate: z.string().optional(),
 });
 
 export type VehicleFormData = z.infer<typeof vehicleSchema>;
 
 export function useVehicleForm(initialValues?: Partial<VehicleFormData>) {
   const [vehicleInfo, setVehicleInfo] = useState<VehicleFormData>({
-    // year: initialValues?.year ?? "",
-    // make: initialValues?.make ?? "",
-    // model: initialValues?.model ?? "",
-    // body_type: initialValues?.body_type ?? "",
-    // color: initialValues?.color ?? "",
+    year: initialValues?.year ?? "",
+    make: initialValues?.make ?? "",
+    model: initialValues?.model ?? "",
+    body_type: initialValues?.body_type ?? "",
+    color: initialValues?.color ?? "",
     license_plate: initialValues?.license_plate ?? "",
   });
 
@@ -33,7 +33,7 @@ export function useVehicleForm(initialValues?: Partial<VehicleFormData>) {
     if (!validation.success) {
       const fieldErrors: Record<string, string> = {};
       for (const [field, messages] of Object.entries(
-        validation.error.flatten().fieldErrors,
+        validation.error.flatten((i) => i.message).fieldErrors,
       )) {
         if (messages) fieldErrors[field] = messages[0];
       }
@@ -58,15 +58,7 @@ export function useVehicleFlock(initialVehicles?: VehicleFormData[]) {
   const [vehicles, setVehicles] = useState<VehicleFormData[]>(
     initialVehicles && initialVehicles.length > 0
       ? initialVehicles
-      : [
-          {
-            // year: "",
-            // make: "",
-            // model: "",
-            // color: "",
-            license_plate: "",
-          },
-        ],
+      : [{ year: "", make: "", model: "", body_type: "", color: "", license_plate: "" }],
   );
 
   const [errors, setErrors] = useState<Record<number, Record<string, string>>>(
@@ -79,14 +71,7 @@ export function useVehicleFlock(initialVehicles?: VehicleFormData[]) {
     if (vehicles.length < MAX_VEHICLES) {
       setVehicles([
         ...vehicles,
-        {
-          // year: "",
-          // make: "",
-          // model: "",
-          // body_type: "",
-          // color: "",
-          license_plate: "",
-        },
+        { year: "", make: "", model: "", body_type: "", color: "", license_plate: "" },
       ]);
     }
   };
@@ -134,7 +119,7 @@ export function useVehicleFlock(initialVehicles?: VehicleFormData[]) {
         isValid = false;
         const fieldErrors: Record<string, string> = {};
         for (const [field, messages] of Object.entries(
-          validation.error.flatten().fieldErrors,
+          validation.error.flatten((i) => i.message).fieldErrors,
         )) {
           if (messages) fieldErrors[field] = messages[0];
         }

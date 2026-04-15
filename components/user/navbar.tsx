@@ -14,12 +14,12 @@ import {
 } from "../ui/navigation-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
+  Sheet,  
   SheetHeader,
+  SheetDescription,
   SheetTitle,
   SheetTrigger,
+  SheetContent,
 } from "@/components/ui/sheet";
 import {
   BellPlus,
@@ -206,7 +206,7 @@ export function UserNavbar() {
               </Link>
             </div>
           </div>
-          <div className="hidden lg:flex flex-shrink-0 items-center gap-1">
+          <div className="hidden xl:flex lg:shrink-0 items-center gap-1">
             <Button
               size="sm"
               onClick={openBookingModal}
@@ -228,7 +228,7 @@ export function UserNavbar() {
             </Link>
             {/* <ThemeToggle /> */}
           </div>
-          <div className="-mr-2 flex items-center lg:hidden gap-1">
+          <div className="-mr-2 flex items-center xl:hidden gap-1">
             {/* <Button
               size="lg"
               onClick={openBookingModal}
@@ -403,7 +403,8 @@ export function UserNavbar() {
                   <p>Click here to call immediately!</p>
                 </TooltipContent>
               </Tooltip>
-            </div>
+             
+          </div>
           </SheetContent>
         </Sheet>
       )}

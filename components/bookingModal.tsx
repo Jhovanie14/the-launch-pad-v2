@@ -121,9 +121,10 @@ export default function BookingModal() {
       });
     } else {
       // Build URL with vehicle specs
-      params = new URLSearchParams({
-        ...vehicleInfo,
-      });
+      const entries = Object.entries(vehicleInfo).filter(
+        (e): e is [string, string] => e[1] !== undefined && e[1] !== "",
+      );
+      params = new URLSearchParams(entries);
     }
     // console.log("Redirecting with:", params.toString());
     closeBookingModal();

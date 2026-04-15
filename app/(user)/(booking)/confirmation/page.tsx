@@ -26,6 +26,7 @@ import { Suspense, useEffect, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import LoadingDots from "@/components/loading";
+import SubscriptionUpsellDialog from "@/components/subscription-upsell-dialog";
 
 const validateGuestInfo = (info: {
   name: string;
@@ -54,6 +55,8 @@ function ConfirmationContent() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showGuestModal, setShowGuestModal] = useState(false);
+  const [showUpsell, setShowUpsell] = useState(false);
+  const [upsellDismissed, setUpsellDismissed] = useState(false);
 
   const [guestInfo, setGuestInfo] = useState({
     name: "",
@@ -181,11 +184,32 @@ function ConfirmationContent() {
   };
 
   const handleConfirmBooking = async () => {
+    // Show upsell for non-subscribers who haven't dismissed it yet
+    if (!isSubscribed && !upsellDismissed) {
+      setShowUpsell(true);
+      return;
+    }
     if (!user) {
       setShowGuestModal(true);
       return;
     }
     await proceedToCheckout();
+  };
+
+  const handleUpsellDismiss = () => {
+    setShowUpsell(false);
+    setUpsellDismissed(true);
+    // Re-trigger the normal booking flow
+    if (!user) {
+      setShowGuestModal(true);
+    } else {
+      proceedToCheckout();
+    }
+  };
+
+  const handleUpsellSubscribe = (planId: string) => {
+    setShowUpsell(false);
+    window.location.href = `/pricing/cart?plan=${encodeURIComponent(planId)}&billing=monthly`;
   };
 
   const proceedToCheckout = async (guestBooking?: boolean) => {
@@ -374,7 +398,7 @@ function ConfirmationContent() {
           {HOLIDAY_SALE_ACTIVE && (
             <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg p-3">
               <div className="bg-linear-to-r from-red-500 to-red-600 text-white px-3 py-1 text-xs font-bold rounded-full">
-                🎄 HOLIDAY SALE
+                SALE
               </div>
               <p className="text-sm text-red-700 font-semibold">
                 5% OFF Applied! Save $
@@ -429,6 +453,13 @@ function ConfirmationContent() {
           </Card>
         </div>
       </div>
+
+      <SubscriptionUpsellDialog
+        open={showUpsell}
+        bookingTotal={calculateTotal()}
+        onDismiss={handleUpsellDismiss}
+        onSubscribe={handleUpsellSubscribe}
+      />
 
       <AlertDialog open={showGuestModal} onOpenChange={setShowGuestModal}>
         <AlertDialogContent>

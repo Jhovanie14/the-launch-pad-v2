@@ -222,7 +222,7 @@ export function Footer() {
                 $10 Handwash Special
               </p> */}
               <p className="text-xs text-gray-400">
-                “Our team members are available 7 days a week from 9:00 AM to
+                “Our team members are available 7 days a week from 10:00 AM to
                 6:30 PM.”
               </p>
               {/* <p className="text-xs text-gray-400">Sedans, Suvs, Trucks</p> */}

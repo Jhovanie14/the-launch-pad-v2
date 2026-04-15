@@ -300,6 +300,16 @@ function ServiceSelectionPage() {
     fetchAddOns();
   }, [fetchPackages, fetchAddOns]);
 
+  // Set active tab based on pre-selected service from URL param
+  useEffect(() => {
+    if (!selectedServiceParam || !services.length) return;
+    const service = services.find((s) => s.id === selectedServiceParam);
+    if (!service) return;
+    const cat = service.category?.toLowerCase();
+    if (cat === "express detail") setActiveTab("express");
+    else if (cat === "quick service") setActiveTab("quick");
+  }, [services, selectedServiceParam]);
+
   const totalPrice = calculateTotal();
 
   if (loading) {

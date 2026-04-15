@@ -184,7 +184,7 @@ export default function WalkInBookingModal({
         const firstVehicle = vehicleList[0];
         setSelectedVehicleId(String(firstVehicle.subscription_vehicle_id));
         setVehicleInfo({
-          year: firstVehicle.year,
+          year: String(firstVehicle.year ?? ""),
           make: firstVehicle.make,
           model: firstVehicle.model,
           body_type: firstVehicle.body_type,

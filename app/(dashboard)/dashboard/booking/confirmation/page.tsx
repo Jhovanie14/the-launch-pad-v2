@@ -59,6 +59,9 @@ function ConfirmationContent() {
 
   const [promoCode, setPromoCode] = useState("");
   const [discountPercent, setDiscountPercent] = useState(0);
+  const [appliedDiscountType, setAppliedDiscountType] = useState<"percent" | "flat">("percent");
+  const [appliedDiscountAmount, setAppliedDiscountAmount] = useState(0);
+  const [appliedPromoId, setAppliedPromoId] = useState<number | null>(null);
   const [subscription, setSubscription] = useState<any>(null);
 
   // ============================================
@@ -174,13 +177,12 @@ function ConfirmationContent() {
   async function validatePromoCode() {
     if (!promoCode) return;
 
+    // Fetch the promo code
     const { data, error } = await supabase
       .from("promo_codes")
-      .select("discount_percent, is_active, applies_to")
+      .select("id, discount_type, discount_percent, discount_amount, is_active, applies_to, max_uses, used_count, restricted_to_service")
       .ilike("code", promoCode.trim())
       .maybeSingle();
-
-    // console.log("Promo code data:", data, error);
 
     if (error || !data) {
       toast.error("Invalid promo code");
@@ -190,22 +192,55 @@ function ConfirmationContent() {
       toast.error("This promo code is not active");
       return;
     }
-
     if (data.applies_to !== "one_time" && data.applies_to !== "both") {
       toast.error("This promo code cannot be used for one-time bookings");
       return;
     }
 
-    setDiscountPercent(data.discount_percent);
-    toast.success(`Promo applied! ${data.discount_percent}% off your total`);
-  }
+    // Service restriction check — non-subscribers only
+    if (data.restricted_to_service) {
+      const serviceName = (selectedPackages?.name ?? "").toLowerCase();
+      const serviceCategory = (selectedPackages?.category ?? "").toLowerCase();
+      const restriction = data.restricted_to_service.toLowerCase();
 
-  useEffect(() => {
-    (async () => {
-      const { data, error } = await supabase.from("promo_codes").select("*");
-      console.log("🔍 All promo codes:", data, error);
-    })();
-  }, [supabase]);
+      if (!serviceName.includes(restriction) && !serviceCategory.includes(restriction)) {
+        toast.error(`This promo code is only valid for "${data.restricted_to_service}" bookings`);
+        return;
+      }
+      if (isSubscribed) {
+        toast.error("This promo code is only available for non-subscribers");
+        return;
+      }
+    }
+
+    // Per-user redemption check
+    if (user?.id) {
+      const { data: existing } = await supabase
+        .from("promo_code_redemptions")
+        .select("id")
+        .eq("promo_code_id", data.id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (existing) {
+        toast.error("You have already used this promo code");
+        return;
+      }
+    }
+
+    const dtype = (data.discount_type ?? "percent") as "percent" | "flat";
+    setAppliedPromoId(data.id);
+    setAppliedDiscountType(dtype);
+    if (dtype === "flat") {
+      setAppliedDiscountAmount(Number(data.discount_amount));
+      setDiscountPercent(0);
+      toast.success(`Promo applied! $${Number(data.discount_amount).toFixed(2)} off your total`);
+    } else {
+      setDiscountPercent(data.discount_percent);
+      setAppliedDiscountAmount(0);
+      toast.success(`Promo applied! ${data.discount_percent}% off your total`);
+    }
+  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -303,10 +338,13 @@ function ConfirmationContent() {
 
   const calculateTotalWithPromo = () => {
     const total = calculateTotal();
-    // Apply promo code discount on top of holiday sale (if any)
-    return discountPercent > 0
-      ? total - (total * discountPercent) / 100
-      : total;
+    if (appliedDiscountType === "flat" && appliedDiscountAmount > 0) {
+      return Math.max(0, total - appliedDiscountAmount);
+    }
+    if (discountPercent > 0) {
+      return total - (total * discountPercent) / 100;
+    }
+    return total;
   };
 
   const formatTime = (time: string) => {
@@ -352,6 +390,15 @@ function ConfirmationContent() {
     setShowPaymentModal(true);
   };
 
+  async function recordPromoRedemption(guestEmail?: string) {
+    if (!appliedPromoId) return;
+    await supabase.from("promo_code_redemptions").insert({
+      promo_code_id: appliedPromoId,
+      user_id: user?.id ?? null,
+      customer_email: guestEmail ?? user?.email ?? null,
+    });
+  }
+
   const confirmPaymentChoice = async () => {
     try {
       setIsSubmitting(true);
@@ -384,10 +431,12 @@ function ConfirmationContent() {
           totalDuration: calculateDuration(),
           payment_method: "cash",
         });
+        await recordPromoRedemption();
         window.location.href = `/dashboard/bookings/success?booking_id=${booking.id}`;
         return;
       } else {
         // Card payment (via Stripe)
+        await recordPromoRedemption();
         const payload = {
           vehicleSpecs: {
             license_plate: vehicleSpecs.license_plate ?? "",
@@ -581,7 +630,7 @@ function ConfirmationContent() {
                       )}
                       <span className="font-medium">
                         $
-                        {discountPercent > 0
+                        {discountPercent > 0 || appliedDiscountAmount > 0
                           ? calculateTotalWithPromo().toFixed(2)
                           : calculateTotal().toFixed(2)}
                       </span>
@@ -605,7 +654,7 @@ function ConfirmationContent() {
             {HOLIDAY_SALE_ACTIVE && (
               <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg p-3">
                 <div className="bg-linear-to-r from-red-500 to-red-600 text-white px-3 py-1 text-xs font-bold rounded-full">
-                  🎄 HOLIDAY SALE
+                  SALE
                 </div>
                 <p className="text-sm text-red-700 font-semibold">
                   5% OFF Applied! Save $
@@ -654,10 +703,13 @@ function ConfirmationContent() {
               }
               return null;
             })()}
-            {discountPercent > 0 && (
+            {(discountPercent > 0 || appliedDiscountAmount > 0) && (
               <p className="text-green-600 text-sm mt-2">
-                Promo applied: {discountPercent}% off — New Total: $
-                {calculateTotalWithPromo().toFixed(2)}
+                Promo applied:{" "}
+                {appliedDiscountType === "flat"
+                  ? `$${appliedDiscountAmount.toFixed(2)} off`
+                  : `${discountPercent}% off`}{" "}
+                — New Total: ${calculateTotalWithPromo().toFixed(2)}
               </p>
             )}
             {isFreeForSubscriber && (

@@ -113,7 +113,7 @@ export default function Home() {
     (typeof services)[0] | null
   >(null);
   return (
-    <main className="flex-1 container mx-auto py-8 px-3">
+    <main className="flex-1 container mx-auto px-3">
       <Hero />
       <div className="max-w-7xl mx-auto">
         {/* Hero Section */}
