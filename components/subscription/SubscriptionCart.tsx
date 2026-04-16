@@ -258,11 +258,9 @@ export default function SubscriptionCart({
         license_plate: vehicle.license_plate,
       }));
 
-      // Promo coupon only applies when there is only the primary vehicle
-      const couponId =
-        PROMO_CONFIG.enabled && vehicleCount === 1
-          ? PROMO_CONFIG.stripeCouponId_Subscription
-          : undefined;
+      const couponId = PROMO_CONFIG.enabled
+        ? PROMO_CONFIG.stripeCouponId_Subscription
+        : undefined;
 
       const res = await fetch("/api/create-checkout-session", {
         method: "POST",
@@ -521,10 +519,9 @@ export default function SubscriptionCart({
               </div>
             </div>
 
-            {/* Promo Code Applied Banner — primary vehicle only */}
+            {/* Promo Code Applied Banner */}
             {PROMO_CONFIG.enabled &&
-              promoDiscountPercent > 0 &&
-              vehicleCount === 1 && (
+              promoDiscountPercent > 0 && (
                 <div className="bg-linear-to-r from-red-50 to-orange-50 border-2 border-red-300 rounded-lg p-4 mb-4">
                   <div className="flex items-start gap-3">
                     <div className="bg-red-600 rounded-full p-2 shrink-0">
@@ -587,9 +584,7 @@ export default function SubscriptionCart({
                       <div className="text-right">
                         {/* Show strikethrough only when there's a real discount to display */}
                         {(pricing.isDiscounted ||
-                          (PROMO_CONFIG.enabled &&
-                            vehicleCount === 1 &&
-                            pricing.promoSavings > 0)) && (
+                          (PROMO_CONFIG.enabled && pricing.promoSavings > 0)) && (
                           <p className="text-xs text-muted-foreground line-through">
                             ${pricing.fullBasePrice.toFixed(2)}
                           </p>
@@ -598,7 +593,7 @@ export default function SubscriptionCart({
                           className={`font-semibold ${
                             pricing.isDiscounted
                               ? "text-green-700"
-                              : PROMO_CONFIG.enabled && vehicleCount === 1
+                              : PROMO_CONFIG.enabled && pricing.promoSavings > 0
                                 ? "text-red-600"
                                 : ""
                           }`}
@@ -615,8 +610,7 @@ export default function SubscriptionCart({
               </div>
 
               {/* Total Savings Summary */}
-              {(totalFlockSavings > 0 ||
-                (vehicleCount === 1 && totalPromoSavings > 0)) && (
+              {(totalFlockSavings > 0 || totalPromoSavings > 0) && (
                 <div className="bg-green-50 rounded-lg p-3 space-y-1">
                   <p className="text-xs font-semibold text-green-900">
                     💰 Your Estimated Savings:
@@ -626,7 +620,7 @@ export default function SubscriptionCart({
                       • Family Discount: ${totalFlockSavings.toFixed(2)}
                     </p>
                   )}
-                  {vehicleCount === 1 && totalPromoSavings > 0 && (
+                  {totalPromoSavings > 0 && (
                     <p className="text-xs text-green-700">
                       • Promo Discount: ${totalPromoSavings.toFixed(2)}
                     </p>
