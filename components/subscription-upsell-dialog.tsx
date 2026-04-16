@@ -18,7 +18,7 @@ interface SubscriptionUpsellDialogProps {
 
 const FEATURES = [
   "Unlimited express detail visits every month",
-  "Interior deep vacuum & shampoo",
+  "Interior vacuum & shampoo",
   "Premium wash, wax & tire shine",
   "Window cleaning & dashboard shine",
   "Priority scheduling — no waiting",
