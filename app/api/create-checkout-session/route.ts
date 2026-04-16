@@ -116,8 +116,25 @@ export async function POST(req: Request) {
     }
 
     if (isFirstVehicle) {
-      // Use the full price for the first vehicle
-      lineItems.push({ price: vPriceId, quantity: 1 });
+      // Apply promo discount only to the primary vehicle's price
+      if (couponId) {
+        const basePriceObj = await stripe.prices.retrieve(vPriceId);
+        const baseAmount = basePriceObj.unit_amount ?? 0;
+        // Retrieve coupon percent to calculate discounted amount
+        const coupon = await stripe.coupons.retrieve(couponId);
+        const discountFactor = coupon.percent_off ? (100 - coupon.percent_off) / 100 : 1;
+        const discountedAmount = Math.round(baseAmount * discountFactor);
+        const discountedPrice = await stripe.prices.create({
+          currency: basePriceObj.currency,
+          unit_amount: discountedAmount,
+          recurring: { interval: billingCycle === "monthly" ? "month" : "year" },
+          product: basePriceObj.product as string,
+          metadata: { plan_id: vPlanId, is_promo_discount: "true" },
+        });
+        lineItems.push({ price: discountedPrice.id, quantity: 1 });
+      } else {
+        lineItems.push({ price: vPriceId, quantity: 1 });
+      }
     } else {
       // Additional vehicles receive 35% discount
       const basePriceObj = await stripe.prices.retrieve(vPriceId);
@@ -140,29 +157,6 @@ export async function POST(req: Request) {
     }
   }
 
-  const discounts = couponId ? [{ coupon: couponId }] : undefined;
-
-  // Optional: Validate the coupon exists in Stripe before creating session
-  if (couponId) {
-    try {
-      const coupon = await stripe.coupons.retrieve(couponId);
-      if (!coupon.valid) {
-        return new Response(
-          JSON.stringify({ error: "Promo code is no longer valid" }),
-          {
-            status: 400,
-            headers: { "Content-Type": "application/json" },
-          }
-        );
-      }
-    } catch (error) {
-      console.error("Invalid coupon:", error);
-      return new Response(JSON.stringify({ error: "Invalid promo code" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-  }
 
   // console.log("Creating checkout session with metadata:", {
   //   app_user_id: user?.id ?? userId ?? "",
@@ -177,7 +171,7 @@ export async function POST(req: Request) {
     payment_method_types: ["card"],
     line_items: lineItems,
     customer_email: email,
-    discounts: discounts,
+
     // allow_promotion_codes: true,
     success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/pricing/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/pricing`,
