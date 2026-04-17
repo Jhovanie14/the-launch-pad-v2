@@ -34,6 +34,13 @@ export async function GET(request: NextRequest) {
     }
 
     console.error("[auth/confirm] exchangeCodeForSession error:", error.message, error.status);
+
+    // Already verified (double-click or scanner) — redirect if session exists
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      return NextResponse.redirect(redirectTo);
+    }
+
     redirectTo.pathname = "/error";
     redirectTo.search = "?message=Email verification failed.";
     return NextResponse.redirect(redirectTo);
@@ -47,6 +54,12 @@ export async function GET(request: NextRequest) {
     });
 
     if (!error) {
+      return NextResponse.redirect(redirectTo);
+    }
+
+    // If token is already used, check if user is already logged in and redirect them
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
       return NextResponse.redirect(redirectTo);
     }
 
