@@ -33,6 +33,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(redirectTo);
     }
 
+    console.error("[auth/confirm] exchangeCodeForSession error:", error.message, error.status);
     redirectTo.pathname = "/error";
     redirectTo.search = "?message=Email verification failed.";
     return NextResponse.redirect(redirectTo);
