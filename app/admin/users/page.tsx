@@ -7,7 +7,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { User, Mail, Car, Calendar, Crown, Pencil } from "lucide-react";
+import { User, Mail, Car, Calendar, Crown, Pencil, X, Phone, Shield } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import WalkInBookingModal from "@/components/walkin-booking-modal";
 import WalkInProgressModal from "@/components/walkin-progress-modal";
@@ -60,6 +62,24 @@ export default function AdminUsersPage() {
   const [showUpdateVehicle, setShowUpdateVehicle] = useState(false);
   const [updateVehicleSub, setUpdateVehicleSub] = useState<any>(null);
   const [updateVehicleType, setUpdateVehicleType] = useState<"express" | "selfservice">("express");
+
+  // User detail modal
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [userDetail, setUserDetail] = useState<any>(null);
+  const [userDetailLoading, setUserDetailLoading] = useState(false);
+
+  async function openUserModal(u: any) {
+    setSelectedUser(u);
+    setUserDetail(null);
+    setUserDetailLoading(true);
+    const [{ data: expressSub }, { data: selfSub }, { data: vehicles }] = await Promise.all([
+      supabase.from("user_subscription").select("*, subscription_plan:subscription_plans(name), subscription_vehicles(vehicle:vehicles(license_plate,year,make,model))").eq("user_id", u.id).eq("status", "active").maybeSingle(),
+      supabase.from("self_service_subscriptions").select("*, self_service_subscription_vehicles(vehicles(license_plate,year,make,model))").eq("user_id", u.id).eq("status", "active").maybeSingle(),
+      supabase.from("vehicles").select("license_plate,year,make,model,body_type,colors").eq("user_id", u.id),
+    ]);
+    setUserDetail({ expressSub, selfSub, vehicles: vehicles || [] });
+    setUserDetailLoading(false);
+  }
 
   // Monthly usage counts
   const [expressUsage, setExpressUsage] = useState<Record<string, number>>({});
@@ -193,12 +213,25 @@ export default function AdminUsersPage() {
   };
 
   function filterList(list: any[], key?: string) {
+    if (!search) return list;
     return list.filter((item) => {
       const target = key ? item[key] : item;
-      return (
+      const matchesProfile =
         target?.full_name?.toLowerCase().includes(search) ||
-        target?.email?.toLowerCase().includes(search)
+        target?.email?.toLowerCase().includes(search) ||
+        target?.phone?.toLowerCase().includes(search);
+
+      // Check license plates from express subscription vehicles
+      const expressPlates = (item.subscription_vehicles || []).some((sv: any) =>
+        sv.vehicle?.license_plate?.toLowerCase().includes(search)
       );
+
+      // Check license plates from self-service subscription vehicles
+      const selfServicePlates = (item.self_service_subscription_vehicles || []).some((sv: any) =>
+        sv.vehicles?.license_plate?.toLowerCase().includes(search)
+      );
+
+      return matchesProfile || expressPlates || selfServicePlates;
     });
   }
 
@@ -212,11 +245,22 @@ export default function AdminUsersPage() {
             </CardHeader>
           </Card>
 
-          <Input
-            placeholder="Search users..."
-            className="mb-4"
-            onChange={(e) => setSearch(e.target.value.toLowerCase())}
-          />
+          <div className="relative mb-4">
+            <Input
+              placeholder="Search by name, email, phone, or license plate..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value.toLowerCase())}
+              className="pr-8"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
 
           <Tabs value={tab} onValueChange={handleTabChange}>
             <TabsList>
@@ -233,24 +277,42 @@ export default function AdminUsersPage() {
                 <CardHeader>
                   <CardTitle>All Users</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-3">
                   {filterList(allUsers).map((u) => (
                     <div
                       key={u.id}
-                      className="p-4 border rounded-lg flex justify-between items-center"
+                      onClick={() => openUserModal(u)}
+                      className="p-4 border rounded-lg flex items-center gap-4 cursor-pointer hover:border-blue-400 hover:bg-blue-50/40 transition-colors"
                     >
-                      <div>
-                        <p className="font-semibold flex items-center gap-2">
-                          <User size={16} />
-                          {u.full_name}
+                      <Avatar className="h-10 w-10 shrink-0">
+                        <AvatarImage src={u.avatar_url || undefined} alt={u.full_name || "User"} />
+                        <AvatarFallback>{u.full_name?.charAt(0) || u.email?.charAt(0).toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-semibold">{u.full_name || "—"}</p>
+                          <Badge variant="secondary" className="text-xs">
+                            <Shield size={10} className="mr-1" />{u.role || "User"}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground flex items-center gap-1 truncate">
+                          <Mail size={12} /> {u.email}
                         </p>
-                        <p className="text-sm flex items-center gap-2 text-muted-foreground">
-                          <Mail size={14} /> {u.email}
-                        </p>
+                        {u.phone && (
+                          <p className="text-sm text-muted-foreground flex items-center gap-1">
+                            <Phone size={12} /> {u.phone}
+                          </p>
+                        )}
                       </div>
-                      <Badge variant="secondary">{u.role || "User"}</Badge>
+                      <div className="text-xs text-muted-foreground text-right shrink-0">
+                        <p>Joined</p>
+                        <p>{new Date(u.created_at).toLocaleDateString()}</p>
+                      </div>
                     </div>
                   ))}
+                  {filterList(allUsers).length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">No users found.</div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -611,6 +673,86 @@ export default function AdminUsersPage() {
           }}
         />
       )}
+
+      {/* User Detail Modal */}
+      <Dialog open={!!selectedUser} onOpenChange={(o) => { if (!o) setSelectedUser(null); }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={selectedUser?.avatar_url || undefined} />
+                <AvatarFallback>{selectedUser?.full_name?.charAt(0) || selectedUser?.email?.charAt(0).toUpperCase()}</AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="text-base font-semibold">{selectedUser?.full_name || "—"}</p>
+                <p className="text-xs text-muted-foreground font-normal">{selectedUser?.email}</p>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+
+          {userDetailLoading ? (
+            <div className="space-y-3 py-4">
+              {[1,2,3].map(i => <div key={i} className="h-12 bg-gray-100 animate-pulse rounded-lg" />)}
+            </div>
+          ) : userDetail && (
+            <div className="space-y-4 mt-2">
+              {/* Profile Info */}
+              <div className="border rounded-lg p-4 space-y-2 text-sm">
+                <p className="font-semibold text-xs text-muted-foreground uppercase tracking-wide mb-2">Profile</p>
+                {selectedUser?.phone && (
+                  <p className="flex items-center gap-2"><Phone size={14} /> {selectedUser.phone}</p>
+                )}
+                <p className="flex items-center gap-2">
+                  <Shield size={14} />
+                  <Badge variant="secondary">{selectedUser?.role || "User"}</Badge>
+                </p>
+                <p className="text-muted-foreground">Joined {new Date(selectedUser?.created_at).toLocaleDateString()}</p>
+              </div>
+
+              {/* Subscriptions */}
+              {(userDetail.expressSub || userDetail.selfSub) && (
+                <div className="border rounded-lg p-4 space-y-2 text-sm">
+                  <p className="font-semibold text-xs text-muted-foreground uppercase tracking-wide mb-2">Active Subscriptions</p>
+                  {userDetail.expressSub && (
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-2"><Crown size={14} className="text-blue-600" /> {userDetail.expressSub.subscription_plan?.name}</span>
+                      <Badge className="bg-green-500 text-white text-xs">Express</Badge>
+                    </div>
+                  )}
+                  {userDetail.selfSub && (
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-2"><Car size={14} className="text-green-600" /> Self-Service Plan</span>
+                      <Badge className="bg-green-500 text-white text-xs">Self-Service</Badge>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Vehicles */}
+              {userDetail.vehicles.length > 0 && (
+                <div className="border rounded-lg p-4 text-sm">
+                  <p className="font-semibold text-xs text-muted-foreground uppercase tracking-wide mb-3">Saved Vehicles</p>
+                  <div className="space-y-2">
+                    {userDetail.vehicles.map((v: any, i: number) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <Car size={14} className="text-muted-foreground shrink-0" />
+                        <span className="font-mono font-semibold">{v.license_plate}</span>
+                        {(v.year || v.make || v.model) && (
+                          <span className="text-muted-foreground text-xs">— {[v.year, v.make, v.model].filter(Boolean).join(" ")}</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {!userDetail.expressSub && !userDetail.selfSub && userDetail.vehicles.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">No subscription or vehicles linked.</p>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
