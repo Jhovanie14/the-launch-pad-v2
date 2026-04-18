@@ -2,11 +2,12 @@
 
 import { useBooking } from "@/context/bookingContext";
 import { Button } from "./ui/button";
-import { X } from "lucide-react";
+import { Car, PenLine, X } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { useEffect, useState } from "react";
 import AuthPromptModal from "./user/authPromptModal";
 import { useVehicleForm } from "@/hooks/useVehicleForm";
+import { useUserVehicles } from "@/hooks/useUserVehicles";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import {
@@ -43,10 +44,10 @@ export default function BookingModal() {
   const [authOpen, setAuthOpen] = useState(false);
 
   const [subscriptionVehicles, setSubscriptionVehicles] = useState<any[]>([]);
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(
-    null
-  );
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+  const [enterManually, setEnterManually] = useState(false);
 
+  const { vehicles: savedVehicles, loading: savedLoading } = useUserVehicles();
   const { vehicleInfo, setVehicleInfo, errors, validate } = useVehicleForm();
 
   useEffect(() => {
@@ -94,42 +95,37 @@ export default function BookingModal() {
     fetchSubscriptionVehicle();
   }, [user]);
 
-  const handleBooking = () => {
-    console.log("handleBooking clicked");
+  // All vehicle sources unified: subscription > saved > manual
+  const hasSavedOrSubscription = subscriptionVehicles.length > 0 || savedVehicles.length > 0;
+  const showDropdown = hasSavedOrSubscription && !enterManually;
 
+  // Pre-fill plate when user picks a saved vehicle
+  const handleVehicleSelect = (id: string) => {
+    setSelectedVehicleId(id);
+    const fromSub = subscriptionVehicles.find((v) => v.id === id);
+    const fromSaved = savedVehicles.find((v) => v.id === id);
+    const plate = fromSub?.license_plate ?? fromSaved?.license_plate ?? "";
+    setVehicleInfo((prev) => ({ ...prev, license_plate: plate }));
+  };
+
+  const handleBooking = () => {
     let params: URLSearchParams;
 
-    // ✅ Only run validate() if no subscribed vehicle is selected
-    // Note: Validation will pass because license_plate is now optional
-    if (subscriptionVehicles.length === 0) {
-      if (!validate()) {
-        // console.log("Validation failed for manual vehicle input");
-        return;
-      }
-    }
-
-    if (subscriptionVehicles.length > 0 && selectedVehicleId) {
-      const selected = subscriptionVehicles.find(
-        (v) => v.id === selectedVehicleId
-      );
-      if (!selected) {
-        // console.log("No selected vehicle");
-        return;
-      }
-      params = new URLSearchParams({
-        license_plate: selected.license_plate,
-      });
+    if (showDropdown && selectedVehicleId) {
+      const fromSub = subscriptionVehicles.find((v) => v.id === selectedVehicleId);
+      const fromSaved = savedVehicles.find((v) => v.id === selectedVehicleId);
+      const selected = fromSub ?? fromSaved;
+      if (!selected) return;
+      params = new URLSearchParams({ license_plate: selected.license_plate });
     } else {
-      // Build URL with vehicle specs
+      if (!validate()) return;
       const entries = Object.entries(vehicleInfo).filter(
         (e): e is [string, string] => e[1] !== undefined && e[1] !== "",
       );
       params = new URLSearchParams(entries);
     }
-    // console.log("Redirecting with:", params.toString());
-    closeBookingModal();
 
-    // Redirect to service selection page
+    closeBookingModal();
     router.push(
       user
         ? `/dashboard/booking/service?${params.toString()}`
@@ -149,9 +145,7 @@ export default function BookingModal() {
         <div className="bg-white rounded-lg p-6 w-full max-w-xl mx-4">
           <div className="flex items-center justify-between mb-1">
             <h2 className="text-2xl font-bold">
-              {subscriptionVehicles.length > 0
-                ? "Select Your Subscribed Vehicle"
-                : "Enter Your Vehicle Info"}
+              {showDropdown ? "Select Your Vehicle" : "Enter Your Vehicle Info"}
             </h2>
             <Button
               variant="outline"
@@ -164,128 +158,71 @@ export default function BookingModal() {
           </div>
 
           <p className="text-sm text-muted-foreground mb-6">
-           Add your car information to help our team prepare for your service.
+            Add your car information to help our team prepare for your service.
           </p>
-          {/* Vehicle details help us serve you faster */}
 
-          {subscriptionVehicles.length > 0 ? (
-            <div className="space-y-3">
-              <Label htmlFor="vehicle">Vehicle</Label>
-              <Select
-                value={selectedVehicleId ?? ""}
-                onValueChange={setSelectedVehicleId}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select your Vehicle" />
-                </SelectTrigger>
-                <SelectContent>
-                  {subscriptionVehicles.map((v) => (
-                    <SelectItem key={v.id} value={v.id}>
-                      License Plate: {v.license_plate}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          ) : (
-            <div className="">
-              {/* <div className="space-y-2">
-                <Label>Make</Label>
-                <Input
-                  value={vehicleInfo.make}
-                  onChange={(e) =>
-                    setVehicleInfo((prev) => ({
-                      ...prev,
-                      make: e.target.value,
-                    }))
-                  }
-                  placeholder="e.g., Toyota"
-                />
-                {errors.make && (
-                  <p className="text-red-500 text-sm">{errors.make}</p>
-                )}
-              </div>
-
+          {showDropdown ? (
+            <div className="space-y-4">
               <div className="space-y-2">
-                <Label>Model</Label>
-                <Input
-                  value={vehicleInfo.model}
-                  onChange={(e) =>
-                    setVehicleInfo((prev) => ({
-                      ...prev,
-                      model: e.target.value,
-                    }))
-                  }
-                  placeholder="e.g., Camry"
-                />
-                {errors.model && (
-                  <p className="text-red-500 text-sm">{errors.model}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label>Year</Label>
-                <Input
-                  type="number"
-                  value={vehicleInfo.year}
-                  onChange={(e) =>
-                    setVehicleInfo((prev) => ({
-                      ...prev,
-                      year: e.target.value,
-                    }))
-                  }
-                  placeholder="e.g., 2020"
-                />
-                {errors.year && (
-                  <p className="text-red-500 text-sm">{errors.year}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label>Color</Label>
-
-                <Input
-                  value={vehicleInfo.color}
-                  onChange={(e) =>
-                    setVehicleInfo((prev) => ({
-                      ...prev,
-                      color: e.target.value,
-                    }))
-                  }
-                  placeholder="e.g., Black,Red"
-                />
-                <p className="text-[11px] text-muted-foreground mt-1">
-                  If car has two colors separate it with comma ","
-                </p>
-                {errors.color && (
-                  <p className="text-red-500 text-sm">{errors.color}</p>
-                )}
-              </div> */}
-
-              {/* <div className="space-y-2">
-                <Label>Body Type</Label>
-                <Select
-                  value={vehicleInfo.body_type}
-                  onValueChange={(val) =>
-                    setVehicleInfo((prev) => ({ ...prev, body_type: val }))
-                  }
-                >
+                <Label>Select Vehicle</Label>
+                <Select value={selectedVehicleId ?? ""} onValueChange={handleVehicleSelect}>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select Body Type" />
+                    <SelectValue placeholder="Choose a saved vehicle" />
                   </SelectTrigger>
                   <SelectContent>
-                    {BODY_TYPES.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
-                    ))}
+                    {subscriptionVehicles.length > 0 && (
+                      <>
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                          Subscription Vehicles
+                        </div>
+                        {subscriptionVehicles.map((v) => {
+                          const details = [v.year, v.make, v.model].filter(Boolean).join(" ");
+                          return (
+                            <SelectItem key={v.id} value={v.id}>
+                              <div className="flex items-center gap-2">
+                                <Car className="w-3.5 h-3.5 shrink-0" />
+                                <span className="font-mono font-semibold">{v.license_plate}</span>
+                                {details && <span className="text-muted-foreground text-xs">— {details}</span>}
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
+                      </>
+                    )}
+                    {savedVehicles.length > 0 && (
+                      <>
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                          My Saved Vehicles
+                        </div>
+                        {savedVehicles
+                          .filter((sv) => !subscriptionVehicles.some((sub) => sub.id === sv.id))
+                          .map((v) => {
+                            const details = [v.year, v.make, v.model].filter(Boolean).join(" ");
+                            return (
+                              <SelectItem key={v.id} value={v.id}>
+                                <div className="flex items-center gap-2">
+                                  <Car className="w-3.5 h-3.5 shrink-0" />
+                                  <span className="font-mono font-semibold">{v.license_plate}</span>
+                                  {details && <span className="text-muted-foreground text-xs">— {details}</span>}
+                                </div>
+                              </SelectItem>
+                            );
+                          })}
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
-                {errors.body_type && (
-                  <p className="text-red-500 text-sm">{errors.body_type}</p>
-                )}
-              </div> */}
-
+              </div>
+              <button
+                type="button"
+                onClick={() => { setEnterManually(true); setSelectedVehicleId(null); }}
+                className="flex items-center gap-1.5 text-sm text-blue-700 hover:underline"
+              >
+                <PenLine className="w-3.5 h-3.5" /> Enter a different plate
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
               <div className="space-y-2">
                 <Label>License Plate</Label>
                 <Input
@@ -296,13 +233,23 @@ export default function BookingModal() {
                       license_plate: e.target.value.toUpperCase(),
                     }))
                   }
-                  placeholder="e.g., ABC123 or leave it blank"
-                  className="text-lg font-mono uppercase"
+                  placeholder="e.g., ABC 1234 or leave blank"
+                  className="text-lg font-mono uppercase tracking-widest"
+                  autoFocus
                 />
                 {errors.license_plate && (
                   <p className="text-red-500 text-sm">{errors.license_plate}</p>
                 )}
               </div>
+              {hasSavedOrSubscription && (
+                <button
+                  type="button"
+                  onClick={() => { setEnterManually(false); setVehicleInfo((p) => ({ ...p, license_plate: "" })); }}
+                  className="flex items-center gap-1.5 text-sm text-blue-700 hover:underline"
+                >
+                  <Car className="w-3.5 h-3.5" /> Choose a saved vehicle
+                </button>
+              )}
             </div>
           )}
 
@@ -310,10 +257,9 @@ export default function BookingModal() {
             <Button
               className="w-full bg-blue-900 text-white hover:bg-blue-800"
               onClick={handleBooking}
+              disabled={savedLoading}
             >
-              {subscriptionVehicles.length > 0
-                ? "Proceed to services"
-                : "See My Pricing"}
+              {showDropdown ? "Proceed to Services" : "See My Pricing"}
             </Button>
           </div>
         </div>

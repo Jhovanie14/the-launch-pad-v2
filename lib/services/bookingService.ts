@@ -154,7 +154,7 @@ export const bookingService = {
       .select(
         `
       *,
-      vehicle:vehicles (year, make, model, body_type, colors),
+      vehicle:vehicles (year, make, model, body_type, colors, license_plate),
       add_ons:booking_add_ons (
         add_ons (
           id,

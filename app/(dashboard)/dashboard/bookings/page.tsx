@@ -117,7 +117,7 @@ export default function BookingsList() {
                 <Car className="w-4 h-4 mr-2" />
                 <span>
                   {booking.vehicle?.year} {booking.vehicle?.make}{" "}
-                  {booking.vehicle?.model}
+                  {booking.vehicle?.model} {booking.vehicle?.license_plate}
                 </span>
               </div>
               <div className="text-sm text-gray-600 ml-6">

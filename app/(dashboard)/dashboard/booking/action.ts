@@ -60,26 +60,27 @@ export async function createBooking(car: CarData, subscriberId?: string) {
   let vehicleId: string | null = null;
   
   if (normalizedPlate) {
-    // Ensure vehicle exists or insert
     const { data: existing } = await supabase
       .from("vehicles")
-      .select("id")
+      .select("id, user_id")
       .eq("license_plate", normalizedPlate)
       .maybeSingle();
 
     vehicleId = existing?.id || null;
-    
+
     if (!vehicleId) {
       const { data: inserted } = await supabase
         .from("vehicles")
-        .insert({
-          user_id: targetUserId || null,
-          license_plate: normalizedPlate,
-        })
+        .insert({ user_id: targetUserId || null, license_plate: normalizedPlate })
         .select("id")
         .single();
-
       vehicleId = inserted?.id || null;
+    } else if (!existing?.user_id && targetUserId) {
+      // Link unowned vehicle to the current user
+      await supabase
+        .from("vehicles")
+        .update({ user_id: targetUserId })
+        .eq("id", vehicleId);
     }
   }
 

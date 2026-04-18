@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Car, CheckCircle, Save, Pencil } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
 import { toast } from "sonner";
 
 type VehicleData = {
@@ -40,7 +39,6 @@ export default function UpdateVehicleModal({
   subscriberName,
   onUpdated,
 }: UpdateVehicleModalProps) {
-  const supabase = createClient();
   const [loading, setLoading] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(
     null
@@ -87,20 +85,22 @@ export default function UpdateVehicleModal({
         .map((c) => c.trim())
         .filter(Boolean);
 
-      const { error } = await supabase
-        .from("vehicles")
-        .update({
-          year: year ? parseInt(year, 10) : null,
+      const res = await fetch("/api/vehicles/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          vehicleId: selectedVehicleId,
+          year: year || null,
           make: make || null,
           model: model || null,
           body_type: bodyType || null,
           colors: colorsArray.length > 0 ? colorsArray : null,
-          license_plate: licensePlate?.trim().toUpperCase() || null,
-        })
-        .eq("id", selectedVehicleId);
+        }),
+      });
 
-      if (error) {
-        console.error("Vehicle update error:", error);
+      if (!res.ok) {
+        const data = await res.json();
+        console.error("Vehicle update error:", data.error);
         toast.error("Failed to update vehicle. Please try again.");
         return;
       }
@@ -251,8 +251,8 @@ export default function UpdateVehicleModal({
                   <Input
                     id="vehicle-plate"
                     value={licensePlate}
-                    onChange={(e) => setLicensePlate(e.target.value)}
-                    placeholder="e.g. ABC 1234"
+                    readOnly
+                    className="bg-gray-50 text-gray-500 cursor-not-allowed font-mono tracking-widest"
                   />
                 </div>
               </div>

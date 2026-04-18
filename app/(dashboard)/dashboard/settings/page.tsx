@@ -10,9 +10,8 @@ export default async function SettingsPage() {
   return (
     <main className="py-6">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-center space-y-6">
-          <UserProfile user={user} />
-        </div>
+        <h1 className="text-3xl font-bold text-gray-900 mb-6">Settings</h1>
+        <UserProfile user={user} />
       </div>
     </main>
   );
