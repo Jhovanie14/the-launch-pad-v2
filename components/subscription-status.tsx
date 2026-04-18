@@ -310,8 +310,9 @@ export default function SubscriptionStatus({
                 </div>
                 {(() => {
                   const fullPrice = pricing.basePrice * pricing.vehiclePricing.length;
-                  const actualCharge = nextInvoiceAmount ?? pricing.totalPrice;
+                  const actualCharge = nextInvoiceAmount ?? (fullPrice - pricing.totalSavings);
                   const actualSavings = fullPrice - actualCharge;
+                  const hasPromo = actualSavings > pricing.totalSavings - (pricing.basePrice * 0.1) + 0.01;
                   return (
                     <div className="flex items-center justify-between pt-2 border-t border-gray-200 mt-2">
                       <div>
@@ -319,9 +320,7 @@ export default function SubscriptionStatus({
                           Total Savings
                         </span>
                         <p className="text-xs text-gray-400">
-                          {nextInvoiceAmount !== null && nextInvoiceAmount < pricing.totalPrice
-                            ? "Promo + family discounts"
-                            : "Family discount"}
+                          {hasPromo ? "Promo + family discounts" : "Family discount"}
                         </p>
                       </div>
                       <span className="text-sm font-semibold text-green-600">
