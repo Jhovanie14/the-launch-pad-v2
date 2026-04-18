@@ -278,9 +278,13 @@ export function AuthNavbar() {
               </Link>
             </div>
             <div className="border-t border-gray-200 pb-3 pt-4 dark:border-gray-700">
-              <div className="flex items-center px-4">
+              <Link
+                href="/dashboard/settings"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center px-4 py-2 rounded-lg mx-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group"
+              >
                 <div className="flex-shrink-0">
-                  <Avatar className="h-10 w-10">
+                  <Avatar className="h-10 w-10 ring-2 ring-blue-500 group-hover:ring-blue-600">
                     <AvatarImage
                       src={userProfile?.avatar_url || undefined}
                       alt={userProfile?.full_name || "User"}
@@ -291,16 +295,16 @@ export function AuthNavbar() {
                     </AvatarFallback>
                   </Avatar>
                 </div>
-                <div className="ml-3">
+                <div className="ml-3 flex-1">
                   <div className="text-base font-medium text-gray-800 dark:text-gray-200">
                     {userProfile?.full_name || userProfile?.email}
                   </div>
-                  <div className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                    {userProfile?.email}
+                  <div className="text-sm font-medium text-blue-500">
+                    View Profile
                   </div>
                 </div>
-              </div>
-              <div className="mt-3 space-y-1">
+              </Link>
+              <div className="mt-3 space-y-1 px-2">
                 <Button
                   onClick={handleSignOut}
                   variant="outline"
