@@ -46,7 +46,7 @@ export default function DashboardPage() {
     const vehiclePricing = vehicles.map((vehicle: any, index: number) => {
       const isFirstVehicle = index === 0;
       return {
-        price: isFirstVehicle ? basePrice : basePrice * 0.9,
+        price: isFirstVehicle ? basePrice : basePrice * 0.65,
         isDiscounted: !isFirstVehicle,
       };
     });
@@ -56,7 +56,7 @@ export default function DashboardPage() {
       0
     );
     const totalSavings = vehiclePricing.reduce(
-      (sum: number, item) => sum + (item.isDiscounted ? basePrice * 0.1 : 0),
+      (sum: number, item) => sum + (item.isDiscounted ? basePrice * 0.35 : 0),
       0
     );
 
@@ -160,7 +160,11 @@ export default function DashboardPage() {
 
           {/* Express Detailing Subscription Banner */}
           {subscription && subscriptionDetails && (
-            <Card className="bg-linear-to-r from-blue-900 to-blue-800 text-white border-0 shadow-lg">
+            <Card className="relative bg-linear-to-r from-blue-900 to-blue-800 text-white border-0 shadow-lg">
+              <span className="absolute top-4 right-4 inline-flex items-center gap-1.5 px-3 py-1 bg-green-500 text-white text-xs font-semibold rounded-full shadow">
+                <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                Active
+              </span>
               <CardContent className="p-6">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div className="flex items-start gap-4 flex-1">
@@ -181,9 +185,6 @@ export default function DashboardPage() {
                             Flock Subscription
                           </span>
                         )}
-                        <span className="inline-flex items-center px-2 py-1 bg-green-500/20 rounded-full text-xs font-medium">
-                          Active
-                        </span>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                         <div className="flex items-center gap-2">
@@ -243,7 +244,11 @@ export default function DashboardPage() {
 
           {/* Self-Service Subscription Banner */}
           {selfServiceSubscription && selfServiceDetails && (
-            <Card className="bg-linear-to-r from-purple-900 to-purple-800 text-white border-0 shadow-lg">
+            <Card className="relative bg-linear-to-r from-purple-900 to-purple-800 text-white border-0 shadow-lg">
+              <span className="absolute top-4 right-4 inline-flex items-center gap-1.5 px-3 py-1 bg-green-500 text-white text-xs font-semibold rounded-full shadow">
+                <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                Active
+              </span>
               <CardContent className="p-6">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div className="flex items-start gap-4 flex-1">
@@ -264,9 +269,6 @@ export default function DashboardPage() {
                             Flock Subscription
                           </span>
                         )}
-                        <span className="inline-flex items-center px-2 py-1 bg-green-500/20 rounded-full text-xs font-medium">
-                          Active
-                        </span>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                         <div className="flex items-center gap-2">

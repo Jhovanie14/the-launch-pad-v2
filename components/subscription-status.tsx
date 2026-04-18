@@ -2,7 +2,7 @@ import { Subscription } from "@/types";
 import Link from "next/link";
 import { useState, useMemo, useEffect } from "react";
 import { Button } from "./ui/button";
-import { Car, CheckCircle2, AlertCircle, XCircle } from "lucide-react";
+import { Car, CheckCircle2, AlertCircle, XCircle, TriangleAlert } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Separator } from "./ui/separator";
 
@@ -185,6 +185,28 @@ export default function SubscriptionStatus({
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Safeguard: warn if Stripe charge doesn't match displayed total */}
+        {nextInvoiceAmount !== null &&
+          nextInvoiceAmount > pricing.totalPrice + 0.01 && (
+            <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <TriangleAlert className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-red-800">
+                  Billing discrepancy detected
+                </p>
+                <p className="text-sm text-red-700 mt-0.5">
+                  Your next charge (${nextInvoiceAmount.toFixed(2)}) is higher
+                  than the amount shown here (${pricing.totalPrice.toFixed(2)}).
+                  Please{" "}
+                  <Link href="/support" className="underline font-medium">
+                    contact support
+                  </Link>{" "}
+                  so we can resolve this immediately.
+                </p>
+              </div>
+            </div>
+          )}
+
         {/* Plan Information */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>

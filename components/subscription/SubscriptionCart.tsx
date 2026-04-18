@@ -389,20 +389,15 @@ export default function SubscriptionCart({
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Vehicle Count Selector */}
-            <div className="grid grid-cols-4 gap-3">
-              {[1, 2, 3, 4].map((count) => {
-                const totalVehicles = count + 1;
+            <div className="grid grid-cols-5 gap-2">
+              {[1, 2, 3, 4, 5].map((totalVehicles) => {
                 const isSelected = vehicleCount === totalVehicles;
-                const savingsPerVehicle = basePrice.original * 0.35;
-                const totalSavings = savingsPerVehicle * count;
+                const extraVehicles = totalVehicles - 1;
+                const totalSavings = basePrice.original * 0.35 * extraVehicles;
                 return (
                   <button
-                    key={count}
-                    onClick={() =>
-                      handleVehicleCountChange(
-                        vehicleCount === totalVehicles ? 1 : totalVehicles,
-                      )
-                    }
+                    key={totalVehicles}
+                    onClick={() => handleVehicleCountChange(totalVehicles)}
                     className={`relative flex flex-col items-center py-3 px-2 rounded-xl border-2 text-center transition-all ${
                       isSelected
                         ? "bg-green-600 text-white border-green-600 shadow-md"
@@ -413,7 +408,7 @@ export default function SubscriptionCart({
                     <span
                       className={`text-xs mt-0.5 font-medium ${isSelected ? "text-green-100" : "text-gray-400"}`}
                     >
-                      vehicles
+                      {totalVehicles === 1 ? "vehicle" : "vehicles"}
                     </span>
                     {totalSavings > 0 && (
                       <span
