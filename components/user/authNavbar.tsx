@@ -295,12 +295,17 @@ export function AuthNavbar() {
                     </AvatarFallback>
                   </Avatar>
                 </div>
-                <div className="ml-3 flex-1">
-                  <div className="text-base font-medium text-gray-800 dark:text-gray-200">
-                    {userProfile?.full_name || userProfile?.email}
+                <div className="ml-3 flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-base font-medium text-gray-800 dark:text-gray-200 truncate">
+                      {userProfile?.full_name}
+                    </span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                      {userProfile?.email}
+                    </span>
                   </div>
-                  <div className="text-sm font-medium text-blue-500">
-                    View Profile
+                  <div className="text-xs font-medium text-blue-500 mt-0.5">
+                    View Profile →
                   </div>
                 </div>
               </Link>
