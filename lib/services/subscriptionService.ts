@@ -41,7 +41,8 @@ export async function getActiveSubscription(
       )
     `
     )
-    .eq("subscription_id", subs.id);
+    .eq("subscription_id", subs.id)
+    .order("id", { ascending: true });
 
   if (vehicleError) {
     console.error("Error fetching subscription vehicles:", vehicleError);

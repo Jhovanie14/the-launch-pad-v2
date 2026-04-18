@@ -3,6 +3,18 @@ import { createClient } from "@/utils/supabase/server";
 import { ensureVehicle } from "@/utils/vehicle";
 
 export async function POST(req: Request) {
+  try {
+    return await handler(req);
+  } catch (err: any) {
+    console.error("[create-checkout-session] unhandled error:", err?.message);
+    return new Response(JSON.stringify({ error: err?.message ?? "Internal server error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+}
+
+async function handler(req: Request) {
   const supabase = await createClient();
   const body = await req.json();
   const { planId, billingCycle, userId, vehicle, vehicles, couponId } =

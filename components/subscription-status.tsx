@@ -1,6 +1,6 @@
 import { Subscription } from "@/types";
 import Link from "next/link";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Car, CheckCircle2, AlertCircle, XCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
@@ -14,6 +14,14 @@ export default function SubscriptionStatus({
   subscription,
 }: SubscriptionStatusProps) {
   const [loading, setLoading] = useState(false);
+  const [nextInvoiceAmount, setNextInvoiceAmount] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch("/api/subscription-upcoming-invoice")
+      .then((r) => r.json())
+      .then((d) => setNextInvoiceAmount(d.amount_due ?? null))
+      .catch(() => {});
+  }, []);
 
   // Calculate pricing for vehicles
   const pricing = useMemo(() => {
@@ -35,8 +43,8 @@ export default function SubscriptionStatus({
     const vehicles = subscription.vehicles || [];
     const vehiclePricing = vehicles.map((vehicle, index) => {
       const isFirstVehicle = index === 0;
-      const price = isFirstVehicle ? basePrice : basePrice * 0.9;
-      const discount = isFirstVehicle ? 0 : basePrice * 0.1;
+      const price = isFirstVehicle ? basePrice : basePrice * 0.65;
+      const discount = isFirstVehicle ? basePrice * 0.1 : basePrice * 0.35;
       return {
         vehicle,
         price,
@@ -197,61 +205,109 @@ export default function SubscriptionStatus({
 
         {/* Vehicles Section */}
         {pricing.vehiclePricing.length > 0 ? (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h4 className="text-base font-semibold text-gray-900">
-                {pricing.isFlock ? "Flock Vehicles" : "Vehicle"}
+          <div className="space-y-4">
+
+            {/* Primary Vehicle */}
+            <div>
+              <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                Primary Vehicle
               </h4>
-              {pricing.isFlock && (
-                <span className="text-xs text-green-600 font-medium">
-                  ✨ Family Discount Active
-                </span>
-              )}
-            </div>
-            <div className="space-y-2">
-              {pricing.vehiclePricing.map((item, index) => (
-                <div
-                  key={item.vehicle.id || index}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                >
-                  <div className="flex items-center gap-3 flex-1">
-                    <Car className="w-5 h-5 text-gray-400" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        {item.displayName} - (License plate)
-                      </p>
-                      {item.isDiscounted && (
-                        <span className="text-xs text-green-600 font-medium mt-1 inline-block">
-                          10% Family Discount
-                        </span>
-                      )}
+              {(() => {
+                const primary = pricing.vehiclePricing[0];
+                return (
+                  <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                    <div className="flex items-center gap-3 flex-1">
+                      <Car className="w-5 h-5 text-blue-600" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {primary.displayName}
+                        </p>
+                        <p className="text-xs text-blue-600 font-medium mt-0.5">
+                          10% off applied on your first month
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    {item.isDiscounted && (
+                    <div className="text-right">
                       <p className="text-xs text-gray-400 line-through">
                         ${pricing.basePrice.toFixed(2)}
                       </p>
-                    )}
-                    <p className="text-sm font-semibold text-gray-900">
-                      ${item.price.toFixed(2)}
-                      <span className="text-xs text-gray-500 ml-1">
-                        /{subscription.billing_cycle}
-                      </span>
-                    </p>
+                      <p className="text-sm font-semibold text-gray-900">
+                        ${(pricing.basePrice * 0.9).toFixed(2)}
+                        <span className="text-xs text-gray-500 ml-1">first month</span>
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        then ${pricing.basePrice.toFixed(2)}/{subscription.billing_cycle}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })()}
             </div>
-            {pricing.isFlock && pricing.totalSavings > 0 && (
-              <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-                <span className="text-sm font-medium text-green-600">
-                  Total Family Savings
-                </span>
-                <span className="text-sm font-semibold text-green-600">
-                  -${pricing.totalSavings.toFixed(2)}/
-                  {subscription.billing_cycle}
-                </span>
+
+            {/* Flock Vehicles */}
+            {pricing.isFlock && (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+                    Family Vehicles
+                  </h4>
+                  <span className="text-xs text-green-600 font-medium">
+                    ✨ 35% Family Discount Every Month
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {pricing.vehiclePricing.slice(1).map((item, index) => (
+                    <div
+                      key={item.vehicle.id || index}
+                      className="flex items-center justify-between p-3 bg-green-50 border border-green-100 rounded-lg"
+                    >
+                      <div className="flex items-center gap-3 flex-1">
+                        <Car className="w-5 h-5 text-green-600" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">
+                            {item.displayName}
+                          </p>
+                          <span className="text-xs text-green-600 font-medium">
+                            35% off every month
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-gray-400 line-through">
+                          ${pricing.basePrice.toFixed(2)}
+                        </p>
+                        <p className="text-sm font-semibold text-gray-900">
+                          ${item.price.toFixed(2)}
+                          <span className="text-xs text-gray-500 ml-1">
+                            /{subscription.billing_cycle}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {(() => {
+                  const fullPrice = pricing.basePrice * pricing.vehiclePricing.length;
+                  const actualCharge = nextInvoiceAmount ?? pricing.totalPrice;
+                  const actualSavings = fullPrice - actualCharge;
+                  return (
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-200 mt-2">
+                      <div>
+                        <span className="text-sm font-medium text-green-600">
+                          Total Savings
+                        </span>
+                        <p className="text-xs text-gray-400">
+                          {nextInvoiceAmount !== null && nextInvoiceAmount < pricing.totalPrice
+                            ? "Promo + family discounts"
+                            : "Family discount"}
+                        </p>
+                      </div>
+                      <span className="text-sm font-semibold text-green-600">
+                        -${actualSavings.toFixed(2)}/{subscription.billing_cycle}
+                      </span>
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>
@@ -287,12 +343,26 @@ export default function SubscriptionStatus({
               </div>
             )}
             <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-              <span className="text-base font-semibold text-gray-900">
-                Total Monthly Billing
-              </span>
-              <span className="text-lg font-bold text-blue-900">
-                ${pricing.totalPrice.toFixed(2)}/{subscription.billing_cycle}
-              </span>
+              <div>
+                <span className="text-base font-semibold text-gray-900">
+                  Next Charge
+                </span>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {nextInvoiceAmount !== null && nextInvoiceAmount < pricing.totalPrice
+                    ? "Promo still active this month"
+                    : "Recurring amount"}
+                </p>
+              </div>
+              <div className="text-right">
+                {nextInvoiceAmount !== null && nextInvoiceAmount < pricing.totalPrice && (
+                  <p className="text-xs text-gray-400 line-through">
+                    ${pricing.totalPrice.toFixed(2)}
+                  </p>
+                )}
+                <span className="text-lg font-bold text-blue-900">
+                  ${(nextInvoiceAmount ?? pricing.totalPrice).toFixed(2)}/{subscription.billing_cycle}
+                </span>
+              </div>
             </div>
           </div>
         </div>

@@ -115,26 +115,43 @@ export default async function SubscriptionSuccessPage({
       ? new Date(cpe * 1000).toISOString()
       : null;
 
-    // Calculate base price from first item (full price)
-    const basePriceAmount =
-      priceObj.recurring?.interval === "month" && priceObj.unit_amount
-        ? priceObj.unit_amount / 100
-        : priceObj.recurring?.interval === "year" && priceObj.unit_amount
-          ? priceObj.unit_amount / 100
-          : 0;
+    // Fetch original plan price from Supabase using session metadata
+    // so we get the unmodified price (not the promo-discounted Stripe price)
+    let planName = priceObj.nickname || "Premium Plan";
+    let originalMonthlyPrice: number | null = null;
+    let originalYearlyPrice: number | null = null;
+    const metaPlanId = session.metadata?.plan_id;
+    if (metaPlanId) {
+      const { data: planData } = await supabase
+        .from("subscription_plans")
+        .select("name, monthly_price, yearly_price")
+        .eq("id", metaPlanId)
+        .maybeSingle();
+      if (planData) {
+        planName = planData.name;
+        originalMonthlyPrice = planData.monthly_price ? Number(planData.monthly_price) : null;
+        originalYearlyPrice = planData.yearly_price ? Number(planData.yearly_price) : null;
+      }
+    }
+
+    const interval = priceObj.recurring?.interval || "month";
+    // Fallback to Stripe amount only if Supabase lookup failed
+    const stripeAmount = priceObj.unit_amount ? priceObj.unit_amount / 100 : 0;
 
     subscription = {
       stripe_subscription_id: stripeSub.id,
-      billing_cycle: priceObj.recurring?.interval || "month",
+      billing_cycle: interval,
       current_period_start: currentPeriodStartIso,
       current_period_end: currentPeriodEndIso,
       status: stripeSub.status,
       subscription_plans: {
-        name: priceObj.nickname || "Premium Plan",
-        monthly_price:
-          priceObj.recurring?.interval === "month" ? basePriceAmount : null,
-        yearly_price:
-          priceObj.recurring?.interval === "year" ? basePriceAmount : null,
+        name: planName,
+        monthly_price: interval === "month"
+          ? (originalMonthlyPrice ?? stripeAmount)
+          : (originalMonthlyPrice ?? null),
+        yearly_price: interval === "year"
+          ? (originalYearlyPrice ?? stripeAmount)
+          : (originalYearlyPrice ?? null),
       },
       subscription_vehicles: [],
       created_at: new Date().toISOString(),
@@ -180,8 +197,8 @@ export default async function SubscriptionSuccessPage({
   // Calculate pricing for each vehicle (first full price, others 10% off)
   const vehiclePricing = vehiclesToDisplay.map((vehicle, index: number) => {
     const isFirstVehicle = index === 0;
-    const price = isFirstVehicle ? basePrice : basePrice * 0.9;
-    const discount = isFirstVehicle ? 0 : basePrice * 0.1;
+    const price = isFirstVehicle ? basePrice : basePrice * 0.65;
+    const discount = isFirstVehicle ? 0 : basePrice * 0.35;
     return {
       vehicle,
       price,
@@ -333,7 +350,7 @@ export default async function SubscriptionSuccessPage({
                             </span>
                             {item.isDiscounted && (
                               <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
-                                10% Flock Discount
+                                35% Flock Discount
                               </span>
                             )}
                           </div>
@@ -402,7 +419,7 @@ export default async function SubscriptionSuccessPage({
               {orderData.isFlock && (
                 <p className="text-xs text-muted-foreground text-right">
                   ${orderData.basePrice.toFixed(2)} base +{" "}
-                  {orderData.vehicles.length - 1} vehicle(s) with 10% discount
+                  {orderData.vehicles.length - 1} vehicle(s) with 35% discount
                 </p>
               )}
             </div>
