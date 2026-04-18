@@ -146,12 +146,12 @@ export function useUserVehicles() {
 
   const removeVehicle = async (vehicleId: string): Promise<boolean> => {
     if (!user?.id) return false;
-    // Unlink from user rather than hard delete (booking history preserved)
-    await supabase
+    const { error } = await supabase
       .from("vehicles")
       .update({ user_id: null })
       .eq("id", vehicleId)
       .eq("user_id", user.id);
+    if (error) { console.error("Vehicle remove error:", error); return false; }
     await fetchVehicles();
     return true;
   };
