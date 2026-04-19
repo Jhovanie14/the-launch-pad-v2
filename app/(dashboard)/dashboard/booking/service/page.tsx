@@ -51,6 +51,7 @@ function ServiceSelectionPage() {
   const searchParams = useSearchParams();
   const { subscription } = useSubscription();
   const [loading, setLoading] = useState(false);
+  const [isVehicleSubscribed, setIsVehicleSubscribed] = useState(false);
 
   const [addOnOpen, setAddOnOpen] = useState(false);
   const [selectedAddOnIds, setSelectedAddOnIds] = useState<string[]>([]);
@@ -63,6 +64,19 @@ function ServiceSelectionPage() {
   const [vehicleSpecs, setVehicleSpecs] = useState<any>({
     license_plate: searchParams.get("license_plate") ?? "",
   });
+
+  // Check if the selected vehicle's license plate is part of an active subscription
+  useEffect(() => {
+    const plate = vehicleSpecs.license_plate;
+    if (!plate || !subscription?.id) { setIsVehicleSubscribed(false); return; }
+    supabase
+      .from("subscription_vehicles")
+      .select("id, vehicle:vehicles!inner(license_plate)")
+      .eq("subscription_id", subscription.id)
+      .eq("vehicles.license_plate", plate)
+      .maybeSingle()
+      .then(({ data }) => setIsVehicleSubscribed(!!data));
+  }, [vehicleSpecs.license_plate, subscription?.id]);
 
   // Keep vehicleSpecs in sync with URL search params so the page updates when
   // the booking modal or other parts of the app navigate here with params.
@@ -110,7 +124,7 @@ function ServiceSelectionPage() {
   };
 
   const isServiceFreeForSubscription = (serviceCategory: string) => {
-    if (!subscription?.subscription_plans?.name) return false;
+    if (!subscription?.subscription_plans?.name || !isVehicleSubscribed) return false;
     const categoryLower = serviceCategory?.toLowerCase() || "";
 
     // If subscribed to Quick Service, Quick Service category is free
@@ -128,38 +142,20 @@ function ServiceSelectionPage() {
 
   // Determine which tabs to show based on subscription
   const shouldShowQuickTab = () => {
-    if (!subscription?.subscription_plans?.name) return true; // Default: show both if no plan info
+    // Non-subscription vehicle: always show both tabs
+    if (!isVehicleSubscribed) return true;
+    if (!subscription?.subscription_plans?.name) return true;
     const planName = subscription.subscription_plans.name.toLowerCase();
-
-    // If plan is specifically for express detail, don't show quick tab
-    if (planName.includes("express detail") || planName.includes("express")) {
-      return false;
-    }
-
-    // If plan is for exterior, show quick tab
-    if (planName.includes("exterior")) {
-      return true;
-    }
-
-    // Default: show both tabs if plan doesn't match
+    if (planName.includes("express detail") || planName.includes("express")) return false;
     return true;
   };
 
   const shouldShowExpressTab = () => {
-    if (!subscription?.subscription_plans?.name) return true; // Default: show both if no plan info
+    // Non-subscription vehicle: always show both tabs
+    if (!isVehicleSubscribed) return true;
+    if (!subscription?.subscription_plans?.name) return true;
     const planName = subscription.subscription_plans.name.toLowerCase();
-
-    // If plan is specifically for exterior, don't show express tab
-    if (planName.includes("exterior")) {
-      return false;
-    }
-
-    // If plan is for express detail, show express tab
-    if (planName.includes("express detail") || planName.includes("express")) {
-      return true;
-    }
-
-    // Default: show both tabs if plan doesn't match
+    if (planName.includes("exterior")) return false;
     return true;
   };
 
@@ -175,28 +171,19 @@ function ServiceSelectionPage() {
     return categoryLower === "express detail";
   });
 
-  // Update active tab when subscription changes
+  // Update active tab when subscription or vehicle changes
   useEffect(() => {
-    if (!subscription?.subscription_plans?.name) {
+    if (!isVehicleSubscribed || !subscription?.subscription_plans?.name) {
       setActiveTab("quick");
       return;
     }
     const planName = subscription.subscription_plans.name.toLowerCase();
-
-    // If plan name contains "exterior", show Quick Service
-    if (planName.includes("exterior")) {
-      setActiveTab("quick");
-    }
-    // If plan name contains "express detail" or "express", show Express Detail
-    else if (
-      planName.includes("express detail") ||
-      planName.includes("express")
-    ) {
+    if (planName.includes("express detail") || planName.includes("express")) {
       setActiveTab("express");
     } else {
       setActiveTab("quick");
     }
-  }, [subscription]);
+  }, [subscription, isVehicleSubscribed]);
 
   const handlePackageSelect = (serviceId: string) => {
     setSelectedService(serviceId);
@@ -313,7 +300,7 @@ function ServiceSelectionPage() {
         <div className="bg-linear-to-r from-red-500 to-red-600 text-white text-center py-3 px-4">
           <div className="max-w-7xl mx-auto flex items-center justify-center gap-2">
             <span className="text-lg font-bold">
-              🎄 HOLIDAY SALE - 5% OFF ALL SERVICES!
+              SALE - 5% OFF ALL SERVICES!
             </span>
           </div>
         </div>

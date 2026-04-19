@@ -87,7 +87,7 @@ function ConfirmationContent() {
   };
 
   const isServiceFreeForSubscription = (serviceCategory: string) => {
-    if (!subscription?.subscription_plans?.name) return false;
+    if (!subscription?.subscription_plans?.name || !isVehicleSubscribed) return false;
     const categoryLower = serviceCategory?.toLowerCase() || "";
 
     // If subscribed to Quick Service, Quick Service category is free
@@ -107,6 +107,20 @@ function ConfirmationContent() {
   const timeParam = searchParams.get("time");
 
   const isSubscribed = !!userSubscribe?.stripe_subscription_id;
+  const [isVehicleSubscribed, setIsVehicleSubscribed] = useState(false);
+
+  // Check if the selected vehicle is part of the user's active subscription
+  useEffect(() => {
+    const plate = vehicleSpecs.license_plate;
+    if (!plate || !userSubscribe?.stripe_subscription_id) { setIsVehicleSubscribed(false); return; }
+    supabase
+      .from("subscription_vehicles")
+      .select("id, vehicle:vehicles!inner(license_plate)")
+      .eq("subscription_id", userSubscribe.id)
+      .eq("vehicles.license_plate", plate)
+      .maybeSingle()
+      .then(({ data }) => setIsVehicleSubscribed(!!data));
+  }, [vehicleSpecs.license_plate, userSubscribe?.stripe_subscription_id]);
 
   useEffect(() => {
     (async () => {
@@ -115,6 +129,7 @@ function ConfirmationContent() {
         .from("user_subscription")
         .select(
           `
+          id,
           stripe_customer_id,
           stripe_subscription_id,
           subscription_plan:subscription_plans (
@@ -587,63 +602,57 @@ function ConfirmationContent() {
                       {Number(selectedPackages?.duration)} mins
                     </span>
                   </div>
+                  {/* Service price row */}
+                  <div className="flex justify-between">
+                    <span className="text-slate-800 font-medium">Service:</span>
+                    {isServiceFree ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-400 line-through">${Number(selectedPackages?.price).toFixed(2)}</span>
+                        <span className="text-green-600 font-semibold">FREE</span>
+                      </div>
+                    ) : (
+                      <span className="font-medium">${Number(selectedPackages?.price).toFixed(2)}</span>
+                    )}
+                  </div>
+
+                  {/* Add-ons with prices */}
                   <div className="flex flex-col">
                     <span className="text-slate-800 font-medium">Add Ons:</span>
-                    {Array.isArray(selectedAddOns) &&
-                    selectedAddOns.length > 0 ? (
+                    {Array.isArray(selectedAddOns) && selectedAddOns.length > 0 ? (
                       selectedAddOns.map((addon: any) => (
-                        <div
-                          key={addon.id}
-                          className="flex justify-between pl-4 text-sm text-gray-600"
-                        >
+                        <div key={addon.id} className="flex justify-between pl-4 text-sm text-gray-600">
                           <span>{addon.name}</span>
-                          <span>{addon.duration} mins</span>
+                          <span className="font-medium text-gray-800">${Number(addon.price).toFixed(2)}</span>
                         </div>
                       ))
                     ) : (
                       <div className="flex justify-between pl-4 text-sm text-gray-500">
                         <span className="font-medium">None</span>
-                        <span className="font-medium">0</span>
+                        <span className="font-medium">—</span>
                       </div>
                     )}
                   </div>
+
                   <div className="flex justify-between">
-                    <span className="text-slate-800 font-medium">
-                      Whole Duration:
-                    </span>
-                    <span className="font-medium">
-                      {calculateDuration()} minutes
-                    </span>
+                    <span className="text-slate-800 font-medium">Duration:</span>
+                    <span className="font-medium">{calculateDuration()} minutes</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-800 font-medium">
-                      Total Price:
-                    </span>
-                    {/* ============================================
-                        HOLIDAY SALE: START
-                        ============================================ */}
+
+                  <div className="flex justify-between border-t pt-2 mt-1">
+                    <span className="text-slate-800 font-semibold">Total:</span>
                     <div className="flex flex-col items-end">
-                      {HOLIDAY_SALE_ACTIVE && (
-                        <span className="text-sm text-gray-500 line-through">
-                          ${calculateOriginalTotal().toFixed(2)}
-                        </span>
+                      {HOLIDAY_SALE_ACTIVE && !isServiceFree && (
+                        <span className="text-xs text-gray-400 line-through">${calculateOriginalTotal().toFixed(2)}</span>
                       )}
-                      <span className="font-medium">
-                        $
-                        {discountPercent > 0 || appliedDiscountAmount > 0
+                      <span className="font-semibold text-base">
+                        ${discountPercent > 0 || appliedDiscountAmount > 0
                           ? calculateTotalWithPromo().toFixed(2)
                           : calculateTotal().toFixed(2)}
                       </span>
+                      {isServiceFree && Array.isArray(selectedAddOns) && selectedAddOns.length > 0 && (
+                        <span className="text-xs text-green-600">Service covered by subscription</span>
+                      )}
                     </div>
-                    {/* ============================================
-                        HOLIDAY SALE: END - Replace above with:
-                        <span className="font-medium">
-                          $
-                          {discountPercent > 0
-                            ? calculateTotalWithPromo().toFixed(2)
-                            : calculateTotal()}
-                        </span>
-                        ============================================ */}
                   </div>
                 </div>
               </CardContent>
@@ -683,20 +692,24 @@ function ConfirmationContent() {
                     </p>
                   </div>
                 );
-              } else if (isSubscribed) {
+              } else if (isSubscribed && isVehicleSubscribed) {
                 return (
                   <div className="flex items-center gap-1">
                     <Crown className="w-4 h-4 text-yellow-500" />
                     <p className="text-sm text-orange-600">
                       You're subscribed to{" "}
-                      {isSubscribedToQuickService()
-                        ? "Quick Service"
-                        : "Express Detail"}{" "}
-                      — this{" "}
-                      {serviceCategory === "quick service"
-                        ? "Quick Service"
-                        : "Express Detail"}{" "}
+                      {isSubscribedToQuickService() ? "Quick Service" : "Express Detail"}{" "}
+                      — this {serviceCategory === "quick service" ? "Quick Service" : "Express Detail"}{" "}
                       service requires payment.
+                    </p>
+                  </div>
+                );
+              } else if (isSubscribed && !isVehicleSubscribed) {
+                return (
+                  <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                    <Crown className="w-4 h-4 text-amber-500 shrink-0" />
+                    <p className="text-sm text-amber-700">
+                      This vehicle is not part of your subscription — standard pricing applies.
                     </p>
                   </div>
                 );
