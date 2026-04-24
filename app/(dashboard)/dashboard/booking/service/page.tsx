@@ -59,10 +59,11 @@ function ServiceSelectionPage() {
   const [addOns, setAddOns] = useState<AddOns[]>([]);
   const [services, setServices] = useState<ServicePackage[]>([]);
   const [selectedService, setSelectedService] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"quick" | "express">("quick");
+  const [activeTab, setActiveTab] = useState<"quick" | "express" | "commercial">("quick");
   const [recommendModalOpen, setRecommendModalOpen] = useState(false);
   const [vehicleSpecs, setVehicleSpecs] = useState<any>({
     license_plate: searchParams.get("license_plate") ?? "",
+    vehicle_id: searchParams.get("vehicle_id") ?? "",
   });
 
   // Check if the selected vehicle's license plate is part of an active subscription
@@ -83,10 +84,11 @@ function ServiceSelectionPage() {
   useEffect(() => {
     const newSpecs = {
       license_plate: searchParams.get("license_plate") ?? "",
+      vehicle_id: searchParams.get("vehicle_id") ?? "",
     };
     setVehicleSpecs((prev: any) => {
       // Only update state if something changed to avoid unnecessary re-renders
-      if (prev.license_plate === newSpecs.license_plate) {
+      if (prev.license_plate === newSpecs.license_plate && prev.vehicle_id === newSpecs.vehicle_id) {
         return prev;
       }
       return newSpecs;
@@ -123,35 +125,30 @@ function ServiceSelectionPage() {
     return planName.includes("express detail") || planName.includes("express");
   };
 
+  const isSubscribedToCommercial = () => {
+    if (!subscription?.subscription_plans?.name) return false;
+    return subscription.subscription_plans.name.toLowerCase().includes("commercial");
+  };
+
   const isServiceFreeForSubscription = (serviceCategory: string) => {
     if (!subscription?.subscription_plans?.name || !isVehicleSubscribed) return false;
     const categoryLower = serviceCategory?.toLowerCase() || "";
-
-    // If subscribed to Quick Service, Quick Service category is free
-    if (isSubscribedToQuickService() && categoryLower === "quick service") {
-      return true;
-    }
-
-    // If subscribed to Express Detail, Express Detail category is free
-    if (isSubscribedToExpressDetail() && categoryLower === "express detail") {
-      return true;
-    }
-
+    if (isSubscribedToQuickService() && categoryLower === "quick service") return true;
+    // Commercial plans cover the same express detail services
+    if ((isSubscribedToExpressDetail() || isSubscribedToCommercial()) && categoryLower === "express detail") return true;
     return false;
   };
 
   // Determine which tabs to show based on subscription
   const shouldShowQuickTab = () => {
-    // Non-subscription vehicle: always show both tabs
     if (!isVehicleSubscribed) return true;
     if (!subscription?.subscription_plans?.name) return true;
     const planName = subscription.subscription_plans.name.toLowerCase();
-    if (planName.includes("express detail") || planName.includes("express")) return false;
+    if (planName.includes("express detail") || planName.includes("express") || planName.includes("commercial")) return false;
     return true;
   };
 
   const shouldShowExpressTab = () => {
-    // Non-subscription vehicle: always show both tabs
     if (!isVehicleSubscribed) return true;
     if (!subscription?.subscription_plans?.name) return true;
     const planName = subscription.subscription_plans.name.toLowerCase();
@@ -159,17 +156,9 @@ function ServiceSelectionPage() {
     return true;
   };
 
-  // Filter services by category - Quick Service tab shows only quick service category
-  const quickServices = services.filter((s) => {
-    const categoryLower = s.category?.toLowerCase() || "";
-    return categoryLower === "quick service";
-  });
-
-  // Filter services by category - Express Detail tab shows only express detail category
-  const expressServices = services.filter((s) => {
-    const categoryLower = s.category?.toLowerCase() || "";
-    return categoryLower === "express detail";
-  });
+  // Filter services by category
+  const quickServices = services.filter((s) => s.category?.toLowerCase() === "quick service");
+  const expressServices = services.filter((s) => s.category?.toLowerCase() === "express detail");
 
   // Update active tab when subscription or vehicle changes
   useEffect(() => {
@@ -178,7 +167,7 @@ function ServiceSelectionPage() {
       return;
     }
     const planName = subscription.subscription_plans.name.toLowerCase();
-    if (planName.includes("express detail") || planName.includes("express")) {
+    if (planName.includes("express detail") || planName.includes("express") || planName.includes("commercial")) {
       setActiveTab("express");
     } else {
       setActiveTab("quick");
@@ -337,15 +326,12 @@ function ServiceSelectionPage() {
             <Tabs
               value={activeTab}
               onValueChange={(value) =>
-                setActiveTab(value as "quick" | "express")
+                setActiveTab(value as "quick" | "express" | "commercial")
               }
               className="w-full"
             >
               <TabsList
-                className={`grid w-full mb-12 ${shouldShowQuickTab() && shouldShowExpressTab()
-                  ? "grid-cols-2"
-                  : "grid-cols-1"
-                  }`}
+                className={`grid w-full mb-12 ${shouldShowQuickTab() && shouldShowExpressTab() ? "grid-cols-2" : "grid-cols-1"}`}
               >
                 {shouldShowQuickTab() && (
                   <TabsTrigger
@@ -589,6 +575,7 @@ function ServiceSelectionPage() {
                   </>
                 )}
               </TabsContent>
+
             </Tabs>
 
             {/* ============================================

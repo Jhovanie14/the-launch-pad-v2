@@ -63,9 +63,13 @@ function ConfirmationContent() {
     email: "",
     phone: "",
   });
+  const rawPlate = searchParams.get("license_plate") ?? "";
+  const cleanPlate = rawPlate === "null" ? "" : rawPlate;
   const [vehicleSpecs, setVehicleSpecs] = useState<any>({
-    license_plate: searchParams.get("license_plate") ?? "",
+    license_plate: cleanPlate,
+    vehicle_id: searchParams.get("vehicle_id") ?? "",
   });
+  const [vehicleInfo, setVehicleInfo] = useState<any>(null);
 
   const [selectedPackages, setSelectedPackages] = useState<any>(null);
   const [selectedAddOns, setSelectedAddOns] = useState<any>(null);
@@ -89,6 +93,16 @@ function ConfirmationContent() {
   const HOLIDAY_SALE_DISCOUNT = 0.1;
 
   const isSubscribed = user ? !!userSubscribe?.stripe_subscription_id : false;
+
+  useEffect(() => {
+    const plate = vehicleSpecs.license_plate;
+    const vid = vehicleSpecs.vehicle_id;
+    if (!plate && !vid) return;
+    const query = supabase.from("vehicles").select("year, make, model, body_type, colors, license_plate");
+    (plate ? query.eq("license_plate", plate) : query.eq("id", vid))
+      .maybeSingle()
+      .then(({ data }) => setVehicleInfo(data));
+  }, [vehicleSpecs.license_plate, vehicleSpecs.vehicle_id]);
 
   useEffect(() => {
     (async () => {
@@ -227,6 +241,7 @@ function ConfirmationContent() {
       const payload = {
         vehicleSpecs: {
           license_plate: vehicleSpecs.license_plate ?? "",
+          vehicle_id: vehicleSpecs.vehicle_id ?? "",
         },
         servicePackageId: selectedPackages!.id,
         servicePackageName: selectedPackages!.name,
@@ -303,16 +318,47 @@ function ConfirmationContent() {
                 Vehicle Details
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-slate-900 font-medium">
-                    License Plate:
-                  </span>
-                  <span className="font-medium font-mono text-lg uppercase">
-                    {vehicleSpecs.license_plate || "N/A"}
-                  </span>
-                </div>
+            <CardContent>
+              <div className="space-y-2 text-sm">
+                {(vehicleSpecs.license_plate || vehicleInfo?.license_plate) && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">License Plate:</span>
+                    <span className="font-mono font-semibold tracking-widest">{vehicleSpecs.license_plate || vehicleInfo?.license_plate}</span>
+                  </div>
+                )}
+                {vehicleInfo?.year && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Year:</span>
+                    <span className="font-medium">{vehicleInfo.year}</span>
+                  </div>
+                )}
+                {vehicleInfo?.make && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Make:</span>
+                    <span className="font-medium">{vehicleInfo.make}</span>
+                  </div>
+                )}
+                {vehicleInfo?.model && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Model:</span>
+                    <span className="font-medium">{vehicleInfo.model}</span>
+                  </div>
+                )}
+                {vehicleInfo?.body_type && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Body Type:</span>
+                    <span className="font-medium">{vehicleInfo.body_type}</span>
+                  </div>
+                )}
+                {vehicleInfo?.colors?.length > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Color:</span>
+                    <span className="font-medium">{vehicleInfo.colors.join(", ")}</span>
+                  </div>
+                )}
+                {!vehicleSpecs.license_plate && !vehicleInfo && (
+                  <p className="text-gray-400 text-sm">No vehicle info available.</p>
+                )}
               </div>
             </CardContent>
           </Card>

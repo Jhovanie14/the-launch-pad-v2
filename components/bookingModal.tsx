@@ -116,7 +116,9 @@ export default function BookingModal() {
       const fromSaved = savedVehicles.find((v) => v.id === selectedVehicleId);
       const selected = fromSub ?? fromSaved;
       if (!selected) return;
-      params = new URLSearchParams({ license_plate: selected.license_plate });
+      params = new URLSearchParams();
+      if (selected.license_plate) params.set("license_plate", selected.license_plate);
+      params.set("vehicle_id", selected.id);
     } else {
       if (!validate()) return;
       const entries = Object.entries(vehicleInfo).filter(

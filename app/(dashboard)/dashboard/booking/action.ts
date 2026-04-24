@@ -8,6 +8,8 @@ import { createAdminClient } from "@/utils/supabase/admin";
 type CarData = {
   // License plate is OPTIONAL
   license_plate?: string;
+  // Direct vehicle ID — used as fallback when no plate
+  vehicle_id?: string;
 
   // Optional vehicle details
   year?: number;
@@ -56,9 +58,9 @@ export async function createBooking(car: CarData, subscriberId?: string) {
     currentUser: currentUser?.id,
   });
 
-  // Only process vehicle if license plate is provided
-  let vehicleId: string | null = null;
-  
+  // Use directly passed vehicle_id as base, then override via plate lookup if plate exists
+  let vehicleId: string | null = car.vehicle_id ?? null;
+
   if (normalizedPlate) {
     const { data: existing } = await supabase
       .from("vehicles")

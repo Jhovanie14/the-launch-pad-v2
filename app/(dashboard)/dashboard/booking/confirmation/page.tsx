@@ -42,8 +42,11 @@ function ConfirmationContent() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const rawPlate = searchParams.get("license_plate") ?? "";
+  const cleanPlate = rawPlate === "null" ? "" : rawPlate;
   const [vehicleSpecs] = useState<any>({
-    license_plate: searchParams.get("license_plate") ?? "",
+    license_plate: cleanPlate,
+    vehicle_id: searchParams.get("vehicle_id") ?? "",
   });
   const [selectedPackages, setSelectedPackages] = useState<any>(null);
   const [userSubscribe, setUserSubscribe] = useState<any>(null);
@@ -86,20 +89,18 @@ function ConfirmationContent() {
     return planName.includes("express detail") || planName.includes("express");
   };
 
+  const isSubscribedToCommercial = () => {
+    if (!subscription?.subscription_plans?.name) return false;
+    return subscription.subscription_plans.name.toLowerCase().includes("commercial");
+  };
+
   const isServiceFreeForSubscription = (serviceCategory: string) => {
     if (!subscription?.subscription_plans?.name || !isVehicleSubscribed) return false;
     const categoryLower = serviceCategory?.toLowerCase() || "";
-
-    // If subscribed to Quick Service, Quick Service category is free
-    if (isSubscribedToQuickService() && categoryLower === "quick service") {
-      return true;
-    }
-
-    // If subscribed to Express Detail, Express Detail category is free
-    if (isSubscribedToExpressDetail() && categoryLower === "express detail") {
-      return true;
-    }
-
+    if (isSubscribedToQuickService() && categoryLower === "quick service") return true;
+    if (isSubscribedToExpressDetail() && categoryLower === "express detail") return true;
+    // Commercial plans use the same express detail services
+    if (isSubscribedToCommercial() && categoryLower === "express detail") return true;
     return false;
   };
 
@@ -108,11 +109,23 @@ function ConfirmationContent() {
 
   const isSubscribed = !!userSubscribe?.stripe_subscription_id;
   const [isVehicleSubscribed, setIsVehicleSubscribed] = useState(false);
+  const [vehicleInfo, setVehicleInfo] = useState<any>(null);
 
-  // Check if the selected vehicle is part of the user's active subscription
+  // Fetch vehicle info — runs for all users (subscriber or not)
   useEffect(() => {
     const plate = vehicleSpecs.license_plate;
-    if (!plate || !userSubscribe?.stripe_subscription_id) { setIsVehicleSubscribed(false); return; }
+    const vid = vehicleSpecs.vehicle_id;
+    if (!plate && !vid) return;
+    const query = supabase.from("vehicles").select("year, make, model, body_type, colors, license_plate");
+    (plate ? query.eq("license_plate", plate) : query.eq("id", vid))
+      .maybeSingle()
+      .then(({ data }) => setVehicleInfo(data));
+  }, [vehicleSpecs.license_plate, vehicleSpecs.vehicle_id]);
+
+  // Check if vehicle is part of active subscription — only for subscribers
+  useEffect(() => {
+    const plate = vehicleSpecs.license_plate;
+    if (!plate || !userSubscribe?.id) { setIsVehicleSubscribed(false); return; }
     supabase
       .from("subscription_vehicles")
       .select("id, vehicle:vehicles!inner(license_plate)")
@@ -120,7 +133,7 @@ function ConfirmationContent() {
       .eq("vehicles.license_plate", plate)
       .maybeSingle()
       .then(({ data }) => setIsVehicleSubscribed(!!data));
-  }, [vehicleSpecs.license_plate, userSubscribe?.stripe_subscription_id]);
+  }, [vehicleSpecs.license_plate, userSubscribe?.id]);
 
   useEffect(() => {
     (async () => {
@@ -384,6 +397,7 @@ function ConfirmationContent() {
       try {
         const booking = await createBooking({
           license_plate: vehicleSpecs.license_plate ?? "",
+          vehicle_id: vehicleSpecs.vehicle_id || undefined,
           servicePackage: { ...selectedPackages, price: 0 },
           addOnsId: [],
           appointmentDate: new Date(appointmentDate!),
@@ -436,6 +450,7 @@ function ConfirmationContent() {
       if (paymentMethod === "cash") {
         const booking = await createBooking({
           license_plate: vehicleSpecs.license_plate ?? "",
+          vehicle_id: vehicleSpecs.vehicle_id || undefined,
           servicePackage: { ...selectedPackages, price: servicePrice },
           addOnsId: selectedAddOns
             ? selectedAddOns.map((a: { id: string }) => a.id)
@@ -455,6 +470,7 @@ function ConfirmationContent() {
         const payload = {
           vehicleSpecs: {
             license_plate: vehicleSpecs.license_plate ?? "",
+            vehicle_id: vehicleSpecs.vehicle_id ?? "",
           },
           servicePackageName: selectedPackages!.name,
           servicePackagePrice: servicePrice, // Free if matches subscription, otherwise full price
@@ -529,37 +545,46 @@ function ConfirmationContent() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  {/* <div className="flex justify-between">
-                    <span className="text-gray-600">Year:</span>
-                    <span className="font-medium">{vehicleSpecs.year}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Make:</span>
-                    <span className="font-medium">{vehicleSpecs.make}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Model:</span>
-                    <span className="font-medium">{vehicleSpecs.model}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Body Type:</span>
-                    <span className="font-medium">
-                      {vehicleSpecs.body_type}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Color:</span>
-                    <span className="font-medium">{vehicleSpecs.color}</span>
-                  </div> */}
-                  <div className="flex justify-between">
-                    <span className="text-slate-900 font-medium">
-                      License Plate:
-                    </span>
-                    <span className="font-medium">
-                      {vehicleSpecs.license_plate || "N/A"}
-                    </span>
-                  </div>
+                <div className="space-y-2 text-sm">
+                  {(vehicleSpecs.license_plate || vehicleInfo?.license_plate) && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">License Plate:</span>
+                      <span className="font-mono font-semibold tracking-widest">{vehicleSpecs.license_plate || vehicleInfo?.license_plate}</span>
+                    </div>
+                  )}
+                  {vehicleInfo?.year && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Year:</span>
+                      <span className="font-medium">{vehicleInfo.year}</span>
+                    </div>
+                  )}
+                  {vehicleInfo?.make && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Make:</span>
+                      <span className="font-medium">{vehicleInfo.make}</span>
+                    </div>
+                  )}
+                  {vehicleInfo?.model && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Model:</span>
+                      <span className="font-medium">{vehicleInfo.model}</span>
+                    </div>
+                  )}
+                  {vehicleInfo?.body_type && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Body Type:</span>
+                      <span className="font-medium">{vehicleInfo.body_type}</span>
+                    </div>
+                  )}
+                  {vehicleInfo?.colors?.length > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Color:</span>
+                      <span className="font-medium">{vehicleInfo.colors.join(", ")}</span>
+                    </div>
+                  )}
+                  {!vehicleSpecs.license_plate && !vehicleInfo && (
+                    <p className="text-gray-400 text-sm">No vehicle info available.</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -685,9 +710,7 @@ function ConfirmationContent() {
                     <Crown className="w-4 h-4 text-yellow-500" />
                     <p className="text-sm text-green-600">
                       You're subscribed to{" "}
-                      {isSubscribedToQuickService()
-                        ? "Quick Service"
-                        : "Express Detail"}{" "}
+                      {isSubscribedToQuickService() ? "Quick Service" : isSubscribedToCommercial() ? "Commercial Wash" : "Express Detail"}{" "}
                       — this service is free! You only pay for add-ons.
                     </p>
                   </div>

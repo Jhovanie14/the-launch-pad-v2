@@ -53,6 +53,7 @@ function DateTimeSelectionPage() {
 
   const [vehicleSpecs, setVehicleSpecs] = useState<any>({
     license_plate: searchParams.get("license_plate"),
+    vehicle_id: searchParams.get("vehicle_id") ?? "",
   });
 
   const serviceId = searchParams.get("service");

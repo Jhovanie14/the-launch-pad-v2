@@ -11,11 +11,12 @@ export async function POST(req: Request) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const vehicleId = body.vehicleSpecs
-    ? await ensureVehicle({
-        license_plate: body.vehicleSpecs.license_plate,
-      })
-    : null;
+  const passedVehicleId = body.vehicleSpecs?.vehicle_id || null;
+  const vehicleId = passedVehicleId
+    ? passedVehicleId
+    : body.vehicleSpecs
+      ? await ensureVehicle({ license_plate: body.vehicleSpecs.license_plate })
+      : null;
 
   // Prepare line items for Stripe
   // const lineItems = [
@@ -80,9 +81,8 @@ export async function POST(req: Request) {
     body.addOnsId?.join(",") ??
     body.addOns?.map((a: any) => a.id).join(",") ??
     "";
-  const license_plate = body.vehicleSpecs
-    ? body.vehicleSpecs.license_plate
-    : "";
+  const license_plate = body.vehicleSpecs?.license_plate || "";
+  const vehicle_id_param = vehicleId ?? "";
   const service = body.servicePackageId || "";
   const addons = aids || "";
   const date = body.appointmentDate || "";
@@ -90,6 +90,7 @@ export async function POST(req: Request) {
 
   const currentParams = new URLSearchParams({
     license_plate,
+    vehicle_id: vehicle_id_param,
     service,
     addons,
     date,
