@@ -91,6 +91,8 @@ export interface Subscription {
   };
   vehicles?: Array<{
     id: string;
+    subscription_vehicle_id: string;
+    stripe_item_id?: string | null;
     year: number;
     make: string;
     model: string;

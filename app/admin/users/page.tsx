@@ -354,28 +354,47 @@ export default function AdminUsersPage() {
                           {sub.subscription_vehicles &&
                             sub.subscription_vehicles.length > 0 && (
                               <div className="bg-muted/30 p-3 rounded-md mt-2">
-                                <p className="font-semibold flex items-center gap-2 mb-2 text-sm">
-                                  <Car size={14} /> Registered Vehicles
-                                </p>
-                                <div className="space-y-1">
-                                  {sub.subscription_vehicles.map((sv: any) => (
+                                <div className="flex items-center gap-2 mb-2">
+                                  <p className="font-semibold flex items-center gap-2 text-sm">
+                                    <Car size={14} /> Registered Vehicles
+                                  </p>
+                                  <Badge variant="secondary" className="text-xs">
+                                    {sub.subscription_vehicles.length}/5
+                                  </Badge>
+                                  {sub.subscription_vehicles.length > 1 && (
+                                    <Badge className="text-xs bg-green-100 text-green-700 border border-green-200">
+                                      Flock
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="space-y-1.5">
+                                  {sub.subscription_vehicles.map((sv: any, idx: number) => (
                                     <div
                                       key={sv.id}
                                       className="text-sm text-muted-foreground flex items-center gap-2"
                                     >
-                                      <span className="w-2 h-2 bg-primary rounded-full"></span>
-                                      <span>
+                                      <span
+                                        className={`w-2 h-2 rounded-full shrink-0 ${idx === 0 ? "bg-blue-500" : "bg-green-500"}`}
+                                      />
+                                      <span className="flex items-center gap-1.5 flex-wrap">
+                                        <span
+                                          className={`text-xs font-semibold px-1.5 py-0.5 rounded ${idx === 0 ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}`}
+                                        >
+                                          {idx === 0 ? "Primary" : "Family"}
+                                        </span>
                                         {sv.vehicle.year} {sv.vehicle.make}{" "}
                                         {sv.vehicle.model}
-                                        {" - "}
-                                        <span className="font-medium">
-                                          {sv.vehicle.body_type}
-                                        </span>
-                                        {" - "}
-                                        <span className="italic">
-                                          {sv.vehicle.colors?.join(", ")}
-                                        </span>
-                                        <span className="italic">
+                                        {sv.vehicle.body_type && (
+                                          <span className="font-medium">
+                                            — {sv.vehicle.body_type}
+                                          </span>
+                                        )}
+                                        {sv.vehicle.colors?.length > 0 && (
+                                          <span className="italic text-xs">
+                                            ({sv.vehicle.colors.join(", ")})
+                                          </span>
+                                        )}
+                                        <span className="font-mono text-xs bg-muted px-1 rounded">
                                           {sv.vehicle.license_plate}
                                         </span>
                                       </span>

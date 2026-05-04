@@ -1,20 +1,30 @@
+"use client";
+
 import { Subscription } from "@/types";
 import Link from "next/link";
 import { useState, useMemo, useEffect } from "react";
 import { Button } from "./ui/button";
-import { Car, CheckCircle2, AlertCircle, XCircle, TriangleAlert } from "lucide-react";
+import { Car, CheckCircle2, AlertCircle, XCircle, TriangleAlert, Plus, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Separator } from "./ui/separator";
+import { Badge } from "./ui/badge";
+import { AddVehicleModal } from "./add-vehicle-modal";
+import { RemoveVehicleDialog } from "./remove-vehicle-dialog";
 
 interface SubscriptionStatusProps {
   subscription: Subscription | null;
+  onVehicleChange?: () => void;
 }
 
 export default function SubscriptionStatus({
   subscription,
+  onVehicleChange,
 }: SubscriptionStatusProps) {
   const [loading, setLoading] = useState(false);
   const [nextInvoiceAmount, setNextInvoiceAmount] = useState<number | null>(null);
+  const [showAddVehicle, setShowAddVehicle] = useState(false);
+  type SubscriptionVehicle = NonNullable<Subscription["vehicles"]>[number];
+  const [vehicleToRemove, setVehicleToRemove] = useState<SubscriptionVehicle | null>(null);
 
   useEffect(() => {
     fetch("/api/subscription-upcoming-invoice")
@@ -294,16 +304,25 @@ export default function SubscriptionStatus({
                           </span>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-xs text-gray-400 line-through">
-                          ${pricing.basePrice.toFixed(2)}
-                        </p>
-                        <p className="text-sm font-semibold text-gray-900">
-                          ${item.price.toFixed(2)}
-                          <span className="text-xs text-gray-500 ml-1">
-                            /{subscription.billing_cycle}
-                          </span>
-                        </p>
+                      <div className="flex items-center gap-3">
+                        <div className="text-right">
+                          <p className="text-xs text-gray-400 line-through">
+                            ${pricing.basePrice.toFixed(2)}
+                          </p>
+                          <p className="text-sm font-semibold text-gray-900">
+                            ${item.price.toFixed(2)}
+                            <span className="text-xs text-gray-500 ml-1">
+                              /{subscription.billing_cycle}
+                            </span>
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => setVehicleToRemove(item.vehicle as any)}
+                          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                          title="Remove this vehicle"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -409,6 +428,25 @@ export default function SubscriptionStatus({
           </div>
         </div>
 
+        {/* Add Family Vehicle */}
+        {subscription.status === "active" &&
+          (pricing.vehiclePricing.length < 5) && (
+            <div className="pt-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAddVehicle(true)}
+                className="w-full border-dashed border-green-400 text-green-700 hover:bg-green-50 hover:text-green-800"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Family Vehicle
+                <Badge variant="secondary" className="ml-2 text-xs bg-green-100 text-green-700">
+                  35% off
+                </Badge>
+              </Button>
+            </div>
+          )}
+
         {/* Actions */}
         <div className="pt-4">
           <Button
@@ -420,6 +458,28 @@ export default function SubscriptionStatus({
           </Button>
         </div>
       </CardContent>
+
+      {/* Add Vehicle Modal */}
+      <AddVehicleModal
+        open={showAddVehicle}
+        onClose={() => setShowAddVehicle(false)}
+        onSuccess={() => onVehicleChange?.()}
+        currentVehicleCount={pricing.vehiclePricing.length}
+        basePriceMonthly={pricing.basePrice}
+        billingCycle={subscription.billing_cycle}
+      />
+
+      {/* Remove Vehicle Dialog */}
+      {vehicleToRemove && (
+        <RemoveVehicleDialog
+          open={!!vehicleToRemove}
+          onClose={() => setVehicleToRemove(null)}
+          onSuccess={() => onVehicleChange?.()}
+          vehicle={vehicleToRemove}
+          discountedPrice={pricing.basePrice * 0.65}
+          billingCycle={subscription.billing_cycle}
+        />
+      )}
     </Card>
   );
 }

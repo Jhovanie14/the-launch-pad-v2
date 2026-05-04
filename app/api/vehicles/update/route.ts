@@ -21,38 +21,48 @@ export async function POST(req: Request) {
 
     if (!vehicle) return Response.json({ error: "Vehicle not found" }, { status: 404 });
 
-    const isDirectOwner = vehicle.user_id === user.id;
+    // Admins can update any vehicle without ownership check
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
 
-    // Check subscription ownership
-    let isSubOwner = false;
-    if (!isDirectOwner) {
-      const { data: subLink } = await admin
-        .from("subscription_vehicles")
-        .select("subscription_id, user_subscription!inner(user_id)")
-        .eq("vehicle_id", vehicleId)
-        .maybeSingle();
+    const isAdmin = profile?.role === "admin";
 
-      if ((subLink as any)?.user_subscription?.user_id === user.id) isSubOwner = true;
-    }
+    if (!isAdmin) {
+      const isDirectOwner = vehicle.user_id === user.id;
 
-    if (!isSubOwner) {
-      const { data: selfLink } = await admin
-        .from("self_service_subscription_vehicles")
-        .select("subscription_id, self_service_subscriptions!inner(user_id)")
-        .eq("vehicle_id", vehicleId)
-        .maybeSingle();
+      // Check subscription ownership
+      let isSubOwner = false;
+      if (!isDirectOwner) {
+        const { data: subLink } = await admin
+          .from("subscription_vehicles")
+          .select("subscription_id, user_subscription!inner(user_id)")
+          .eq("vehicle_id", vehicleId)
+          .maybeSingle();
 
-      if ((selfLink as any)?.self_service_subscriptions?.user_id === user.id) isSubOwner = true;
-    }
+        if ((subLink as any)?.user_subscription?.user_id === user.id) isSubOwner = true;
+      }
 
-    if (!isDirectOwner && !isSubOwner) {
-      return Response.json({ error: "Forbidden" }, { status: 403 });
+      if (!isSubOwner) {
+        const { data: selfLink } = await admin
+          .from("self_service_subscription_vehicles")
+          .select("subscription_id, self_service_subscriptions!inner(user_id)")
+          .eq("vehicle_id", vehicleId)
+          .maybeSingle();
+
+        if ((selfLink as any)?.self_service_subscriptions?.user_id === user.id) isSubOwner = true;
+      }
+
+      if (!isDirectOwner && !isSubOwner) {
+        return Response.json({ error: "Forbidden" }, { status: 403 });
+      }
     }
 
     const { error } = await admin
       .from("vehicles")
       .update({
-        user_id: user.id,
         year: year ? parseInt(year, 10) : null,
         make: make || null,
         model: model || null,

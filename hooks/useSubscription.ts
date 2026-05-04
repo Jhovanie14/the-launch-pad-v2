@@ -42,5 +42,5 @@ export function useSubscription() {
     }
   }
 
-  return { subscription, loading, error };
+  return { subscription, loading, error, refetch: loadSubscrption };
 }

@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { CreditCard, Settings, AlertCircle } from "lucide-react";
 
 export default function BillingPage() {
-  const { subscription, loading, error } = useSubscription();
+  const { subscription, loading, error, refetch } = useSubscription();
   const { subscription: selfSubs } = useSelfServiceSubscription();
   const [canceling, setCanceling] = useState(false);
 
@@ -92,7 +92,7 @@ export default function BillingPage() {
         <h2 className="text-xl font-semibold text-gray-900">
           Express Detailing Subscription
         </h2>
-        <SubscriptionStatus subscription={subscription} />
+        <SubscriptionStatus subscription={subscription} onVehicleChange={refetch} />
         {subscription && <SubscriptionCancelInfo subscription={subscription} />}
       </div>
 

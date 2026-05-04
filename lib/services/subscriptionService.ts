@@ -30,6 +30,7 @@ export async function getActiveSubscription(
     .select(
       `
       id,
+      stripe_item_id,
       vehicle:vehicles (
         id,
         year,
@@ -53,6 +54,16 @@ export async function getActiveSubscription(
     plan_id: subs.subscription_plan_id,
     subscription_plans: plan,
     billing_cycle: subs.billing_cycle || "month",
-    vehicles: (vehicles || []).map((v: any) => v.vehicle).filter(Boolean),
+    vehicles: (vehicles || [])
+      .map((v: any) =>
+        v.vehicle
+          ? {
+              ...v.vehicle,
+              subscription_vehicle_id: v.id,
+              stripe_item_id: v.stripe_item_id ?? null,
+            }
+          : null
+      )
+      .filter(Boolean),
   };
 }
