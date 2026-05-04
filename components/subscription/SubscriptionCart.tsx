@@ -99,7 +99,7 @@ export default function SubscriptionCart({
   // Promo configuration
   const PROMO_CONFIG = {
     enabled: true,
-    stripeCouponId_Subscription: "lk14jNPw",
+    stripeCouponId_Subscription: "SOBGLcnf",
     isSubscriptionPercent: 10,
   };
 

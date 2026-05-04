@@ -88,9 +88,30 @@ async function handler(req: Request) {
 
   // Retrieve Stripe subscription to get the primary item's price details
   console.log("[add-vehicle] retrieving stripe sub:", sub.stripe_subscription_id);
-  const stripeSub = await stripe.subscriptions.retrieve(
-    sub.stripe_subscription_id
-  );
+  let stripeSub: Awaited<ReturnType<typeof stripe.subscriptions.retrieve>>;
+  try {
+    stripeSub = await stripe.subscriptions.retrieve(sub.stripe_subscription_id);
+  } catch (stripeErr: any) {
+    console.error("[add-vehicle] stripe retrieve error:", stripeErr?.message);
+    // Test/live mode mismatch — subscription exists in the other Stripe mode
+    if (
+      stripeErr?.message?.includes("a similar object exists in test mode") ||
+      stripeErr?.message?.includes("a similar object exists in live mode")
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Your subscription was created in Stripe test mode but the app is running in live mode (or vice versa). Please contact support to re-link your subscription.",
+        },
+        { status: 400 }
+      );
+    }
+    return NextResponse.json(
+      { error: "Could not retrieve subscription from Stripe. Please try again or contact support." },
+      { status: 500 }
+    );
+  }
+
   const primaryItem = stripeSub.items.data[0];
 
   if (!primaryItem) {
