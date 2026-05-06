@@ -40,7 +40,7 @@ export function Footer() {
             </p>
             <div className="flex gap-4">
               <Link
-                href="https://instagram.com/thelaunchpadhtx"
+                href="https://www.instagram.com/thelaunchpadwash/"
                 target="_blank"
                 rel="noopener"
                 aria-label="Instagram"

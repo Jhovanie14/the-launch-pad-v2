@@ -1,4 +1,9 @@
 import { sendBookingConfirmationEmail } from "@/lib/email/sendConfirmation";
+import {
+  sendPaymentFailedEmail,
+  sendCancellationScheduledEmail,
+  sendSubscriptionCancelledEmail,
+} from "@/lib/email/subscription-emails";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
@@ -643,15 +648,15 @@ async function processSubscription(session: Stripe.Checkout.Session) {
   const cps = Number(subscriptionItem?.current_period_start);
   const cpe = Number(subscriptionItem?.current_period_end);
 
-  console.log("Raw billing data from subscription item:", {
-    current_period_start: subscriptionItem?.current_period_start,
-    current_period_end: subscriptionItem?.current_period_end,
-    cps_number: cps,
-    cpe_number: cpe,
-    is_cps_finite: Number.isFinite(cps),
-    is_cpe_finite: Number.isFinite(cpe),
-    line_items_count: subscriptionItems.length,
-  });
+  // console.log("Raw billing data from subscription item:", {
+  //   current_period_start: subscriptionItem?.current_period_start,
+  //   current_period_end: subscriptionItem?.current_period_end,
+  //   cps_number: cps,
+  //   cpe_number: cpe,
+  //   is_cps_finite: Number.isFinite(cps),
+  //   is_cpe_finite: Number.isFinite(cpe),
+  //   line_items_count: subscriptionItems.length,
+  // });
 
   const currentPeriodStartIso = Number.isFinite(cps)
     ? new Date(cps * 1000).toISOString()
@@ -664,20 +669,20 @@ async function processSubscription(session: Stripe.Checkout.Session) {
   const priceId = subscriptionItems[0]?.price?.id ?? null;
   const cancelAtPeriodEnd = Boolean(sub?.cancel_at_period_end);
 
-  console.log("Saving subscription with payload:", {
-    user_id: appUserId,
-    subscription_plan_id: planId,
-    billing_cycle: billingCycle,
-    stripe_customer_id: session.customer,
-    stripe_subscription_id: subscription.id,
-    price_id: priceId,
-    status: subscription.status,
-    current_period_start: currentPeriodStartIso,
-    current_period_end: currentPeriodEndIso,
-    cancel_at_period_end: cancelAtPeriodEnd,
-    vehicle_ids: vehicleIds,
-    vehicle_count: vehicleIds.length,
-  });
+  // console.log("Saving subscription with payload:", {
+  //   user_id: appUserId,
+  //   subscription_plan_id: planId,
+  //   billing_cycle: billingCycle,
+  //   stripe_customer_id: session.customer,
+  //   stripe_subscription_id: subscription.id,
+  //   price_id: priceId,
+  //   status: subscription.status,
+  //   current_period_start: currentPeriodStartIso,
+  //   current_period_end: currentPeriodEndIso,
+  //   cancel_at_period_end: cancelAtPeriodEnd,
+  //   vehicle_ids: vehicleIds,
+  //   vehicle_count: vehicleIds.length,
+  // });
 
   // Insert/update subscription
   const { data: subscriptionRow, error: subError } = await supabase
@@ -862,6 +867,34 @@ async function handleSubscriptionUpdated(event: Stripe.Event) {
     return;
   }
 
+  // Send retention email when cancel_at_period_end is newly set to true
+  const prevAttrs = (event.data.previous_attributes ?? {}) as any;
+  const cancelJustScheduled =
+    "cancel_at_period_end" in prevAttrs &&
+    prevAttrs.cancel_at_period_end === false &&
+    cancelAtPeriodEnd === true;
+
+  if (cancelJustScheduled && subscriptionRow?.user_id) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("email, full_name")
+      .eq("id", subscriptionRow.user_id)
+      .maybeSingle();
+
+    if (profile?.email && currentPeriodEndIso) {
+      const endDate = new Date(currentPeriodEndIso).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+      await sendCancellationScheduledEmail({
+        to: profile.email,
+        name: profile.full_name ?? "there",
+        periodEndDate: endDate,
+      });
+    }
+  }
+
   // 2️⃣ Update subscription_vehicles if vehicle_id exists
   const vehicleId = subscription.metadata?.vehicle_id ?? null;
   if (vehicleId && subscriptionRow?.id) {
@@ -892,17 +925,32 @@ async function handleSubscriptionDeleted(event: Stripe.Event) {
 
   console.log("Subscription deleted:", subscription.id);
 
-  const { error } = await supabase
+  const { data: sub, error } = await supabase
     .from("user_subscription")
-    .update({
-      status: "canceled",
-      cancel_at_period_end: false,
-    })
-    .eq("stripe_subscription_id", subscription.id);
+    .update({ status: "canceled", cancel_at_period_end: false })
+    .eq("stripe_subscription_id", subscription.id)
+    .select("user_id")
+    .maybeSingle();
 
   if (error) {
     console.error("Error canceling subscription:", error);
+    return;
   }
+
+  if (!sub?.user_id) return;
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("email, full_name")
+    .eq("id", sub.user_id)
+    .maybeSingle();
+
+  if (!profile?.email) return;
+
+  await sendSubscriptionCancelledEmail({
+    to: profile.email,
+    name: profile.full_name ?? "there",
+  });
 }
 
 // ========================================
@@ -927,16 +975,41 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
 }
 
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
+  // Update fleet invoice status if this is a fleet invoice
   const { error } = await supabase
     .from("fleet_invoices")
-    .update({
-      status: "overdue",
-    })
+    .update({ status: "overdue" })
     .eq("stripe_invoice_id", invoice.id);
 
   if (error) {
-    console.error("Failed to update invoice:", error);
+    console.error("Failed to update fleet invoice:", error);
   } else {
     console.log(`⚠️ Invoice ${invoice.id} payment failed`);
   }
+
+  // Send payment failed email to subscriber if this belongs to a subscription
+  const invoiceAny = invoice as any;
+  if (!invoiceAny.subscription) return;
+
+  const { data: sub } = await supabase
+    .from("user_subscription")
+    .select("user_id, stripe_customer_id")
+    .eq("stripe_subscription_id", invoiceAny.subscription as string)
+    .maybeSingle();
+
+  if (!sub) return;
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("email, full_name")
+    .eq("id", sub.user_id)
+    .maybeSingle();
+
+  if (!profile?.email) return;
+
+  await sendPaymentFailedEmail({
+    to: profile.email,
+    name: profile.full_name ?? "there",
+    attemptCount: invoice.attempt_count ?? 1,
+  });
 }
