@@ -246,6 +246,69 @@ function processRevenueByMonth(
   };
 }
 
+export async function getVehicleStats() {
+  const supabase = await createClient();
+
+  try {
+    // Get all active subscription IDs
+    const { data: activeSubs } = await supabase
+      .from("user_subscription")
+      .select("id")
+      .eq("status", "active");
+
+    const activeSubIds = (activeSubs || []).map((s: any) => s.id);
+
+    if (activeSubIds.length === 0) {
+      return {
+        totalVehicles: 0,
+        primaryVehicles: 0,
+        familyVehicles: 0,
+        flockSubscriptions: 0,
+        soloSubscriptions: 0,
+      };
+    }
+
+    // Get all subscription_vehicle rows for active subscriptions
+    const { data: subVehicles } = await supabase
+      .from("subscription_vehicles")
+      .select("subscription_id")
+      .in("subscription_id", activeSubIds);
+
+    // Count vehicles per subscription
+    const vehiclesPerSub: Record<string, number> = {};
+    (subVehicles || []).forEach((sv: any) => {
+      vehiclesPerSub[sv.subscription_id] =
+        (vehiclesPerSub[sv.subscription_id] || 0) + 1;
+    });
+
+    const counts = Object.values(vehiclesPerSub);
+    const totalVehicles = counts.reduce((a, b) => a + b, 0);
+    const totalSubscriptions = counts.length;
+    const flockSubscriptions = counts.filter((c) => c > 1).length;
+    const soloSubscriptions = totalSubscriptions - flockSubscriptions;
+    // Each subscription has exactly 1 primary; family = the rest
+    const familyVehicles = totalVehicles - totalSubscriptions;
+    const primaryVehicles = totalSubscriptions;
+
+    return {
+      totalVehicles,
+      primaryVehicles,
+      familyVehicles,
+      flockSubscriptions,
+      soloSubscriptions,
+    };
+  } catch (error) {
+    console.error("Error fetching vehicle stats:", error);
+    return {
+      totalVehicles: 0,
+      primaryVehicles: 0,
+      familyVehicles: 0,
+      flockSubscriptions: 0,
+      soloSubscriptions: 0,
+    };
+  }
+}
+
 export async function getRecentBookings() {
   const supabase = await createClient();
 

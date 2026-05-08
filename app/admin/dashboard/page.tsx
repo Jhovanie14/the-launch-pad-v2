@@ -12,7 +12,8 @@ import {
   getCategoryData,
   getBookingStats,
   getAddOnRevenue,
-  getAddOnStats
+  getAddOnStats,
+  getVehicleStats,
 } from "@/app/admin/dashboard/action";
 import { DashboardCharts } from "@/components/admin/dashboard-charts";
 import RevenueCard from "@/components/admin/revenue-card";
@@ -39,7 +40,7 @@ function getTimeAgo(dateString: string): string {
 
 export default async function AdminDashboardPage() {
   // Fetch all data in parallel
-  const [profile, stats, revenueData, categoryData, bookingStats, addOnRevenue, addOnStats] =
+  const [profile, stats, revenueData, categoryData, bookingStats, addOnRevenue, addOnStats, vehicleStats] =
     await Promise.all([
       getUserProfile(),
       getDashboardStats(),
@@ -48,6 +49,7 @@ export default async function AdminDashboardPage() {
       getBookingStats(),
       getAddOnRevenue(),
       getAddOnStats(),
+      getVehicleStats(),
     ]);
   // console.log(categoryData);
   const chartData = {
@@ -97,8 +99,8 @@ export default async function AdminDashboardPage() {
 
             {/* Stats Grid */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-              <Link href="/admin/users?tab=users" className="block">
-                <Card className="cursor-pointer hover:shadow">
+              <Link href="/admin/users?tab=users" className="block h-full">
+                <Card className="cursor-pointer hover:shadow h-full flex flex-col">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">
                       Total Users
@@ -118,8 +120,8 @@ export default async function AdminDashboardPage() {
                       <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
                     </svg>
                   </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stats.totalUsers}</div>
+                  <CardContent className="flex-1 flex flex-col justify-between">
+                    <div className="text-4xl font-bold">{stats.totalUsers}</div>
                     <p className="text-xs text-muted-foreground">
                       +{stats.userGrowthByDay.reduce((a, b) => a + b, 0)} this
                       week
@@ -128,11 +130,11 @@ export default async function AdminDashboardPage() {
                 </Card>
               </Link> 
 
-              <Link href="/admin/users?tab=express" className="block">
-                <Card className="cursor-pointer hover:shadow">
+              <Link href="/admin/users?tab=express" className="block h-full">
+                <Card className="cursor-pointer hover:shadow h-full flex flex-col">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">
-                      Active Subscription
+                      Active Subscriptions
                     </CardTitle>
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -148,18 +150,47 @@ export default async function AdminDashboardPage() {
                       <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
                     </svg>
                   </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {stats.activeSubscriptions}
+                  <CardContent className="flex-1 flex flex-col justify-between">
+                    <div>
+                      <div className="text-4xl font-bold">
+                        {stats.activeSubscriptions}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {vehicleStats.totalVehicles} total vehicle{vehicleStats.totalVehicles !== 1 ? "s" : ""} enrolled
+                      </p>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      +5 from last week
-                    </p>
+
+                    {/* Vehicle breakdown */}
+                    <div className="space-y-1.5 pt-1 border-t border-border/60 mt-3">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="flex items-center gap-1.5 text-muted-foreground">
+                          <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                          Primary vehicles
+                        </span>
+                        <span className="font-semibold">{vehicleStats.primaryVehicles}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="flex items-center gap-1.5 text-muted-foreground">
+                          <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
+                          Family vehicles
+                        </span>
+                        <span className="font-semibold text-green-600">{vehicleStats.familyVehicles}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs pt-1 border-t border-border/40">
+                        <span className="text-muted-foreground">Flock subscribers</span>
+                        <span className="font-semibold text-blue-600">
+                          {vehicleStats.flockSubscriptions}
+                          <span className="text-muted-foreground font-normal ml-1">
+                            / {stats.activeSubscriptions}
+                          </span>
+                        </span>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
-              </Link> 
+              </Link>
 
-              <div>
+              <div className="h-full">
                 <RevenueCard
                   revenueData={revenueData}
                   addOnRevenue={addOnRevenue}
@@ -168,7 +199,7 @@ export default async function AdminDashboardPage() {
                 />
               </div>
 
-              <Card>
+              <Card className="h-full flex flex-col">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">
                     Total Bookings
@@ -189,8 +220,8 @@ export default async function AdminDashboardPage() {
                     <line x1="3" x2="21" y1="10" y2="10" />
                   </svg>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
+                <CardContent className="flex-1 flex flex-col justify-between">
+                  <div className="text-4xl font-bold">
                     {bookingStats.totalBookings}
                   </div>
                   <p className="text-xs text-muted-foreground">

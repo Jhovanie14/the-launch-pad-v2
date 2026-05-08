@@ -100,8 +100,8 @@ export default function RevenueCard({
 
   return (
     <>
-      <div onClick={() => setOpen(true)} className="cursor-pointer">
-        <Card className="cursor-pointer hover:shadow">
+      <div onClick={() => setOpen(true)} className="cursor-pointer h-full">
+        <Card className="cursor-pointer hover:shadow h-full flex flex-col">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Revenue</CardTitle>
             <svg
@@ -117,8 +117,8 @@ export default function RevenueCard({
               <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
             </svg>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">${totalRevenue?.toLocaleString() || "0"}</div>
+          <CardContent className="flex-1 flex flex-col justify-between">
+            <div className="text-4xl font-bold">${totalRevenue?.toLocaleString() || "0"}</div>
             <p className="text-xs text-muted-foreground">Click to view breakdown</p>
           </CardContent>
         </Card>
