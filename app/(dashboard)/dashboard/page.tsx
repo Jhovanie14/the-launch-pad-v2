@@ -348,6 +348,19 @@ export default function DashboardPage() {
           )}
         </div>
 
+        {/* Weather Notice — shown only to active subscribers */}
+        {(subscription || selfServiceSubscription) && (
+          <div className="flex items-start gap-3 bg-sky-50 border border-sky-200 rounded-lg px-4 py-3 text-xs text-sky-800 leading-relaxed">
+            <span className="text-base shrink-0">⛅</span>
+            <p>
+              <span className="font-semibold">Weather Notice:</span> In the event of rain or inclement weather, our location may temporarily suspend services. Subscription fees are non-refundable for weather-related closures. Full access resumes once normal operations continue.{" "}
+              <Link href="/terms" className="underline font-medium hover:text-sky-900">
+                See Terms §1.8
+              </Link>
+            </p>
+          </div>
+        )}
+
         {/* Stats */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           <StatCard

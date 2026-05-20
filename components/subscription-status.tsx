@@ -22,6 +22,8 @@ export default function SubscriptionStatus({
 }: SubscriptionStatusProps) {
   const [loading, setLoading] = useState(false);
   const [nextInvoiceAmount, setNextInvoiceAmount] = useState<number | null>(null);
+  const [recurringAmount, setRecurringAmount] = useState<number | null>(null);
+  const [hasProration, setHasProration] = useState(false);
   const [showAddVehicle, setShowAddVehicle] = useState(false);
   type SubscriptionVehicle = NonNullable<Subscription["vehicles"]>[number];
   const [vehicleToRemove, setVehicleToRemove] = useState<SubscriptionVehicle | null>(null);
@@ -29,7 +31,11 @@ export default function SubscriptionStatus({
   useEffect(() => {
     fetch("/api/subscription-upcoming-invoice")
       .then((r) => r.json())
-      .then((d) => setNextInvoiceAmount(d.amount_due ?? null))
+      .then((d) => {
+        setNextInvoiceAmount(d.amount_due ?? null);
+        setRecurringAmount(d.recurring_amount ?? null);
+        setHasProration(d.has_proration ?? false);
+      })
       .catch(() => {});
   }, []);
 
@@ -195,9 +201,32 @@ export default function SubscriptionStatus({
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Safeguard: warn if Stripe charge doesn't match displayed total */}
-        {nextInvoiceAmount !== null &&
-          nextInvoiceAmount > pricing.totalPrice + 0.01 && (
+        {/* Proration notice: mid-cycle vehicle add causes a one-time adjusted charge */}
+        {hasProration && nextInvoiceAmount !== null && (
+          <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-100 rounded-lg">
+            <TriangleAlert className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-blue-800">
+                One-time proration adjustment
+              </p>
+              <p className="text-sm text-blue-700 mt-0.5">
+                Your next charge will be{" "}
+                <strong>${nextInvoiceAmount.toFixed(2)}</strong> — this includes
+                a prorated amount for a vehicle added mid-billing cycle. From
+                the following month your regular charge will be{" "}
+                <strong>
+                  ${(recurringAmount ?? pricing.totalPrice).toFixed(2)}
+                </strong>
+                .
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Real discrepancy: recurring amount is higher than expected with no proration to explain it */}
+        {!hasProration &&
+          (recurringAmount ?? nextInvoiceAmount) !== null &&
+          (recurringAmount ?? nextInvoiceAmount)! > pricing.totalPrice + 0.01 && (
             <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
               <TriangleAlert className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
               <div>
@@ -205,10 +234,10 @@ export default function SubscriptionStatus({
                   Billing discrepancy detected
                 </p>
                 <p className="text-sm text-red-700 mt-0.5">
-                  Your next charge (${nextInvoiceAmount.toFixed(2)}) is higher
+                  Your next charge (${(recurringAmount ?? nextInvoiceAmount)!.toFixed(2)}) is higher
                   than the amount shown here (${pricing.totalPrice.toFixed(2)}).
                   Please{" "}
-                  <Link href="/support" className="underline font-medium">
+                  <Link href="/contact" className="underline font-medium">
                     contact support
                   </Link>{" "}
                   so we can resolve this immediately.

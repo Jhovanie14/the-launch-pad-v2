@@ -194,7 +194,15 @@ export default function TermsOfServicePage() {
               </div>
               <div>
                 <h3 className="text-lg font-semibold mb-2 text-foreground">
-                  1.8 Environmental Practices; Green Wash Option
+                  1.8 Weather & Operational Closures
+                </h3>
+                <p className="text-foreground leading-relaxed">
+                  The Launch Pad Wash reserves the right to temporarily suspend, limit, or discontinue services at its sole discretion due to inclement weather conditions, including but not limited to rain, flooding, severe storms, or adverse weather forecasts that may affect the safety of our staff, customers, or equipment. Service interruptions resulting from weather or other conditions beyond our reasonable control do not constitute a breach of this Agreement. Subscription fees are non-refundable for weather-related closures or service suspensions; however, affected members retain full access to their membership benefits and services upon resumption of normal operations. The Launch Pad Wash shall not be liable for any inconvenience, loss, or damages — direct or indirect — arising from weather-related or other force majeure service interruptions.
+                </p>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold mb-2 text-foreground">
+                  1.9 Environmental Practices; Green Wash Option
                 </h3>
                 <p className="text-foreground leading-relaxed">
                   We implement sustainability measures designed to reduce

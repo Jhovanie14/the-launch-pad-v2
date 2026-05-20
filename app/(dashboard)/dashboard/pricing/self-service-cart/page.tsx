@@ -245,6 +245,14 @@ export default function SelfServiceCart() {
                 </div>
               </div>
 
+              {/* Weather & Closure Disclaimer */}
+              <div className="bg-sky-50 border border-sky-200 rounded-lg p-3 text-xs text-sky-800 leading-relaxed">
+                <p className="font-semibold mb-1">⛅ Weather & Operational Closure Notice</p>
+                <p>
+                  The Launch Pad Wash reserves the right to temporarily suspend or limit services at its sole discretion due to inclement weather conditions, including but not limited to rain, flooding, or adverse weather forecasts. Subscription fees are non-refundable for weather-related service interruptions; however, affected members retain full access to their membership benefits upon resumption of normal operations. The Launch Pad Wash shall not be liable for any inconvenience, loss, or damages arising from weather-related closures or service suspensions.
+                </p>
+              </div>
+
               {/* Error Message */}
               {error && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3">
