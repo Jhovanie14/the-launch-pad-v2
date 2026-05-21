@@ -11,7 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Car, BadgePercent } from "lucide-react";
+import { Car, BadgePercent, Info } from "lucide-react";
 import { toast } from "sonner";
 
 interface AddVehicleModalProps {
@@ -21,6 +21,9 @@ interface AddVehicleModalProps {
   currentVehicleCount: number;
   basePriceMonthly: number;
   billingCycle: string;
+  currentPeriodStart?: string;
+  currentPeriodEnd?: string;
+  currentTotalPrice?: number;
 }
 
 export function AddVehicleModal({
@@ -30,12 +33,30 @@ export function AddVehicleModal({
   currentVehicleCount,
   basePriceMonthly,
   billingCycle,
+  currentPeriodStart,
+  currentPeriodEnd,
+  currentTotalPrice = 0,
 }: AddVehicleModalProps) {
   const [licensePlate, setLicensePlate] = useState("");
   const [loading, setLoading] = useState(false);
 
   const remaining = 5 - currentVehicleCount;
   const discountedPrice = basePriceMonthly * 0.65;
+
+  // Estimate proration for the remaining days in the current billing cycle
+  const prorationEstimate = (() => {
+    if (!currentPeriodStart || !currentPeriodEnd) return null;
+    const now = Date.now();
+    const start = new Date(currentPeriodStart).getTime();
+    const end = new Date(currentPeriodEnd).getTime();
+    const totalMs = end - start;
+    const remainingMs = end - now;
+    if (totalMs <= 0 || remainingMs <= 0) return null;
+    const fraction = remainingMs / totalMs;
+    return discountedPrice * fraction;
+  })();
+
+  const nextRecurring = currentTotalPrice + discountedPrice;
 
   async function handleSubmit() {
     const plate = licensePlate.trim().toUpperCase();
@@ -87,19 +108,39 @@ export function AddVehicleModal({
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Pricing preview */}
+          {/* Recurring discount */}
           <div className="flex items-start gap-3 p-3 bg-green-50 border border-green-100 rounded-lg">
             <BadgePercent className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
             <div className="text-sm">
               <p className="font-semibold text-green-800">35% Family Discount</p>
               <p className="text-green-700 mt-0.5">
-                This vehicle will be billed at{" "}
+                This vehicle is billed at{" "}
                 <span className="font-bold">
                   ${discountedPrice.toFixed(2)}/{billingCycle}
                 </span>{" "}
                 instead of ${basePriceMonthly.toFixed(2)}/{billingCycle}.
-                Stripe will prorate the first charge to your current billing
-                cycle.
+              </p>
+            </div>
+          </div>
+
+          {/* Proration notice */}
+          <div className="flex items-start gap-3 p-3 bg-blue-50 border border-blue-100 rounded-lg">
+            <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <p className="font-semibold text-blue-800">Billing adjustment on next charge</p>
+              <p className="text-blue-700 mt-0.5">
+                Since you're adding this vehicle mid-cycle, your{" "}
+                <span className="font-bold">next bill</span> will include a
+                one-time prorated amount for the remaining days of this billing
+                period
+                {prorationEstimate !== null
+                  ? ` (~$${prorationEstimate.toFixed(2)})`
+                  : ""}
+                .
+              </p>
+              <p className="text-blue-700 mt-1">
+                From the following {billingCycle}, your regular charge will be{" "}
+                <span className="font-bold">${nextRecurring.toFixed(2)}/{billingCycle}</span>.
               </p>
             </div>
           </div>

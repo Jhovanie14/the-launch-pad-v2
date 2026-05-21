@@ -34,18 +34,21 @@ export async function GET() {
 
     const lines = (invoice.lines?.data ?? []) as any[];
 
-    // Proration line items have proration: true
-    const hasProration = lines.some((line) => line.proration === true);
-
-    // Recurring amount = only non-proration subscription items
+    // Recurring amount = non-proration subscription items
+    const recurringLines = lines.filter((line) => !line.proration);
     const recurringAmount =
-      lines
-        .filter((line) => !line.proration)
-        .reduce((sum: number, line: any) => sum + (line.amount ?? 0), 0) / 100;
+      recurringLines.reduce((sum: number, line: any) => sum + (line.amount ?? 0), 0) / 100;
+
+    const amountDue = invoice.amount_due / 100;
+
+    // Detect proration: either explicit flag OR amount_due meaningfully exceeds recurring
+    const hasFlaggedProration = lines.some((line) => line.proration === true);
+    const hasAmountDelta = amountDue > recurringAmount + 0.5;
+    const hasProration = hasFlaggedProration || hasAmountDelta;
 
     return new Response(
       JSON.stringify({
-        amount_due: invoice.amount_due / 100,
+        amount_due: amountDue,
         recurring_amount: recurringAmount,
         has_proration: hasProration,
       }),

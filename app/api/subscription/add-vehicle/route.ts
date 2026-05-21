@@ -163,22 +163,42 @@ async function handler(req: Request) {
 
   console.log("[add-vehicle] base amount (cents):", originalBaseAmount);
 
-  // Create a discounted price for the additional vehicle (65% of base = 35% family discount)
-  const additionalVehiclePrice = await stripe.prices.create({
-    currency: primaryItem.price.currency,
-    unit_amount: Math.round(originalBaseAmount * 0.65),
-    recurring: {
-      interval: primaryItem.price.recurring!.interval,
-      interval_count: primaryItem.price.recurring!.interval_count ?? 1,
-    },
+  const targetAmount = Math.round(originalBaseAmount * 0.65);
+
+  // Reuse an existing flock-discount price if one already exists for this product/interval/amount
+  const existingPrices = await stripe.prices.list({
     product: productId,
-    metadata: {
-      plan_id: sub.subscription_plan_id,
-      is_flock_discount: "true",
-    },
+    active: true,
+    limit: 100,
   });
 
-  console.log("[add-vehicle] created price:", additionalVehiclePrice.id);
+  const existingPrice = existingPrices.data.find(
+    (p) =>
+      p.unit_amount === targetAmount &&
+      p.recurring?.interval === primaryItem.price.recurring!.interval &&
+      p.metadata?.is_flock_discount === "true"
+  );
+
+  const additionalVehiclePrice =
+    existingPrice ??
+    (await stripe.prices.create({
+      currency: primaryItem.price.currency,
+      unit_amount: targetAmount,
+      recurring: {
+        interval: primaryItem.price.recurring!.interval,
+        interval_count: primaryItem.price.recurring!.interval_count ?? 1,
+      },
+      product: productId,
+      metadata: {
+        plan_id: sub.subscription_plan_id,
+        is_flock_discount: "true",
+      },
+    }));
+
+  console.log(
+    "[add-vehicle] price:", additionalVehiclePrice.id,
+    existingPrice ? "(reused)" : "(created new)"
+  );
 
   // Add the new item to the existing Stripe subscription (prorated automatically)
   const newStripeItem = await stripe.subscriptionItems.create({

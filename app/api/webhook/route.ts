@@ -743,6 +743,44 @@ async function processSubscription(session: Stripe.Checkout.Session) {
         );
       }
     }
+
+    // Store stripe_item_id for each vehicle so removals work correctly later
+    if (session.subscription && subscriptionRow?.id) {
+      try {
+        const stripeSubId = typeof session.subscription === "string"
+          ? session.subscription
+          : (session.subscription as any).id;
+
+        const stripeSub = await stripe.subscriptions.retrieve(stripeSubId);
+
+        // Re-fetch the full vehicle links in insertion order
+        const { data: allLinks } = await supabase
+          .from("subscription_vehicles")
+          .select("id, vehicle_id")
+          .eq("subscription_id", subscriptionRow.id)
+          .order("id", { ascending: true });
+
+        if (allLinks && allLinks.length > 0) {
+          for (let i = 0; i < allLinks.length; i++) {
+            // Match by vehicle_index metadata (set in checkout route) or fall back to position
+            const stripeItem =
+              stripeSub.items.data.find(
+                (item: any) => item.price?.metadata?.vehicle_index === i.toString()
+              ) ?? stripeSub.items.data[i];
+
+            if (stripeItem?.id) {
+              await supabase
+                .from("subscription_vehicles")
+                .update({ stripe_item_id: stripeItem.id })
+                .eq("id", allLinks[i].id);
+            }
+          }
+          console.log(`Stored stripe_item_id for ${allLinks.length} vehicle(s)`);
+        }
+      } catch (err: any) {
+        console.error("Error storing stripe_item_id for vehicles:", err?.message);
+      }
+    }
   }
 }
 

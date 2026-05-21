@@ -21,6 +21,7 @@ export default function SubscriptionStatus({
   onVehicleChange,
 }: SubscriptionStatusProps) {
   const [loading, setLoading] = useState(false);
+  const [invoiceLoading, setInvoiceLoading] = useState(true);
   const [nextInvoiceAmount, setNextInvoiceAmount] = useState<number | null>(null);
   const [recurringAmount, setRecurringAmount] = useState<number | null>(null);
   const [hasProration, setHasProration] = useState(false);
@@ -28,7 +29,10 @@ export default function SubscriptionStatus({
   type SubscriptionVehicle = NonNullable<Subscription["vehicles"]>[number];
   const [vehicleToRemove, setVehicleToRemove] = useState<SubscriptionVehicle | null>(null);
 
+  const vehicleCount = subscription?.vehicles?.length ?? 0;
+
   useEffect(() => {
+    setInvoiceLoading(true);
     fetch("/api/subscription-upcoming-invoice")
       .then((r) => r.json())
       .then((d) => {
@@ -36,8 +40,9 @@ export default function SubscriptionStatus({
         setRecurringAmount(d.recurring_amount ?? null);
         setHasProration(d.has_proration ?? false);
       })
-      .catch(() => {});
-  }, []);
+      .catch(() => {})
+      .finally(() => setInvoiceLoading(false));
+  }, [vehicleCount]);
 
   // Calculate pricing for vehicles
   const pricing = useMemo(() => {
@@ -60,7 +65,7 @@ export default function SubscriptionStatus({
     const vehiclePricing = vehicles.map((vehicle, index) => {
       const isFirstVehicle = index === 0;
       const price = isFirstVehicle ? basePrice : basePrice * 0.65;
-      const discount = isFirstVehicle ? basePrice * 0.1 : basePrice * 0.35;
+      const discount = isFirstVehicle ? 0 : basePrice * 0.35;
       return {
         vehicle,
         price,
@@ -223,28 +228,6 @@ export default function SubscriptionStatus({
           </div>
         )}
 
-        {/* Real discrepancy: recurring amount is higher than expected with no proration to explain it */}
-        {!hasProration &&
-          (recurringAmount ?? nextInvoiceAmount) !== null &&
-          (recurringAmount ?? nextInvoiceAmount)! > pricing.totalPrice + 0.01 && (
-            <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <TriangleAlert className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-semibold text-red-800">
-                  Billing discrepancy detected
-                </p>
-                <p className="text-sm text-red-700 mt-0.5">
-                  Your next charge (${(recurringAmount ?? nextInvoiceAmount)!.toFixed(2)}) is higher
-                  than the amount shown here (${pricing.totalPrice.toFixed(2)}).
-                  Please{" "}
-                  <Link href="/contact" className="underline font-medium">
-                    contact support
-                  </Link>{" "}
-                  so we can resolve this immediately.
-                </p>
-              </div>
-            </div>
-          )}
 
         {/* Plan Information */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -284,20 +267,14 @@ export default function SubscriptionStatus({
                           {primary.displayName}
                         </p>
                         <p className="text-xs text-blue-600 font-medium mt-0.5">
-                          10% off applied on your first month
+                          Primary vehicle
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-gray-400 line-through">
-                        ${pricing.basePrice.toFixed(2)}
-                      </p>
                       <p className="text-sm font-semibold text-gray-900">
-                        ${(pricing.basePrice * 0.9).toFixed(2)}
-                        <span className="text-xs text-gray-500 ml-1">first month</span>
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        then ${pricing.basePrice.toFixed(2)}/{subscription.billing_cycle}
+                        ${pricing.basePrice.toFixed(2)}
+                        <span className="text-xs text-gray-500 ml-1">/{subscription.billing_cycle}</span>
                       </p>
                     </div>
                   </div>
@@ -417,20 +394,32 @@ export default function SubscriptionStatus({
                   Next Charge
                 </span>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  {nextInvoiceAmount !== null && nextInvoiceAmount < pricing.totalPrice
-                    ? "Promo still active this month"
-                    : "Recurring amount"}
+                  Due {new Date(subscription.current_period_end).toLocaleDateString()}
                 </p>
-              </div>
-              <div className="text-right">
-                {nextInvoiceAmount !== null && nextInvoiceAmount < pricing.totalPrice && (
-                  <p className="text-xs text-gray-400 line-through">
-                    ${pricing.totalPrice.toFixed(2)}
+                {!invoiceLoading && hasProration && (
+                  <p className="text-xs text-blue-600 mt-0.5">
+                    Includes one-time proration for a vehicle added mid-cycle
                   </p>
                 )}
-                <span className="text-lg font-bold text-blue-900">
-                  ${(nextInvoiceAmount ?? pricing.totalPrice).toFixed(2)}/{subscription.billing_cycle}
-                </span>
+              </div>
+              <div className="text-right">
+                {invoiceLoading ? (
+                  <div className="h-7 w-24 bg-gray-200 rounded animate-pulse" />
+                ) : (
+                  <>
+                    <span className="text-lg font-bold text-blue-900">
+                      ${(nextInvoiceAmount ?? pricing.totalPrice).toFixed(2)}
+                      <span className="text-sm font-normal text-gray-500 ml-1">
+                        /{subscription.billing_cycle}
+                      </span>
+                    </span>
+                    {hasProration && recurringAmount !== null && (
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        then ${recurringAmount.toFixed(2)}/{subscription.billing_cycle}
+                      </p>
+                    )}
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -496,6 +485,9 @@ export default function SubscriptionStatus({
         currentVehicleCount={pricing.vehiclePricing.length}
         basePriceMonthly={pricing.basePrice}
         billingCycle={subscription.billing_cycle}
+        currentPeriodStart={subscription.current_period_start}
+        currentPeriodEnd={subscription.current_period_end}
+        currentTotalPrice={pricing.totalPrice}
       />
 
       {/* Remove Vehicle Dialog */}
