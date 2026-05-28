@@ -27,6 +27,20 @@ export const faqData = [
     answer:
       "Yes, invoices are automatically generated and sent to your email after each payment.",
   },
+  {
+    id: "billing-3",
+    category: "Billing & Payments",
+    question: "Why was my bill higher than usual after adding a family vehicle?",
+    answer:
+      "When you add a family vehicle to your subscription in the middle of your billing cycle, Stripe automatically calculates a one-time prorated charge for the remaining days of that period. For example, if your billing date is the 1st and you add a vehicle on the 15th, you are charged for roughly half a month's cost of that new vehicle — only the days remaining. This is called proration and it is a one-time adjustment, not an error. Starting your next billing date, your charge returns to the regular monthly amount which includes all your vehicles. If you have questions about a specific charge, please contact us at (832) 219-8320 or email info@thelaunchpadwash.com.",
+  },
+  {
+    id: "billing-4",
+    category: "Billing & Payments",
+    question: "How does the Flock (family vehicle) discount work on my bill?",
+    answer:
+      "Every additional vehicle you add under a Flock subscription receives a 35% discount off the base plan price. For example, if your plan is $59.99/month, each family vehicle is billed at $38.99/month instead. The first month a family vehicle is added may show a slightly different amount due to proration (a partial charge for the remaining days of your current billing cycle). From the following billing date onward, you will see the regular discounted rate for every family vehicle on your account.",
+  },
   // {
   //   id: "technical-1",
   //   category: "Technical Issues",

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/utils/supabase/client";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -18,20 +18,31 @@ function chunkArray<T>(array: T[], size: number): T[][] {
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = createClient();
+    const admin = createAdminClient();
     const { subject, title, body, bannerUrl } = await req.json();
 
-    // Get all subscribed users
-    const { data: subscribers, error } = await supabase
-      .from("profiles")
-      .select("email")
-      .eq("subscribed", true);
+    // Get all active express + self-service subscribers' emails
+    const [{ data: expressSubs }, { data: selfSubs }] = await Promise.all([
+      admin
+        .from("user_subscription")
+        .select("profiles(email)")
+        .eq("status", "active"),
+      admin
+        .from("self_service_subscriptions")
+        .select("profiles(email)")
+        .eq("status", "active"),
+    ]);
 
-    if (error) throw error;
-    if (!subscribers || subscribers.length === 0) {
+    const emailSet = new Set<string>();
+    (expressSubs ?? []).forEach((s: any) => s.profiles?.email && emailSet.add(s.profiles.email));
+    (selfSubs ?? []).forEach((s: any) => s.profiles?.email && emailSet.add(s.profiles.email));
+
+    const subscribers = Array.from(emailSet).map((email) => ({ email }));
+
+    if (subscribers.length === 0) {
       return NextResponse.json({
         success: false,
-        error: "No subscribers found.",
+        error: "No active subscribers found.",
       });
     }
 

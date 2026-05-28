@@ -263,8 +263,17 @@ export default function WalkInBookingModal({
   const handleCreateBooking = async () => {
     const addOnsTotal = calculateAddOnsTotal().total;
 
-    // If no add-ons or cash payment, create booking directly
-    if (addOnsTotal === 0 || paymentMethod === "cash") {
+    // Subscriber with no add-ons — service is covered by subscription
+    if (addOnsTotal === 0) {
+      await handleSubmit({
+        skipVehicleValidation: true,
+        paymentMethod: "subscription",
+      });
+      return;
+    }
+
+    // Subscriber with add-ons paid by cash
+    if (paymentMethod === "cash") {
       await handleSubmit({
         skipVehicleValidation: true,
         paymentMethod: "cash",
@@ -728,9 +737,9 @@ export default function WalkInBookingModal({
                 <span className="ml-2 text-xl">→</span>
               </>
             ) : hasAddOns && paymentMethod === "cash" ? (
-              "Create Booking (Cash Payment)"
+              "Create Booking (Cash Add-ons)"
             ) : (
-              "Create Walk-In Booking"
+              "Create Booking (Subscription)"
             )}
           </Button>
         </div>

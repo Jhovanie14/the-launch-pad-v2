@@ -3,6 +3,7 @@ import {
   sendPaymentFailedEmail,
   sendCancellationScheduledEmail,
   sendSubscriptionCancelledEmail,
+  sendSubscriptionInvoiceEmail,
 } from "@/lib/email/subscription-emails";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
@@ -995,21 +996,68 @@ async function handleSubscriptionDeleted(event: Stripe.Event) {
 // FLEET INVOICE HANDLERS
 // ========================================
 async function handleInvoicePaid(invoice: Stripe.Invoice) {
-  const { data, error } = await supabase
+  const inv = invoice as any;
+
+  // ── Fleet invoice: update fleet_invoices table ──
+  const { data: fleetData, error: fleetError } = await supabase
     .from("fleet_invoices")
-    .update({
-      status: "paid",
-      payment_date: new Date().toISOString(),
-    })
+    .update({ status: "paid", payment_date: new Date().toISOString() })
     .eq("stripe_invoice_id", invoice.id);
 
-  console.log("Invoice found in DB:", data);
-
-  if (error) {
-    console.error("Failed to update invoice:", error);
-  } else {
-    console.log(`✅ Invoice ${invoice.id} marked as paid`);
+  if (fleetError) {
+    console.error("Failed to update fleet invoice:", fleetError);
+  } else if (fleetData) {
+    console.log(`✅ Fleet invoice ${invoice.id} marked as paid`);
   }
+
+  // ── Subscription invoice: send receipt email ──
+  if (!inv.subscription) return; // not a subscription invoice
+
+  // Look up the subscriber in our DB (try express first, then self-service)
+  const [{ data: expressSub }, { data: selfSub }] = await Promise.all([
+    supabase
+      .from("user_subscription")
+      .select("user_id")
+      .eq("stripe_subscription_id", inv.subscription as string)
+      .maybeSingle(),
+    supabase
+      .from("self_service_subscriptions")
+      .select("user_id")
+      .eq("stripe_subscription_id", inv.subscription as string)
+      .maybeSingle(),
+  ]);
+
+  const userId = expressSub?.user_id ?? selfSub?.user_id ?? null;
+  if (!userId) return; // not one of our subscribers
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("email, full_name")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (!profile?.email) return;
+
+  const amountPaid = (inv.amount_paid ?? 0) / 100;
+  const periodStart = new Date((inv.period_start ?? 0) * 1000).toLocaleDateString("en-US", {
+    year: "numeric", month: "long", day: "numeric",
+  });
+  const periodEnd = new Date((inv.period_end ?? 0) * 1000).toLocaleDateString("en-US", {
+    year: "numeric", month: "long", day: "numeric",
+  });
+  const isRenewal = inv.billing_reason === "subscription_cycle";
+
+  await sendSubscriptionInvoiceEmail({
+    to: profile.email,
+    name: profile.full_name ?? "there",
+    amountPaid,
+    billingPeriodStart: periodStart,
+    billingPeriodEnd: periodEnd,
+    invoiceUrl: inv.hosted_invoice_url ?? null,
+    isRenewal,
+  });
+
+  console.log(`✅ Subscription invoice email sent to ${profile.email} (${isRenewal ? "renewal" : "new"})`);
 }
 
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {

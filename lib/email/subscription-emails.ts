@@ -53,7 +53,94 @@ function emailWrapper(headerBg: string, headerContent: string, bodyContent: stri
 }
 
 // ─────────────────────────────────────────────────────────────
-// 1. PAYMENT FAILED — update card urgency email
+// 1. SUBSCRIPTION INVOICE / RECEIPT
+// ─────────────────────────────────────────────────────────────
+export async function sendSubscriptionInvoiceEmail({
+  to,
+  name,
+  amountPaid,
+  billingPeriodStart,
+  billingPeriodEnd,
+  invoiceUrl,
+  isRenewal,
+}: {
+  to: string;
+  name: string;
+  amountPaid: number; // in dollars
+  billingPeriodStart: string; // e.g. "June 1, 2025"
+  billingPeriodEnd: string;   // e.g. "June 30, 2025"
+  invoiceUrl?: string | null;
+  isRenewal: boolean;
+}) {
+  const billingUrl = `${SITE_URL}/dashboard/billing`;
+
+  const header = `
+    <div style="font-size:48px;margin-bottom:12px;">✅</div>
+    <h1>${isRenewal ? "Subscription Renewed" : "Welcome to The Launch Pad!"}</h1>
+    <p>${isRenewal ? "Your monthly plan has been renewed successfully" : "Your subscription is now active"}</p>
+  `;
+
+  const body = `
+    <p>Hi <strong>${name}</strong>,</p>
+    <p>
+      ${isRenewal
+        ? "Your subscription has been successfully renewed. Here's a summary of your payment:"
+        : "Thank you for subscribing! Your first payment has been processed. Here's your receipt:"}
+    </p>
+
+    <div class="card" style="border-left:4px solid #16a34a;">
+      <table cellpadding="0" cellspacing="0" border="0" width="100%">
+        <tr>
+          <td style="font-size:14px;color:#6b7280;padding:4px 0;">Amount Paid</td>
+          <td align="right" style="font-size:20px;font-weight:700;color:#0f172a;">$${amountPaid.toFixed(2)}</td>
+        </tr>
+        <tr>
+          <td style="font-size:14px;color:#6b7280;padding:4px 0;">Billing Period</td>
+          <td align="right" style="font-size:14px;color:#374151;">${billingPeriodStart} – ${billingPeriodEnd}</td>
+        </tr>
+        <tr>
+          <td style="font-size:14px;color:#6b7280;padding:4px 0;">Status</td>
+          <td align="right" style="font-size:14px;color:#16a34a;font-weight:600;">Paid ✓</td>
+        </tr>
+      </table>
+    </div>
+
+    ${invoiceUrl ? `
+    <div class="cta">
+      <a href="${invoiceUrl}" class="btn" style="background:linear-gradient(135deg,#1d4ed8,#1e40af);">
+        View Full Invoice →
+      </a>
+    </div>
+    ` : ""}
+
+    <p style="font-size:14px;color:#6b7280;text-align:center;">
+      You can also view your billing history and manage your plan from your
+      <a href="${billingUrl}" style="color:#1d4ed8;">billing page</a>.
+    </p>
+
+    <p>Thank you for being a member — we'll see you at the pad! 🚀</p>
+    <p>— The Launch Pad Wash Team</p>
+  `;
+
+  const { error } = await resend.emails.send({
+    from: FROM,
+    to,
+    subject: isRenewal
+      ? `✅ Your subscription has been renewed — $${amountPaid.toFixed(2)} charged`
+      : `✅ Payment confirmed — welcome to The Launch Pad Wash!`,
+    html: emailWrapper(
+      "linear-gradient(135deg,#16a34a 0%,#15803d 100%)",
+      header,
+      body
+    ),
+  });
+
+  if (error) console.error("[email] subscription invoice send error:", error);
+  else console.log("[email] subscription invoice email sent to:", to);
+}
+
+// ─────────────────────────────────────────────────────────────
+// 2. PAYMENT FAILED — update card urgency email
 // ─────────────────────────────────────────────────────────────
 export async function sendPaymentFailedEmail({
   to,
