@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { requireAdmin } from "@/lib/auth/guards";
 import { apiError } from "@/lib/http/apiError";
 import { Resend } from "resend";
+import { escapeHtml, isAllowedBannerUrl } from "@/lib/email/escapeHtml";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>${subject || "Launchpad Wash"}</title>
+      <title>${escapeHtml(subject) || "Launchpad Wash"}</title>
       <!--[if mso]>
       <style>
         table { border-collapse: collapse; }
@@ -77,11 +78,11 @@ export async function POST(req: NextRequest) {
               
               <!-- Banner Image (if exists) -->
               ${
-                bannerUrl
+                isAllowedBannerUrl(bannerUrl)
                   ? `
               <tr>
                 <td style="padding: 0;">
-                  <img src="${bannerUrl}" alt="Banner" style="width: 100%; height: auto; display: block; border: none;" />
+                  <img src="${escapeHtml(bannerUrl)}" alt="Banner" style="width: 100%; height: auto; display: block; border: none;" />
                 </td>
               </tr>
               `
@@ -108,7 +109,7 @@ export async function POST(req: NextRequest) {
                     title
                       ? `
                   <h1 style="margin: 0 0 20px 0; font-size: 28px; font-weight: 700; color: #0f172a; line-height: 1.3;">
-                    ${title}
+                    ${escapeHtml(title)}
                   </h1>
                   `
                       : ""
@@ -123,7 +124,7 @@ export async function POST(req: NextRequest) {
                       .split("\n")
                       .map((paragraph: any) =>
                         paragraph.trim()
-                          ? `<p style="margin: 0 0 16px 0;">${paragraph}</p>`
+                          ? `<p style="margin: 0 0 16px 0;">${escapeHtml(paragraph.trim())}</p>`
                           : ""
                       )
                       .join("")}

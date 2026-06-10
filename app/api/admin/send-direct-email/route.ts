@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { Resend } from "resend";
+import { escapeHtml, isAllowedBannerUrl } from "@/lib/email/escapeHtml";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -56,9 +57,9 @@ function buildEmailHtml({ subject, title, body, bannerUrl }: {
       if (!trimmed) return "";
       // Indent lines that start with bullet-like characters
       if (trimmed.startsWith("•") || trimmed.startsWith("-")) {
-        return `<p style="margin:0 0 10px 0;padding-left:16px;color:#475569;">${trimmed}</p>`;
+        return `<p style="margin:0 0 10px 0;padding-left:16px;color:#475569;">${escapeHtml(trimmed)}</p>`;
       }
-      return `<p style="margin:0 0 14px 0;color:#475569;">${trimmed}</p>`;
+      return `<p style="margin:0 0 14px 0;color:#475569;">${escapeHtml(trimmed)}</p>`;
     })
     .join("");
 
@@ -67,7 +68,7 @@ function buildEmailHtml({ subject, title, body, bannerUrl }: {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${subject}</title>
+  <title>${escapeHtml(subject)}</title>
 </head>
 <body style="margin:0;padding:0;background-color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
 
@@ -85,10 +86,10 @@ function buildEmailHtml({ subject, title, body, bannerUrl }: {
           </tr>
 
           <!-- Banner (optional) -->
-          ${bannerUrl ? `
+          ${isAllowedBannerUrl(bannerUrl) ? `
           <tr>
             <td style="padding:0;">
-              <img src="${bannerUrl}" alt="Banner" style="width:100%;height:auto;display:block;border:none;" />
+              <img src="${escapeHtml(bannerUrl)}" alt="Banner" style="width:100%;height:auto;display:block;border:none;" />
             </td>
           </tr>` : ""}
 
@@ -97,7 +98,7 @@ function buildEmailHtml({ subject, title, body, bannerUrl }: {
             <td style="background-color:#ffffff;padding:40px 36px;">
 
               ${title ? `
-              <h1 style="margin:0 0 8px 0;font-size:24px;font-weight:700;color:#0f172a;line-height:1.3;">${title}</h1>
+              <h1 style="margin:0 0 8px 0;font-size:24px;font-weight:700;color:#0f172a;line-height:1.3;">${escapeHtml(title)}</h1>
               <div style="width:48px;height:3px;background:linear-gradient(90deg,#2563eb,#60a5fa);border-radius:2px;margin-bottom:28px;"></div>
               ` : `<div style="margin-bottom:28px;"></div>`}
 
