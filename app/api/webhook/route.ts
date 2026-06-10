@@ -35,6 +35,16 @@ export async function POST(req: Request) {
     return new Response(`Webhook Error: ${error.message}`, { status: 400 });
   }
 
+  // Idempotency: skip events Stripe has already delivered.
+  const { data: alreadyProcessed } = await supabase
+    .from("processed_stripe_events")
+    .select("id")
+    .eq("id", event.id)
+    .maybeSingle();
+  if (alreadyProcessed) {
+    return NextResponse.json({ received: true, duplicate: true });
+  }
+
   // Handle events with a clean switch statement
   switch (event.type) {
     // Subscription & Booking Events
@@ -62,6 +72,10 @@ export async function POST(req: Request) {
     default:
       console.log(`Unhandled event type: ${event.type}`);
   }
+
+  await supabase
+    .from("processed_stripe_events")
+    .insert({ id: event.id, type: event.type });
 
   return new Response("ok", { status: 200 });
 }
