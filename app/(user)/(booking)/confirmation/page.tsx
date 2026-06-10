@@ -81,6 +81,7 @@ function ConfirmationContent() {
   const timeParam = searchParams.get("time");
 
   const [guestErrors, setGuestErrors] = useState<Record<string, string>>({});
+  const [promoCode, setPromoCode] = useState("");
 
   const [appointmentDate, setAppointmentDate] = useState<string | null>(
     dateParam,
@@ -268,7 +269,7 @@ function ConfirmationContent() {
       const res = await fetch("/api/checkout_sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...payload, promoCode }),
       });
 
       if (!res.ok) {

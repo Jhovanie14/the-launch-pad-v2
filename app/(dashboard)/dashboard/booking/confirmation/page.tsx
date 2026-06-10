@@ -405,6 +405,7 @@ function ConfirmationContent() {
           totalPrice: 0,
           totalDuration: calculateDuration(),
           payment_method: "subscription",
+          promoCode,
         });
         window.location.href = `/dashboard/bookings/success?booking_id=${booking.id}`;
       } catch (error) {
@@ -460,6 +461,7 @@ function ConfirmationContent() {
           totalPrice: totalWithDiscount,
           totalDuration: calculateDuration(),
           payment_method: "cash",
+          promoCode,
         });
         await recordPromoRedemption();
         window.location.href = `/dashboard/bookings/success?booking_id=${booking.id}`;
@@ -492,7 +494,7 @@ function ConfirmationContent() {
         const res = await fetch("/api/checkout_sessions", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: JSON.stringify({ ...payload, promoCode }),
         });
 
         const { url } = await res.json();
