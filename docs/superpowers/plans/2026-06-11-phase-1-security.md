@@ -727,6 +727,202 @@ git commit -m "feat: add server-side authoritative booking price computation"
 
 ---
 
+## Task 5b: Server-side promo validation (`validatePromo`)
+
+Promo codes must be validated and applied server-side; the client may not send a discount. The holiday sale is treated as a server-controlled constant (currently off — it was a winter sale).
+
+**Files:**
+- Create: `lib/pricing/validatePromo.ts`
+- Test: `lib/pricing/validatePromo.test.ts`
+
+- [ ] **Step 1: Write the failing test**
+
+```ts
+import { describe, expect, it } from "vitest";
+import { validatePromo } from "./validatePromo";
+
+function fakeDb(promo: any, alreadyRedeemed = false) {
+  return {
+    from(table: string) {
+      if (table === "promo_codes") {
+        return {
+          select: () => ({
+            ilike: () => ({ maybeSingle: async () => ({ data: promo }) }),
+          }),
+        };
+      }
+      // promo_code_redemptions
+      return {
+        select: () => ({
+          eq: () => ({
+            eq: () => ({
+              maybeSingle: async () => ({
+                data: alreadyRedeemed ? { id: 1 } : null,
+              }),
+            }),
+          }),
+        }),
+      };
+    },
+  } as any;
+}
+
+describe("validatePromo", () => {
+  it("applies a percent discount", async () => {
+    const db = fakeDb({
+      id: 1, discount_type: "percent", discount_percent: 10,
+      discount_amount: 0, is_active: true, max_uses: null, used_count: 0,
+      restricted_to_service: null,
+    });
+    const r = await validatePromo(db, { code: "SAVE10", baseAmount: 100, userId: "u1", serviceId: "s1" });
+    expect(r.discountedAmount).toBe(90);
+    expect(r.promoId).toBe(1);
+  });
+
+  it("applies a flat discount and never goes negative", async () => {
+    const db = fakeDb({
+      id: 2, discount_type: "flat", discount_percent: 0,
+      discount_amount: 150, is_active: true, max_uses: null, used_count: 0,
+      restricted_to_service: null,
+    });
+    const r = await validatePromo(db, { code: "BIG", baseAmount: 100, userId: "u1", serviceId: "s1" });
+    expect(r.discountedAmount).toBe(0);
+  });
+
+  it("rejects an inactive code (no discount)", async () => {
+    const db = fakeDb({ id: 3, is_active: false });
+    const r = await validatePromo(db, { code: "OFF", baseAmount: 100, userId: "u1", serviceId: "s1" });
+    expect(r.discountedAmount).toBe(100);
+    expect(r.promoId).toBeNull();
+  });
+
+  it("rejects a maxed-out code", async () => {
+    const db = fakeDb({
+      id: 4, discount_type: "percent", discount_percent: 50,
+      is_active: true, max_uses: 5, used_count: 5, restricted_to_service: null,
+    });
+    const r = await validatePromo(db, { code: "MAX", baseAmount: 100, userId: "u1", serviceId: "s1" });
+    expect(r.discountedAmount).toBe(100);
+    expect(r.promoId).toBeNull();
+  });
+
+  it("rejects a code already redeemed by the user", async () => {
+    const db = fakeDb(
+      { id: 5, discount_type: "percent", discount_percent: 50, is_active: true,
+        max_uses: null, used_count: 0, restricted_to_service: null },
+      true
+    );
+    const r = await validatePromo(db, { code: "ONCE", baseAmount: 100, userId: "u1", serviceId: "s1" });
+    expect(r.discountedAmount).toBe(100);
+    expect(r.promoId).toBeNull();
+  });
+
+  it("rejects a code restricted to a different service", async () => {
+    const db = fakeDb({
+      id: 6, discount_type: "percent", discount_percent: 50, is_active: true,
+      max_uses: null, used_count: 0, restricted_to_service: "other-service",
+    });
+    const r = await validatePromo(db, { code: "SVC", baseAmount: 100, userId: "u1", serviceId: "s1" });
+    expect(r.discountedAmount).toBe(100);
+    expect(r.promoId).toBeNull();
+  });
+
+  it("returns no discount when no code is given", async () => {
+    const db = fakeDb(null);
+    const r = await validatePromo(db, { code: "", baseAmount: 100, userId: "u1", serviceId: "s1" });
+    expect(r.discountedAmount).toBe(100);
+    expect(r.promoId).toBeNull();
+  });
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `npx vitest run lib/pricing/validatePromo.test.ts`
+Expected: FAIL — cannot find module `./validatePromo`.
+
+- [ ] **Step 3: Write minimal implementation**
+
+```ts
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+export interface PromoInput {
+  code: string;
+  baseAmount: number;
+  userId: string | null;
+  serviceId: string;
+}
+
+export interface PromoResult {
+  discountedAmount: number; // baseAmount when invalid
+  promoId: number | null; // set only when a valid discount was applied
+}
+
+/**
+ * Validate a promo code against the DB and return the discounted amount.
+ * Any failure (inactive, maxed, restricted, already redeemed, missing) is a
+ * silent no-op that returns the original amount — never throws.
+ */
+export async function validatePromo(
+  db: SupabaseClient,
+  input: PromoInput
+): Promise<PromoResult> {
+  const none: PromoResult = { discountedAmount: input.baseAmount, promoId: null };
+  const code = input.code?.trim();
+  if (!code) return none;
+
+  const { data: promo } = await db
+    .from("promo_codes")
+    .select(
+      "id, discount_type, discount_percent, discount_amount, is_active, max_uses, used_count, restricted_to_service"
+    )
+    .ilike("code", code)
+    .maybeSingle();
+
+  if (!promo || !promo.is_active) return none;
+  if (promo.max_uses != null && Number(promo.used_count) >= Number(promo.max_uses))
+    return none;
+  if (
+    promo.restricted_to_service &&
+    promo.restricted_to_service !== input.serviceId
+  )
+    return none;
+
+  if (input.userId) {
+    const { data: redeemed } = await db
+      .from("promo_code_redemptions")
+      .select("id")
+      .eq("promo_code_id", promo.id)
+      .eq("user_id", input.userId)
+      .maybeSingle();
+    if (redeemed) return none;
+  }
+
+  let discounted = input.baseAmount;
+  if (promo.discount_type === "flat") {
+    discounted = Math.max(0, input.baseAmount - Number(promo.discount_amount));
+  } else if (promo.discount_type === "percent") {
+    discounted = input.baseAmount * (1 - Number(promo.discount_percent) / 100);
+  }
+
+  return { discountedAmount: Number(discounted.toFixed(2)), promoId: promo.id };
+}
+```
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `npx vitest run lib/pricing/validatePromo.test.ts`
+Expected: PASS (7 tests).
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add lib/pricing/validatePromo.ts lib/pricing/validatePromo.test.ts
+git commit -m "feat: add server-side promo code validation"
+```
+
+---
+
 ## Task 6: Wire price authority into `checkout_sessions`
 
 **Files:**
@@ -742,6 +938,7 @@ import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { ensureVehicle } from "@/utils/vehicle";
 import { computeBookingAmount } from "@/lib/pricing/computeBookingAmount";
+import { validatePromo } from "@/lib/pricing/validatePromo";
 import { apiError } from "@/lib/http/apiError";
 import { logger } from "@/lib/log/logger";
 
@@ -769,6 +966,17 @@ export async function POST(req: Request) {
       paymentMethod: "card",
     });
 
+    // Server-side promo validation (client-sent discounts are ignored).
+    const promo = await validatePromo(admin, {
+      code: body.promoCode ?? "",
+      baseAmount: priced.amount,
+      userId: user?.id ?? null,
+      serviceId: servicePackageId,
+    });
+    // Distribute the validated discount proportionally across line items.
+    const discountFactor =
+      priced.amount > 0 ? promo.discountedAmount / priced.amount : 1;
+
     // Resolve names from DB for Stripe line-item labels.
     const { data: service } = await admin
       .from("service_packages")
@@ -784,7 +992,7 @@ export async function POST(req: Request) {
         price_data: {
           currency: "usd",
           product_data: { name: service?.name ?? "Car Wash Service" },
-          unit_amount: Math.round(priced.servicePrice * 100),
+          unit_amount: Math.round(priced.servicePrice * 100 * discountFactor),
         },
         quantity: 1,
       },
@@ -792,7 +1000,7 @@ export async function POST(req: Request) {
         price_data: {
           currency: "usd",
           product_data: { name: a.name },
-          unit_amount: Math.round(Number(a.price) * 100),
+          unit_amount: Math.round(Number(a.price) * 100 * discountFactor),
         },
         quantity: 1,
       })),
@@ -814,7 +1022,7 @@ export async function POST(req: Request) {
       aids: addOnIds.join(","),
       ad: body.appointmentDate ?? "",
       at: body.appointmentTime ?? "",
-      tp: priced.amount,
+      tp: promo.discountedAmount,
       td: body.totalDuration ?? 0,
       em: user?.email ?? body.customerEmail ?? "",
       nm: user?.user_metadata?.full_name ?? body.customerName ?? "",
@@ -887,8 +1095,11 @@ Task 6 secured the card path. The **cash** and **free/subscription** paths call 
 
 In `createBooking`, after `targetUserId` is determined and before the `bookings` insert (line ~89), insert authoritative recomputation for the self-serve path (when `!subscriberId`; walk-ins are admin-initiated and keep current behavior):
 
+First add a `promoCode?: string` field to the `CarData` type (top of the file) so the action can validate it.
+
 ```ts
 import { computeBookingAmount } from "@/lib/pricing/computeBookingAmount";
+import { validatePromo } from "@/lib/pricing/validatePromo";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { ApiError } from "@/lib/http/apiError";
 ```
@@ -898,8 +1109,9 @@ let authoritativeServicePrice = car.servicePackage?.price ?? 0;
 
 if (!subscriberId) {
   // Self-serve booking: never trust client prices or payment method.
+  const admin = createAdminClient();
   const isAuthenticated = !!currentUser;
-  const priced = await computeBookingAmount(createAdminClient(), {
+  const priced = await computeBookingAmount(admin, {
     servicePackageId: car.servicePackage?.id ?? "",
     addOnIds: car.addOnsId ?? [],
     userId: currentUser?.id ?? null,
@@ -915,8 +1127,16 @@ if (!subscriberId) {
     throw new ApiError("No active subscription covers this service", 400);
   }
 
+  // Apply promo server-side (ignored if invalid).
+  const promo = await validatePromo(admin, {
+    code: car.promoCode ?? "",
+    baseAmount: priced.amount,
+    userId: currentUser?.id ?? null,
+    serviceId: car.servicePackage?.id ?? "",
+  });
+
   authoritativeServicePrice = priced.servicePrice;
-  authoritativeTotal = priced.amount;
+  authoritativeTotal = promo.discountedAmount;
 }
 ```
 
@@ -941,6 +1161,49 @@ From the dashboard confirmation page, tamper the server-action arguments (React 
 git add "app/(dashboard)/dashboard/booking/action.ts"
 git commit -m "fix: enforce server-side price and payment rules in createBooking"
 ```
+
+---
+
+## Task 6c: Pass the promo code from the client to the server
+
+The server now validates promos, so the client must send the **raw promo code string** (not a precomputed discount). Both confirmation pages enter the code as `promoCode` state.
+
+**Files:**
+- Modify: `app/(dashboard)/dashboard/booking/confirmation/page.tsx`
+- Modify: `app/(user)/(booking)/confirmation/page.tsx`
+
+- [ ] **Step 1: Send `promoCode` to the card checkout call**
+
+In each confirmation page, in the card-payment branch that POSTs to `/api/checkout_sessions`, add `promoCode` to the JSON payload:
+```ts
+body: JSON.stringify({ ...payload, promoCode }),
+```
+(where `promoCode` is the existing state holding the entered code).
+
+- [ ] **Step 2: Send `promoCode` to the `createBooking` cash/free call**
+
+In the same pages, add `promoCode` to each `createBooking({ ... })` argument object:
+```ts
+promoCode,
+```
+
+- [ ] **Step 3: Type-check**
+
+Run: `npx tsc --noEmit`
+Expected: no errors.
+
+- [ ] **Step 4: Manual verification**
+
+Apply a known-valid promo and complete a card booking and a cash booking. Confirm the Stripe amount and the stored `total_price` reflect the discount. Apply a fake/inactive code and confirm full price is charged. Record results.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add "app/(dashboard)/dashboard/booking/confirmation/page.tsx" "app/(user)/(booking)/confirmation/page.tsx"
+git commit -m "fix: send raw promo code to server for validation"
+```
+
+> **Follow-up (Phase 2):** move `recordPromoRedemption` to the server so redemptions can't be skipped by a tampered client. Out of scope for Phase 1.
 
 ---
 
