@@ -2,11 +2,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
+import { requireAdmin } from "@/lib/auth/guards";
+import { apiError } from "@/lib/http/apiError";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function POST(req: NextRequest) {
   try {
+    const supabase = await createClient();
+    await requireAdmin(supabase, createAdminClient());
     const {
       amount,
       subscriber_id,
@@ -53,8 +58,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ sessionId: session.id });
-  } catch (error: any) {
-    console.error("Stripe checkout error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (err) {
+    return apiError(err);
   }
 }

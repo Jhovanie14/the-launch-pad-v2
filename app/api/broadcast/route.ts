@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { createClient } from "@/utils/supabase/server";
+import { requireAdmin } from "@/lib/auth/guards";
+import { apiError } from "@/lib/http/apiError";
 import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -18,7 +21,9 @@ function chunkArray<T>(array: T[], size: number): T[][] {
 
 export async function POST(req: NextRequest) {
   try {
+    const supabase = await createClient();
     const admin = createAdminClient();
+    await requireAdmin(supabase, admin);
     const { subject, title, body, bannerUrl } = await req.json();
 
     // Get all active express + self-service subscribers' emails
@@ -226,7 +231,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, sentTo: sentCount });
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ success: false, error: (err as Error).message });
+    return apiError(err);
   }
 }
