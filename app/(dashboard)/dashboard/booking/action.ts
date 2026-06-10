@@ -4,6 +4,9 @@ import { createClient } from "@/utils/supabase/server";
 import { ServicePackage } from "@/lib/data/services";
 import { sendBookingConfirmationEmail } from "@/lib/email/sendConfirmation";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { computeBookingAmount } from "@/lib/pricing/computeBookingAmount";
+import { validatePromo } from "@/lib/pricing/validatePromo";
+import { ApiError } from "@/lib/http/apiError";
 
 type CarData = {
   // License plate is OPTIONAL
@@ -32,6 +35,7 @@ type CarData = {
   customerPhone?: string;
   notes?: string;
   specialInstructions?: string;
+  promoCode?: string;
 };
 
 export async function createBooking(car: CarData, subscriberId?: string) {
@@ -57,6 +61,41 @@ export async function createBooking(car: CarData, subscriberId?: string) {
     targetUserId,
     currentUser: currentUser?.id,
   });
+
+  let authoritativeTotal = car.totalPrice ?? 0;
+  let authoritativeServicePrice = car.servicePackage?.price ?? 0;
+
+  if (!subscriberId) {
+    // Self-serve booking: never trust client prices or payment method.
+    const admin = createAdminClient();
+    const isAuthenticated = !!currentUser;
+    const priced = await computeBookingAmount(admin, {
+      servicePackageId: car.servicePackage?.id ?? "",
+      addOnIds: car.addOnsId ?? [],
+      userId: currentUser?.id ?? null,
+      isAuthenticated,
+      paymentMethod: car.payment_method as "card" | "cash" | "subscription",
+    });
+
+    // Guests cannot pay cash; "subscription" requires an actually-free result.
+    if (car.payment_method === "cash" && !isAuthenticated) {
+      throw new ApiError("Cash payment requires an account", 400);
+    }
+    if (car.payment_method === "subscription" && !priced.isFree) {
+      throw new ApiError("No active subscription covers this service", 400);
+    }
+
+    // Apply promo server-side (ignored if invalid).
+    const promo = await validatePromo(admin, {
+      code: car.promoCode ?? "",
+      baseAmount: priced.amount,
+      userId: currentUser?.id ?? null,
+      serviceId: car.servicePackage?.id ?? "",
+    });
+
+    authoritativeServicePrice = priced.servicePrice;
+    authoritativeTotal = promo.discountedAmount;
+  }
 
   // Use directly passed vehicle_id as base, then override via plate lookup if plate exists
   let vehicleId: string | null = car.vehicle_id ?? null;
@@ -94,10 +133,10 @@ export async function createBooking(car: CarData, subscriberId?: string) {
       vehicle_id: vehicleId,
       service_package_id: car.servicePackage?.id,
       service_package_name: car.servicePackage?.name,
-      service_package_price: car.servicePackage?.price,
+      service_package_price: authoritativeServicePrice,
       appointment_date: car.appointmentDate?.toISOString().split("T")[0],
       appointment_time: car.appointmentTime,
-      total_price: car.totalPrice,
+      total_price: authoritativeTotal,
       total_duration: car.totalDuration,
       payment_method: car.payment_method,
       status: "pending",
