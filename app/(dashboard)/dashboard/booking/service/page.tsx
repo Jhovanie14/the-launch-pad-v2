@@ -61,7 +61,8 @@ function ServiceSelectionPage() {
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"quick" | "express" | "commercial">("quick");
   const [recommendModalOpen, setRecommendModalOpen] = useState(false);
-  const [vehicleSpecs, setVehicleSpecs] = useState<any>({
+  type VehicleSpecs = { license_plate: string; vehicle_id: string };
+  const [vehicleSpecs, setVehicleSpecs] = useState<VehicleSpecs>({
     license_plate: searchParams.get("license_plate") ?? "",
     vehicle_id: searchParams.get("vehicle_id") ?? "",
   });
@@ -86,7 +87,7 @@ function ServiceSelectionPage() {
       license_plate: searchParams.get("license_plate") ?? "",
       vehicle_id: searchParams.get("vehicle_id") ?? "",
     };
-    setVehicleSpecs((prev: any) => {
+    setVehicleSpecs((prev: VehicleSpecs) => {
       // Only update state if something changed to avoid unnecessary re-renders
       if (prev.license_plate === newSpecs.license_plate && prev.vehicle_id === newSpecs.vehicle_id) {
         return prev;

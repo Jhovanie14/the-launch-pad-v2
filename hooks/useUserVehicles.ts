@@ -47,7 +47,7 @@ export function useUserVehicles() {
             .from("user_subscription")
             .select("id")
             .eq("user_id", user.id)
-        ).data?.map((s: any) => s.id) ?? []
+        ).data?.map((s: { id: string }) => s.id) ?? []
       );
 
     const { data: selfSubVehicles } = await supabase
@@ -60,13 +60,16 @@ export function useUserVehicles() {
             .from("self_service_subscriptions")
             .select("id")
             .eq("user_id", user.id)
-        ).data?.map((s: any) => s.id) ?? []
+        ).data?.map((s: { id: string }) => s.id) ?? []
       );
 
+    // Supabase returns the joined relation as an array when using foreign-key
+    // select syntax; we take the first element (there is always at most one).
+    type SubVehicleRow = { vehicle: UserVehicle[] };
     const fromSubs = [
-      ...(subVehicles ?? []).map((r: any) => r.vehicle),
-      ...(selfSubVehicles ?? []).map((r: any) => r.vehicle),
-    ].filter(Boolean);
+      ...(subVehicles ?? []).map((r: SubVehicleRow) => r.vehicle[0] ?? null),
+      ...(selfSubVehicles ?? []).map((r: SubVehicleRow) => r.vehicle[0] ?? null),
+    ].filter((v): v is UserVehicle => v !== null);
 
     // Merge and deduplicate by id
     const seen = new Set<string>();
