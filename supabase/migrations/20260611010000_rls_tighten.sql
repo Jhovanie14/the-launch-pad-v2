@@ -78,33 +78,55 @@ drop policy if exists "allow read for all" on public.self_service_subscriptions;
 
 
 -- =========================================================================
--- STILL DEFERRED (needs app changes first) — vehicles & profiles.
--- See docs/superpowers/specs/2026-06-11-rls-tightening-followup.md.
---
--- vehicles: the booking CONFIRMATION page (a client component) reads vehicles
--- by plate via the anon key for guests. That read must move server-side before
--- dropping "Vehicles are viewable by everyone", or guest vehicle display breaks.
+-- READY (apply after deploying commit 7497fbc) — vehicles (block anonymous).
+-- The guest confirmation vehicle read was moved to a service-role server
+-- action (`getVehicleDisplay`, commit 7497fbc), so no anon flow reads vehicles
+-- directly. Replace the public "viewable by everyone" SELECT with an
+-- authenticated-only SELECT. Logged-in users can still read vehicles by plate,
+-- which the subscription-vehicle joins and plate-linking in useUserVehicles /
+-- createBooking / add-vehicle require. (Full owner-only closure would need
+-- those flows moved server-side too — see the follow-up spec.)
+-- VERIFY after applying: guest booking confirmation still shows vehicle info;
+-- a logged-in user's vehicle list + add-vehicle still work; an anon REST query
+-- to /vehicles returns zero rows.
 -- ---------------------------------------------------------------------------
--- drop policy if exists "Vehicles are viewable by everyone" on public.vehicles;
--- create policy "Admins can select all vehicles" on public.vehicles
---   for select to authenticated
---   using (exists (select 1 from public.profiles p
---                  where p.id = auth.uid() and p.role = 'admin'));
--- create policy "Users can select own vehicles" on public.vehicles
---   for select to authenticated
---   using (user_id = auth.uid());
+drop policy if exists "Vehicles are viewable by everyone" on public.vehicles;
+drop policy if exists "Authenticated can read vehicles" on public.vehicles;
+create policy "Authenticated can read vehicles" on public.vehicles
+  for select to authenticated using (true);
+
+-- =========================================================================
+-- READY — profiles (restrict to own + admin).
+-- The only cross-user/anon profile reader was the public reviews carousel,
+-- which is dead code (not rendered anywhere); the reviews page uses static
+-- testimonials. All live profile reads are own (users_manage_own_profile) or
+-- admin (admin pages / service-role). So profiles can be restricted with no
+-- app change.
 --
--- profiles: anon "Enable read access for all users" + authenticated
--- "allow_read_profiles" make all profiles world-readable. NOTE: the public
--- reviews carousel and any UI showing another user's name/avatar read profiles;
--- restricting to own+admin will break those for anon visitors. Consider a
--- public VIEW exposing only (id, full_name, avatar_url) instead of opening the
--- whole table. Do not enable without handling that.
+-- IMPORTANT: the admin check uses a SECURITY DEFINER function. A profiles
+-- SELECT policy that queried `profiles` inline would recurse infinitely under
+-- RLS; is_admin() runs as the function owner and bypasses that.
+-- VERIFY after applying: login works; dashboard loads (own profile); the admin
+-- users page loads (admin reads other profiles); an anon REST query to
+-- /profiles returns zero rows; a non-admin user cannot read another user's row.
 -- ---------------------------------------------------------------------------
--- drop policy if exists "Enable read access for all users" on public.profiles;
--- drop policy if exists "allow_read_profiles" on public.profiles;
--- create policy "Admins can read all profiles" on public.profiles
---   for select to authenticated
---   using (exists (select 1 from public.profiles p
---                  where p.id = auth.uid() and p.role = 'admin'));
--- -- ("users_manage_own_profile" (auth.uid() = id) already exists.)
+create or replace function public.is_admin()
+  returns boolean
+  language sql
+  security definer
+  stable
+  set search_path = public
+as $$
+  select exists (
+    select 1 from public.profiles
+    where id = auth.uid() and role = 'admin'
+  );
+$$;
+
+drop policy if exists "Enable read access for all users" on public.profiles;
+drop policy if exists "allow_read_profiles" on public.profiles;
+drop policy if exists "Admins can read all profiles" on public.profiles;
+create policy "Admins can read all profiles" on public.profiles
+  for select to authenticated
+  using (public.is_admin());
+-- ("users_manage_own_profile" (FOR ALL, auth.uid() = id) already covers own SELECT.)
