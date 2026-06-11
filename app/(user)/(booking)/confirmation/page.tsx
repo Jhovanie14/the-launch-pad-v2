@@ -27,6 +27,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import LoadingDots from "@/components/loading";
 import SubscriptionUpsellDialog from "@/components/subscription-upsell-dialog";
+import { getVehicleDisplay } from "@/app/actions/vehicle";
 
 const validateGuestInfo = (info: {
   name: string;
@@ -99,10 +100,9 @@ function ConfirmationContent() {
     const plate = vehicleSpecs.license_plate;
     const vid = vehicleSpecs.vehicle_id;
     if (!plate && !vid) return;
-    const query = supabase.from("vehicles").select("year, make, model, body_type, colors, license_plate");
-    (plate ? query.eq("license_plate", plate) : query.eq("id", vid))
-      .maybeSingle()
-      .then(({ data }) => setVehicleInfo(data));
+    getVehicleDisplay({ licensePlate: plate, vehicleId: vid }).then((data) =>
+      setVehicleInfo(data)
+    );
   }, [vehicleSpecs.license_plate, vehicleSpecs.vehicle_id]);
 
   useEffect(() => {
