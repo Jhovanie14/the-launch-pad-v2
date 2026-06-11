@@ -42,6 +42,24 @@ Several tables have permissive `using (true)` policies that defeat RLS; the anon
    - Admin booking/subscription lists still load.
    - A logged-in user can still see their own bookings/vehicles/subscription, but NOT another user's (verify via the REST API with a non-admin token).
 
+## vehicles — detailed trace (why it is a larger refactor)
+
+`vehicles` is read by plate *across ownership boundaries* in client code, so owner-only RLS breaks five flows. Each anon/cross-owner read must move to a server-side service-role call before the permissive policy can drop:
+
+1. `hooks/useUserVehicles.ts` — subscription-linked vehicles are read via embedded join `subscription_vehicles -> vehicle:vehicles(...)`; family/null-owner vehicles would be filtered out by owner-only RLS and disappear from the list.
+2. `hooks/useUserVehicles.ts` `addVehicle` — the "plate exists but `user_id IS NULL`" check returns nothing under owner-only RLS → duplicate-plate INSERT → unique-constraint error.
+3. `app/(user)/(booking)/confirmation/page.tsx` & `app/(dashboard)/dashboard/booking/confirmation/page.tsx` — client-side plate/id lookup for vehicle display (guest case is anon).
+4. `app/(dashboard)/dashboard/booking/action.ts` — self-serve path plate lookup uses the anon server client; unowned plates would not be found.
+5. `app/api/subscription/add-vehicle/route.ts` — plate lookup.
+
+**Two paths:**
+- **Full closure (owner + admin only):** move all of the above to server-side service-role (a `lookupVehicleByPlate` server action for the confirmation pages; switch `action.ts`/`add-vehicle`/`useUserVehicles` reads to server routes). Highest privacy, but a real refactor of the vehicle data layer with regression risk on booking/subscription flows. Needs its own plan + testing.
+- **Partial closure (authenticated-only):** move just the guest (anon) confirmation read server-side, then change "Vehicles are viewable by everyone" from `public` to `authenticated`. Closes anonymous plate scraping (the worst of it) with low risk; logged-in users can still read vehicles (lower-severity residual). License plates are less sensitive than the `bookings` PII already closed.
+
+## profiles — detailed trace
+
+The public reviews UI reads `profiles(full_name, avatar_url)` via a PostgREST embedded join and renders to anonymous visitors. Restricting `profiles` requires either (a) moving the reviews fetch to server-side service-role and passing rows as props (the carousel already takes `reviews` as a prop — locate and convert the fetch), or (b) a `public_profiles` VIEW exposing only `(id, full_name, avatar_url)` with the reviews query repointed to it. Until one is done, `profiles` SELECT cannot be restricted (it currently exposes every user's email to anon).
+
 ## Why a follow-up, not part of the main Phase 1 branch
 
 These changes alter anonymous, guest-facing production flows (booking success, vehicle creation, public reviews). They warrant isolated implementation + manual verification on each flow before deploy, rather than being bundled with the already-verified server-side-price/auth work.
