@@ -33,7 +33,35 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import LoadingDots from "@/components/loading";
-import { getVehicleDisplay } from "@/app/actions/vehicle";
+import { getVehicleDisplay, VehicleDisplay } from "@/app/actions/vehicle";
+import type { ServicePackageRow } from "@/types/db";
+import type { AddOn } from "@/types";
+import type { ServicePackage } from "@/lib/data/services";
+
+interface VehicleSpecs {
+  license_plate: string;
+  vehicle_id: string;
+}
+
+interface SubscriptionPlanShape {
+  name: string;
+  description: string | null;
+  monthly_price: number | null;
+  yearly_price: number | null;
+}
+
+interface UserSubscribeData {
+  id: string;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  // Supabase PostgREST returns the aliased FK join as a single object at runtime
+  // (the generated TS types incorrectly widen it to an array for isOneToOne: false FKs)
+  subscription_plan: SubscriptionPlanShape | null;
+}
+
+interface SubscriptionState {
+  subscription_plans: SubscriptionPlanShape | null;
+}
 
 function ConfirmationContent() {
   const router = useRouter();
@@ -45,13 +73,13 @@ function ConfirmationContent() {
 
   const rawPlate = searchParams.get("license_plate") ?? "";
   const cleanPlate = rawPlate === "null" ? "" : rawPlate;
-  const [vehicleSpecs] = useState<any>({
+  const [vehicleSpecs] = useState<VehicleSpecs>({
     license_plate: cleanPlate,
     vehicle_id: searchParams.get("vehicle_id") ?? "",
   });
-  const [selectedPackages, setSelectedPackages] = useState<any>(null);
-  const [userSubscribe, setUserSubscribe] = useState<any>(null);
-  const [selectedAddOns, setSelectedAddOns] = useState<any>(null);
+  const [selectedPackages, setSelectedPackages] = useState<ServicePackageRow | null>(null);
+  const [userSubscribe, setUserSubscribe] = useState<UserSubscribeData | null>(null);
+  const [selectedAddOns, setSelectedAddOns] = useState<AddOn[] | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"card" | "cash">("card");
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
@@ -66,7 +94,7 @@ function ConfirmationContent() {
   const [appliedDiscountType, setAppliedDiscountType] = useState<"percent" | "flat">("percent");
   const [appliedDiscountAmount, setAppliedDiscountAmount] = useState(0);
   const [appliedPromoId, setAppliedPromoId] = useState<number | null>(null);
-  const [subscription, setSubscription] = useState<any>(null);
+  const [subscription, setSubscription] = useState<SubscriptionState | null>(null);
 
   // ============================================
   // HOLIDAY SALE: START - Remove all code between START and END when sale ends
@@ -110,7 +138,7 @@ function ConfirmationContent() {
 
   const isSubscribed = !!userSubscribe?.stripe_subscription_id;
   const [isVehicleSubscribed, setIsVehicleSubscribed] = useState(false);
-  const [vehicleInfo, setVehicleInfo] = useState<any>(null);
+  const [vehicleInfo, setVehicleInfo] = useState<VehicleDisplay | null>(null);
 
   // Fetch vehicle info — runs for all users (subscriber or not)
   useEffect(() => {
@@ -161,11 +189,13 @@ function ConfirmationContent() {
         console.error("❌ Error fetching subscription:", error);
       } else {
         // console.log("✅ Subscription data:", data);
-        setUserSubscribe(data);
+        // Cast: Supabase generated types mark FK joins as arrays but PostgREST
+        // returns a single object at runtime for this aliased FK query.
+        setUserSubscribe(data as UserSubscribeData | null);
         // Set full subscription data for category checking
         if (data) {
           setSubscription({
-            subscription_plans: data.subscription_plan,
+            subscription_plans: data.subscription_plan as unknown as SubscriptionPlanShape | null,
           });
         }
       }
@@ -283,7 +313,7 @@ function ConfirmationContent() {
     const base = Number(selectedPackages?.duration) || 0;
     const addOnsTotal = Array.isArray(selectedAddOns)
       ? selectedAddOns.reduce(
-          (sum: number, addOn: any) => sum + Number(addOn.duration),
+          (sum: number, addOn: AddOn) => sum + Number(addOn.duration),
           0,
         )
       : 0;
@@ -296,7 +326,7 @@ function ConfirmationContent() {
     // HOLIDAY SALE: START
     // ============================================
     const addOnsTotal = Array.isArray(selectedAddOns)
-      ? selectedAddOns.reduce((sum: number, addOn: any) => {
+      ? selectedAddOns.reduce((sum: number, addOn: AddOn) => {
           let price = Number(addOn.price);
           // Apply holiday sale to add-ons
           if (HOLIDAY_SALE_ACTIVE) {
@@ -343,7 +373,7 @@ function ConfirmationContent() {
   const calculateOriginalTotal = () => {
     const addOnsTotal = Array.isArray(selectedAddOns)
       ? selectedAddOns.reduce(
-          (sum: number, addOn: any) => sum + Number(addOn.price),
+          (sum: number, addOn: AddOn) => sum + Number(addOn.price),
           0,
         )
       : 0;
@@ -398,7 +428,7 @@ function ConfirmationContent() {
         const booking = await createBooking({
           license_plate: vehicleSpecs.license_plate ?? "",
           vehicle_id: vehicleSpecs.vehicle_id || undefined,
-          servicePackage: { ...selectedPackages, price: 0 },
+          servicePackage: { ...selectedPackages, price: 0 } as ServicePackage,
           addOnsId: [],
           appointmentDate: new Date(appointmentDate!),
           appointmentTime: appointmentTime!.toString(),
@@ -452,7 +482,7 @@ function ConfirmationContent() {
         const booking = await createBooking({
           license_plate: vehicleSpecs.license_plate ?? "",
           vehicle_id: vehicleSpecs.vehicle_id || undefined,
-          servicePackage: { ...selectedPackages, price: servicePrice },
+          servicePackage: { ...selectedPackages, price: servicePrice } as ServicePackage,
           addOnsId: selectedAddOns
             ? selectedAddOns.map((a: { id: string }) => a.id)
             : [],
@@ -578,10 +608,10 @@ function ConfirmationContent() {
                       <span className="font-medium">{vehicleInfo.body_type}</span>
                     </div>
                   )}
-                  {vehicleInfo?.colors?.length > 0 && (
+                  {(vehicleInfo?.colors?.length ?? 0) > 0 && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">Color:</span>
-                      <span className="font-medium">{vehicleInfo.colors.join(", ")}</span>
+                      <span className="font-medium">{vehicleInfo?.colors?.join(", ")}</span>
                     </div>
                   )}
                   {!vehicleSpecs.license_plate && !vehicleInfo && (
@@ -646,7 +676,7 @@ function ConfirmationContent() {
                   <div className="flex flex-col">
                     <span className="text-slate-800 font-medium">Add Ons:</span>
                     {Array.isArray(selectedAddOns) && selectedAddOns.length > 0 ? (
-                      selectedAddOns.map((addon: any) => (
+                      selectedAddOns.map((addon: AddOn) => (
                         <div key={addon.id} className="flex justify-between pl-4 text-sm text-gray-600">
                           <span>{addon.name}</span>
                           <span className="font-medium text-gray-800">${Number(addon.price).toFixed(2)}</span>
