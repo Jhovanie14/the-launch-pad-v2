@@ -4,7 +4,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { ensureVehicle } from "@/utils/vehicle";
 import { computeBookingAmount } from "@/lib/pricing/computeBookingAmount";
 import { validatePromo } from "@/lib/pricing/validatePromo";
-import { apiError } from "@/lib/http/apiError";
+import { apiError, ApiError } from "@/lib/http/apiError";
 import { logger } from "@/lib/log/logger";
 
 export async function POST(req: Request) {
@@ -41,6 +41,15 @@ export async function POST(req: Request) {
     // Distribute the validated discount proportionally across line items.
     const discountFactor =
       priced.amount > 0 ? promo.discountedAmount / priced.amount : 1;
+
+    if (promo.discountedAmount <= 0) {
+      return apiError(
+        new ApiError(
+          "This booking has no balance to charge. Please confirm it as a free booking instead.",
+          400
+        )
+      );
+    }
 
     // Resolve names from DB for Stripe line-item labels.
     const { data: service } = await admin
@@ -98,7 +107,7 @@ export async function POST(req: Request) {
     const bookingJson = JSON.stringify(bookingData);
     if (bookingJson.length > 500) {
       logger.error("Booking metadata too large:", bookingJson.length);
-      return apiError(new Error("metadata too large"));
+      return apiError(new ApiError("Booking data too large", 400));
     }
 
     const currentParams = new URLSearchParams({

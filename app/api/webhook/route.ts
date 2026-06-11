@@ -35,47 +35,49 @@ export async function POST(req: Request) {
     return new Response(`Webhook Error: ${error.message}`, { status: 400 });
   }
 
-  // Idempotency: skip events Stripe has already delivered.
-  const { data: alreadyProcessed } = await supabase
+  // Idempotency: atomically claim this event. The PK conflict means a
+  // concurrent/duplicate delivery already claimed it — skip reprocessing.
+  const { error: claimError } = await supabase
     .from("processed_stripe_events")
-    .select("id")
-    .eq("id", event.id)
-    .maybeSingle();
-  if (alreadyProcessed) {
+    .insert({ id: event.id, type: event.type });
+  if (claimError) {
     return NextResponse.json({ received: true, duplicate: true });
   }
 
   // Handle events with a clean switch statement
-  switch (event.type) {
-    // Subscription & Booking Events
-    case "checkout.session.completed":
-      await handleCheckoutSessionCompleted(event);
-      break;
+  try {
+    switch (event.type) {
+      // Subscription & Booking Events
+      case "checkout.session.completed":
+        await handleCheckoutSessionCompleted(event);
+        break;
 
-    case "customer.subscription.updated":
-      await handleSubscriptionUpdated(event);
-      break;
+      case "customer.subscription.updated":
+        await handleSubscriptionUpdated(event);
+        break;
 
-    case "customer.subscription.deleted":
-      await handleSubscriptionDeleted(event);
-      break;
+      case "customer.subscription.deleted":
+        await handleSubscriptionDeleted(event);
+        break;
 
-    // Fleet Invoice Events
-    case "invoice.paid":
-      await handleInvoicePaid(event.data.object as Stripe.Invoice);
-      break;
+      // Fleet Invoice Events
+      case "invoice.paid":
+        await handleInvoicePaid(event.data.object as Stripe.Invoice);
+        break;
 
-    case "invoice.payment_failed":
-      await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
-      break;
+      case "invoice.payment_failed":
+        await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
+        break;
 
-    default:
-      console.log(`Unhandled event type: ${event.type}`);
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
+    }
+  } catch (handlerErr) {
+    // Processing failed — release the idempotency claim so Stripe retries.
+    await supabase.from("processed_stripe_events").delete().eq("id", event.id);
+    console.error("[webhook] handler error, released claim:", handlerErr);
+    return new Response("Webhook handler error", { status: 500 });
   }
-
-  await supabase
-    .from("processed_stripe_events")
-    .insert({ id: event.id, type: event.type });
 
   return new Response("ok", { status: 200 });
 }

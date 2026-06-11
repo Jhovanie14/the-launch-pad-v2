@@ -20,7 +20,8 @@ export interface ComputeResult {
 function planCoversCategory(planName: string, category: string): boolean {
   const name = planName.toLowerCase();
   const cat = category.toLowerCase();
-  if (cat === "quick service") return name.includes("quick");
+  if (cat === "quick service")
+    return name.includes("quick") || name.includes("exterior");
   if (cat === "express detail")
     return name.includes("express") || name.includes("commercial");
   return false;

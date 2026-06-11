@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { Resend } from "resend";
 import { escapeHtml, isAllowedBannerUrl } from "@/lib/email/escapeHtml";
+import { apiError } from "@/lib/http/apiError";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (err: any) {
     console.error("[send-direct-email]", err?.message);
-    return NextResponse.json({ success: false, error: err?.message }, { status: 500 });
+    return apiError(err);
   }
 }
 
