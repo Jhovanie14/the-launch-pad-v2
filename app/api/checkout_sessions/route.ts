@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { ensureVehicle } from "@/utils/vehicle";
 import { computeBookingAmount } from "@/lib/pricing/computeBookingAmount";
+import { buildLineItemUnitAmounts } from "@/lib/pricing/lineItems";
 import { validatePromo } from "@/lib/pricing/validatePromo";
 import { apiError, ApiError } from "@/lib/http/apiError";
 import { logger } from "@/lib/log/logger";
@@ -61,20 +62,26 @@ export async function POST(req: Request) {
       ? await admin.from("add_ons").select("id, name, price").in("id", addOnIds)
       : { data: [] as any[] };
 
+    const unitAmounts = buildLineItemUnitAmounts({
+      servicePrice: priced.servicePrice,
+      addOnPrices: (addOnRows ?? []).map((a: any) => Number(a.price)),
+      discountFactor,
+    });
+
     const lineItems = [
       {
         price_data: {
           currency: "usd",
           product_data: { name: service?.name ?? "Car Wash Service" },
-          unit_amount: Math.round(priced.servicePrice * 100 * discountFactor),
+          unit_amount: unitAmounts.serviceCents,
         },
         quantity: 1,
       },
-      ...(addOnRows ?? []).map((a: any) => ({
+      ...(addOnRows ?? []).map((a: any, i: number) => ({
         price_data: {
           currency: "usd",
           product_data: { name: a.name },
-          unit_amount: Math.round(Number(a.price) * 100 * discountFactor),
+          unit_amount: unitAmounts.addOnCents[i],
         },
         quantity: 1,
       })),

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ApiError } from "@/lib/http/apiError";
+import { applyHolidaySale } from "@/lib/booking/holidaySale";
 
 export interface ComputeInput {
   servicePackageId: string;
@@ -80,11 +81,19 @@ export async function computeBookingAmount(
     }
   }
 
-  const servicePrice = isFree ? 0 : Number(service.price);
+  // Holiday sale applies to the non-free service and to add-ons; promo codes
+  // are applied later (validatePromo) on top of the discounted amount, in the
+  // same order the display lib previews it.
+  const servicePrice = round2(isFree ? 0 : applyHolidaySale(Number(service.price)));
+  const discountedAddOnsTotal = round2(applyHolidaySale(addOnsTotal));
   return {
-    amount: servicePrice + addOnsTotal,
+    amount: round2(servicePrice + discountedAddOnsTotal),
     isFree,
     servicePrice,
-    addOnsTotal,
+    addOnsTotal: discountedAddOnsTotal,
   };
+}
+
+function round2(n: number): number {
+  return Number(n.toFixed(2));
 }
