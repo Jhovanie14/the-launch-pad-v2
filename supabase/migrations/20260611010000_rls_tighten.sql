@@ -59,6 +59,7 @@ drop policy if exists "Enable read access for all users" on public.fleet_invoice
 -- returns zero rows.
 -- ---------------------------------------------------------------------------
 drop policy if exists "Allow select all bookings" on public.bookings;
+drop policy if exists "Admins can select all bookings" on public.bookings;
 create policy "Admins can select all bookings" on public.bookings
   for select to authenticated
   using (exists (select 1 from public.profiles p
@@ -67,6 +68,7 @@ create policy "Admins can select all bookings" on public.bookings
 
 -- self_service_subscriptions: owner read ("user can view own subscriptions")
 -- already exists; add admin read, then drop the permissive "allow read for all".
+drop policy if exists "Admins can read self service subscriptions" on public.self_service_subscriptions;
 create policy "Admins can read self service subscriptions"
   on public.self_service_subscriptions
   for select to authenticated
