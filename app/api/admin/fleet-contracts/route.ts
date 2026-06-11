@@ -2,30 +2,16 @@
 // FILE: /api/admin/fleet-contracts/route.ts
 // ==========================================
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
+import { requireAdmin } from "@/lib/auth/guards";
+import { apiError } from "@/lib/http/apiError";
 import { NextResponse } from "next/server";
 
 // GET - Fetch all fleet contracts
 export async function GET(request: Request) {
   try {
     const supabase = await createClient();
-
-    // Check if user is admin
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Optional: Add admin role check
-    // const { data: profile } = await supabase
-    //   .from('profiles')
-    //   .select('role')
-    //   .eq('id', user.id)
-    //   .single();
-    // if (profile?.role !== 'admin') {
-    //   return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    // }
+    await requireAdmin(supabase, createAdminClient());
 
     const { data, error } = await supabase
       .from("fleet_contracts")
@@ -36,11 +22,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(data);
   } catch (error) {
-    console.error("Fleet contracts fetch error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch contracts" },
-      { status: 500 }
-    );
+    return apiError(error);
   }
 }
 
@@ -48,14 +30,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
-
-    // Check if user is admin
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    await requireAdmin(supabase, createAdminClient());
 
     const body = await request.json();
 
@@ -92,11 +67,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error("Fleet contract creation error:", error);
-    return NextResponse.json(
-      { error: "Failed to create contract" },
-      { status: 500 }
-    );
+    return apiError(error);
   }
 }
 
@@ -104,14 +75,7 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const supabase = await createClient();
-
-    // Check if user is admin
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    await requireAdmin(supabase, createAdminClient());
 
     const body = await request.json();
     const { id, ...updateData } = body;
@@ -130,11 +94,7 @@ export async function PATCH(request: Request) {
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error("Fleet contract update error:", error);
-    return NextResponse.json(
-      { error: "Failed to update contract" },
-      { status: 500 }
-    );
+    return apiError(error);
   }
 }
 
@@ -142,14 +102,7 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const supabase = await createClient();
-
-    // Check if user is admin
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    await requireAdmin(supabase, createAdminClient());
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
@@ -170,10 +123,6 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Fleet contract deletion error:", error);
-    return NextResponse.json(
-      { error: "Failed to delete contract" },
-      { status: 500 }
-    );
+    return apiError(error);
   }
 }

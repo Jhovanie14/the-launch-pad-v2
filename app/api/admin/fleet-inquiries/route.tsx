@@ -1,28 +1,14 @@
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
+import { requireAdmin } from "@/lib/auth/guards";
+import { apiError } from "@/lib/http/apiError";
 import { NextResponse } from "next/server";
 
 // GET - Fetch all fleet inquiries
 export async function GET(request: Request) {
   try {
     const supabase = await createClient();
-
-    // Check if user is admin (implement your own admin check)
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Optional: Add admin role check here
-    // const { data: profile } = await supabase
-    //   .from('profiles')
-    //   .select('role')
-    //   .eq('id', user.id)
-    //   .single();
-    // if (profile?.role !== 'admin') {
-    //   return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    // }
+    await requireAdmin(supabase, createAdminClient());
 
     const { data, error } = await supabase
       .from("fleet_inquiries")
@@ -33,11 +19,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(data);
   } catch (error) {
-    console.error("Fleet inquiries fetch error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch inquiries" },
-      { status: 500 }
-    );
+    return apiError(error);
   }
 }
 
@@ -45,14 +27,7 @@ export async function GET(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const supabase = await createClient();
-
-    // Check if user is admin
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    await requireAdmin(supabase, createAdminClient());
 
     const body = await request.json();
     const { id, status } = body;
@@ -71,10 +46,6 @@ export async function PATCH(request: Request) {
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error("Fleet inquiry update error:", error);
-    return NextResponse.json(
-      { error: "Failed to update inquiry" },
-      { status: 500 }
-    );
+    return apiError(error);
   }
 }

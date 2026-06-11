@@ -2,20 +2,16 @@
 // FILE: /api/admin/fleet-invoices/route.ts
 // ==========================================
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
+import { requireAdmin } from "@/lib/auth/guards";
+import { apiError } from "@/lib/http/apiError";
 import { NextResponse } from "next/server";
 
 // GET - Fetch all fleet invoices
 export async function GET(request: Request) {
   try {
     const supabase = await createClient();
-
-    // Check if user is admin
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    await requireAdmin(supabase, createAdminClient());
 
     const { data, error } = await supabase
       .from("fleet_invoices")
@@ -47,11 +43,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(data);
   } catch (error) {
-    console.error("Fleet invoices fetch error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch invoices" },
-      { status: 500 }
-    );
+    return apiError(error);
   }
 }
 
@@ -59,14 +51,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
-
-    // Check if user is admin
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    await requireAdmin(supabase, createAdminClient());
 
     const body = await request.json();
 
@@ -92,11 +77,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error("Fleet invoice creation error:", error);
-    return NextResponse.json(
-      { error: "Failed to create invoice" },
-      { status: 500 }
-    );
+    return apiError(error);
   }
 }
 
@@ -104,14 +85,7 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const supabase = await createClient();
-
-    // Check if user is admin
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    await requireAdmin(supabase, createAdminClient());
 
     const body = await request.json();
     const { id, status, payment_date } = body;
@@ -132,11 +106,7 @@ export async function PATCH(request: Request) {
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error("Fleet invoice update error:", error);
-    return NextResponse.json(
-      { error: "Failed to update invoice" },
-      { status: 500 }
-    );
+    return apiError(error);
   }
 }
 

@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
+import { requireAdmin } from "@/lib/auth/guards";
+import { apiError } from "@/lib/http/apiError";
 
 export async function GET() {
   try {
     const supabase = await createClient();
+    await requireAdmin(supabase, createAdminClient());
 
     const { data, error } = await supabase
       .from("bookings")
@@ -23,14 +27,10 @@ export async function GET() {
       .order("created_at", { ascending: false })
       .limit(50);
 
-    if (error) {
-      console.error("Error fetching revenue breakdown:", error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+    if (error) throw error;
 
     return NextResponse.json({ data: data || [] });
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    return apiError(err);
   }
 }
