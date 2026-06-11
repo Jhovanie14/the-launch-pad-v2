@@ -8,6 +8,26 @@ import {
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
+import type { AddOnRow } from "@/types/db";
+
+/** Shape of booking metadata encoded as JSON in session.metadata.booking */
+interface BookingMetadata {
+  uid: string | null;
+  vid: string | null;
+  spid: string;
+  spn: string;
+  spp: number;
+  aids: string;
+  ad: string;
+  at: string;
+  tp: number;
+  td: number;
+  em: string;
+  nm: string;
+  ph: string;
+  si: string;
+  addOns?: Array<{ id: string }>;
+}
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 const supabase = createClient(
@@ -31,8 +51,9 @@ export async function POST(req: Request) {
       sig,
       process.env.STRIPE_WEBHOOK_SECRET!
     );
-  } catch (error: any) {
-    return new Response(`Webhook Error: ${error.message}`, { status: 400 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    return new Response(`Webhook Error: ${message}`, { status: 400 });
   }
 
   // Idempotency: atomically claim this event. The PK conflict means a
@@ -210,7 +231,7 @@ async function processNewBooking(session: Stripe.Checkout.Session) {
 
     // 4. Get add-ons details
     const addOnIds = JSON.parse(add_on_ids || "[]");
-    let addOnsData: any[] = [];
+    let addOnsData: AddOnRow[] = [];
     let addOnsTotalPrice = 0;
     let addOnsTotalDuration = 0;
 
@@ -291,7 +312,7 @@ async function processNewBooking(session: Stripe.Checkout.Session) {
 
     // 7. Send confirmation email
     if (booking?.customer_email) {
-      const addOnNames = addOnsData.map((a) => a.name);
+      const addOnNames = addOnsData.map((a) => a.name).filter((n): n is string => n !== null);
 
       await sendBookingConfirmationEmail({
         to: booking.customer_email,
@@ -394,7 +415,7 @@ async function processWalkInBooking(session: Stripe.Checkout.Session) {
 
     // Get add-ons details
     const addOnIds = JSON.parse(add_on_ids || "[]");
-    let addOnsData: any[] = [];
+    let addOnsData: AddOnRow[] = [];
     let addOnsTotalPrice = 0;
     let addOnsTotalDuration = 0;
 
@@ -482,7 +503,7 @@ async function processWalkInBooking(session: Stripe.Checkout.Session) {
 
     // Send confirmation email
     if (booking?.customer_email) {
-      const addOnNames = addOnsData.map((a) => a.name);
+      const addOnNames = addOnsData.map((a) => a.name).filter((n): n is string => n !== null);
 
       await sendBookingConfirmationEmail({
         to: booking.customer_email,
@@ -504,8 +525,8 @@ async function processWalkInBooking(session: Stripe.Checkout.Session) {
 }
 
 async function processBooking(session: Stripe.Checkout.Session) {
-  const bookingMeta = session.metadata?.booking
-    ? JSON.parse(session.metadata.booking)
+  const bookingMeta: BookingMetadata | null = session.metadata?.booking
+    ? (JSON.parse(session.metadata.booking) as BookingMetadata)
     : null;
 
   console.log("Parsed booking metadata:", bookingMeta);
@@ -572,7 +593,7 @@ async function processBooking(session: Stripe.Checkout.Session) {
     if (bookingMeta.aids) {
       addOnIds = bookingMeta.aids.split(",").filter((id: string) => id.trim());
     } else if (bookingMeta.addOns?.length) {
-      addOnIds = bookingMeta.addOns.map((a: any) => a.id);
+      addOnIds = bookingMeta.addOns.map((a) => a.id);
     }
 
     // 🟩 Insert add-ons if found
@@ -656,11 +677,10 @@ async function processSubscription(session: Stripe.Checkout.Session) {
     session.subscription as string
   );
 
-  const sub = subscription as any;
-  const subscriptionItems = sub?.items?.data || [];
+  const subscriptionItems: Stripe.SubscriptionItem[] = subscription.items.data;
 
   // Use the first subscription item for period dates (all items share the same period)
-  const subscriptionItem = subscriptionItems[0];
+  const subscriptionItem = subscriptionItems[0] as Stripe.SubscriptionItem | undefined;
 
   const cps = Number(subscriptionItem?.current_period_start);
   const cpe = Number(subscriptionItem?.current_period_end);
@@ -684,7 +704,7 @@ async function processSubscription(session: Stripe.Checkout.Session) {
 
   // Use the first price ID as the primary price (for backward compatibility)
   const priceId = subscriptionItems[0]?.price?.id ?? null;
-  const cancelAtPeriodEnd = Boolean(sub?.cancel_at_period_end);
+  const cancelAtPeriodEnd = Boolean(subscription.cancel_at_period_end);
 
   // console.log("Saving subscription with payload:", {
   //   user_id: appUserId,
@@ -766,7 +786,7 @@ async function processSubscription(session: Stripe.Checkout.Session) {
       try {
         const stripeSubId = typeof session.subscription === "string"
           ? session.subscription
-          : (session.subscription as any).id;
+          : (session.subscription as Stripe.Subscription).id;
 
         const stripeSub = await stripe.subscriptions.retrieve(stripeSubId);
 
@@ -782,7 +802,7 @@ async function processSubscription(session: Stripe.Checkout.Session) {
             // Match by vehicle_index metadata (set in checkout route) or fall back to position
             const stripeItem =
               stripeSub.items.data.find(
-                (item: any) => item.price?.metadata?.vehicle_index === i.toString()
+                (item: Stripe.SubscriptionItem) => item.price?.metadata?.vehicle_index === i.toString()
               ) ?? stripeSub.items.data[i];
 
             if (stripeItem?.id) {
@@ -794,8 +814,9 @@ async function processSubscription(session: Stripe.Checkout.Session) {
           }
           console.log(`Stored stripe_item_id for ${allLinks.length} vehicle(s)`);
         }
-      } catch (err: any) {
-        console.error("Error storing stripe_item_id for vehicles:", err?.message);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error("Error storing stripe_item_id for vehicles:", msg);
       }
     }
   }
@@ -870,8 +891,7 @@ async function processSelfServiceSubscription(
 async function handleSubscriptionUpdated(event: Stripe.Event) {
   const subscription = event.data.object as Stripe.Subscription;
 
-  const sub = subscription as any;
-  const subscriptionItem = sub?.items?.data?.[0];
+  const subscriptionItem = subscription.items.data[0] as Stripe.SubscriptionItem | undefined;
 
   const cps = Number(subscriptionItem?.current_period_start);
   const cpe = Number(subscriptionItem?.current_period_end);
@@ -890,7 +910,7 @@ async function handleSubscriptionUpdated(event: Stripe.Event) {
     .single();
 
   const priceId = subscriptionItem?.price?.id ?? null;
-  const cancelAtPeriodEnd = Boolean(sub?.cancel_at_period_end);
+  const cancelAtPeriodEnd = Boolean(subscription.cancel_at_period_end);
   const planId =
     subscription.metadata?.plan_id ?? existingSub?.subscription_plan_id ?? null;
   const billingCycleRaw = subscription.metadata?.billing_cycle || null;
@@ -923,7 +943,9 @@ async function handleSubscriptionUpdated(event: Stripe.Event) {
   }
 
   // Send retention email when cancel_at_period_end is newly set to true
-  const prevAttrs = (event.data.previous_attributes ?? {}) as any;
+  // Stripe's PreviousAttributes is typed as an empty interface; cast to a
+  // record so we can safely read the dynamic field we know may be present.
+  const prevAttrs = (event.data.previous_attributes ?? {}) as Record<string, unknown>;
   const cancelJustScheduled =
     "cancel_at_period_end" in prevAttrs &&
     prevAttrs.cancel_at_period_end === false &&
@@ -1012,7 +1034,11 @@ async function handleSubscriptionDeleted(event: Stripe.Event) {
 // FLEET INVOICE HANDLERS
 // ========================================
 async function handleInvoicePaid(invoice: Stripe.Invoice) {
-  const inv = invoice as any;
+  // SDK v18+: subscription id is nested under parent.subscription_details.subscription
+  const subscriptionId =
+    typeof invoice.parent?.subscription_details?.subscription === "string"
+      ? invoice.parent.subscription_details.subscription
+      : (invoice.parent?.subscription_details?.subscription as Stripe.Subscription | undefined)?.id ?? null;
 
   // ── Fleet invoice: update fleet_invoices table ──
   const { data: fleetData, error: fleetError } = await supabase
@@ -1027,19 +1053,19 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
   }
 
   // ── Subscription invoice: send receipt email ──
-  if (!inv.subscription) return; // not a subscription invoice
+  if (!subscriptionId) return; // not a subscription invoice
 
   // Look up the subscriber in our DB (try express first, then self-service)
   const [{ data: expressSub }, { data: selfSub }] = await Promise.all([
     supabase
       .from("user_subscription")
       .select("user_id")
-      .eq("stripe_subscription_id", inv.subscription as string)
+      .eq("stripe_subscription_id", subscriptionId)
       .maybeSingle(),
     supabase
       .from("self_service_subscriptions")
       .select("user_id")
-      .eq("stripe_subscription_id", inv.subscription as string)
+      .eq("stripe_subscription_id", subscriptionId)
       .maybeSingle(),
   ]);
 
@@ -1054,14 +1080,14 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
 
   if (!profile?.email) return;
 
-  const amountPaid = (inv.amount_paid ?? 0) / 100;
-  const periodStart = new Date((inv.period_start ?? 0) * 1000).toLocaleDateString("en-US", {
+  const amountPaid = (invoice.amount_paid ?? 0) / 100;
+  const periodStart = new Date((invoice.period_start ?? 0) * 1000).toLocaleDateString("en-US", {
     year: "numeric", month: "long", day: "numeric",
   });
-  const periodEnd = new Date((inv.period_end ?? 0) * 1000).toLocaleDateString("en-US", {
+  const periodEnd = new Date((invoice.period_end ?? 0) * 1000).toLocaleDateString("en-US", {
     year: "numeric", month: "long", day: "numeric",
   });
-  const isRenewal = inv.billing_reason === "subscription_cycle";
+  const isRenewal = invoice.billing_reason === "subscription_cycle";
 
   await sendSubscriptionInvoiceEmail({
     to: profile.email,
@@ -1069,7 +1095,7 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
     amountPaid,
     billingPeriodStart: periodStart,
     billingPeriodEnd: periodEnd,
-    invoiceUrl: inv.hosted_invoice_url ?? null,
+    invoiceUrl: invoice.hosted_invoice_url ?? null,
     isRenewal,
   });
 
@@ -1090,13 +1116,17 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
   }
 
   // Send payment failed email to subscriber if this belongs to a subscription
-  const invoiceAny = invoice as any;
-  if (!invoiceAny.subscription) return;
+  // SDK v18+: subscription id is nested under parent.subscription_details.subscription
+  const subIdForFailed =
+    typeof invoice.parent?.subscription_details?.subscription === "string"
+      ? invoice.parent.subscription_details.subscription
+      : (invoice.parent?.subscription_details?.subscription as Stripe.Subscription | undefined)?.id ?? null;
+  if (!subIdForFailed) return;
 
   const { data: sub } = await supabase
     .from("user_subscription")
     .select("user_id, stripe_customer_id")
-    .eq("stripe_subscription_id", invoiceAny.subscription as string)
+    .eq("stripe_subscription_id", subIdForFailed)
     .maybeSingle();
 
   if (!sub) return;
