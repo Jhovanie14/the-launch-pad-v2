@@ -47,7 +47,7 @@ export function useUserVehicles() {
             .from("user_subscription")
             .select("id")
             .eq("user_id", user.id)
-        ).data?.map((s: any) => s.id) ?? []
+        ).data?.map((s: { id: string }) => s.id) ?? []
       );
 
     const { data: selfSubVehicles } = await supabase
@@ -60,13 +60,17 @@ export function useUserVehicles() {
             .from("self_service_subscriptions")
             .select("id")
             .eq("user_id", user.id)
-        ).data?.map((s: any) => s.id) ?? []
+        ).data?.map((s: { id: string }) => s.id) ?? []
       );
 
+    // The to-one `vehicle:vehicles(...)` embed returns a single object at
+    // runtime; the generated types model it as an array, so cast to the real
+    // shape rather than index into it (indexing would yield undefined).
+    type SubVehicleRow = { vehicle: UserVehicle | null };
     const fromSubs = [
-      ...(subVehicles ?? []).map((r: any) => r.vehicle),
-      ...(selfSubVehicles ?? []).map((r: any) => r.vehicle),
-    ].filter(Boolean);
+      ...(subVehicles ?? []).map((r) => (r as unknown as SubVehicleRow).vehicle),
+      ...(selfSubVehicles ?? []).map((r) => (r as unknown as SubVehicleRow).vehicle),
+    ].filter((v): v is UserVehicle => v != null);
 
     // Merge and deduplicate by id
     const seen = new Set<string>();

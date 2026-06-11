@@ -12,10 +12,10 @@ export default function HelpPage() {
   const [activeTab, setActiveTab] = useState("support");
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<
-    "guide" | "tutorials" | "forum" | null
+    "guide" | "tutorials" | null
   >(null);
 
-  const openModal = (type: "guide" | "tutorials" | "forum") => {
+  const openModal = (type: "guide" | "tutorials") => {
     setModalType(type);
     setModalOpen(true);
   };
@@ -137,20 +137,6 @@ export default function HelpPage() {
                 </span>
               </button>
 
-              <button
-                onClick={() => openModal("forum")}
-                className="rounded-lg border border-border bg-card p-8 hover:shadow-md transition-shadow text-left"
-              >
-                <h3 className="text-lg font-semibold text-foreground mb-3">
-                  Community Forum
-                </h3>
-                <p className="text-muted-foreground mb-4">
-                  Connect with other users and share solutions.
-                </p>
-                <span className="text-primary hover:underline font-medium">
-                  Join Forum →
-                </span>
-              </button>
             </div>
           </TabsContent>
         </Tabs>

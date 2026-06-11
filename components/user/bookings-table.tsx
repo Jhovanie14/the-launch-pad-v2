@@ -176,7 +176,7 @@ export function BookingsTable({
                 <div className="text-sm">
                   <div className="font-medium">
                     {booking.vehicle?.year} {booking.vehicle?.make}{" "}
-                    {booking.vehicle?.model}
+                    {booking.vehicle?.model} {booking.vehicle?.license_plate && `(${booking.vehicle.license_plate})`}
                   </div>
                   <div className="text-muted-foreground">
                     {booking.vehicle?.colors}

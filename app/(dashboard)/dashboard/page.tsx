@@ -9,6 +9,7 @@ import QuickActions from "@/components/qucik-actions";
 import StatCard from "@/components/stats-card";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useSelfServiceSubscription } from "@/hooks/useSelfServiceSubscription";
+import { Subscription, SelfServiceSubscription } from "@/types";
 import {
   Crown,
   Calendar,
@@ -43,7 +44,7 @@ export default function DashboardPage() {
         : Number(subscription.subscription_plans.yearly_price ?? 0);
 
     const vehicles = subscription.vehicles || [];
-    const vehiclePricing = vehicles.map((vehicle: any, index: number) => {
+    const vehiclePricing = vehicles.map((_vehicle: NonNullable<Subscription["vehicles"]>[number], index: number) => {
       const isFirstVehicle = index === 0;
       return {
         price: isFirstVehicle ? basePrice : basePrice * 0.65,
@@ -89,7 +90,7 @@ export default function DashboardPage() {
     );
 
     const vehicles = selfServiceSubscription.vehicles || [];
-    const vehiclePricing = vehicles.map((vehicle: any, index: number) => {
+    const vehiclePricing = vehicles.map((_vehicle: SelfServiceSubscription["vehicles"][number], index: number) => {
       const isFirstVehicle = index === 0;
       return {
         price: isFirstVehicle ? basePrice : basePrice * 0.9,

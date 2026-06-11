@@ -6,6 +6,12 @@ import { useAuth } from "@/context/auth-context";
 import { bookingService } from "@/lib/services/bookingService";
 import { Booking } from "@/types";
 
+interface RecentBooking {
+  id: string;
+  status: string;
+  created_at: string;
+}
+
 export function useBookings() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,7 +94,7 @@ export function useBookingStats() {
     difference: 0,
     active: 0,
   });
-  const [recentBookings, setRecentBookings] = useState<any[]>([]);
+  const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();

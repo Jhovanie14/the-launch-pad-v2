@@ -3,12 +3,11 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
 
 interface ResourceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  type: "guide" | "tutorials" | "forum" | null;
+  type: "guide" | "tutorials" | null;
 }
 
 export function ResourceModal({ isOpen, onClose, type }: ResourceModalProps) {
@@ -132,47 +131,6 @@ export function ResourceModal({ isOpen, onClose, type }: ResourceModalProps) {
                   Watch Video (7 min)
                 </Button>
               </div>
-            </div>
-          </div>
-        );
-      case "forum":
-        return (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-foreground">
-              Community Forum
-            </h2>
-            <div className="space-y-6 text-muted-foreground">
-              <p>
-                Join our active community of car wash enthusiasts and service
-                users. Share tips, ask questions, and connect with others.
-              </p>
-              <div className="rounded-lg border border-border bg-muted p-4">
-                <h3 className="font-semibold text-foreground mb-2">
-                  Popular Topics
-                </h3>
-                <ul className="space-y-2 text-sm">
-                  <li>• Best practices for car maintenance</li>
-                  <li>• Seasonal car care tips</li>
-                  <li>• Member experiences and reviews</li>
-                  <li>• Service recommendations</li>
-                  <li>• Membership benefits discussion</li>
-                </ul>
-              </div>
-              <div className="rounded-lg border border-border bg-muted p-4">
-                <h3 className="font-semibold text-foreground mb-2">
-                  Community Guidelines
-                </h3>
-                <p className="text-sm">
-                  Be respectful, helpful, and constructive. Our moderators
-                  ensure a positive environment for all members.
-                </p>
-              </div>
-              <Link
-                href="/dashboard/forum"
-                className="w-full bg-blue-900 p-3 rounded-lg text-white font-medium"
-              >
-                Join Our Forum
-              </Link>
             </div>
           </div>
         );
