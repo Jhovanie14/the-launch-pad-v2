@@ -1,7 +1,7 @@
 // Client-side price DISPLAY helpers. They mirror the server's authoritative
 // rules in lib/pricing/computeBookingAmount.ts + validatePromo.ts so the UI
 // previews what the server will charge. They must never feed a charge amount.
-import { HOLIDAY_SALE_ACTIVE, HOLIDAY_SALE_DISCOUNT } from "./holidaySale";
+import { applyHolidaySale } from "./holidaySale";
 
 export interface DisplayService {
   price: number;
@@ -38,9 +38,9 @@ export function isServiceFreeForDisplay(opts: {
   return planCoversCategory(opts.planName, opts.category ?? "");
 }
 
-/** Display-only holiday sale discount. */
+/** Holiday sale discount — same math the server charges with. */
 export function applySale(amount: number): number {
-  return HOLIDAY_SALE_ACTIVE ? amount * (1 - HOLIDAY_SALE_DISCOUNT) : amount;
+  return applyHolidaySale(amount);
 }
 
 export interface DisplayPricing {

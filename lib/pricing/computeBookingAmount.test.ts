@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { computeBookingAmount } from "./computeBookingAmount";
+import {
+  HOLIDAY_SALE_ACTIVE,
+  HOLIDAY_SALE_DISCOUNT,
+} from "@/lib/booking/holidaySale";
+import { computeDisplayPricing } from "@/lib/booking/pricingDisplay";
+
+const sale = (n: number) =>
+  Number((HOLIDAY_SALE_ACTIVE ? n * (1 - HOLIDAY_SALE_DISCOUNT) : n).toFixed(2));
 
 /** Minimal fake Supabase that resolves table reads from a fixture map. */
 function fakeDb(fixtures: {
@@ -43,7 +51,8 @@ describe("computeBookingAmount", () => {
       isAuthenticated: false,
       paymentMethod: "card",
     });
-    expect(result.amount).toBe(60);
+    expect(result.amount).toBe(sale(60));
+    expect(result.servicePrice).toBe(sale(50));
     expect(result.isFree).toBe(false);
   });
 
@@ -61,8 +70,32 @@ describe("computeBookingAmount", () => {
       isAuthenticated: true,
       paymentMethod: "subscription",
     });
-    expect(result.amount).toBe(10);
+    expect(result.amount).toBe(sale(10));
     expect(result.isFree).toBe(true);
+  });
+
+  it("charges exactly what the display lib shows (sale included)", async () => {
+    const service = { id: "s1", price: 100, category: "quick service" };
+    const addOns = [
+      { id: "a1", price: 10 },
+      { id: "a2", price: 5 },
+    ];
+    const db = fakeDb({ service, addOns });
+    const charged = await computeBookingAmount(db, {
+      servicePackageId: "s1",
+      addOnIds: ["a1", "a2"],
+      userId: null,
+      isAuthenticated: false,
+      paymentMethod: "card",
+    });
+    const displayed = computeDisplayPricing({
+      service,
+      addOns,
+      planName: null,
+      isVehicleSubscribed: false,
+      promo: null,
+    });
+    expect(charged.amount).toBe(displayed.finalTotal);
   });
 
   it("rejects cash for unauthenticated users", async () => {
