@@ -63,13 +63,14 @@ export function useUserVehicles() {
         ).data?.map((s: { id: string }) => s.id) ?? []
       );
 
-    // Supabase returns the joined relation as an array when using foreign-key
-    // select syntax; we take the first element (there is always at most one).
-    type SubVehicleRow = { vehicle: UserVehicle[] };
+    // The to-one `vehicle:vehicles(...)` embed returns a single object at
+    // runtime; the generated types model it as an array, so cast to the real
+    // shape rather than index into it (indexing would yield undefined).
+    type SubVehicleRow = { vehicle: UserVehicle | null };
     const fromSubs = [
-      ...(subVehicles ?? []).map((r: SubVehicleRow) => r.vehicle[0] ?? null),
-      ...(selfSubVehicles ?? []).map((r: SubVehicleRow) => r.vehicle[0] ?? null),
-    ].filter((v): v is UserVehicle => v !== null);
+      ...(subVehicles ?? []).map((r) => (r as unknown as SubVehicleRow).vehicle),
+      ...(selfSubVehicles ?? []).map((r) => (r as unknown as SubVehicleRow).vehicle),
+    ].filter((v): v is UserVehicle => v != null);
 
     // Merge and deduplicate by id
     const seen = new Set<string>();
