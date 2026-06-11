@@ -160,6 +160,7 @@ export default function ConfirmationStep({ ctx }: { ctx: BookingAuthContext }) {
             <h1 className="text-xl font-semibold text-gray-900">
               Confirm Your Booking
             </h1>
+            <div className="w-16" /> {/* Spacer for center alignment */}
           </div>
         </div>
       </div>
