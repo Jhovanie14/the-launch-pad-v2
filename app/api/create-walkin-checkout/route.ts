@@ -4,7 +4,8 @@ import Stripe from "stripe";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { requireAdmin } from "@/lib/auth/guards";
-import { apiError } from "@/lib/http/apiError";
+import { apiError, ApiError } from "@/lib/http/apiError";
+import { computeBookingAmount } from "@/lib/pricing/computeBookingAmount";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -13,7 +14,6 @@ export async function POST(req: NextRequest) {
     const supabase = await createClient();
     await requireAdmin(supabase, createAdminClient());
     const {
-      amount,
       subscriber_id,
       subscription_vehicle_id,
       service_package_id,
@@ -24,6 +24,24 @@ export async function POST(req: NextRequest) {
       customer_email,
       customer_name,
     } = await req.json();
+
+    const addOnIds: string[] = Array.isArray(add_on_ids)
+      ? add_on_ids
+      : typeof add_on_ids === "string" && add_on_ids
+        ? add_on_ids.split(",")
+        : [];
+
+    const priced = await computeBookingAmount(createAdminClient(), {
+      servicePackageId: service_package_id ?? "",
+      addOnIds,
+      userId: subscriber_id ?? null,
+      isAuthenticated: !!subscriber_id,
+      paymentMethod: "card",
+    });
+
+    if (priced.amount <= 0) {
+      return apiError(new ApiError("Nothing to charge for this walk-in", 400));
+    }
 
     // Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
@@ -36,7 +54,7 @@ export async function POST(req: NextRequest) {
               name: "Walk-In Service Add-Ons",
               description: `Payment for additional services - ${customer_name}`,
             },
-            unit_amount: Math.round(amount * 100), // Convert to cents
+            unit_amount: Math.round(priced.amount * 100), // Convert to cents
           },
           quantity: 1,
         },

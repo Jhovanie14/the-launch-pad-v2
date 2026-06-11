@@ -4,7 +4,8 @@ import Stripe from "stripe";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { requireAdmin } from "@/lib/auth/guards";
-import { apiError } from "@/lib/http/apiError";
+import { apiError, ApiError } from "@/lib/http/apiError";
+import { computeBookingAmount } from "@/lib/pricing/computeBookingAmount";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -13,7 +14,6 @@ export async function POST(req: NextRequest) {
     const supabase = await createClient();
     await requireAdmin(supabase, createAdminClient());
     const {
-      amount,
       customer_name,
       customer_email,
       customer_phone,
@@ -29,6 +29,24 @@ export async function POST(req: NextRequest) {
       appointment_time,
     } = await req.json();
 
+    const addOnIds: string[] = Array.isArray(add_on_ids)
+      ? add_on_ids
+      : typeof add_on_ids === "string" && add_on_ids
+        ? add_on_ids.split(",")
+        : [];
+
+    const priced = await computeBookingAmount(createAdminClient(), {
+      servicePackageId: service_package_id ?? "",
+      addOnIds,
+      userId: null,
+      isAuthenticated: false,
+      paymentMethod: "card",
+    });
+
+    if (priced.amount <= 0) {
+      return apiError(new ApiError("Nothing to charge for this booking", 400));
+    }
+
     // Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
@@ -40,7 +58,7 @@ export async function POST(req: NextRequest) {
               name: "Car Wash Service Booking",
               description: `Booking for ${customer_name}`,
             },
-            unit_amount: Math.round(amount * 100), // Convert to cents
+            unit_amount: Math.round(priced.amount * 100), // Convert to cents
           },
           quantity: 1,
         },
