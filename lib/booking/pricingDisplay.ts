@@ -89,8 +89,8 @@ export function computeDisplayPricing(opts: {
 }
 
 export function computeTotalDuration(
-  service: { duration: number } | null,
-  addOns: { duration: number }[]
+  service: { duration: number | null } | null,
+  addOns: { duration: number | null }[]
 ): number {
   const base = Number(service?.duration) || 0;
   return base + addOns.reduce((sum, a) => sum + Number(a.duration), 0);

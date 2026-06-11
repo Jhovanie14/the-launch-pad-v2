@@ -19,8 +19,7 @@ import {
 } from "@/lib/booking/pricingDisplay";
 import type { BookingAuthContext } from "@/hooks/useBookingAuthContext";
 import type { ServicePackage } from "@/lib/data/services";
-import type { ServicePackageRow } from "@/types/db";
-import type { AddOn } from "@/types";
+import type { AddOnRow, ServicePackageRow } from "@/types/db";
 
 export type BookingStep = "service" | "datetime" | "confirmation";
 
@@ -49,11 +48,11 @@ export function useBookingFlow(ctx: BookingAuthContext, step: BookingStep) {
 
   // Catalogs (service step only)
   const [services, setServices] = useState<ServicePackageRow[]>([]);
-  const [allAddOns, setAllAddOns] = useState<AddOn[]>([]);
+  const [allAddOns, setAllAddOns] = useState<AddOnRow[]>([]);
 
   // Selected entities (resolved from URL params on every step)
   const [service, setService] = useState<ServicePackageRow | null>(null);
-  const [addOns, setAddOns] = useState<AddOn[]>([]);
+  const [addOns, setAddOns] = useState<AddOnRow[]>([]);
   const [vehicleInfo, setVehicleInfo] = useState<VehicleDisplay | null>(null);
   const [isVehicleSubscribed, setIsVehicleSubscribed] = useState(false);
 
