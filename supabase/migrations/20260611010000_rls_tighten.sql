@@ -47,26 +47,50 @@ drop policy if exists "Enable read access for all users" on public.fleet_invoice
 
 
 -- =========================================================================
--- REVIEW (do NOT run blindly) — tighten sensitive world-readable tables.
--- Each DROP removes a permissive policy; each CREATE restores the access the
--- app legitimately needs (owner + admin). Before enabling, confirm how each
--- flow fetches data:
---   * If a flow uses the service-role key (createAdminClient / webhook), RLS is
---     bypassed and tightening is safe.
---   * If a flow uses the anon/SSR key, it relies on these policies — verify the
---     owner/admin policies below cover it, especially GUEST (unauthenticated)
---     reads which `auth.uid() = user_id` will NOT satisfy.
---
--- bookings: "Allow select all bookings" exposes all customer PII. Guest booking
--- success pages read a booking by id without auth — confirm they use the
--- service-role key before enabling, or add a scoped policy for them.
+-- READY (apply after deploying commit 2f653e7) — bookings & self_service.
+-- The guest booking-success pages and ensureVehicle were switched to the
+-- service-role client (commit 2f653e7), so dropping the permissive bookings
+-- SELECT no longer breaks guest flows. Remaining bookings readers:
+--   * admin booking list / realtime / dashboard  -> covered by the admin policy below
+--   * a user's own bookings list                 -> covered by existing "Users can view own bookings"
+--   * guest success pages                         -> now service-role (RLS bypassed)
+-- VERIFY after applying: guest success page loads, admin booking list loads,
+-- a user sees only their own bookings, and an anon REST query to /bookings
+-- returns zero rows.
 -- ---------------------------------------------------------------------------
--- drop policy if exists "Allow select all bookings" on public.bookings;
--- create policy "Admins can select all bookings" on public.bookings
+drop policy if exists "Allow select all bookings" on public.bookings;
+create policy "Admins can select all bookings" on public.bookings
+  for select to authenticated
+  using (exists (select 1 from public.profiles p
+                 where p.id = auth.uid() and p.role = 'admin'));
+-- ("Users can view own bookings" (auth.uid() = user_id) already exists.)
+
+-- self_service_subscriptions: owner read ("user can view own subscriptions")
+-- already exists; add admin read, then drop the permissive "allow read for all".
+create policy "Admins can read self service subscriptions"
+  on public.self_service_subscriptions
+  for select to authenticated
+  using (exists (select 1 from public.profiles p
+                 where p.id = auth.uid() and p.role = 'admin'));
+drop policy if exists "allow read for all" on public.self_service_subscriptions;
+
+
+-- =========================================================================
+-- STILL DEFERRED (needs app changes first) — vehicles & profiles.
+-- See docs/superpowers/specs/2026-06-11-rls-tightening-followup.md.
+--
+-- vehicles: the booking CONFIRMATION page (a client component) reads vehicles
+-- by plate via the anon key for guests. That read must move server-side before
+-- dropping "Vehicles are viewable by everyone", or guest vehicle display breaks.
+-- ---------------------------------------------------------------------------
+-- drop policy if exists "Vehicles are viewable by everyone" on public.vehicles;
+-- create policy "Admins can select all vehicles" on public.vehicles
 --   for select to authenticated
 --   using (exists (select 1 from public.profiles p
 --                  where p.id = auth.uid() and p.role = 'admin'));
--- -- ("Users can view own bookings" (auth.uid() = user_id) already exists.)
+-- create policy "Users can select own vehicles" on public.vehicles
+--   for select to authenticated
+--   using (user_id = auth.uid());
 --
 -- profiles: anon "Enable read access for all users" + authenticated
 -- "allow_read_profiles" make all profiles world-readable. NOTE: the public
@@ -82,27 +106,3 @@ drop policy if exists "Enable read access for all users" on public.fleet_invoice
 --   using (exists (select 1 from public.profiles p
 --                  where p.id = auth.uid() and p.role = 'admin'));
 -- -- ("users_manage_own_profile" (auth.uid() = id) already exists.)
---
--- vehicles: "Vehicles are viewable by everyone" exposes all license plates.
--- The booking flow looks up vehicles by plate (sometimes for guests) — confirm
--- that path uses the service-role key before enabling.
--- ---------------------------------------------------------------------------
--- drop policy if exists "Vehicles are viewable by everyone" on public.vehicles;
--- create policy "Admins can select all vehicles" on public.vehicles
---   for select to authenticated
---   using (exists (select 1 from public.profiles p
---                  where p.id = auth.uid() and p.role = 'admin'));
--- create policy "Users can select own vehicles" on public.vehicles
---   for select to authenticated
---   using (user_id = auth.uid());
---
--- self_service_subscriptions: "allow read for all" (USING true) exposes all
--- subscriptions. Owner read ("user can view own subscriptions") already exists;
--- add admin read, then drop the permissive policy.
--- ---------------------------------------------------------------------------
--- create policy "Admins can read self service subscriptions"
---   on public.self_service_subscriptions
---   for select to authenticated
---   using (exists (select 1 from public.profiles p
---                  where p.id = auth.uid() and p.role = 'admin'));
--- drop policy if exists "allow read for all" on public.self_service_subscriptions;
