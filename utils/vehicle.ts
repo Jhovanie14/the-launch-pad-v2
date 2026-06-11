@@ -1,5 +1,5 @@
 // utils/vehicle.ts
-import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 
 export async function ensureVehicle(vehicle: {
   user_id?: string | null;
@@ -11,7 +11,7 @@ export async function ensureVehicle(vehicle: {
   body_type?: string | null;
   colors?: string[] | null;
 }): Promise<string | null> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // Normalize license plate (uppercase, trim whitespace) - optional
   const normalizedPlate = vehicle.license_plate?.trim().toUpperCase();

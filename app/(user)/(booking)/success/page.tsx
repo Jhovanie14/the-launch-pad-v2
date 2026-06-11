@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import { stripe } from "@/lib/stripe/stripe";
-import { createClient } from "@/utils/supabase/client";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { OrderData } from "@/types";
 
 interface SuccessPageProps {
@@ -13,7 +13,7 @@ interface SuccessPageProps {
 
 export default async function SuccessPage({ searchParams }: SuccessPageProps) {
   const params = await searchParams;
-  const supabase = createClient();
+  const supabase = createAdminClient();
 
   let orderData: OrderData | null = null;
   let addOns: { id: string; name: string; price: number }[] = [];
