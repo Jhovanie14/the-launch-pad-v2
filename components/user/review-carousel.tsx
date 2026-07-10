@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, Star } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { TimeAgo } from "@/components/ui/time-ago";
 import { Review } from "@/types";
 
 interface ReviewCarouselProps {
@@ -62,39 +63,6 @@ export function ReviewCarousel({
     const initials = words.map((word) => word[0].toUpperCase()).slice(0, 2);
 
     return initials.join("");
-  }
-
-  function formatTimeAgo(date: Date | string | null | undefined): string {
-    if (!date) return "just now"; // handles null or undefined
-
-    const _date = new Date(date);
-
-    if (isNaN(_date.getTime())) {
-      // invalid date string
-      return "just now";
-    }
-
-    const seconds = Math.floor((Date.now() - _date.getTime()) / 1000);
-
-    if (seconds < 5) return "just now";
-    if (seconds < 60) return `${seconds} seconds ago`;
-
-    const intervals: Record<string, number> = {
-      year: 31536000,
-      month: 2628000,
-      day: 86400,
-      hour: 3600,
-      minute: 60,
-    };
-
-    for (const [unit, secondsInUnit] of Object.entries(intervals)) {
-      const interval = Math.floor(seconds / secondsInUnit);
-      if (interval >= 1) {
-        return `${interval} ${unit}${interval > 1 ? "s" : ""} ago`;
-      }
-    }
-
-    return "just now";
   }
 
   return (
@@ -159,9 +127,10 @@ export function ReviewCarousel({
                   <p className="font-semibold text-card-foreground">
                     {review?.profiles?.full_name}
                   </p>
-                  <p className="text-sm text-muted-foreground">
-                    {formatTimeAgo(review?.created_at)}
-                  </p>
+                  <TimeAgo
+                    className="text-sm text-muted-foreground"
+                    date={review?.created_at}
+                  />
                 </div>
               </motion.div>
             </Card>

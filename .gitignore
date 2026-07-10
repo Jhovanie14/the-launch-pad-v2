@@ -39,3 +39,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# mcp, skills, agents (local tooling — not shared)
+.agents
+.claude/settings.local.json
+.claude/skills/
+.mcp.json
+skills-lock.json
+
+# supabase local/CLI state
+supabase/.temp/

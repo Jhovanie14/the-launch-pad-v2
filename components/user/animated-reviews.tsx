@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Star } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { TimeAgo } from "@/components/ui/time-ago";
 import { Review } from "@/types";
 
 interface AnimatedReviewsProps {
@@ -61,43 +62,6 @@ export function AnimatedReviews({
     const initials = words.map((word) => word[0].toUpperCase()).slice(0, 2);
 
     return initials.join("");
-  }
-
-  function formatTimeAgo(date: Date | string): string {
-    let _date: Date;
-
-    // Convert string input to a Date object if necessary
-    if (typeof date === "string") {
-      _date = new Date(date);
-    } else {
-      _date = date;
-    }
-
-    const seconds: number = Math.floor(
-      (new Date().getTime() - _date.getTime()) / 1000
-    );
-
-    // Define intervals for different time units in seconds
-    const intervals: Record<string, number> = {
-      year: 31536000,
-      month: 2628000,
-      day: 86400,
-      hour: 3600,
-      minute: 60,
-    };
-
-    // Iterate through the intervals and determine the appropriate unit
-    for (const [unit, secondsInUnit] of Object.entries(intervals)) {
-      const interval: number = Math.floor(seconds / secondsInUnit);
-      if (interval > 1) {
-        return `${interval} ${unit}s ago`;
-      } else if (interval === 1) {
-        return `${interval} ${unit} ago`;
-      }
-    }
-
-    // If no larger unit is found, return "just now"
-    return "just now";
   }
 
   return (
@@ -167,9 +131,10 @@ export function AnimatedReviews({
                   <p className="font-semibold text-sm text-card-foreground truncate">
                     {review?.profiles?.full_name}
                   </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {formatTimeAgo(review?.created_at)}
-                  </p>
+                  <TimeAgo
+                    className="text-xs text-muted-foreground truncate"
+                    date={review?.created_at}
+                  />
                 </div>
               </motion.div>
             </Card>
