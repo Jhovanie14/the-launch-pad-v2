@@ -3,8 +3,19 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
+import { useEffect, useState } from "react";
 
 export default function LoadingDots() {
+  // Distance the rocket travels upward to clear the viewport. Starts at a safe
+  // constant that is identical on the server and the first client render, then
+  // reads the real viewport height after mount. Nothing touches `window` during
+  // render, so there is no hydration mismatch.
+  const [flyDistance, setFlyDistance] = useState(1000);
+
+  useEffect(() => {
+    setFlyDistance(window.innerHeight + 300);
+  }, []);
+
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center bg-white">
       {/* ============================================
@@ -68,7 +79,7 @@ export default function LoadingDots() {
           scale: 1,
         }}
         animate={{
-          y: typeof window !== "undefined" ? -window.innerHeight - 300 : -1000,
+          y: -flyDistance,
           opacity: [1, 1, 0],
           scale: [1, 1.1, 0.8],
         }}
