@@ -93,6 +93,7 @@ export interface Subscription {
     id: string;
     subscription_vehicle_id: string;
     stripe_item_id?: string | null;
+    is_primary: boolean;
     year: number;
     make: string;
     model: string;

@@ -930,6 +930,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_primary: boolean
           stripe_item_id: string | null
           subscription_id: string
           updated_at: string
@@ -938,6 +939,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_primary?: boolean
           stripe_item_id?: string | null
           subscription_id: string
           updated_at?: string
@@ -946,6 +948,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_primary?: boolean
           stripe_item_id?: string | null
           subscription_id?: string
           updated_at?: string

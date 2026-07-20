@@ -3,7 +3,6 @@
 import { useSubscription } from "@/hooks/useSubscription";
 import SubscriptionStatus from "@/components/subscription-status";
 import Link from "next/link";
-import { useState } from "react";
 import SubscriptionCancelInfo from "@/components/user/subscription-cancel-info";
 import { useSelfServiceSubscription } from "@/hooks/useSelfServiceSubscription";
 import SelfServiceSubscriptionStatus from "@/components/self-service-subscription-status";
@@ -15,35 +14,6 @@ import { CreditCard, Settings, AlertCircle } from "lucide-react";
 export default function BillingPage() {
   const { subscription, loading, error, refetch } = useSubscription();
   const { subscription: selfSubs } = useSelfServiceSubscription();
-  const [canceling, setCanceling] = useState(false);
-
-  async function handleCancelSubscription() {
-    if (!confirm("Are you sure you want to cancel your subscription?")) return;
-
-    try {
-      setCanceling(true);
-      const res = await fetch("/api/cancel-subscription", { method: "POST" });
-
-      if (!res.ok) {
-        const data = await res.json();
-        alert(
-          `Failed to cancel subscription: ${data.error || "Unknown error"}`
-        );
-        return;
-      }
-
-      await res.json();
-      alert(
-        "Your subscription will be canceled at the end of the billing period."
-      );
-      window.location.reload(); // refresh UI to reflect new status
-    } catch (error) {
-      console.error("Error canceling subscription:", error);
-      alert("An unexpected error occurred.");
-    } finally {
-      setCanceling(false);
-    }
-  }
 
   if (loading) {
     return (
@@ -117,8 +87,8 @@ export default function BillingPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-gray-600">
-              Update your subscription plan, payment method, or cancel your
-              subscription at any time.
+              Update your subscription plan or payment method. To cancel,
+              use "Unsubscribe Everything" in the subscription details above.
             </p>
             <Separator />
             <div className="flex flex-wrap gap-3">
@@ -128,14 +98,10 @@ export default function BillingPage() {
                   Change Plan
                 </Link>
               </Button>
-              <Button
-                variant="destructive"
-                onClick={handleCancelSubscription}
-                disabled={canceling}
-              >
-                {canceling ? "Canceling..." : "Cancel Subscription"}
-              </Button>
             </div>
+            <p className="text-xs text-gray-500">
+              To cancel your subscription, use "Unsubscribe Everything" above.
+            </p>
             {subscription.cancel_at_period_end && (
               <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <div className="flex items-start gap-2">
