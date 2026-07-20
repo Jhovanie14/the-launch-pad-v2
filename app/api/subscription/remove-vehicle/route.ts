@@ -1,6 +1,7 @@
 import { stripe } from "@/lib/stripe/stripe";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { sendFamilyVehicleRemovedEmail } from "@/lib/email/subscription-emails";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -38,7 +39,7 @@ async function handler(req: Request) {
   // Get user's active subscription
   const { data: sub } = await supabase
     .from("user_subscription")
-    .select("id, stripe_subscription_id")
+    .select("id, stripe_subscription_id, subscription_plan_id, billing_cycle")
     .eq("user_id", user.id)
     .eq("status", "active")
     .single();
@@ -154,6 +155,41 @@ async function handler(req: Request) {
       { error: "Vehicle removed from billing but failed to update records. Please contact support." },
       { status: 500 }
     );
+  }
+
+  const { data: vehicleRow } = await supabase
+    .from("vehicles")
+    .select("license_plate")
+    .eq("id", vehicleToRemove.vehicle_id)
+    .maybeSingle();
+
+  const { data: plan } = await supabase
+    .from("subscription_plans")
+    .select("monthly_price, yearly_price")
+    .eq("id", sub.subscription_plan_id)
+    .maybeSingle();
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (user.email && plan) {
+    const remainingFamilyCount = allSubVehicles.length - 2; // minus primary, minus the one just removed
+    const basePrice =
+      sub.billing_cycle === "year"
+        ? Number(plan.yearly_price ?? 0)
+        : Number(plan.monthly_price ?? 0);
+    const newTotal = basePrice + basePrice * 0.65 * Math.max(remainingFamilyCount, 0);
+
+    await sendFamilyVehicleRemovedEmail({
+      to: user.email,
+      name: profile?.full_name ?? "there",
+      licensePlate: vehicleRow?.license_plate ?? "your vehicle",
+      newTotal,
+      billingCycle: sub.billing_cycle ?? "month",
+    });
   }
 
   console.log("[remove-vehicle] success, removed subscription_vehicle:", subscriptionVehicleId);

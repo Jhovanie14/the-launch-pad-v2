@@ -1,6 +1,7 @@
 import { stripe } from "@/lib/stripe/stripe";
 import { createClient } from "@/utils/supabase/server";
 import { ensureVehicle } from "@/utils/vehicle";
+import { sendFamilyVehicleAddedEmail } from "@/lib/email/subscription-emails";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -272,6 +273,22 @@ async function handler(req: Request) {
       { error: "Failed to link vehicle to subscription" },
       { status: 500 }
     );
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (user.email) {
+    await sendFamilyVehicleAddedEmail({
+      to: user.email,
+      name: profile?.full_name ?? "there",
+      licensePlate: normalizedPlate,
+      newTotal: (originalBaseAmount + targetAmount * currentVehicleCount) / 100,
+      billingCycle: sub.billing_cycle ?? "month",
+    });
   }
 
   console.log("[add-vehicle] success, vehicleId:", vehicleId);
