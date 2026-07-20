@@ -4,12 +4,25 @@ import { Subscription } from "@/types";
 import Link from "next/link";
 import { useState, useMemo, useEffect } from "react";
 import { Button } from "./ui/button";
-import { Car, CheckCircle2, AlertCircle, XCircle, TriangleAlert, Plus, Trash2 } from "lucide-react";
+import { Car, CheckCircle2, AlertCircle, XCircle, TriangleAlert, Plus, Trash2, Info } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Separator } from "./ui/separator";
 import { Badge } from "./ui/badge";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "./ui/alert-dialog";
 import { AddVehicleModal } from "./add-vehicle-modal";
 import { RemoveVehicleDialog } from "./remove-vehicle-dialog";
+import { SwapPrimaryVehicleDialog } from "./subscription/SwapPrimaryVehicleDialog";
+import MultiVehicleBenefitsDialog from "./subscription/MultiVehicleBenefitsDialog";
+import { toast } from "sonner";
 
 interface SubscriptionStatusProps {
   subscription: Subscription | null;
@@ -28,6 +41,10 @@ export default function SubscriptionStatus({
   const [showAddVehicle, setShowAddVehicle] = useState(false);
   type SubscriptionVehicle = NonNullable<Subscription["vehicles"]>[number];
   const [vehicleToRemove, setVehicleToRemove] = useState<SubscriptionVehicle | null>(null);
+  const [showSwapPrimary, setShowSwapPrimary] = useState(false);
+  const [showBenefitsInfo, setShowBenefitsInfo] = useState(false);
+  const [showUnsubscribeAll, setShowUnsubscribeAll] = useState(false);
+  const [unsubscribingAll, setUnsubscribingAll] = useState(false);
 
   const vehicleCount = subscription?.vehicles?.length ?? 0;
 
@@ -112,6 +129,22 @@ export default function SubscriptionStatus({
       alert("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUnsubscribeEverything = async () => {
+    setUnsubscribingAll(true);
+    try {
+      const res = await fetch("/api/cancel-subscription", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to cancel subscription");
+      toast.success("Your subscription will be canceled at the end of the billing period.");
+      setShowUnsubscribeAll(false);
+      onVehicleChange?.();
+    } catch (err: any) {
+      toast.error(err.message ?? "Something went wrong. Please try again.");
+    } finally {
+      setUnsubscribingAll(false);
     }
   };
 
@@ -271,11 +304,22 @@ export default function SubscriptionStatus({
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="flex items-center gap-3">
                       <p className="text-sm font-semibold text-gray-900">
                         ${pricing.basePrice.toFixed(2)}
                         <span className="text-xs text-gray-500 ml-1">/{subscription.billing_cycle}</span>
                       </p>
+                      <button
+                        onClick={() =>
+                          pricing.vehiclePricing.length > 1
+                            ? setShowSwapPrimary(true)
+                            : setShowUnsubscribeAll(true)
+                        }
+                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                        title="Unsubscribe this vehicle"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
                 );
@@ -286,9 +330,18 @@ export default function SubscriptionStatus({
             {pricing.isFlock && (
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
-                    Family Vehicles
-                  </h4>
+                  <div className="flex items-center gap-1.5">
+                    <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+                      Family Vehicles
+                    </h4>
+                    <button
+                      onClick={() => setShowBenefitsInfo(true)}
+                      className="text-gray-400 hover:text-blue-600 transition-colors"
+                      title="Family vehicle benefits"
+                    >
+                      <Info className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                   <span className="text-xs text-green-600 font-medium">
                     ✨ 35% Family Discount Every Month
                   </span>
@@ -325,7 +378,7 @@ export default function SubscriptionStatus({
                         <button
                           onClick={() => setVehicleToRemove(item.vehicle as any)}
                           className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                          title="Remove this vehicle"
+                          title="Unsubscribe this vehicle"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -465,6 +518,20 @@ export default function SubscriptionStatus({
             </div>
           )}
 
+        {/* Unsubscribe Everything */}
+        {subscription.status === "active" && !subscription.cancel_at_period_end && (
+          <div className="pt-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowUnsubscribeAll(true)}
+              className="w-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+            >
+              Unsubscribe Everything
+            </Button>
+          </div>
+        )}
+
         {/* Actions */}
         <div className="pt-4">
           <Button
@@ -501,6 +568,50 @@ export default function SubscriptionStatus({
           billingCycle={subscription.billing_cycle}
         />
       )}
+
+      {/* Swap Primary Vehicle Dialog */}
+      {showSwapPrimary && pricing.vehiclePricing.length > 1 && (
+        <SwapPrimaryVehicleDialog
+          open={showSwapPrimary}
+          onClose={() => setShowSwapPrimary(false)}
+          onSuccess={() => onVehicleChange?.()}
+          currentPrimary={pricing.vehiclePricing[0].vehicle as any}
+          familyVehicles={pricing.vehiclePricing.slice(1).map((p) => p.vehicle as any)}
+          basePriceMonthly={pricing.basePrice}
+          billingCycle={subscription.billing_cycle}
+        />
+      )}
+
+      {/* Multi-Vehicle Benefits Info Dialog */}
+      <MultiVehicleBenefitsDialog
+        isOpen={showBenefitsInfo}
+        onClose={() => setShowBenefitsInfo(false)}
+      />
+
+      {/* Unsubscribe Everything Dialog */}
+      <AlertDialog open={showUnsubscribeAll} onOpenChange={(v) => !v && setShowUnsubscribeAll(false)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unsubscribe from everything?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This cancels your entire Express Detailing subscription — all vehicles,
+              including any family vehicles — at the end of your current billing
+              period ({new Date(subscription.current_period_end).toLocaleDateString()}).
+              You'll keep access until then.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={unsubscribingAll}>Keep My Subscription</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleUnsubscribeEverything}
+              disabled={unsubscribingAll}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {unsubscribingAll ? "Unsubscribing..." : "Yes, Unsubscribe Everything"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
