@@ -762,9 +762,10 @@ async function processSubscription(session: Stripe.Checkout.Session) {
     // Insert only new vehicle links
     const newVehicleLinks = vehicleIds
       .filter((vid: string) => !existingVehicleIds.has(vid))
-      .map((vehicleId: string) => ({
+      .map((vehicleId: string, index: number) => ({
         subscription_id: subscriptionRow.id,
         vehicle_id: vehicleId.trim(),
+        is_primary: index === 0 && existingVehicleIds.size === 0,
       }));
 
     if (newVehicleLinks.length > 0) {
@@ -795,7 +796,8 @@ async function processSubscription(session: Stripe.Checkout.Session) {
           .from("subscription_vehicles")
           .select("id, vehicle_id")
           .eq("subscription_id", subscriptionRow.id)
-          .order("id", { ascending: true });
+          .order("is_primary", { ascending: false })
+          .order("created_at", { ascending: true });
 
         if (allLinks && allLinks.length > 0) {
           for (let i = 0; i < allLinks.length; i++) {
@@ -988,10 +990,13 @@ async function handleSubscriptionUpdated(event: Stripe.Event) {
         .update({ vehicle_id: vehicleId })
         .eq("subscription_id", subscriptionRow.id);
     } else {
-      // Insert new link
+      // Insert new link. This handler only runs for single-vehicle
+      // subscriptions (vehicle_id comes from subscription metadata, not a
+      // multi-vehicle array), so a freshly-inserted link is always primary.
       await supabase.from("subscription_vehicles").insert({
         subscription_id: subscriptionRow.id,
         vehicle_id: vehicleId,
+        is_primary: true,
       });
     }
   }
