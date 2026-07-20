@@ -363,3 +363,226 @@ export async function sendSubscriptionCancelledEmail({
   if (error) console.error("[email] cancelled send error:", error);
   else console.log("[email] cancelled email sent to:", to);
 }
+
+// ─────────────────────────────────────────────────────────────
+// 4. FAMILY VEHICLE ADDED
+// ─────────────────────────────────────────────────────────────
+export async function sendFamilyVehicleAddedEmail({
+  to,
+  name,
+  licensePlate,
+  newTotal,
+  billingCycle,
+}: {
+  to: string;
+  name: string;
+  licensePlate: string;
+  newTotal: number; // in dollars
+  billingCycle: string; // "month" | "year"
+}) {
+  const billingUrl = `${SITE_URL}/dashboard/billing`;
+
+  const header = `
+    <div style="font-size:48px;margin-bottom:12px;">🚗</div>
+    <h1>Vehicle Added</h1>
+    <p>${licensePlate} is now on your family plan</p>
+  `;
+
+  const body = `
+    <p>Hi <strong>${name}</strong>,</p>
+    <p>
+      You've added <strong>${licensePlate}</strong> to your Express Detailing
+      subscription at 35% off — every month, no expiry.
+    </p>
+
+    <div class="card" style="border-left:4px solid #16a34a;">
+      <table cellpadding="0" cellspacing="0" border="0" width="100%">
+        <tr>
+          <td style="font-size:14px;color:#6b7280;padding:4px 0;">Vehicle Added</td>
+          <td align="right" style="font-size:14px;color:#374151;">${licensePlate}</td>
+        </tr>
+        <tr>
+          <td style="font-size:14px;color:#6b7280;padding:4px 0;">New Recurring Total</td>
+          <td align="right" style="font-size:20px;font-weight:700;color:#0f172a;">
+            $${newTotal.toFixed(2)}/${billingCycle}
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="cta">
+      <a href="${billingUrl}" class="btn" style="background:linear-gradient(135deg,#16a34a,#15803d);">
+        View Billing
+      </a>
+    </div>
+
+    <p>— The Launch Pad Wash Team 🚀</p>
+  `;
+
+  const { error } = await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `✅ ${licensePlate} added to your subscription — 35% off`,
+    html: emailWrapper(
+      "linear-gradient(135deg,#16a34a 0%,#15803d 100%)",
+      header,
+      body
+    ),
+  });
+
+  if (error) console.error("[email] family vehicle added send error:", error);
+  else console.log("[email] family vehicle added email sent to:", to);
+}
+
+// ─────────────────────────────────────────────────────────────
+// 5. FAMILY VEHICLE REMOVED
+// ─────────────────────────────────────────────────────────────
+export async function sendFamilyVehicleRemovedEmail({
+  to,
+  name,
+  licensePlate,
+  newTotal,
+  billingCycle,
+}: {
+  to: string;
+  name: string;
+  licensePlate: string;
+  newTotal: number; // in dollars
+  billingCycle: string;
+}) {
+  const billingUrl = `${SITE_URL}/dashboard/billing`;
+
+  const header = `
+    <div style="font-size:48px;margin-bottom:12px;">👋</div>
+    <h1>Vehicle Unsubscribed</h1>
+    <p>${licensePlate} has been removed from your plan</p>
+  `;
+
+  const body = `
+    <p>Hi <strong>${name}</strong>,</p>
+    <p>
+      <strong>${licensePlate}</strong> has been unsubscribed from your Express
+      Detailing family plan. Your other vehicles keep their current pricing.
+    </p>
+
+    <div class="card">
+      <table cellpadding="0" cellspacing="0" border="0" width="100%">
+        <tr>
+          <td style="font-size:14px;color:#6b7280;padding:4px 0;">Vehicle Removed</td>
+          <td align="right" style="font-size:14px;color:#374151;">${licensePlate}</td>
+        </tr>
+        <tr>
+          <td style="font-size:14px;color:#6b7280;padding:4px 0;">New Recurring Total</td>
+          <td align="right" style="font-size:20px;font-weight:700;color:#0f172a;">
+            $${newTotal.toFixed(2)}/${billingCycle}
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <p style="font-size:14px;color:#6b7280;text-align:center;">
+      A prorated credit for the current period has been applied automatically.
+    </p>
+
+    <div class="cta">
+      <a href="${billingUrl}" class="btn" style="background:linear-gradient(135deg,#1d4ed8,#1e40af);">
+        View Billing
+      </a>
+    </div>
+
+    <p>— The Launch Pad Wash Team 🚀</p>
+  `;
+
+  const { error } = await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `${licensePlate} unsubscribed from your family plan`,
+    html: emailWrapper(
+      "linear-gradient(135deg,#374151 0%,#1f2937 100%)",
+      header,
+      body
+    ),
+  });
+
+  if (error) console.error("[email] family vehicle removed send error:", error);
+  else console.log("[email] family vehicle removed email sent to:", to);
+}
+
+// ─────────────────────────────────────────────────────────────
+// 6. PRIMARY VEHICLE SWAPPED
+// ─────────────────────────────────────────────────────────────
+export async function sendPrimaryVehicleSwappedEmail({
+  to,
+  name,
+  oldPrimaryLabel,
+  newPrimaryLabel,
+  newTotal,
+  billingCycle,
+}: {
+  to: string;
+  name: string;
+  oldPrimaryLabel: string;
+  newPrimaryLabel: string;
+  newTotal: number; // in dollars
+  billingCycle: string;
+}) {
+  const billingUrl = `${SITE_URL}/dashboard/billing`;
+
+  const header = `
+    <div style="font-size:48px;margin-bottom:12px;">🔄</div>
+    <h1>Primary Vehicle Updated</h1>
+    <p>${newPrimaryLabel} is now your primary vehicle</p>
+  `;
+
+  const body = `
+    <p>Hi <strong>${name}</strong>,</p>
+    <p>
+      You unsubscribed <strong>${oldPrimaryLabel}</strong> as your primary
+      vehicle. Since you still have other vehicles on your plan, we've made
+      <strong>${newPrimaryLabel}</strong> your new primary vehicle — it now
+      bills at the full plan rate and anchors your family discount for any
+      remaining vehicles.
+    </p>
+
+    <div class="card" style="border-left:4px solid #1d4ed8;">
+      <table cellpadding="0" cellspacing="0" border="0" width="100%">
+        <tr>
+          <td style="font-size:14px;color:#6b7280;padding:4px 0;">Unsubscribed</td>
+          <td align="right" style="font-size:14px;color:#374151;">${oldPrimaryLabel}</td>
+        </tr>
+        <tr>
+          <td style="font-size:14px;color:#6b7280;padding:4px 0;">New Primary Vehicle</td>
+          <td align="right" style="font-size:14px;color:#374151;">${newPrimaryLabel}</td>
+        </tr>
+        <tr>
+          <td style="font-size:14px;color:#6b7280;padding:4px 0;">New Recurring Total</td>
+          <td align="right" style="font-size:20px;font-weight:700;color:#0f172a;">
+            $${newTotal.toFixed(2)}/${billingCycle}
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="cta">
+      <a href="${billingUrl}" class="btn" style="background:linear-gradient(135deg,#1d4ed8,#1e40af);">
+        View Billing
+      </a>
+    </div>
+
+    <p>— The Launch Pad Wash Team 🚀</p>
+  `;
+
+  const { error } = await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `Your primary vehicle is now ${newPrimaryLabel}`,
+    html: emailWrapper(
+      "linear-gradient(135deg,#1d4ed8 0%,#1e3a8a 100%)",
+      header,
+      body
+    ),
+  });
+
+  if (error) console.error("[email] primary vehicle swapped send error:", error);
+  else console.log("[email] primary vehicle swapped email sent to:", to);
+}
