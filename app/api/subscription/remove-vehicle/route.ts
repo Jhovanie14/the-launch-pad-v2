@@ -50,12 +50,13 @@ async function handler(req: Request) {
     );
   }
 
-  // Fetch all subscription vehicles ordered by insertion (first = primary)
+  // Fetch all subscription vehicles, primary first (matches subscriptionService.ts ordering)
   const { data: allSubVehicles } = await supabase
     .from("subscription_vehicles")
-    .select("id, vehicle_id, stripe_item_id")
+    .select("id, vehicle_id, stripe_item_id, is_primary")
     .eq("subscription_id", sub.id)
-    .order("id", { ascending: true });
+    .order("is_primary", { ascending: false })
+    .order("created_at", { ascending: true });
 
   if (!allSubVehicles || allSubVehicles.length === 0) {
     return NextResponse.json(
@@ -75,17 +76,17 @@ async function handler(req: Request) {
     );
   }
 
-  if (vehicleIndex === 0) {
+  const vehicleToRemove = allSubVehicles[vehicleIndex];
+
+  if (vehicleToRemove.is_primary) {
     return NextResponse.json(
       {
         error:
-          "Cannot remove the primary vehicle. Cancel your subscription instead.",
+          "Cannot remove the primary vehicle here. Use the primary-vehicle unsubscribe control instead.",
       },
       { status: 400 }
     );
   }
-
-  const vehicleToRemove = allSubVehicles[vehicleIndex];
   let stripeItemId: string | null = vehicleToRemove.stripe_item_id ?? null;
 
   // If no stored stripe_item_id, retrieve Stripe subscription and match by metadata or position
