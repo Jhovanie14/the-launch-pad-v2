@@ -31,6 +31,7 @@ export async function getActiveSubscription(
       `
       id,
       stripe_item_id,
+      is_primary,
       vehicle:vehicles (
         id,
         year,
@@ -43,7 +44,8 @@ export async function getActiveSubscription(
     `
     )
     .eq("subscription_id", subs.id)
-    .order("id", { ascending: true });
+    .order("is_primary", { ascending: false })
+    .order("created_at", { ascending: true });
 
   if (vehicleError) {
     console.error("Error fetching subscription vehicles:", vehicleError);
@@ -61,6 +63,7 @@ export async function getActiveSubscription(
               ...v.vehicle,
               subscription_vehicle_id: v.id,
               stripe_item_id: v.stripe_item_id ?? null,
+              is_primary: v.is_primary ?? false,
             }
           : null
       )
