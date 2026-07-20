@@ -51,7 +51,7 @@ export function RemoveVehicleDialog({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to remove vehicle");
 
-      toast.success(`${vehicle.license_plate} removed from your subscription.`);
+      toast.success(`${vehicle.license_plate} unsubscribed from your subscription.`);
       onSuccess();
       onClose();
     } catch (err: any) {
@@ -70,10 +70,10 @@ export function RemoveVehicleDialog({
     <AlertDialog open={open} onOpenChange={(v) => !v && onClose()}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Remove Family Vehicle</AlertDialogTitle>
+          <AlertDialogTitle>Unsubscribe This Vehicle</AlertDialogTitle>
           <AlertDialogDescription className="space-y-2">
             <span className="block">
-              Remove <strong>{vehicleLabel}</strong> from your subscription?
+              Unsubscribe <strong>{vehicleLabel}</strong> from your subscription?
             </span>
             <span className="block text-sm text-muted-foreground">
               Your billing will decrease by{" "}
@@ -92,7 +92,7 @@ export function RemoveVehicleDialog({
             disabled={loading}
             className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
           >
-            {loading ? "Removing..." : "Yes, Remove Vehicle"}
+            {loading ? "Unsubscribing..." : "Yes, Unsubscribe"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
