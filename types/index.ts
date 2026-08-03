@@ -70,6 +70,11 @@ export interface SubscriptionPlans {
   features: string[];
   is_active: boolean;
   image_url: string;
+  /**
+   * Commercial vehicle plan. Additional vehicles bill at the full plan price —
+   * the family/flock discount does not apply. See lib/pricing/flockPricing.
+   */
+  is_commercial?: boolean | null;
 }
 
 export interface Subscription {
@@ -88,6 +93,7 @@ export interface Subscription {
     description: string;
     monthly_price: number;
     yearly_price: number;
+    is_commercial?: boolean | null;
   };
   vehicles?: Array<{
     id: string;
