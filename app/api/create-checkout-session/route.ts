@@ -1,6 +1,10 @@
 import { stripe } from "@/lib/stripe/stripe";
 import { createClient } from "@/utils/supabase/server";
 import { ensureVehicle } from "@/utils/vehicle";
+import {
+  flockPriceMetadata,
+  flockUnitAmountCents,
+} from "@/lib/pricing/flockPricing";
 
 export async function POST(req: Request) {
   try {
@@ -69,7 +73,7 @@ async function handler(req: Request) {
   const { data: plans, error: plansError } = await supabase
     .from("subscription_plans")
     .select(
-      "id, stripe_price_id_monthly, stripe_price_id_yearly, monthly_price, yearly_price"
+      "id, name, is_commercial, stripe_price_id_monthly, stripe_price_id_yearly, monthly_price, yearly_price"
     )
     .in("id", Array.from(planIdsToFetch));
 
@@ -148,10 +152,13 @@ async function handler(req: Request) {
         lineItems.push({ price: vPriceId, quantity: 1 });
       }
     } else {
-      // Additional vehicles receive 35% discount
+      // Additional vehicle. Personal plans get the family discount; commercial
+      // plans bill at the full plan price. Either way this is a separate price
+      // object per vehicle: Stripe rejects the same price twice in one
+      // subscription, and remove-vehicle matches items by vehicle_index.
       const basePriceObj = await stripe.prices.retrieve(vPriceId);
       const baseAmount = basePriceObj.unit_amount ?? 0;
-      const discountedAmount = Math.round(baseAmount * 0.65);
+      const discountedAmount = flockUnitAmountCents(baseAmount, vPlan);
       const discountedPrice = await stripe.prices.create({
         currency: basePriceObj.currency,
         unit_amount: discountedAmount,
@@ -160,8 +167,7 @@ async function handler(req: Request) {
         },
         product: basePriceObj.product as string,
         metadata: {
-          plan_id: vPlanId,
-          is_flock_discount: "true",
+          ...flockPriceMetadata(vPlanId, vPlan),
           vehicle_index: i.toString(),
         },
       });

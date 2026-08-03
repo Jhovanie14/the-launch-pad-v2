@@ -2,6 +2,12 @@ import { stripe } from "@/lib/stripe/stripe";
 import { createClient } from "@/utils/supabase/server";
 import { ensureVehicle } from "@/utils/vehicle";
 import { sendFamilyVehicleAddedEmail } from "@/lib/email/subscription-emails";
+import {
+  MAX_VEHICLES_PER_SUBSCRIPTION,
+  flockDiscountPercent,
+  flockPriceMetadata,
+  flockUnitAmountCents,
+} from "@/lib/pricing/flockPricing";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -57,9 +63,11 @@ async function handler(req: Request) {
 
   const currentVehicleCount = (sub.subscription_vehicles as any[])?.length ?? 0;
 
-  if (currentVehicleCount >= 5) {
+  if (currentVehicleCount >= MAX_VEHICLES_PER_SUBSCRIPTION) {
     return NextResponse.json(
-      { error: "Maximum 5 vehicles allowed per subscription" },
+      {
+        error: `Maximum ${MAX_VEHICLES_PER_SUBSCRIPTION} vehicles allowed per subscription`,
+      },
       { status: 400 }
     );
   }
@@ -135,7 +143,7 @@ async function handler(req: Request) {
 
   const { data: plan } = await supabase
     .from("subscription_plans")
-    .select("stripe_price_id_monthly, stripe_price_id_yearly")
+    .select("name, is_commercial, stripe_price_id_monthly, stripe_price_id_yearly")
     .eq("id", sub.subscription_plan_id)
     .maybeSingle();
 
@@ -164,9 +172,20 @@ async function handler(req: Request) {
 
   console.log("[add-vehicle] base amount (cents):", originalBaseAmount);
 
-  const targetAmount = Math.round(originalBaseAmount * 0.65);
+  // Commercial plans get no family discount — additional vehicles bill at the
+  // full plan price. lib/pricing/flockPricing owns that rule for both the UI
+  // and every route that creates Stripe items.
+  const targetAmount = flockUnitAmountCents(originalBaseAmount, plan);
+  const discountPercent = flockDiscountPercent(plan);
 
-  // Reuse an existing flock-discount price if one already exists for this product/interval/amount
+  console.log(
+    "[add-vehicle] flock amount (cents):", targetAmount,
+    "discount:", `${discountPercent}%`
+  );
+
+  // Reuse an existing additional-vehicle price for this product/interval/amount.
+  // `is_flock_item` covers both rates; `is_flock_discount` is the legacy tag
+  // written before commercial plans were separated out.
   const existingPrices = await stripe.prices.list({
     product: productId,
     active: true,
@@ -177,7 +196,8 @@ async function handler(req: Request) {
     (p) =>
       p.unit_amount === targetAmount &&
       p.recurring?.interval === primaryItem.price.recurring!.interval &&
-      p.metadata?.is_flock_discount === "true"
+      (p.metadata?.is_flock_item === "true" ||
+        p.metadata?.is_flock_discount === "true")
   );
 
   const additionalVehiclePrice =
@@ -190,10 +210,7 @@ async function handler(req: Request) {
         interval_count: primaryItem.price.recurring!.interval_count ?? 1,
       },
       product: productId,
-      metadata: {
-        plan_id: sub.subscription_plan_id,
-        is_flock_discount: "true",
-      },
+      metadata: flockPriceMetadata(sub.subscription_plan_id, plan),
     }));
 
   console.log(
@@ -288,6 +305,7 @@ async function handler(req: Request) {
       licensePlate: normalizedPlate,
       newTotal: (originalBaseAmount + targetAmount * currentVehicleCount) / 100,
       billingCycle: sub.billing_cycle ?? "month",
+      discountPercent,
     });
   }
 

@@ -2,6 +2,7 @@ import { stripe } from "@/lib/stripe/stripe";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { sendPrimaryVehicleSwappedEmail } from "@/lib/email/subscription-emails";
+import { subscriptionTotal } from "@/lib/pricing/flockPricing";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -202,7 +203,7 @@ async function handler(req: Request) {
 
   const { data: plan2 } = await supabase
     .from("subscription_plans")
-    .select("monthly_price, yearly_price")
+    .select("name, is_commercial, monthly_price, yearly_price")
     .eq("id", sub.subscription_plan_id)
     .maybeSingle();
 
@@ -217,8 +218,10 @@ async function handler(req: Request) {
       sub.billing_cycle === "year"
         ? Number(plan2.yearly_price ?? 0)
         : Number(plan2.monthly_price ?? 0);
-    const remainingFamilyCount = allSubVehicles.length - 2; // total minus old primary minus promoted target
-    const newTotal = basePrice + basePrice * 0.65 * Math.max(remainingFamilyCount, 0);
+    // The old primary leaves the subscription; the promoted target takes its
+    // place, so the vehicle count drops by one and the plan's own flock rate
+    // (full price on commercial plans) prices whatever remains.
+    const newTotal = subscriptionTotal(basePrice, allSubVehicles.length - 1, plan2);
 
     const oldPrimaryLabel = (oldPrimary as any).vehicles?.license_plate ?? "your old primary vehicle";
     const newPrimaryLabel = (target as any).vehicles?.license_plate ?? "your new primary vehicle";

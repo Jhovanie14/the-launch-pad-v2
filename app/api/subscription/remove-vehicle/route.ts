@@ -2,6 +2,7 @@ import { stripe } from "@/lib/stripe/stripe";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { sendFamilyVehicleRemovedEmail } from "@/lib/email/subscription-emails";
+import { subscriptionTotal } from "@/lib/pricing/flockPricing";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -105,9 +106,13 @@ async function handler(req: Request) {
     const storedItemIds = new Set(
       allSubVehicles.map((v) => v.stripe_item_id).filter(Boolean)
     );
+    // `is_flock_item` tags additional-vehicle prices at either rate; commercial
+    // items are full price and so carry is_flock_discount="false". Matching on
+    // the legacy tag alone would miss them entirely.
     const unmatchedFlockItems = stripeSub.items.data.filter(
       (item: any) =>
-        item.price?.metadata?.is_flock_discount === "true" &&
+        (item.price?.metadata?.is_flock_item === "true" ||
+          item.price?.metadata?.is_flock_discount === "true") &&
         !storedItemIds.has(item.id)
     );
 
@@ -165,7 +170,7 @@ async function handler(req: Request) {
 
   const { data: plan } = await supabase
     .from("subscription_plans")
-    .select("monthly_price, yearly_price")
+    .select("name, is_commercial, monthly_price, yearly_price")
     .eq("id", sub.subscription_plan_id)
     .maybeSingle();
 
@@ -176,12 +181,12 @@ async function handler(req: Request) {
     .maybeSingle();
 
   if (user.email && plan) {
-    const remainingFamilyCount = allSubVehicles.length - 2; // minus primary, minus the one just removed
+    const remainingVehicleCount = allSubVehicles.length - 1; // minus the one just removed
     const basePrice =
       sub.billing_cycle === "year"
         ? Number(plan.yearly_price ?? 0)
         : Number(plan.monthly_price ?? 0);
-    const newTotal = basePrice + basePrice * 0.65 * Math.max(remainingFamilyCount, 0);
+    const newTotal = subscriptionTotal(basePrice, remainingVehicleCount, plan);
 
     await sendFamilyVehicleRemovedEmail({
       to: user.email,
