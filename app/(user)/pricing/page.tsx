@@ -2,11 +2,12 @@
 
 import { useSubscription } from "@/hooks/useSubscription";
 import { useState } from "react";
-import { CheckCircle, Crown } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 import { usePricingPlans } from "@/hooks/usePricingPlans";
 import PricingCard from "@/components/pricing-plan";
 import LoadingDots from "@/components/loading";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
+import { gridStagger, pageRise, pageStagger } from "@/lib/motion";
 
 export default function PricingContent() {
   const [pricing, setPricing] = useState<"monthly" | "yearly">("monthly");
@@ -23,102 +24,112 @@ export default function PricingContent() {
   }
   return (
     <main className="min-h-screen bg-linear-to-b from-blue-50 to-white">
-      <motion.div
-        className="bg-linear-to-r from-red-500 to-red-600 text-white text-center py-4 px-4 shadow-lg"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        <div className="flex items-center justify-center gap-2">
-          <span className="text-lg md:text-3xl font-bold">
-            Get 10% Off on the 1st month when you subscribe today!
-          </span>
-        </div>
-      </motion.div>
-      <section className="relative py-12 overflow-hidden">
-        <div className="container mx-auto px-4 relative z-10">
+      <div className="bg-red-600 px-4 py-3 text-center text-white">
+        <p className="text-base md:text-xl font-semibold tracking-tight text-balance">
+          Get 10% Off on the 1st month when you subscribe today!
+        </p>
+      </div>
+
+      <section className="relative overflow-hidden py-14 md:py-20">
+        <div className="container relative z-10 mx-auto px-5">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center max-w-4xl mx-auto"
+            variants={pageStagger}
+            initial="hidden"
+            animate="show"
+            className="mx-auto max-w-3xl text-center"
           >
-            <div className="flex justify-center mb-6">
-              <Crown className="w-16 h-16 text-blue-900" />
-            </div>
-            <h1 className="text-5xl md:text-7xl font-bold text-blue-900 mb-6">
-              UNLIMITED WASH MEMBERSHIPS
-            </h1>
-            <p className="text-xl md:text-2xl text-slate-600 mb-4">
-              Any Vehicle • One Price • Unlimited
-            </p>
-            <p className="text-lg text-blue-900 font-bold mb-8">
-              Wash twice → Membership pays for itself
-            </p>
-            <div className="flex flex-wrap justify-center gap-4 text-sm text-slate-600">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-                <span>No contracts</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-                <span>Cancel anytime</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-                <span>Professional equipment</span>
-              </div>
-            </div>
+            <motion.h1
+              variants={pageRise}
+              className="text-balance text-4xl font-black leading-[1.02] tracking-[-0.03em] text-blue-900 sm:text-5xl md:text-6xl"
+            >
+              Unlimited wash memberships
+            </motion.h1>
+
+            <motion.p
+              variants={pageRise}
+              className="mt-5 text-lg text-slate-600 md:text-xl"
+            >
+              Any vehicle · One price · Unlimited
+            </motion.p>
+
+            <motion.p
+              variants={pageRise}
+              className="mt-2 text-lg font-bold text-blue-900"
+            >
+              Wash twice and the membership pays for itself
+            </motion.p>
+
+            <motion.ul
+              variants={pageRise}
+              className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-3 text-sm text-slate-600"
+            >
+              {["No contracts", "Cancel anytime", "Professional equipment"].map(
+                (item) => (
+                  <li key={item} className="flex items-center gap-2">
+                    <CheckCircle
+                      className="h-4 w-4 text-green-600"
+                      aria-hidden="true"
+                    />
+                    {item}
+                  </li>
+                )
+              )}
+            </motion.ul>
           </motion.div>
         </div>
       </section>
       <div className="py-12 bg-linear-to-b from-white to-blue-50">
         <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            className="max-w-7xl mx-auto text-center space-y-6"
-          >
-            {/* Pricing Toggle */}
-            <div className="flex justify-center mb-12">
-              <div className="bg-gray-100 p-1 rounded-lg">
-                <button
-                  onClick={() => setPricing("monthly")}
-                  className={`px-6 py-2 rounded-md transition-colors ${
-                    pricing === "monthly"
-                      ? "bg-white text-blue-900 shadow-sm"
-                      : "text-gray-600 hover:text-blue-900"
-                  }`}
-                >
-                  Monthly
-                </button>
-                <button
-                  onClick={() => setPricing("yearly")}
-                  className={`px-6 py-2 rounded-md transition-colors ${
-                    pricing === "yearly"
-                      ? "bg-white text-blue-900 shadow-sm"
-                      : "text-gray-600 hover:text-blue-900"
-                  }`}
-                >
-                  Yearly (Save 20%)
-                </button>
+          <div className="mx-auto max-w-7xl">
+            {/* Billing cycle toggle */}
+            <div className="mb-12 flex justify-center">
+              <div
+                role="group"
+                aria-label="Billing cycle"
+                className="inline-flex rounded-lg bg-gray-100 p-1"
+              >
+                {(
+                  [
+                    { value: "monthly", label: "Monthly" },
+                    { value: "yearly", label: "Yearly (Save 20%)" },
+                  ] as const
+                ).map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setPricing(option.value)}
+                    aria-pressed={pricing === option.value}
+                    className={`rounded-md px-6 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 ${
+                      pricing === option.value
+                        ? "bg-white text-blue-900 shadow-sm"
+                        : "text-gray-600 hover:text-blue-900"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
               </div>
             </div>
 
             {/* Pricing Cards */}
-            <section className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-8 px-6 md:px-3">
+            <motion.section
+              variants={gridStagger}
+              initial="hidden"
+              animate="show"
+              className="grid grid-cols-1 gap-8 px-2 md:grid-cols-3"
+            >
               {plans.map((plan) => (
-                <PricingCard
-                  key={plan.id}
-                  plan={plan}
-                  pricing={pricing}
-                  subscription={subscription}
-                  handleCheckout={handleCheckout}
-                />
+                <motion.div key={plan.id} variants={pageRise} className="flex">
+                  <PricingCard
+                    plan={plan}
+                    pricing={pricing}
+                    subscription={subscription}
+                    handleCheckout={handleCheckout}
+                  />
+                </motion.div>
               ))}
-            </section>
-          </motion.div>
+            </motion.section>
+          </div>
         </div>
       </div>
     </main>
