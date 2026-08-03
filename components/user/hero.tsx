@@ -1,5 +1,7 @@
 "use client";
+
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
@@ -11,6 +13,7 @@ import {
   MapPin,
   Clock,
 } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 import { useBooking } from "@/context/bookingContext";
 
 const cards = [
@@ -29,9 +32,8 @@ const cards = [
     priceSub: "avg. spend",
     cta: "View Bays",
     href: "/self-service",
-    accent: "from-sky-400 to-cyan-500",
-    glow: "shadow-sky-500/30",
-    ring: "ring-sky-400/40",
+    accent: "text-sky-300",
+    rule: "bg-sky-400",
   },
   {
     icon: Sparkles,
@@ -48,9 +50,8 @@ const cards = [
     priceSub: "per visit",
     cta: "Book Now",
     href: "/services",
-    accent: "from-amber-400 to-orange-500",
-    glow: "shadow-amber-500/40",
-    ring: "ring-amber-400/50",
+    accent: "text-amber-300",
+    rule: "bg-amber-400",
     featured: true,
   },
   {
@@ -68,167 +69,214 @@ const cards = [
     priceSub: "per month",
     cta: "See Plans",
     href: "/pricing",
-    accent: "from-violet-400 to-purple-500",
-    glow: "shadow-violet-500/30",
-    ring: "ring-violet-400/40",
+    accent: "text-violet-300",
+    rule: "bg-violet-400",
   },
 ];
 
 export function Hero() {
   const { openBookingModal } = useBooking();
+  const reduceMotion = useReducedMotion();
+
+  // One authored entrance: content settles downward out of a soft blur.
+  // Everything starts visible enough to read if motion never runs.
+  const rise = {
+    hidden: reduceMotion
+      ? { opacity: 1, y: 0, filter: "blur(0px)" }
+      : { opacity: 0, y: 18, filter: "blur(6px)" },
+    show: {
+      opacity: 1,
+      y: 0,
+      filter: "blur(0px)",
+      transition: { duration: 0.85, ease: [0.16, 1, 0.3, 1] as const },
+    },
+  };
+
+  const stagger = {
+    hidden: {},
+    show: {
+      transition: { staggerChildren: reduceMotion ? 0 : 0.09, delayChildren: 0.05 },
+    },
+  };
 
   return (
     <section
-      className="relative min-h-screen overflow-hidden rounded-2xl"
+      className="relative isolate min-h-svh w-full overflow-hidden bg-slate-950"
       aria-label="The Launch Pad — Houston car wash and detailing"
     >
-      {/* Background */}
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: "url(/self-service.png)" }}
+      {/* Background photograph — real image element so it is a sized, priority
+          LCP candidate with responsive sources rather than a CSS backdrop. */}
+      <Image
+        src="/self-service.png"
+        alt=""
+        fill
+        priority
+        sizes="100vw"
+        className="object-cover object-center"
       />
-      {/* Dark overlay — stronger at top, lighter at bottom */}
-      <div className="absolute inset-0 bg-gradient-to-b from-slate-950/85 via-slate-900/70 to-slate-950/80" />
 
-      {/* Ambient colour orbs */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-32 left-1/4 h-[500px] w-[500px] rounded-full bg-amber-500/10 blur-[120px]" />
-        <div className="absolute bottom-0 right-1/4 h-[400px] w-[400px] rounded-full bg-sky-500/10 blur-[100px]" />
-      </div>
+      {/* Scrim tuned for legibility, not for darkness: lighter across the upper
+          half where the sky carries the photograph, deeper behind the cards.
+          The section ends on a hard edge — a fade to the page background just
+          reads as a murky band once the photo is this dark. */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-linear-to-b from-slate-950/70 via-slate-950/65 to-slate-950/90"
+      />
 
-      <div className="relative z-10 container mx-auto max-w-6xl px-4 py-24 md:py-32">
+      <motion.div
+        variants={stagger}
+        initial="hidden"
+        animate="show"
+        className="relative z-10 mx-auto w-full max-w-7xl px-5 pb-20 pt-24 sm:px-8 md:pb-24 md:pt-32"
+      >
+        <motion.h1
+          variants={rise}
+          className="max-w-4xl text-balance text-5xl font-black leading-[0.95] tracking-[-0.035em] text-white sm:text-6xl md:text-7xl lg:text-8xl"
+        >
+          Your car deserves better.
+        </motion.h1>
 
-        {/* ── Eyebrow pill ── */}
-        <div className="flex justify-center mb-8">
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-amber-300 backdrop-blur-sm">
-            <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
-            Houston's Premier Car Care
+        <motion.p
+          variants={rise}
+          className="mt-7 max-w-xl text-pretty text-lg leading-relaxed text-slate-300 md:text-xl"
+        >
+          24/7 self-service bays or a full professional detail — everything your
+          car needs at{" "}
+          <span className="font-medium text-white">
+            10410 S Main St, Houston.
           </span>
-        </div>
+        </motion.p>
 
-        {/* ── Headline ── */}
-        <div className="text-center space-y-5 mb-8">
-          <h1 className="text-4xl sm:text-5xl md:text-7xl font-black text-white leading-[1.05] tracking-tight">
-            Your Car Deserves{" "}
-            <span className="bg-gradient-to-r from-amber-300 via-orange-400 to-amber-300 bg-clip-text text-transparent">
-              Better.
-            </span>
-          </h1>
-
-          <p className="text-base md:text-xl text-white/70 max-w-xl mx-auto leading-relaxed">
-            24/7 self-service bays or a full professional detail — we have
-            everything your car needs at{" "}
-            <span className="text-white font-medium">10410 S Main St, Houston.</span>
-          </p>
-        </div>
-
-        {/* ── Primary CTAs ── */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6">
+        <motion.div
+          variants={rise}
+          className="mt-9 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center"
+        >
           <Button
             size="lg"
             onClick={openBookingModal}
-            className="h-12 px-8 bg-amber-400 hover:bg-amber-300 text-slate-900 font-bold text-base shadow-lg shadow-amber-500/30 transition-all hover:scale-[1.03]"
+            className="h-13 bg-amber-400 px-8 text-base font-bold text-slate-950 shadow-lg shadow-amber-500/20 transition-colors hover:bg-amber-300"
           >
-            Book Online
-            <ArrowRight className="ml-2 w-4 h-4" />
+            Book online
+            <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
           </Button>
-          <Link href="/self-service">
-            <Button
-              size="lg"
-              variant="outline"
-              className="h-12 px-8 border-white/20 bg-white/5 text-white hover:bg-white/10 font-semibold text-base backdrop-blur-sm"
-            >
-              Self-Service Bays
-            </Button>
-          </Link>
-        </div>
+          <Button
+            asChild
+            size="lg"
+            variant="outline"
+            className="h-13 border-white/25 bg-white/5 px-8 text-base font-semibold text-white transition-colors hover:bg-white/10 hover:text-white"
+          >
+            <Link href="/self-service">Self-service bays</Link>
+          </Button>
+        </motion.div>
 
-        {/* ── Quick trust badges ── */}
-        <div className="flex flex-wrap items-center justify-center gap-4 mb-20 text-white/50 text-xs">
-          <span className="flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5" /> Open 24 / 7
+        {/* Facts about the location, not decoration */}
+        <motion.div
+          variants={rise}
+          className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-3 text-sm text-slate-300"
+        >
+          <span className="flex items-center gap-2">
+            <Clock className="h-4 w-4" aria-hidden="true" /> Open 24/7
           </span>
-          <span className="w-px h-3 bg-white/20" />
-          <span className="flex items-center gap-1.5">
-            <MapPin className="w-3.5 h-3.5" /> 10410 S Main St
+          <span aria-hidden="true" className="h-3.5 w-px bg-white/20" />
+          <span className="flex items-center gap-2">
+            <MapPin className="h-4 w-4" aria-hidden="true" /> 10410 S Main St
           </span>
-          <span className="w-px h-3 bg-white/20" />
-          <span className="flex items-center gap-1.5">
-            {[...Array(5)].map((_, i) => (
-              <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
-            ))}
-            <span className="ml-0.5">4.4 · 31+ reviews</span>
+          <span aria-hidden="true" className="h-3.5 w-px bg-white/20" />
+          <span className="flex items-center gap-2">
+            <span className="flex" aria-hidden="true">
+              {[...Array(5)].map((_, i) => (
+                <Star
+                  key={i}
+                  className="h-3.5 w-3.5 fill-amber-400 text-amber-400"
+                />
+              ))}
+            </span>
+            4.4 · 31+ reviews
           </span>
-        </div>
+        </motion.div>
 
-        {/* ── Service cards ── */}
-        <div className="mb-10">
-          <p className="text-center text-xs font-semibold uppercase tracking-widest text-white/40 mb-8">
+        {/* Service picker */}
+        <motion.div variants={rise} className="mt-16 md:mt-20">
+          <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-300">
             Choose your experience
-          </p>
+          </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
             {cards.map((card) => {
               const Icon = card.icon;
               return (
                 <Link
                   key={card.label}
                   href={card.href}
-                  className={`group relative flex flex-col rounded-2xl border bg-white/5 backdrop-blur-md p-6 ring-1 ${card.ring} border-white/10 transition-all duration-300 hover:bg-white/10 hover:-translate-y-1 hover:shadow-xl ${card.glow} ${
-                    card.featured ? "md:-translate-y-2 shadow-2xl " + card.glow : ""
+                  className={`group relative flex flex-col rounded-xl border border-white/10 bg-slate-900/80 p-6 transition-[transform,border-color,background-color] duration-300 ease-out hover:-translate-y-1 hover:border-white/25 hover:bg-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ${
+                    card.featured ? "border-amber-400/30 bg-slate-900" : ""
                   }`}
                 >
-                  {/* Featured ribbon */}
-                  {card.featured && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <span className={`inline-flex items-center gap-1 rounded-full bg-gradient-to-r ${card.accent} px-3 py-0.5 text-[11px] font-bold text-slate-900 shadow`}>
-                        ★ {card.eyebrow}
-                      </span>
-                    </div>
-                  )}
+                  {/* Top rule carries the card's colour instead of a gradient chip */}
+                  <span
+                    aria-hidden="true"
+                    className={`absolute inset-x-6 top-0 h-px ${card.rule} opacity-60 transition-opacity duration-300 group-hover:opacity-100`}
+                  />
 
-                  {/* Icon */}
-                  <div className={`mb-4 inline-flex w-fit rounded-xl bg-gradient-to-br ${card.accent} p-3 shadow-lg`}>
-                    <Icon className="w-5 h-5 text-white" />
-                  </div>
-
-                  {/* Eyebrow (non-featured) */}
-                  {!card.featured && (
-                    <span className="mb-1 text-[11px] font-bold uppercase tracking-widest text-white/40">
+                  <div className="flex items-center justify-between gap-3">
+                    <Icon
+                      className={`h-5 w-5 ${card.accent}`}
+                      aria-hidden="true"
+                    />
+                    <span
+                      className={`text-[11px] font-bold uppercase tracking-[0.14em] ${
+                        card.featured ? card.accent : "text-slate-500"
+                      }`}
+                    >
                       {card.eyebrow}
                     </span>
-                  )}
+                  </div>
 
-                  <h3 className="text-xl font-bold text-white mb-2">{card.label}</h3>
-                  <p className="text-sm text-white/60 leading-relaxed mb-5">{card.desc}</p>
+                  <h3 className="mt-5 text-xl font-bold tracking-tight text-white">
+                    {card.label}
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-400">
+                    {card.desc}
+                  </p>
 
-                  {/* Perks */}
-                  <ul className="space-y-1.5 mb-6 flex-1">
+                  <ul className="mt-5 flex-1 space-y-2">
                     {card.perks.map((p) => (
-                      <li key={p} className="flex items-start gap-2">
-                        <Check className="w-3.5 h-3.5 text-emerald-400 mt-0.5 shrink-0" />
-                        <span className="text-sm text-white/70">{p}</span>
+                      <li key={p} className="flex items-start gap-2.5">
+                        <Check
+                          className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400"
+                          aria-hidden="true"
+                        />
+                        <span className="text-sm text-slate-300">{p}</span>
                       </li>
                     ))}
                   </ul>
 
-                  {/* Price */}
-                  <div className="border-t border-white/10 pt-4 mb-4">
-                    <span className="text-2xl font-black text-white">{card.price}</span>
-                    <span className="ml-1.5 text-xs text-white/40">{card.priceSub}</span>
-                  </div>
-
-                  {/* CTA row */}
-                  <div className={`inline-flex items-center gap-1.5 text-sm font-semibold bg-gradient-to-r ${card.accent} bg-clip-text text-transparent group-hover:gap-2.5 transition-all`}>
-                    {card.cta}
-                    <ArrowRight className={`w-4 h-4 bg-gradient-to-r ${card.accent} rounded-full text-white p-0.5`} />
+                  <div className="mt-6 flex items-end justify-between border-t border-white/10 pt-5">
+                    <div>
+                      <span className="text-2xl font-black tracking-tight text-white">
+                        {card.price}
+                      </span>
+                      <span className="ml-1.5 text-xs text-slate-500">
+                        {card.priceSub}
+                      </span>
+                    </div>
+                    <span
+                      className={`inline-flex items-center gap-1.5 text-sm font-semibold ${card.accent}`}
+                    >
+                      {card.cta}
+                      <ArrowRight
+                        className="h-4 w-4 transition-transform duration-300 ease-out group-hover:translate-x-1"
+                        aria-hidden="true"
+                      />
+                    </span>
                   </div>
                 </Link>
               );
             })}
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </section>
   );
 }

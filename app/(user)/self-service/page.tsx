@@ -1,15 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import {
-  Crown,
-  CheckCircle,
-  Clock,
-  DollarSign,
-  Sparkles,
-  X,
-} from "lucide-react";
-import { motion } from "framer-motion";
+import { CheckCircle, Clock, DollarSign, Sparkles, X } from "lucide-react";
+import { motion } from "motion/react";
+import { pageRise, pageStagger } from "@/lib/motion";
 import { useRouter } from "next/navigation";
 import PricingCard from "@/components/pricing-plan";
 import { useAuth } from "@/context/auth-context";
@@ -52,38 +47,46 @@ export default function SelfServicePage() {
         <div className="absolute inset-0 bg-blue-900/5" />
         <div className="container mx-auto px-4 relative z-10">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center max-w-4xl mx-auto"
+            variants={pageStagger}
+            initial="hidden"
+            animate="show"
+            className="mx-auto max-w-3xl text-center"
           >
-            <div className="flex justify-center mb-6">
-              <Crown className="w-16 h-16 text-blue-900" />
-            </div>
-            <h1 className="text-5xl md:text-7xl font-bold text-blue-900 mb-6">
+            <motion.h1
+              variants={pageRise}
+              className="text-balance text-4xl font-black leading-[1.02] tracking-[-0.03em] text-blue-900 sm:text-5xl md:text-6xl"
+            >
               Self-Service Bay Membership
-            </h1>
-            <p className="text-xl md:text-2xl text-slate-600 mb-4">
+            </motion.h1>
+            <motion.p
+              variants={pageRise}
+              className="mt-5 text-lg text-slate-600 md:text-xl"
+            >
               DIY car wash — pay-per-use $10 per visit, or get daily access for
               just $19.99/month
-            </p>
-            <p className="text-lg text-blue-900 font-bold mb-8">
-              That's only ¢0.67 per day when you subscribe! 🎉
-            </p>
-            <div className="flex flex-wrap justify-center gap-4 text-sm text-slate-600">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-                <span>Use once per day</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-                <span>Cancel anytime</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-                <span>Professional equipment</span>
-              </div>
-            </div>
+            </motion.p>
+            <motion.p
+              variants={pageRise}
+              className="mt-2 text-lg font-bold text-blue-900"
+            >
+              That's only $0.67 per day when you subscribe
+            </motion.p>
+            <motion.ul
+              variants={pageRise}
+              className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-3 text-sm text-slate-600"
+            >
+              {["Use once per day", "Cancel anytime", "Professional equipment"].map(
+                (item) => (
+                  <li key={item} className="flex items-center gap-2">
+                    <CheckCircle
+                      className="h-4 w-4 text-green-600"
+                      aria-hidden="true"
+                    />
+                    {item}
+                  </li>
+                )
+              )}
+            </motion.ul>
           </motion.div>
         </div>
       </section>
@@ -101,7 +104,7 @@ export default function SelfServicePage() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 }}
-                className="p-6 bg-slate-50 rounded-xl border-2 border-slate-200 flex flex-col" // Add flex flex-col
+                className="flex flex-col rounded-xl border-2 border-slate-200 bg-slate-50 p-6"
               >
                 <div className="text-center mb-4">
                   <h3 className="text-2xl font-bold text-slate-900 mb-2">
@@ -111,8 +114,6 @@ export default function SelfServicePage() {
                   <p className="text-slate-600 text-sm">per visit</p>
                 </div>
                 <ul className="flex-1 space-y-3">
-                  {" "}
-                  {/* flex-1 makes this grow */}
                   <li className="flex items-start gap-2">
                     <CheckCircle className="w-5 h-5 text-gray-600 mt-0.5 shrink-0" />
                     <span className="text-slate-700">
@@ -221,11 +222,18 @@ export default function SelfServicePage() {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="relative rounded-2xl overflow-hidden shadow-2xl max-w-5xl mx-auto"
           >
-            <img
-              src="https://images.unsplash.com/photo-1601362840469-51e4d8d58785?w=1200&h=600&fit=crop"
-              alt="Modern self-service car wash bay with high-pressure equipment at The Launch Pad Houston"
-              className="w-full h-[400px] md:h-[500px] object-cover"
-            />
+            {/* Was a stock Unsplash photo of someone else's wash, captioned as
+                if it were this location. Swapped for the real bay photograph
+                already in /public. */}
+            <div className="relative h-100 w-full md:h-125">
+              <Image
+                src="/self-service-wash-1.jpg"
+                alt="A self-service wash bay at The Launch Pad in Houston"
+                fill
+                className="object-cover"
+                sizes="(max-width: 1024px) 100vw, 1024px"
+              />
+            </div>
             <div className="absolute inset-0 bg-linear-to-t from-blue-900/80 via-blue-900/20 to-transparent" />
             <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
               <h2 className="text-3xl md:text-4xl font-bold mb-3">

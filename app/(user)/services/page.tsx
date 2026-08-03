@@ -11,24 +11,54 @@ import {
 } from "@/components/ui/card";
 import {
   Sparkles,
-  Car,
   Check,
-  Truck,
-  CarFront,
-  Caravan,
   Droplets,
   Crown,
   Calendar,
   Clock,
   DollarSign,
-  ArrowRight,
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
-import { useBooking } from "@/context/bookingContext";
+import { motion, type Variants } from "motion/react";
+import {
+  HOLIDAY_SALE_ACTIVE,
+  HOLIDAY_SALE_DISCOUNT,
+} from "@/lib/booking/holidaySale";
+import { EASE_OUT, pageRise, pageStagger } from "@/lib/motion";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+
+// Hoisted out of the component: these are constants, not per-render state, and
+// EASE_OUT now comes from the shared motion vocabulary rather than a private copy.
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1, delayChildren: 0.2 },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: EASE_OUT },
+  },
+};
+
+const cardVariants: Variants = {
+  hidden: { opacity: 0, scale: 0.95 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.5, ease: EASE_OUT },
+  },
+  hover: {
+    y: -8,
+    transition: { duration: 0.3 },
+  },
+};
 
 type ServicePackage = {
   id: string;
@@ -46,18 +76,13 @@ type ServicePackage = {
 export default function ServicePage() {
   const router = useRouter();
   const supabase = createClient();
-  const { openBookingModal } = useBooking();
   const [services, setServices] = useState<ServicePackage[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // ============================================
-  // HOLIDAY SALE: START - Remove all code between START and END when sale ends
-  // ============================================
-  // HOLIDAY SALE: 35% discount (UI only - backend prices will be updated separately)
-  const HOLIDAY_SALE_ACTIVE = true; // Set to false when sale ends
-  const HOLIDAY_SALE_DISCOUNT = 0.05; // 5% off
-  // ============================================
-  // HOLIDAY SALE: END
+  // Holiday sale flags come from lib/booking/holidaySale — the same module the
+  // server charges with. They used to be re-declared locally here, which meant
+  // ending the sale in one place left this page advertising sale prices the
+  // checkout would not honour.
   // ============================================
 
   const serviceRef = useRef<HTMLDivElement | null>(null);
@@ -163,49 +188,7 @@ export default function ServicePage() {
     ...orderedVehicleCategories,
   ];
 
-  const EASE_OUT: [number, number, number, number] = [0.16, 1, 0.3, 1];
   const popularServices = "Deluxe wash";
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.2,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.6,
-        ease: EASE_OUT,
-      },
-    },
-  };
-
-  const cardVariants = {
-    hidden: { opacity: 0, scale: 0.95 },
-    visible: {
-      opacity: 1,
-      scale: 1,
-      transition: {
-        duration: 0.5,
-        ease: EASE_OUT,
-      },
-    },
-    hover: {
-      y: -8,
-      transition: {
-        duration: 0.3,
-      },
-    },
-  };
 
   const mainServiceCategories = [
     {
@@ -261,18 +244,11 @@ export default function ServicePage() {
             HOLIDAY SALE: START - Remove this banner when sale ends
             ============================================ */}
       {HOLIDAY_SALE_ACTIVE && (
-        <motion.div
-          className="bg-linear-to-r from-red-500 to-red-600 text-white text-center py-4 px-4 rounded-lg mb-8 shadow-lg"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <div className="flex items-center justify-center gap-2">
-            <span className="text-2xl md:text-3xl font-bold">
-              5% OFF ALL SERVICES!
-            </span>
-          </div>
-        </motion.div>
+        <div className="mb-10 rounded-lg bg-red-600 px-4 py-3 text-center text-white">
+          <p className="text-base font-semibold tracking-tight md:text-xl">
+            {Math.round(HOLIDAY_SALE_DISCOUNT * 100)}% off all services
+          </p>
+        </div>
       )}
       {/* ============================================
             HOLIDAY SALE: END
@@ -281,17 +257,23 @@ export default function ServicePage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
-          className="text-center mb-16"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: EASE_OUT }}
+          variants={pageStagger}
+          initial="hidden"
+          animate="show"
+          className="mb-16 text-center"
         >
-          <h2 className="text-4xl md:text-5xl font-bold mb-4 text-blue-900">
+          <motion.h1
+            variants={pageRise}
+            className="text-balance text-4xl font-bold tracking-tight text-blue-900 md:text-5xl"
+          >
             Our Services
-          </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          </motion.h1>
+          <motion.p
+            variants={pageRise}
+            className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground"
+          >
             Professional car care services tailored to your vehicle's needs
-          </p>
+          </motion.p>
         </motion.div>
 
         {/* Main Service Categories Overview */}
@@ -311,15 +293,32 @@ export default function ServicePage() {
           <div className="grid md:grid-cols-3 gap-8 mb-12">
             {mainServiceCategories.map((category, index) => {
               const Icon = category.icon;
+              const isInteractive =
+                category.title === "Professional Express Detailing";
               return (
                 <motion.div key={index} variants={itemVariants}>
                   <Card
-                    onClick={
-                      category.title === "Professional Express Detailing"
-                        ? handleClickService
-                        : undefined
-                    }
-                    className={`h-full border-2 ${category.color} hover:shadow-xl transition-all duration-300`}
+                    // Only the detailing card navigates. A bare onClick on a div
+                    // is unreachable by keyboard, so the interactive one gets a
+                    // real button role, tab stop, Enter/Space, and a focus ring.
+                    {...(isInteractive
+                      ? {
+                          role: "button" as const,
+                          tabIndex: 0,
+                          onClick: handleClickService,
+                          onKeyDown: (e: React.KeyboardEvent) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              handleClickService();
+                            }
+                          },
+                        }
+                      : {})}
+                    className={`h-full border-2 ${category.color} transition-all duration-300 hover:shadow-xl ${
+                      isInteractive
+                        ? "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2"
+                        : ""
+                    }`}
                   >
                     <CardHeader>
                       <div className="flex items-center gap-3 mb-3">
@@ -386,6 +385,44 @@ export default function ServicePage() {
         <div className="border-t border-border my-16"></div>
 
         <div ref={serviceRef}>
+          {/* The fetch already tracked `loading` but nothing rendered it, so
+              this whole region flashed empty on arrival with no signal. */}
+          {loading && orderedCategories.length === 0 && (
+            <div
+              role="status"
+              aria-live="polite"
+              className="space-y-8 py-4"
+            >
+              <span className="sr-only">Loading services…</span>
+              {[0, 1].map((group) => (
+                <div key={group} className="space-y-4">
+                  <div className="h-7 w-56 animate-pulse rounded bg-muted" />
+                  <div className="grid gap-6 md:grid-cols-3">
+                    {[0, 1, 2].map((card) => (
+                      <div
+                        key={card}
+                        className="h-56 animate-pulse rounded-xl bg-muted"
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!loading && orderedCategories.length === 0 && (
+            <p className="py-12 text-center text-muted-foreground">
+              No services are listed right now. Please call{" "}
+              <a
+                href="tel:8322198320"
+                className="underline underline-offset-4 hover:text-foreground"
+              >
+                (832) 219-8320
+              </a>{" "}
+              and we'll get you booked.
+            </p>
+          )}
+
           {/* Universal Service Categories (Quick Service & Express Detail) */}
           {orderedCategories
             .filter(([cat]) => UNIVERSAL_CATEGORIES.includes(cat.toLowerCase()))

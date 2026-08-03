@@ -11,8 +11,14 @@ import { Check, Car, ChevronRight, Loader2, Tag } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { createClient } from "@/utils/supabase/client";
 import TermsModal from "../terms-modal";
-import LoadingDots from "../loading";
 import MultiVehicleBenefitsDialog from "./MultiVehicleBenefitsDialog";
+import {
+  MAX_VEHICLES_PER_SUBSCRIPTION,
+  flockDiscountPercent,
+  flockVehiclePrice,
+  flockVehicleSavings,
+  hasFlockDiscount,
+} from "@/lib/pricing/flockPricing";
 
 type Billing = "monthly" | "yearly";
 
@@ -50,6 +56,7 @@ export default function SubscriptionCart({
   const [plan, setPlan] = useState<{
     id: string;
     name: string;
+    is_commercial?: boolean | null;
     monthly_price: number | string;
     yearly_price: number | string;
     features?: string[];
@@ -178,6 +185,10 @@ export default function SubscriptionCart({
     ? PROMO_CONFIG.isSubscriptionPercent
     : 0;
 
+  // Commercial plans bill every vehicle at the plan rate — no family discount.
+  const planHasFlockDiscount = hasFlockDiscount(plan);
+  const planFlockDiscountPercent = flockDiscountPercent(plan);
+
   // Calculate base price
   const basePrice = useMemo(() => {
     const price =
@@ -200,8 +211,12 @@ export default function SubscriptionCart({
       const isFirstVehicle = index === 0;
       const vehicleBase = basePrice.original;
 
-      const price = isFirstVehicle ? vehicleBase : vehicleBase * 0.65;
-      const flockDiscount = isFirstVehicle ? 0 : vehicleBase * 0.35;
+      const price = isFirstVehicle
+        ? vehicleBase
+        : flockVehiclePrice(vehicleBase, plan);
+      const flockDiscount = isFirstVehicle
+        ? 0
+        : flockVehicleSavings(vehicleBase, plan);
 
       // Promo discount only applies to the primary vehicle
       const estimatedPrice = isFirstVehicle
@@ -217,10 +232,10 @@ export default function SubscriptionCart({
         estimatedPrice,
         promoSavings,
         flockDiscount,
-        isDiscounted: !isFirstVehicle,
+        isDiscounted: !isFirstVehicle && hasFlockDiscount(plan),
       };
     });
-  }, [vehicles, basePrice, promoDiscountPercent]);
+  }, [vehicles, basePrice, promoDiscountPercent, plan]);
 
   // Calculate totals
   const totalOriginalPrice = useMemo(() => {
@@ -380,21 +395,35 @@ export default function SubscriptionCart({
               </button>
             </div>
             <p className="text-sm text-muted-foreground">
-              Select how many total vehicles to include. Each extra vehicle
-              saves you{" "}
-              <span className="font-semibold text-green-600">
-                35% every month
-              </span>
-              .
+              {planHasFlockDiscount ? (
+                <>
+                  Select how many total vehicles to include. Each extra vehicle
+                  saves you{" "}
+                  <span className="font-semibold text-green-600">
+                    {planFlockDiscountPercent}% every month
+                  </span>
+                  .
+                </>
+              ) : (
+                <>
+                  Select how many total vehicles to include. Commercial plans
+                  bill every vehicle at the same rate — no family discount
+                  applies.
+                </>
+              )}
             </p>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Vehicle Count Selector */}
             <div className="grid grid-cols-5 gap-2">
-              {[1, 2, 3, 4, 5].map((totalVehicles) => {
+              {Array.from(
+                { length: MAX_VEHICLES_PER_SUBSCRIPTION },
+                (_, i) => i + 1
+              ).map((totalVehicles) => {
                 const isSelected = vehicleCount === totalVehicles;
                 const extraVehicles = totalVehicles - 1;
-                const totalSavings = basePrice.original * 0.35 * extraVehicles;
+                const totalSavings =
+                  flockVehicleSavings(basePrice.original, plan) * extraVehicles;
                 return (
                   <button
                     key={totalVehicles}
@@ -439,9 +468,11 @@ export default function SubscriptionCart({
                         className="text-base font-semibold"
                       >
                         Vehicle {actualIndex + 1}: License Plate
-                        <span className="ml-2 text-sm font-normal text-green-600">
-                          (35% Family Discount)
-                        </span>
+                        {planHasFlockDiscount && (
+                          <span className="ml-2 text-sm font-normal text-green-600">
+                            ({planFlockDiscountPercent}% Family Discount)
+                          </span>
+                        )}
                       </Label>
                       <Input
                         id={`vehicle-${actualIndex}`}
@@ -565,7 +596,7 @@ export default function SubscriptionCart({
                         <div className="flex flex-col gap-0.5 mt-1">
                           {pricing.isDiscounted && (
                             <p className="text-xs text-green-600">
-                              Family: 35% off (-$
+                              Family: {planFlockDiscountPercent}% off (-$
                               {pricing.flockDiscount.toFixed(2)})
                             </p>
                           )}
@@ -789,7 +820,7 @@ export default function SubscriptionCart({
         <MultiVehicleBenefitsDialog
           isOpen={isBenefitsOpen}
           onClose={() => setIsBenefitsOpen(false)}
-          familyDiscountPercent={35}
+          familyDiscountPercent={planFlockDiscountPercent}
         />
       </div>
     </div>

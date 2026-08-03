@@ -122,7 +122,10 @@ export default function SubscriptionView() {
   const openModal = (plan?: SubscriptionPlans) => {
     if (plan) {
       setCurrentPlan(plan);
-      setIsCommercial(false);
+      // Load the stored flag directly rather than through handleCommercialToggle,
+      // which also nudges the price fields — that is only correct when an admin
+      // flips the checkbox, not when an existing plan is opened for editing.
+      setIsCommercial(!!plan.is_commercial);
       setFeatures(plan.features || []);
       setFeatureInput("");
       setForm({
@@ -226,6 +229,9 @@ export default function SubscriptionView() {
         description: form.description,
         image_url: form.image_url,
         features,
+        // Drives billing: additional vehicles on a commercial plan bill at the
+        // full plan price instead of the family rate.
+        is_commercial: isCommercial,
       };
 
       if (currentPlan) {

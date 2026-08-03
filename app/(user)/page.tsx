@@ -8,12 +8,41 @@ import {
   CardFooter,
   CardHeader,
 } from "@/components/ui/card";
-import { Star, Check, Award, Clock, DollarSign, Users } from "lucide-react";
+import {
+  Star,
+  Check,
+  Award,
+  Clock,
+  DollarSign,
+  Users,
+  ArrowRight,
+} from "lucide-react";
 import Image from "next/image";
-// import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import ServiceModal from "@/components/user/service-modal";
+
+const reasons = [
+  {
+    icon: Award,
+    title: "Professional equipment",
+    detail: "Top-tier self-service bays",
+  },
+  {
+    icon: Clock,
+    title: "Convenient hours",
+    detail: "Open 24/7 for self-service bays",
+  },
+  {
+    icon: DollarSign,
+    title: "Great value",
+    detail: "Best price in town",
+  },
+  {
+    icon: Users,
+    title: "Satisfaction guarantee",
+    detail: "Where we guarantee your shine",
+  },
+];
 
 const services = [
   {
@@ -113,59 +142,72 @@ export default function Home() {
     (typeof services)[0] | null
   >(null);
   return (
-    <main className="flex-1 container mx-auto px-3">
+    <main className="flex-1">
+      {/* Full-bleed: the hero owns the whole viewport width so the photograph
+          reads as a scene, not as an inset panel. */}
       <Hero />
-      <div className="max-w-7xl mx-auto">
-        {/* Hero Section */}
+      <div className="mx-auto max-w-7xl px-5 sm:px-8">
         {/* Service, One Location */}
-        <div className=" py-16 md:py-20">
-          <div className="max-w-4xl mb-16">
-            <h1 className="text-3xl md:text-5xl font-bold leading-tight text-blue-900 mb-8">
+        <div className="py-16 md:py-24">
+          <div className="max-w-4xl mb-14">
+            <h2 className="text-3xl md:text-5xl font-bold leading-[1.1] tracking-tight text-blue-900 mb-6">
               Three Amazing Services, One Location
-            </h1>
-            <p className="max-w-2xl text-xl text-accent-foreground leading-relaxed">
+            </h2>
+            <p className="max-w-2xl text-lg md:text-xl text-muted-foreground leading-relaxed">
               From DIY car washing to professional detailing and a unique
               community, The Launch Pad is your complete automotive care center.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-20">
             {services.map((service) => (
-              <Card key={service.id} className="p-6">
+              <Card
+                key={service.id}
+                className="group flex flex-col overflow-hidden p-0 gap-0 transition-shadow duration-300 hover:shadow-lg hover:shadow-black/5"
+              >
                 <CardHeader className="p-0">
-                  <div className="relative w-full h-64 rounded-xl overflow-hidden">
+                  <div className="relative w-full h-56 overflow-hidden">
                     <Image
                       src={service.image || ""}
                       alt={service.alt}
                       fill
-                      className="object-cover"
+                      className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     />
                   </div>
                 </CardHeader>
-                <CardContent className="flex-1">
-                  <h3 className="text-[28px] font-semibold text-accent-foreground mb-4">
+                <CardContent className="flex-1 p-6">
+                  <h3 className="text-xl font-semibold tracking-tight mb-3">
                     {service.title}
                   </h3>
 
-                  <p className="text-[15px] mb-8 text-accent-foreground">
+                  <p className="text-sm leading-relaxed text-muted-foreground mb-6">
                     {service.description}
                   </p>
-                  <div className="space-y-3">
+                  <ul className="space-y-2.5">
                     {service.features.map((feature, i) => (
-                      <span key={i} className="flex text-sm gap-2">
-                        <Check className="w-4 h-4 text-muted-foreground" />
+                      <li key={i} className="flex items-start gap-2.5 text-sm">
+                        <Check
+                          className="mt-0.5 w-3.5 h-3.5 shrink-0 text-blue-700"
+                          aria-hidden="true"
+                        />
                         {feature}
-                      </span>
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 </CardContent>
-                <CardFooter>
-                  <Button
+                <CardFooter className="px-6 pb-6 pt-0">
+                  <button
+                    type="button"
                     onClick={() => setSelectedService(service)}
-                    className="texl-base font-light text-blue-400 underline hover:text-blue-600 bg-white hover:bg-white"
+                    className="inline-flex items-center gap-1.5 rounded-sm text-sm font-medium text-blue-700 underline-offset-4 transition-colors hover:text-blue-900 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2"
                   >
-                    See Details
-                  </Button>
+                    See details
+                    <ArrowRight
+                      className="w-3.5 h-3.5 transition-transform duration-300 ease-out group-hover:translate-x-0.5"
+                      aria-hidden="true"
+                    />
+                    <span className="sr-only"> about {service.title}</span>
+                  </button>
                 </CardFooter>
               </Card>
             ))}
@@ -176,110 +218,84 @@ export default function Home() {
               onClose={() => setSelectedService(null)}
             />
           )}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-12 items-center">
             {/* Left Block */}
             <div className="relative">
-              <Image
-                src="/carwash.jpg"
-                alt="Carwash"
-                width={400}
-                height={400}
-                className="w-full h-full object-contain rounded-md"
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              />
-              <Card className="absolute -bottom-6 md:bottom-6 -right-3 md:-right-6 bg-linear-to-r from-red-600 to-blue-600 text-white rounded-xl p-4 soft-shadow">
-                <div className="flex items-center gap-2">
-                  <Star />
-                  <div>
-                    <span className="block font-bold"> 4.9/5</span>
-                    <span className="text-sm"> From 500+ Reviews</span>
-                  </div>
+              <div className="relative aspect-4/3 w-full overflow-hidden rounded-xl">
+                <Image
+                  src="/carwash.jpg"
+                  alt="A car being washed at The Launch Pad in Houston"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                />
+              </div>
+              <div className="absolute -bottom-5 right-4 md:right-6 flex items-center gap-3 rounded-xl bg-blue-900 px-5 py-3.5 text-white shadow-lg shadow-blue-900/25">
+                <Star
+                  className="w-5 h-5 fill-amber-400 text-amber-400"
+                  aria-hidden="true"
+                />
+                <div className="leading-tight">
+                  <span className="block text-lg font-bold tracking-tight">
+                    4.9/5
+                  </span>
+                  <span className="text-xs text-blue-200">
+                    From 500+ Reviews
+                  </span>
                 </div>
-              </Card>
+              </div>
             </div>
             {/* Right Block */}
-            <div className="space-y-4 p-3">
-              <h1 className="text-center font-semibold text-3xl">
+            <div className="pt-8 md:pt-0">
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-blue-900">
                 Why Choose The Launch Pad?
-              </h1>
-              <p>
-                Founded in 2024, The Launch Pad revolutionized the car care
-                experience by combining multiple services under one roof.
-                Whether you want to wash your car yourself, get professional
-                detailing, or grab a quick handwash, we've got you covered.
-              </p>
-              <p>
-                Plus, while you wait, enjoy Houston's finest food trucks! It's
-                the perfect way to turn car maintenance into an enjoyable
-                experience.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card>
-                  <CardContent>
-                    <div className="flex items-center space-x-3">
-                      <Award className="w-8 h-8 bg-blue-100 text-blue-400 p-1 rounded-md" />
-                      <div>
-                        <span className="block font-medium text-foreground">
-                          Professional Equipment
-                        </span>
-                        <span className="text-sm">
-                          Top-tier self-service bays
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent>
-                    <div className="flex items-center space-x-3">
-                      <Clock className="w-8 h-8 bg-red-100 text-red-400 p-1 rounded-md" />
-                      <div>
-                        <span className="block font-medium text-foreground">
-                          Convenient Hours
-                        </span>
-                        <span className="text-sm">
-                          Open 24/7 for self service bay
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent>
-                    <div className="flex items-center space-x-3">
-                      <DollarSign className="w-8 h-8 bg-yellow-100 text-yellow-400 p-1 rounded-md" />
-                      <div>
-                        <span className="block font-medium text-foreground">
-                          Great Value
-                        </span>
-                        <span className="text-sm">Best price in town</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent>
-                    <div className="flex items-center space-x-3">
-                      <Users className="w-8 h-8 bg-green-100 text-green-400 p-1 rounded-md" />
-                      <div>
-                        <span className="block font-medium text-foreground">
-                          {/* customer  */}
-                          Satisfaction guarantee
-                        </span>
-                        <span className="text-sm">
-                          where we guarantee your shine
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+              </h2>
+              <div className="mt-5 space-y-4 text-muted-foreground leading-relaxed">
+                <p>
+                  Founded in 2024, The Launch Pad revolutionized the car care
+                  experience by combining multiple services under one roof.
+                  Whether you want to wash your car yourself, get professional
+                  detailing, or grab a quick handwash, we've got you covered.
+                </p>
+                <p>
+                  Plus, while you wait, enjoy Houston's finest food trucks! It's
+                  the perfect way to turn car maintenance into an enjoyable
+                  experience.
+                </p>
               </div>
+
+              {/* Facts, not four more cards — a divided list reads faster and
+                  stops the page from becoming a grid of identical boxes. */}
+              <dl className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-x-8">
+                {reasons.map((reason) => (
+                  <div
+                    key={reason.title}
+                    className="flex items-start gap-3 border-t py-4"
+                  >
+                    <reason.icon
+                      className="mt-0.5 w-4 h-4 shrink-0 text-blue-700"
+                      aria-hidden="true"
+                    />
+                    <div>
+                      <dt className="font-medium leading-snug">
+                        {reason.title}
+                      </dt>
+                      <dd className="mt-0.5 text-sm text-muted-foreground">
+                        {reason.detail}
+                      </dd>
+                    </div>
+                  </div>
+                ))}
+              </dl>
             </div>
           </div>
         </div>
         {/* Customers say */}
         <Customers />
       </div>
+      {/* Breathing room before the footer — the testimonial block was landing
+          flush against it with no separation at all. */}
+      <div className="h-16 md:h-24" aria-hidden="true" />
     </main>
   );
 }

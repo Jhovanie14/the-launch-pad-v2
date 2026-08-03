@@ -6,6 +6,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import BookingProvider from "@/context/bookingContext";
+import { MotionProvider } from "@/components/motion-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import BookingModal from "@/components/bookingModal";
 import { AuthContextProvider } from "@/context/auth-context";
@@ -129,15 +130,17 @@ export default function RootLayout({
           `}
         </Script>
         {/* <SnowEffect /> */}
-        <AuthContextProvider>
-          <BookingProvider>
-            <TooltipProvider>
-              <ServiceWorkerRegister />
-              {children}
-              <BookingModal />
-            </TooltipProvider>
-          </BookingProvider>
-        </AuthContextProvider>
+        <MotionProvider>
+          <AuthContextProvider>
+            <BookingProvider>
+              <TooltipProvider>
+                <ServiceWorkerRegister />
+                {children}
+                <BookingModal />
+              </TooltipProvider>
+            </BookingProvider>
+          </AuthContextProvider>
+        </MotionProvider>
       </body>
     </html>
   );

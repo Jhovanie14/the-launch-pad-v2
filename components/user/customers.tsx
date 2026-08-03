@@ -1,7 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
-import Image from "next/image";
+import { motion } from "motion/react";
 import { Star } from "lucide-react";
 
 interface Testimonial {
@@ -112,82 +111,69 @@ const duplicatedTestimonials = [...testimonials, ...testimonials];
 
 export default function Testimonials() {
   const TestimonialCard = ({ testimonial }: { testimonial: Testimonial }) => (
-    <div className="bg-white rounded-2xl shadow-lg flex-shrink-0 w-full overflow-hidden">
-      {/* Image Section */}
-      <div className="relative">
-        <div className="absolute top-4 left-4 z-10">
-          <span className="text-5xl font-bold text-yellow-400">"</span>
-        </div>
-        {/* <Image
-          src={testimonial.image || "/placeholder.svg"}
-          alt={`Review from ${testimonial.author}`}
-          width={450}
-          height={450}
-          className="w-full h-auto rounded-t-xl object-cover"
-        /> */}
+    <figure className="w-full shrink-0 overflow-hidden rounded-2xl bg-white p-6 shadow-lg shadow-blue-950/20">
+      {/* Star Rating */}
+      <div
+        className="mb-3 flex gap-1"
+        aria-label={`${testimonial.rating} out of 5 stars`}
+      >
+        {[...Array(testimonial.rating)].map((_, i) => (
+          <Star
+            key={i}
+            className="h-5 w-5 fill-amber-400 text-amber-400"
+            aria-hidden="true"
+          />
+        ))}
       </div>
 
-      {/* Text Content Section - NEW */}
-      <div className="p-6 bg-white">
-        {/* Star Rating */}
-        <div className="flex gap-1 mb-3">
-          {[...Array(testimonial.rating)].map((_, i) => (
-            <Star key={i} className="h-5 w-5 fill-amber-400 text-amber-400" />
-          ))}
-        </div>
+      {/* Review Text */}
+      <blockquote className="mb-4 text-sm italic leading-relaxed text-gray-700">
+        "{testimonial.text}"
+      </blockquote>
 
-        {/* Review Text */}
-        <p className="text-gray-700 text-sm leading-relaxed mb-4 italic">
-          "{testimonial.text}"
+      {/* Author Info */}
+      <figcaption className="border-t border-gray-200 pt-3">
+        <p className="text-sm font-semibold text-gray-900">
+          {testimonial.author}
         </p>
-
-        {/* Author Info */}
-        <div className="border-t border-gray-200 pt-3">
-          <p className="font-semibold text-gray-900 text-sm">
-            {testimonial.author}
-          </p>
-          {testimonial.vehicle && (
-            <p className="text-xs text-gray-500">{testimonial.vehicle}</p>
-          )}
-          <p className="text-xs text-gray-400 mt-1">
-            {testimonial.source} Review
-          </p>
-        </div>
-      </div>
-    </div>
+        {testimonial.vehicle && (
+          <p className="text-xs text-gray-500">{testimonial.vehicle}</p>
+        )}
+        <p className="mt-1 text-xs text-gray-500">
+          {testimonial.source} Review
+        </p>
+      </figcaption>
+    </figure>
   );
 
   return (
-    <section className="bg-gradient-to-br from-blue-700 to-blue-900 py-20 rounded-md px-4 sm:px-6 lg:px-8">
+    <section className="rounded-xl bg-linear-to-br from-blue-700 to-blue-900 px-6 py-20 sm:px-8 lg:px-12">
       <div className="container mx-auto">
-        <div className="grid lg:grid-cols-2 gap-8 items-start">
+        <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-12">
           {/* Left Content */}
           <div className="text-white">
-            <div className="inline-block border border-blue-200 rounded-full px-4 py-2 mb-6 text-sm font-semibold text-blue-100">
-              TESTIMONIALS
-            </div>
-            <h2 className="text-5xl sm:text-6xl font-bold mb-6 leading-tight">
+            <h2 className="text-balance text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl">
               What Our Customers are Saying
             </h2>
-            <p className="text-lg text-emerald-100 leading-relaxed max-w-md mb-8">
+            <p className="mt-6 max-w-md text-lg leading-relaxed text-blue-100">
               Don't just take our word for it, see what our happy customers are
               saying! These testimonials show how we make every car shine and
               every visit worth it.
             </p>
           </div>
 
-          {/* Right Escalator Cards */}
-          <div className="flex gap-6 h-96 w-full overflow-hidden">
+          {/* Right escalator — hidden on small screens, where the static list
+              below carries the same reviews. */}
+          <div className="relative hidden h-96 w-full overflow-hidden lg:block">
             <motion.div
-              className="flex-1 flex flex-col gap-6"
-              animate={{
-                y: [-600, -1800],
-              }}
+              className="flex flex-col gap-6"
+              // The list is rendered twice, so travelling exactly -50% lands on
+              // the identical frame and the loop is seamless at any card height.
+              animate={{ y: ["0%", "-50%"] }}
               transition={{
-                duration: 30,
+                duration: 40,
                 repeat: Infinity,
                 ease: "linear",
-                repeatType: "loop",
               }}
             >
               {duplicatedTestimonials.map((testimonial, index) => (
@@ -197,43 +183,56 @@ export default function Testimonials() {
                 />
               ))}
             </motion.div>
+            {/* Feather the ends so cards enter and leave instead of clipping */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-linear-to-b from-blue-800 to-transparent"
+            />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-linear-to-t from-blue-900 to-transparent"
+            />
           </div>
         </div>
 
-        {/* Mobile-friendly text reviews - NEW */}
-        <div className="lg:hidden mt-12 space-y-6">
-          <h3 className="text-2xl font-bold text-white text-center mb-6">
-            Featured Reviews
-          </h3>
+        {/* Small screens get the same reviews as a static list — the escalator
+            is unreadable at that width. */}
+        <div className="mt-10 lg:hidden">
           <div className="grid gap-4">
             {testimonials.slice(0, 5).map((review) => (
-              <div
+              <figure
                 key={review.id}
-                className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20"
+                className="rounded-xl border border-blue-400/30 bg-blue-950/30 p-5"
               >
-                <div className="flex gap-1 mb-2">
+                <div
+                  className="mb-2 flex gap-1"
+                  aria-label={`${review.rating} out of 5 stars`}
+                >
                   {[...Array(review.rating)].map((_, i) => (
                     <Star
                       key={i}
                       className="h-4 w-4 fill-amber-400 text-amber-400"
+                      aria-hidden="true"
                     />
                   ))}
                 </div>
-                <p className="text-white text-sm leading-relaxed mb-3 italic">
+                <blockquote className="mb-3 text-sm italic leading-relaxed text-white">
                   "{review.text}"
-                </p>
-                <div className="flex items-center justify-between">
+                </blockquote>
+                <figcaption className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-white font-semibold text-sm">
+                    <p className="text-sm font-semibold text-white">
                       {review.author}
                     </p>
                     {review.vehicle && (
-                      <p className="text-blue-200 text-xs">{review.vehicle}</p>
+                      <p className="text-xs text-blue-200">{review.vehicle}</p>
                     )}
                   </div>
-                  <p className="text-blue-200 text-xs">{review.source}</p>
-                </div>
-              </div>
+                  <p className="shrink-0 text-xs text-blue-200">
+                    {review.source}
+                  </p>
+                </figcaption>
+              </figure>
             ))}
           </div>
         </div>

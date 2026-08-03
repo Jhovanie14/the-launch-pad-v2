@@ -18,7 +18,7 @@ export async function getActiveSubscription(
 
   const { data: plan, error: planError } = await supabase
     .from("subscription_plans")
-    .select("name, description, monthly_price, yearly_price")
+    .select("name, description, monthly_price, yearly_price, is_commercial")
     .eq("id", subs.subscription_plan_id)
     .maybeSingle();
 

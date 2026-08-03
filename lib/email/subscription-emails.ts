@@ -1,6 +1,17 @@
 import { Resend } from "resend";
+import {
+  FLOCK_DISCOUNT_RATE,
+  MAX_VEHICLES_PER_SUBSCRIPTION,
+} from "@/lib/pricing/flockPricing";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+
+/**
+ * Family-discount percent for marketing copy in plan-agnostic emails (dunning,
+ * win-back). Plan-specific emails take an explicit `discountPercent` instead,
+ * because commercial plans get no family discount at all.
+ */
+const FAMILY_DISCOUNT_PERCENT = Math.round(FLOCK_DISCOUNT_RATE * 100);
 
 const FROM = "The Launch Pad Wash <noreply@thelaunchpadwash.com>";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.thelaunchpadwash.com";
@@ -88,7 +99,7 @@ export async function sendSubscriptionInvoiceEmail({
         : "Thank you for subscribing! Your first payment has been processed. Here's your receipt:"}
     </p>
 
-    <div class="card" style="border-left:4px solid #16a34a;">
+    <div class="card" style="border:1px solid #bbf7d0;background:#f0fdf4;">
       <table cellpadding="0" cellspacing="0" border="0" width="100%">
         <tr>
           <td style="font-size:14px;color:#6b7280;padding:4px 0;">Amount Paid</td>
@@ -168,7 +179,7 @@ export async function sendPaymentFailedEmail({
       update your payment method as soon as possible.
     </p>
 
-    <div class="card" style="border-left:4px solid #ef4444;">
+    <div class="card" style="border:1px solid #fecaca;background:#fef2f2;">
       <p><strong style="color:#ef4444;">What happens if you don't act:</strong></p>
       <ul class="list" style="margin-top:10px;">
         <li><span>❌</span> Your subscription will be suspended after failed retries</li>
@@ -245,7 +256,7 @@ export async function sendCancellationScheduledEmail({
       <p><strong>What you'll lose when your plan ends:</strong></p>
       <ul class="list" style="margin-top:10px;">
         <li><span>🚗</span> Unlimited express car washes every month</li>
-        <li><span>💰</span> 35% family discount on additional vehicles</li>
+        <li><span>💰</span> Family pricing on additional vehicles — up to ${FAMILY_DISCOUNT_PERCENT}% off</li>
         <li><span>⚡</span> Priority service — skip the regular queue</li>
         <li><span>📅</span> Flexible walk-in bookings — no appointment needed</li>
       </ul>
@@ -320,7 +331,7 @@ export async function sendSubscriptionCancelledEmail({
       <ul class="list" style="margin-top:10px;">
         <li><span>✨</span> <span><strong>Unlimited washes</strong> — keep your car spotless every week</span></li>
         <li><span>💸</span> <span><strong>Save vs. pay-per-wash</strong> — members save an average of $40/month</span></li>
-        <li><span>👨‍👩‍👧</span> <span><strong>Family plan</strong> — add up to 4 extra vehicles at 35% off</span></li>
+        <li><span>👨‍👩‍👧</span> <span><strong>Family plan</strong> — add up to ${MAX_VEHICLES_PER_SUBSCRIPTION - 1} extra vehicles, up to ${FAMILY_DISCOUNT_PERCENT}% off</span></li>
         <li><span>⚡</span> <span><strong>Priority service</strong> — no waiting in the regular line</span></li>
       </ul>
     </div>
@@ -373,29 +384,37 @@ export async function sendFamilyVehicleAddedEmail({
   licensePlate,
   newTotal,
   billingCycle,
+  discountPercent = 35,
 }: {
   to: string;
   name: string;
   licensePlate: string;
   newTotal: number; // in dollars
   billingCycle: string; // "month" | "year"
+  /** 0 on commercial plans, where additional vehicles bill at full price. */
+  discountPercent?: number;
 }) {
   const billingUrl = `${SITE_URL}/dashboard/billing`;
+  const isDiscounted = discountPercent > 0;
 
   const header = `
     <div style="font-size:48px;margin-bottom:12px;">🚗</div>
     <h1>Vehicle Added</h1>
-    <p>${licensePlate} is now on your family plan</p>
+    <p>${licensePlate} is now on your plan</p>
   `;
 
   const body = `
     <p>Hi <strong>${name}</strong>,</p>
     <p>
       You've added <strong>${licensePlate}</strong> to your Express Detailing
-      subscription at 35% off — every month, no expiry.
+      subscription${
+        isDiscounted
+          ? ` at ${discountPercent}% off — every month, no expiry.`
+          : ` at the full plan rate.`
+      }
     </p>
 
-    <div class="card" style="border-left:4px solid #16a34a;">
+    <div class="card" style="border:1px solid #bbf7d0;background:#f0fdf4;">
       <table cellpadding="0" cellspacing="0" border="0" width="100%">
         <tr>
           <td style="font-size:14px;color:#6b7280;padding:4px 0;">Vehicle Added</td>
@@ -422,7 +441,9 @@ export async function sendFamilyVehicleAddedEmail({
   const { error } = await resend.emails.send({
     from: FROM,
     to,
-    subject: `✅ ${licensePlate} added to your subscription — 35% off`,
+    subject: isDiscounted
+      ? `✅ ${licensePlate} added to your subscription — ${discountPercent}% off`
+      : `✅ ${licensePlate} added to your subscription`,
     html: emailWrapper(
       "linear-gradient(135deg,#16a34a 0%,#15803d 100%)",
       header,
@@ -544,7 +565,7 @@ export async function sendPrimaryVehicleSwappedEmail({
       remaining vehicles.
     </p>
 
-    <div class="card" style="border-left:4px solid #1d4ed8;">
+    <div class="card" style="border:1px solid #bfdbfe;background:#eff6ff;">
       <table cellpadding="0" cellspacing="0" border="0" width="100%">
         <tr>
           <td style="font-size:14px;color:#6b7280;padding:4px 0;">Unsubscribed</td>

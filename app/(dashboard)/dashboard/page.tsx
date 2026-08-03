@@ -20,6 +20,11 @@ import {
   Wrench,
 } from "lucide-react";
 import { useMemo } from "react";
+import {
+  flockVehiclePrice,
+  flockVehicleSavings,
+  hasFlockDiscount,
+} from "@/lib/pricing/flockPricing";
 import SubscriptionCancelInfo from "@/components/user/subscription-cancel-info";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
@@ -43,12 +48,15 @@ export default function DashboardPage() {
         ? Number(subscription.subscription_plans.monthly_price ?? 0)
         : Number(subscription.subscription_plans.yearly_price ?? 0);
 
+    const plan = subscription.subscription_plans;
+    const planHasDiscount = hasFlockDiscount(plan);
+
     const vehicles = subscription.vehicles || [];
     const vehiclePricing = vehicles.map((_vehicle: NonNullable<Subscription["vehicles"]>[number], index: number) => {
       const isFirstVehicle = index === 0;
       return {
-        price: isFirstVehicle ? basePrice : basePrice * 0.65,
-        isDiscounted: !isFirstVehicle,
+        price: isFirstVehicle ? basePrice : flockVehiclePrice(basePrice, plan),
+        isDiscounted: !isFirstVehicle && planHasDiscount,
       };
     });
 
@@ -57,7 +65,8 @@ export default function DashboardPage() {
       0
     );
     const totalSavings = vehiclePricing.reduce(
-      (sum: number, item) => sum + (item.isDiscounted ? basePrice * 0.35 : 0),
+      (sum: number, item) =>
+        sum + (item.isDiscounted ? flockVehicleSavings(basePrice, plan) : 0),
       0
     );
 
@@ -153,9 +162,9 @@ export default function DashboardPage() {
         {/* Header */}
         <div className="space-y-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
             <p className="text-muted-foreground mt-1">
-              Welcome back, {userProfile?.full_name || user?.email}!
+              Welcome back, {userProfile?.full_name || user?.email}
             </p>
           </div>
 
@@ -182,8 +191,8 @@ export default function DashboardPage() {
                         </span>
                         {subscriptionDetails.isFlock && (
                           <span className="inline-flex items-center gap-1 px-2 py-1 bg-white/20 rounded-full text-xs font-medium">
-                            <Sparkles className="w-3 h-3" />
-                            Flock Subscription
+                            <Sparkles className="w-3 h-3" aria-hidden="true" />
+                            Multi-vehicle
                           </span>
                         )}
                       </div>
@@ -214,11 +223,15 @@ export default function DashboardPage() {
                       </div>
                       {subscriptionDetails.isFlock &&
                         subscriptionDetails.totalSavings > 0 && (
-                          <p className="text-xs text-blue-200 mt-1">
-                            ✨ You're saving $
+                          <p className="mt-1 flex items-center gap-1.5 text-xs text-blue-200">
+                            <Sparkles
+                              className="h-3 w-3 shrink-0"
+                              aria-hidden="true"
+                            />
+                            You're saving $
                             {subscriptionDetails.totalSavings.toFixed(2)}/
-                            {subscriptionDetails.billingCycle} with your flock
-                            discount!
+                            {subscriptionDetails.billingCycle} with your family
+                            discount
                           </p>
                         )}
                     </div>

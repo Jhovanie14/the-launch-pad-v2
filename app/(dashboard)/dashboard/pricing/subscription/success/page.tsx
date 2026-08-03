@@ -7,6 +7,12 @@ import { stripe } from "@/lib/stripe/stripe";
 import Stripe from "stripe";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
+import {
+  flockDiscountPercent,
+  flockVehiclePrice,
+  flockVehicleSavings,
+  hasFlockDiscount,
+} from "@/lib/pricing/flockPricing";
 
 interface SubscriptionSuccessPageProps {
   searchParams: { session_id?: string };
@@ -44,6 +50,7 @@ export default async function SubscriptionSuccessPage({
       name: string;
       monthly_price: number | string | null;
       yearly_price: number | string | null;
+      is_commercial?: boolean | null;
     } | null;
     subscription_vehicles: Array<{
       vehicles: {
@@ -69,7 +76,8 @@ export default async function SubscriptionSuccessPage({
           name,
           description,
           monthly_price,
-          yearly_price
+          yearly_price,
+          is_commercial
         ),
         subscription_vehicles (
           id,
@@ -120,17 +128,19 @@ export default async function SubscriptionSuccessPage({
     let planName = priceObj.nickname || "Premium Plan";
     let originalMonthlyPrice: number | null = null;
     let originalYearlyPrice: number | null = null;
+    let planIsCommercial: boolean | null = null;
     const metaPlanId = session.metadata?.plan_id;
     if (metaPlanId) {
       const { data: planData } = await supabase
         .from("subscription_plans")
-        .select("name, monthly_price, yearly_price")
+        .select("name, monthly_price, yearly_price, is_commercial")
         .eq("id", metaPlanId)
         .maybeSingle();
       if (planData) {
         planName = planData.name;
         originalMonthlyPrice = planData.monthly_price ? Number(planData.monthly_price) : null;
         originalYearlyPrice = planData.yearly_price ? Number(planData.yearly_price) : null;
+        planIsCommercial = planData.is_commercial ?? null;
       }
     }
 
@@ -152,6 +162,7 @@ export default async function SubscriptionSuccessPage({
         yearly_price: interval === "year"
           ? (originalYearlyPrice ?? stripeAmount)
           : (originalYearlyPrice ?? null),
+        is_commercial: planIsCommercial,
       },
       subscription_vehicles: [],
       created_at: new Date().toISOString(),
@@ -194,16 +205,20 @@ export default async function SubscriptionSuccessPage({
   // Use vehicles from DB, or fallback to Stripe metadata count
   const vehiclesToDisplay = vehicles.length > 0 ? vehicles : vehiclesFromStripe;
 
-  // Calculate pricing for each vehicle (first full price, others 10% off)
+  // Primary vehicle at full price; additional vehicles at the plan's flock
+  // rate, which is the full price again on commercial plans.
+  const planHasDiscount = hasFlockDiscount(plan);
   const vehiclePricing = vehiclesToDisplay.map((vehicle, index: number) => {
     const isFirstVehicle = index === 0;
-    const price = isFirstVehicle ? basePrice : basePrice * 0.65;
-    const discount = isFirstVehicle ? 0 : basePrice * 0.35;
+    const price = isFirstVehicle
+      ? basePrice
+      : flockVehiclePrice(basePrice, plan);
+    const discount = isFirstVehicle ? 0 : flockVehicleSavings(basePrice, plan);
     return {
       vehicle,
       price,
       discount,
-      isDiscounted: !isFirstVehicle,
+      isDiscounted: !isFirstVehicle && planHasDiscount,
       displayName: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
     };
   });
@@ -248,6 +263,7 @@ export default async function SubscriptionSuccessPage({
       : "N/A",
     vehicles: vehiclePricing,
     isFlock: vehiclesToDisplay.length > 1,
+    discountPercent: flockDiscountPercent(plan),
     hasVehicleData: vehicles.length > 0, // Whether we have actual vehicle data from DB
   };
 
@@ -350,7 +366,7 @@ export default async function SubscriptionSuccessPage({
                             </span>
                             {item.isDiscounted && (
                               <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
-                                35% Flock Discount
+                                {orderData.discountPercent}% family discount
                               </span>
                             )}
                           </div>
@@ -419,7 +435,11 @@ export default async function SubscriptionSuccessPage({
               {orderData.isFlock && (
                 <p className="text-xs text-muted-foreground text-right">
                   ${orderData.basePrice.toFixed(2)} base +{" "}
-                  {orderData.vehicles.length - 1} vehicle(s) with 35% discount
+                  {orderData.vehicles.length - 1} additional vehicle
+                  {orderData.vehicles.length - 1 === 1 ? "" : "s"}
+                  {orderData.discountPercent > 0
+                    ? ` at ${orderData.discountPercent}% off`
+                    : " at the full plan rate"}
                 </p>
               )}
             </div>
