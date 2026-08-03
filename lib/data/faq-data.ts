@@ -39,7 +39,7 @@ export const faqData = [
     category: "Billing & Payments",
     question: "How does the Flock (family vehicle) discount work on my bill?",
     answer:
-      "Every additional vehicle you add under a Flock subscription receives a 35% discount off the base plan price. For example, if your plan is $59.99/month, each family vehicle is billed at $38.99/month instead. The first month a family vehicle is added may show a slightly different amount due to proration (a partial charge for the remaining days of your current billing cycle). From the following billing date onward, you will see the regular discounted rate for every family vehicle on your account.",
+      "On a personal plan, every additional vehicle you add receives a 35% discount off the base plan price. For example, if your plan is $59.99/month, each additional vehicle is billed at $38.99/month instead. Commercial plans work differently: because those rates are already set for commercial vehicles, every vehicle on a commercial plan is billed at the full plan price with no family discount. In both cases, the first month a vehicle is added may show a slightly different amount due to proration (a partial charge for the remaining days of your current billing cycle). From the following billing date onward, you will see the regular rate for every vehicle on your account.",
   },
   // {
   //   id: "technical-1",

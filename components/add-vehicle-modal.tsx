@@ -11,8 +11,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Car, BadgePercent, Info } from "lucide-react";
+import { Car, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  MAX_VEHICLES_PER_SUBSCRIPTION,
+  type FlockPlanLike,
+  flockDiscountPercent,
+  flockVehiclePrice,
+  hasFlockDiscount,
+} from "@/lib/pricing/flockPricing";
 
 interface AddVehicleModalProps {
   open: boolean;
@@ -24,6 +31,8 @@ interface AddVehicleModalProps {
   currentPeriodStart?: string;
   currentPeriodEnd?: string;
   currentTotalPrice?: number;
+  /** Drives whether the family discount applies. Commercial plans get none. */
+  plan?: FlockPlanLike | null;
 }
 
 export function AddVehicleModal({
@@ -36,12 +45,15 @@ export function AddVehicleModal({
   currentPeriodStart,
   currentPeriodEnd,
   currentTotalPrice = 0,
+  plan,
 }: AddVehicleModalProps) {
   const [licensePlate, setLicensePlate] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const remaining = 5 - currentVehicleCount;
-  const discountedPrice = basePriceMonthly * 0.65;
+  const remaining = MAX_VEHICLES_PER_SUBSCRIPTION - currentVehicleCount;
+  const vehiclePrice = flockVehiclePrice(basePriceMonthly, plan);
+  const isDiscounted = hasFlockDiscount(plan);
+  const discountPercent = flockDiscountPercent(plan);
 
   // Estimate proration for the remaining days in the current billing cycle
   const prorationEstimate = (() => {
@@ -53,10 +65,10 @@ export function AddVehicleModal({
     const remainingMs = end - now;
     if (totalMs <= 0 || remainingMs <= 0) return null;
     const fraction = remainingMs / totalMs;
-    return discountedPrice * fraction;
+    return vehiclePrice * fraction;
   })();
 
-  const nextRecurring = currentTotalPrice + discountedPrice;
+  const nextRecurring = currentTotalPrice + vehiclePrice;
 
   async function handleSubmit() {
     const plate = licensePlate.trim().toUpperCase();
@@ -76,7 +88,7 @@ export function AddVehicleModal({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to add vehicle");
 
-      toast.success("Vehicle added successfully!");
+      toast.success(`${plate} added to your subscription`);
       setLicensePlate("");
       onSuccess();
       onClose();
@@ -96,10 +108,10 @@ export function AddVehicleModal({
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Car className="w-5 h-5 text-blue-900" />
-            Add a Family Vehicle
+        <DialogHeader className="space-y-2">
+          <DialogTitle className="flex items-center gap-2 tracking-tight">
+            <Car className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
+            Add a vehicle
           </DialogTitle>
           <DialogDescription>
             You can add {remaining} more vehicle{remaining !== 1 ? "s" : ""} to
@@ -107,47 +119,10 @@ export function AddVehicleModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Recurring discount */}
-          <div className="flex items-start gap-3 p-3 bg-green-50 border border-green-100 rounded-lg">
-            <BadgePercent className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
-            <div className="text-sm">
-              <p className="font-semibold text-green-800">35% Family Discount</p>
-              <p className="text-green-700 mt-0.5">
-                This vehicle is billed at{" "}
-                <span className="font-bold">
-                  ${discountedPrice.toFixed(2)}/{billingCycle}
-                </span>{" "}
-                instead of ${basePriceMonthly.toFixed(2)}/{billingCycle}.
-              </p>
-            </div>
-          </div>
-
-          {/* Proration notice */}
-          <div className="flex items-start gap-3 p-3 bg-blue-50 border border-blue-100 rounded-lg">
-            <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-            <div className="text-sm">
-              <p className="font-semibold text-blue-800">Billing adjustment on next charge</p>
-              <p className="text-blue-700 mt-0.5">
-                Since you're adding this vehicle mid-cycle, your{" "}
-                <span className="font-bold">next bill</span> will include a
-                one-time prorated amount for the remaining days of this billing
-                period
-                {prorationEstimate !== null
-                  ? ` (~$${prorationEstimate.toFixed(2)})`
-                  : ""}
-                .
-              </p>
-              <p className="text-blue-700 mt-1">
-                From the following {billingCycle}, your regular charge will be{" "}
-                <span className="font-bold">${nextRecurring.toFixed(2)}/{billingCycle}</span>.
-              </p>
-            </div>
-          </div>
-
-          {/* License plate input */}
+        <div className="space-y-5">
+          {/* License plate input — the only thing the customer has to do */}
           <div className="space-y-1.5">
-            <Label htmlFor="license-plate">License Plate</Label>
+            <Label htmlFor="license-plate">License plate</Label>
             <Input
               id="license-plate"
               placeholder="e.g. ABC 1234"
@@ -155,14 +130,62 @@ export function AddVehicleModal({
               onChange={(e) => setLicensePlate(e.target.value.toUpperCase())}
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
               disabled={loading}
+              autoComplete="off"
+              className="font-mono tracking-wider uppercase"
             />
             <p className="text-xs text-muted-foreground">
-              You can add the vehicle details (year, make, model) later from
-              your dashboard.
+              Year, make and model can be added later from your dashboard.
             </p>
           </div>
 
-          <div className="flex gap-2 pt-1">
+          {/* What this costs — one reconciled summary, not scattered callouts */}
+          <div className="rounded-lg border bg-muted/40 p-4 space-y-2.5">
+            <div className="flex items-baseline justify-between gap-4 text-sm">
+              <span className="text-muted-foreground">This vehicle</span>
+              <span className="font-semibold tabular-nums">
+                {isDiscounted && (
+                  <span className="mr-1.5 font-normal text-muted-foreground line-through">
+                    ${basePriceMonthly.toFixed(2)}
+                  </span>
+                )}
+                ${vehiclePrice.toFixed(2)}/{billingCycle}
+              </span>
+            </div>
+
+            {isDiscounted ? (
+              <p className="text-xs text-muted-foreground">
+                Includes the {discountPercent}% family discount, applied every
+                billing cycle with no expiry.
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Commercial plans bill every vehicle at the full plan rate.
+              </p>
+            )}
+
+            <div className="border-t pt-2.5 space-y-2.5">
+              {prorationEstimate !== null && (
+                <div className="flex items-baseline justify-between gap-4 text-sm">
+                  <span className="text-muted-foreground">
+                    One-time proration on your next bill
+                  </span>
+                  <span className="font-medium tabular-nums">
+                    ~${prorationEstimate.toFixed(2)}
+                  </span>
+                </div>
+              )}
+              <div className="flex items-baseline justify-between gap-4 text-sm">
+                <span className="text-muted-foreground">
+                  Recurring from the next {billingCycle}
+                </span>
+                <span className="font-semibold tabular-nums">
+                  ${nextRecurring.toFixed(2)}/{billingCycle}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-2">
             <Button
               variant="outline"
               onClick={handleClose}
@@ -176,7 +199,13 @@ export function AddVehicleModal({
               disabled={loading || !licensePlate.trim()}
               className="flex-1 bg-blue-900 hover:bg-blue-800"
             >
-              {loading ? "Adding..." : "Add Vehicle"}
+              {loading && (
+                <Loader2
+                  className="mr-2 h-4 w-4 animate-spin"
+                  aria-hidden="true"
+                />
+              )}
+              {loading ? "Adding…" : "Add vehicle"}
             </Button>
           </div>
         </div>

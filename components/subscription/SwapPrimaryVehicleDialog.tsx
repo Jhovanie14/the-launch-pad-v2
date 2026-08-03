@@ -11,6 +11,11 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Car, CheckCircle2 } from "lucide-react";
+import {
+  type FlockPlanLike,
+  flockDiscountPercent,
+  hasFlockDiscount,
+} from "@/lib/pricing/flockPricing";
 import { toast } from "sonner";
 
 interface SwapVehicle {
@@ -28,6 +33,8 @@ interface SwapPrimaryVehicleDialogProps {
   familyVehicles: SwapVehicle[];
   basePriceMonthly: number;
   billingCycle: string;
+  /** Drives the discount wording. Commercial plans have none to lose. */
+  plan?: FlockPlanLike | null;
 }
 
 function vehicleLabel(v: SwapVehicle) {
@@ -44,9 +51,12 @@ export function SwapPrimaryVehicleDialog({
   familyVehicles,
   basePriceMonthly,
   billingCycle,
+  plan,
 }: SwapPrimaryVehicleDialogProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const isDiscounted = hasFlockDiscount(plan);
+  const discountPercent = flockDiscountPercent(plan);
 
   async function handleConfirm() {
     if (!selectedId) return;
@@ -80,13 +90,24 @@ export function SwapPrimaryVehicleDialog({
     <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Unsubscribe Primary Vehicle</DialogTitle>
+          <DialogTitle>Unsubscribe primary vehicle</DialogTitle>
           <DialogDescription>
-            Unsubscribing <strong>{vehicleLabel(currentPrimary)}</strong> requires
-            choosing a new primary vehicle, since you still have family vehicles
-            on your plan. The vehicle you choose will move to the full plan rate
-            of ${basePriceMonthly.toFixed(2)}/{billingCycle} and lose its 35%
-            family discount.
+            Unsubscribing <strong>{vehicleLabel(currentPrimary)}</strong>{" "}
+            requires choosing a new primary vehicle, since you still have other
+            vehicles on your plan.{" "}
+            {isDiscounted ? (
+              <>
+                The vehicle you choose moves to the full plan rate of $
+                {basePriceMonthly.toFixed(2)}/{billingCycle} and loses its{" "}
+                {discountPercent}% family discount.
+              </>
+            ) : (
+              <>
+                Every vehicle on this plan already bills at $
+                {basePriceMonthly.toFixed(2)}/{billingCycle}, so your total will
+                not change.
+              </>
+            )}
           </DialogDescription>
         </DialogHeader>
 

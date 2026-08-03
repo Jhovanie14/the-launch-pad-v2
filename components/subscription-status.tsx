@@ -22,6 +22,13 @@ import { AddVehicleModal } from "./add-vehicle-modal";
 import { RemoveVehicleDialog } from "./remove-vehicle-dialog";
 import { SwapPrimaryVehicleDialog } from "./subscription/SwapPrimaryVehicleDialog";
 import MultiVehicleBenefitsDialog from "./subscription/MultiVehicleBenefitsDialog";
+import {
+  MAX_VEHICLES_PER_SUBSCRIPTION,
+  flockDiscountPercent,
+  flockVehiclePrice,
+  flockVehicleSavings,
+  hasFlockDiscount,
+} from "@/lib/pricing/flockPricing";
 import { toast } from "sonner";
 
 interface SubscriptionStatusProps {
@@ -70,24 +77,34 @@ export default function SubscriptionStatus({
         totalSavings: 0,
         vehiclePricing: [],
         isFlock: false,
+        hasDiscount: false,
+        discountPercent: 0,
       };
     }
 
+    const plan = subscription.subscription_plans;
     const basePrice =
       subscription.billing_cycle === "month"
-        ? Number(subscription.subscription_plans.monthly_price ?? 0)
-        : Number(subscription.subscription_plans.yearly_price ?? 0);
+        ? Number(plan.monthly_price ?? 0)
+        : Number(plan.yearly_price ?? 0);
+
+    // Commercial plans bill every vehicle at the plan rate — no family discount.
+    const planHasDiscount = hasFlockDiscount(plan);
 
     const vehicles = subscription.vehicles || [];
     const vehiclePricing = vehicles.map((vehicle, index) => {
       const isFirstVehicle = index === 0;
-      const price = isFirstVehicle ? basePrice : basePrice * 0.65;
-      const discount = isFirstVehicle ? 0 : basePrice * 0.35;
+      const price = isFirstVehicle
+        ? basePrice
+        : flockVehiclePrice(basePrice, plan);
+      const discount = isFirstVehicle
+        ? 0
+        : flockVehicleSavings(basePrice, plan);
       return {
         vehicle,
         price,
         discount,
-        isDiscounted: !isFirstVehicle,
+        isDiscounted: !isFirstVehicle && planHasDiscount,
         displayName: `${vehicle.license_plate}`,
       };
     });
@@ -107,6 +124,8 @@ export default function SubscriptionStatus({
       totalSavings,
       vehiclePricing,
       isFlock: vehicles.length > 1,
+      hasDiscount: planHasDiscount,
+      discountPercent: flockDiscountPercent(plan),
     };
   }, [subscription]);
 
@@ -292,22 +311,27 @@ export default function SubscriptionStatus({
               {(() => {
                 const primary = pricing.vehiclePricing[0];
                 return (
-                  <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-100 rounded-lg">
-                    <div className="flex items-center gap-3 flex-1">
-                      <Car className="w-5 h-5 text-blue-600" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">
+                  <div className="flex items-center justify-between gap-3 p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <Car
+                        className="w-5 h-5 shrink-0 text-blue-600"
+                        aria-hidden="true"
+                      />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-blue-950 truncate">
                           {primary.displayName}
                         </p>
-                        <p className="text-xs text-blue-600 font-medium mt-0.5">
+                        <p className="text-xs text-blue-700 font-medium mt-0.5">
                           Primary vehicle
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <p className="text-sm font-semibold text-gray-900">
+                    <div className="flex items-center gap-2 shrink-0">
+                      <p className="text-sm font-semibold text-blue-950 tabular-nums">
                         ${pricing.basePrice.toFixed(2)}
-                        <span className="text-xs text-gray-500 ml-1">/{subscription.billing_cycle}</span>
+                        <span className="text-xs font-normal text-blue-700 ml-1">
+                          /{subscription.billing_cycle}
+                        </span>
                       </p>
                       <button
                         onClick={() =>
@@ -315,10 +339,12 @@ export default function SubscriptionStatus({
                             ? setShowSwapPrimary(true)
                             : setShowUnsubscribeAll(true)
                         }
-                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                        title="Unsubscribe this vehicle"
+                        className="p-1.5 rounded text-blue-700/70 transition-colors hover:text-red-600 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1 focus-visible:ring-offset-blue-50"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4" aria-hidden="true" />
+                        <span className="sr-only">
+                          Unsubscribe {primary.displayName}
+                        </span>
                       </button>
                     </div>
                   </div>
@@ -326,61 +352,104 @@ export default function SubscriptionStatus({
               })()}
             </div>
 
-            {/* Flock Vehicles */}
+            {/* Additional vehicles */}
             {pricing.isFlock && (
               <div>
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between gap-3 mb-2">
                   <div className="flex items-center gap-1.5">
                     <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
-                      Family Vehicles
+                      Additional Vehicles
                     </h4>
                     <button
                       onClick={() => setShowBenefitsInfo(true)}
-                      className="text-gray-400 hover:text-blue-600 transition-colors"
-                      title="Family vehicle benefits"
+                      className="text-gray-500 hover:text-blue-700 transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
                     >
-                      <Info className="w-3.5 h-3.5" />
+                      <Info className="w-3.5 h-3.5" aria-hidden="true" />
+                      <span className="sr-only">Multi-vehicle benefits</span>
                     </button>
                   </div>
-                  <span className="text-xs text-green-600 font-medium">
-                    ✨ 35% Family Discount Every Month
-                  </span>
+                  {pricing.hasDiscount ? (
+                    <span className="text-xs text-green-700 font-medium">
+                      {pricing.discountPercent}% family discount every{" "}
+                      {subscription.billing_cycle}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-gray-500 font-medium">
+                      Billed at the full plan rate
+                    </span>
+                  )}
                 </div>
                 <div className="space-y-2">
                   {pricing.vehiclePricing.slice(1).map((item, index) => (
                     <div
                       key={item.vehicle.id || index}
-                      className="flex items-center justify-between p-3 bg-green-50 border border-green-100 rounded-lg"
+                      className={`flex items-center justify-between gap-3 p-3 rounded-lg border ${
+                        item.isDiscounted
+                          ? "bg-green-50 border-green-100"
+                          : "bg-muted/40 border-border"
+                      }`}
                     >
-                      <div className="flex items-center gap-3 flex-1">
-                        <Car className="w-5 h-5 text-green-600" />
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <Car
+                          className={`w-5 h-5 shrink-0 ${
+                            item.isDiscounted
+                              ? "text-green-600"
+                              : "text-muted-foreground"
+                          }`}
+                          aria-hidden="true"
+                        />
+                        <div className="min-w-0">
+                          <p
+                            className={`text-sm font-medium truncate ${
+                              item.isDiscounted ? "text-green-950" : ""
+                            }`}
+                          >
                             {item.displayName}
                           </p>
-                          <span className="text-xs text-green-600 font-medium">
-                            35% off every month
-                          </span>
+                          {item.isDiscounted && (
+                            <span className="text-xs text-green-700 font-medium">
+                              {pricing.discountPercent}% off every{" "}
+                              {subscription.billing_cycle}
+                            </span>
+                          )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 shrink-0">
                         <div className="text-right">
-                          <p className="text-xs text-gray-400 line-through">
-                            ${pricing.basePrice.toFixed(2)}
-                          </p>
-                          <p className="text-sm font-semibold text-gray-900">
+                          {item.isDiscounted && (
+                            <p className="text-xs text-green-700/70 line-through tabular-nums">
+                              ${pricing.basePrice.toFixed(2)}
+                            </p>
+                          )}
+                          <p
+                            className={`text-sm font-semibold tabular-nums ${
+                              item.isDiscounted ? "text-green-950" : ""
+                            }`}
+                          >
                             ${item.price.toFixed(2)}
-                            <span className="text-xs text-gray-500 ml-1">
+                            <span
+                              className={`text-xs font-normal ml-1 ${
+                                item.isDiscounted
+                                  ? "text-green-700"
+                                  : "text-muted-foreground"
+                              }`}
+                            >
                               /{subscription.billing_cycle}
                             </span>
                           </p>
                         </div>
                         <button
                           onClick={() => setVehicleToRemove(item.vehicle as any)}
-                          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                          title="Unsubscribe this vehicle"
+                          className={`p-1.5 rounded transition-colors hover:text-red-600 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1 ${
+                            item.isDiscounted
+                              ? "text-green-700/70 focus-visible:ring-offset-green-50"
+                              : "text-muted-foreground"
+                          }`}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-4 h-4" aria-hidden="true" />
+                          <span className="sr-only">
+                            Unsubscribe {item.displayName}
+                          </span>
                         </button>
                       </div>
                     </div>
@@ -499,21 +568,30 @@ export default function SubscriptionStatus({
           </div>
         </div>
 
-        {/* Add Family Vehicle */}
+        {/* Add another vehicle */}
         {subscription.status === "active" &&
-          (pricing.vehiclePricing.length < 5) && (
+          pricing.vehiclePricing.length < MAX_VEHICLES_PER_SUBSCRIPTION && (
             <div className="pt-1">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowAddVehicle(true)}
-                className="w-full border-dashed border-green-400 text-green-700 hover:bg-green-50 hover:text-green-800"
+                className={
+                  pricing.hasDiscount
+                    ? "w-full border-dashed border-green-400 text-green-700 hover:bg-green-50 hover:text-green-800"
+                    : "w-full border-dashed"
+                }
               >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Family Vehicle
-                <Badge variant="secondary" className="ml-2 text-xs bg-green-100 text-green-700">
-                  35% off
-                </Badge>
+                <Plus className="w-4 h-4 mr-2" aria-hidden="true" />
+                Add a vehicle
+                {pricing.hasDiscount && (
+                  <Badge
+                    variant="secondary"
+                    className="ml-2 text-xs bg-green-100 text-green-700"
+                  >
+                    {pricing.discountPercent}% off
+                  </Badge>
+                )}
               </Button>
             </div>
           )}
@@ -555,6 +633,7 @@ export default function SubscriptionStatus({
         currentPeriodStart={subscription.current_period_start}
         currentPeriodEnd={subscription.current_period_end}
         currentTotalPrice={pricing.totalPrice}
+        plan={subscription.subscription_plans}
       />
 
       {/* Remove Vehicle Dialog */}
@@ -564,7 +643,10 @@ export default function SubscriptionStatus({
           onClose={() => setVehicleToRemove(null)}
           onSuccess={() => onVehicleChange?.()}
           vehicle={vehicleToRemove}
-          discountedPrice={pricing.basePrice * 0.65}
+          discountedPrice={flockVehiclePrice(
+            pricing.basePrice,
+            subscription.subscription_plans
+          )}
           billingCycle={subscription.billing_cycle}
         />
       )}
@@ -579,6 +661,7 @@ export default function SubscriptionStatus({
           familyVehicles={pricing.vehiclePricing.slice(1).map((p) => p.vehicle as any)}
           basePriceMonthly={pricing.basePrice}
           billingCycle={subscription.billing_cycle}
+          plan={subscription.subscription_plans}
         />
       )}
 
@@ -586,6 +669,7 @@ export default function SubscriptionStatus({
       <MultiVehicleBenefitsDialog
         isOpen={showBenefitsInfo}
         onClose={() => setShowBenefitsInfo(false)}
+        familyDiscountPercent={pricing.discountPercent}
       />
 
       {/* Unsubscribe Everything Dialog */}
