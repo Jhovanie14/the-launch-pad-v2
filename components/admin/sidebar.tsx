@@ -21,6 +21,8 @@ import {
   RadioTower,
   UserRound,
   MessageSquare,
+  ShoppingBasket,
+  Package,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/auth-context";
@@ -41,6 +43,8 @@ const navigation = [
   { name: "Subscriptions", href: "/admin/subscriptions", icon: CreditCard },
   { name: "Services", href: "/admin/services", icon: Car },
   { name: "Add-ons", href: "/admin/addons", icon: Truck },
+  { name: "Products", href: "/admin/products", icon: ShoppingBasket },
+  { name: "Orders", href: "/admin/orders", icon: Package },
   { name: "Promo codes", href: "/admin/promo", icon: HandHelping },
   { name: "QR payment/Tip", href: "/admin/qr", icon: QrCode },
   { name: "Blog", href: "/admin/blog", icon: Notebook },
