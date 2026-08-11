@@ -44,5 +44,5 @@ export function useSelfServiceSubscription() {
     }
   }
 
-  return { subscription, loading, error };
+  return { subscription, loading, error, reload: loadSubscription };
 }

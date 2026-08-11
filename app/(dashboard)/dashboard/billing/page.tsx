@@ -13,7 +13,8 @@ import { CreditCard, Settings, AlertCircle } from "lucide-react";
 
 export default function BillingPage() {
   const { subscription, loading, error, refetch } = useSubscription();
-  const { subscription: selfSubs } = useSelfServiceSubscription();
+  const { subscription: selfSubs, reload: reloadSelfSubs } =
+    useSelfServiceSubscription();
 
   if (loading) {
     return (
@@ -72,7 +73,10 @@ export default function BillingPage() {
           <h2 className="text-xl font-semibold text-gray-900">
             Self-Service Subscription
           </h2>
-          <SelfServiceSubscriptionStatus subscription={selfSubs} />
+          <SelfServiceSubscriptionStatus
+            subscription={selfSubs}
+            onSubscriptionChange={reloadSelfSubs}
+          />
         </div>
       )}
 

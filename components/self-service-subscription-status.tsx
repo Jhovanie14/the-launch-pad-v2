@@ -1,15 +1,30 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "./ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "./ui/alert-dialog";
 import { SelfServiceSubscription } from "@/types";
 
 interface SelfServiceSubscriptionStatusProps {
   subscription: SelfServiceSubscription | null;
+  onSubscriptionChange?: () => void;
 }
 
 export default function SelfServiceSubscriptionStatus({
   subscription,
+  onSubscriptionChange,
 }: SelfServiceSubscriptionStatusProps) {
   const [loading, setLoading] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   const handleUpdatePayment = async () => {
     setLoading(true);
@@ -29,6 +44,30 @@ export default function SelfServiceSubscriptionStatus({
       alert("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    setCancelling(true);
+    try {
+      const res = await fetch("/api/cancel-self-service-subscription", {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error ?? "Failed to cancel subscription");
+      }
+      toast.success(
+        "Your subscription will be canceled at the end of the billing period.",
+      );
+      setCancelOpen(false);
+      onSubscriptionChange?.();
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Something went wrong. Please try again.",
+      );
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -195,6 +234,49 @@ export default function SelfServiceSubscriptionStatus({
             {loading ? "Redirecting..." : "Update Payment Method"}
           </Button>
         </div>
+
+        {subscription.cancel_at_period_end ? (
+          <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            Cancellation scheduled — your access ends{" "}
+            {formatDate(subscription.current_period_end)}.
+          </div>
+        ) : (
+          subscription.status === "active" && (
+            <div className="mt-4">
+              <Button variant="destructive" onClick={() => setCancelOpen(true)}>
+                Cancel Subscription
+              </Button>
+            </div>
+          )
+        )}
+
+        <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                Cancel your self-service subscription?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                You&apos;ll keep access until{" "}
+                {formatDate(subscription.current_period_end)}, then your
+                subscription ends. No further charges.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-red-600 hover:bg-red-700"
+                disabled={cancelling}
+                onClick={(e) => {
+                  e.preventDefault(); // keep the dialog open while in flight
+                  handleCancelSubscription();
+                }}
+              >
+                {cancelling ? "Cancelling…" : "Yes, Cancel Subscription"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
