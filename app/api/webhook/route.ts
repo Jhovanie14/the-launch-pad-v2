@@ -10,6 +10,11 @@ import {
   processProductOrderCompleted,
   processProductOrderExpired,
 } from "@/lib/products/processProductOrder";
+import {
+  applySubscriptionDeleted,
+  applySubscriptionUpdate,
+  wasCancelJustScheduled,
+} from "@/lib/subscriptions/syncStripeSubscription";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
@@ -960,59 +965,32 @@ async function handleSubscriptionUpdated(event: Stripe.Event) {
     ? new Date(cpe * 1000).toISOString()
     : null;
 
-  const { data: existingSub } = await supabase
-    .from("user_subscription")
-    .select("subscription_plan_id, billing_cycle")
-    .eq("stripe_subscription_id", subscription.id)
-    .single();
-
-  const priceId = subscriptionItem?.price?.id ?? null;
   const cancelAtPeriodEnd = Boolean(subscription.cancel_at_period_end);
-  const planId =
-    subscription.metadata?.plan_id ?? existingSub?.subscription_plan_id ?? null;
-  const billingCycleRaw = subscription.metadata?.billing_cycle || null;
-  const billingCycle =
-    billingCycleRaw === "monthly"
-      ? "month"
-      : billingCycleRaw === "yearly"
-        ? "year"
-        : (existingSub?.billing_cycle ?? null);
 
-  // 1️⃣ Update user_subscription (no vehicle_id)
-  const { data: subscriptionRow, error: subError } = await supabase
-    .from("user_subscription")
-    .update({
-      status: subscription.status,
-      current_period_start: currentPeriodStartIso,
-      current_period_end: currentPeriodEndIso,
-      cancel_at_period_end: cancelAtPeriodEnd,
-      price_id: priceId,
-      billing_cycle: billingCycle,
-      subscription_plan_id: planId,
-    })
-    .eq("stripe_subscription_id", subscription.id)
-    .select()
-    .single();
+  // Express first, self-service fall-through (see lib/subscriptions).
+  const result = await applySubscriptionUpdate(supabase, {
+    stripeSubscriptionId: subscription.id,
+    status: subscription.status,
+    currentPeriodStartIso,
+    currentPeriodEndIso,
+    cancelAtPeriodEnd,
+    priceId: subscriptionItem?.price?.id ?? null,
+    metadataPlanId: subscription.metadata?.plan_id ?? null,
+    metadataBillingCycle: subscription.metadata?.billing_cycle || null,
+  });
 
-  if (subError) {
-    console.error("Error updating subscription:", subError);
-    return;
-  }
+  if (!result.table) return;
 
-  // Send retention email when cancel_at_period_end is newly set to true
+  // Send retention email when cancel_at_period_end is newly set to true.
   // Stripe's PreviousAttributes is typed as an empty interface; cast to a
   // record so we can safely read the dynamic field we know may be present.
   const prevAttrs = (event.data.previous_attributes ?? {}) as Record<string, unknown>;
-  const cancelJustScheduled =
-    "cancel_at_period_end" in prevAttrs &&
-    prevAttrs.cancel_at_period_end === false &&
-    cancelAtPeriodEnd === true;
 
-  if (cancelJustScheduled && subscriptionRow?.user_id) {
+  if (wasCancelJustScheduled(prevAttrs, cancelAtPeriodEnd) && result.userId) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("email, full_name")
-      .eq("id", subscriptionRow.user_id)
+      .eq("id", result.userId)
       .maybeSingle();
 
     if (profile?.email && currentPeriodEndIso) {
@@ -1029,13 +1007,13 @@ async function handleSubscriptionUpdated(event: Stripe.Event) {
     }
   }
 
-  // 2️⃣ Update subscription_vehicles if vehicle_id exists
+  // Update subscription_vehicles if vehicle_id exists — express-only concern.
   const vehicleId = subscription.metadata?.vehicle_id ?? null;
-  if (vehicleId && subscriptionRow?.id) {
+  if (result.table === "user_subscription" && vehicleId && result.rowId) {
     const { data: existingLink } = await supabase
       .from("subscription_vehicles")
       .select("id, vehicle_id")
-      .eq("subscription_id", subscriptionRow.id)
+      .eq("subscription_id", result.rowId)
       .maybeSingle();
 
     if (existingLink) {
@@ -1043,13 +1021,13 @@ async function handleSubscriptionUpdated(event: Stripe.Event) {
       await supabase
         .from("subscription_vehicles")
         .update({ vehicle_id: vehicleId })
-        .eq("subscription_id", subscriptionRow.id);
+        .eq("subscription_id", result.rowId);
     } else {
       // Insert new link. This handler only runs for single-vehicle
       // subscriptions (vehicle_id comes from subscription metadata, not a
       // multi-vehicle array), so a freshly-inserted link is always primary.
       await supabase.from("subscription_vehicles").insert({
-        subscription_id: subscriptionRow.id,
+        subscription_id: result.rowId,
         vehicle_id: vehicleId,
         is_primary: true,
       });
@@ -1062,24 +1040,13 @@ async function handleSubscriptionDeleted(event: Stripe.Event) {
 
   console.log("Subscription deleted:", subscription.id);
 
-  const { data: sub, error } = await supabase
-    .from("user_subscription")
-    .update({ status: "canceled", cancel_at_period_end: false })
-    .eq("stripe_subscription_id", subscription.id)
-    .select("user_id")
-    .maybeSingle();
-
-  if (error) {
-    console.error("Error canceling subscription:", error);
-    return;
-  }
-
-  if (!sub?.user_id) return;
+  const result = await applySubscriptionDeleted(supabase, subscription.id);
+  if (!result.userId) return;
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("email, full_name")
-    .eq("id", sub.user_id)
+    .eq("id", result.userId)
     .maybeSingle();
 
   if (!profile?.email) return;
