@@ -49,10 +49,11 @@ Site copy expresses this as "Three Amazing Services, One Location."
 - Stripe checkout for bookings, subscriptions, self-service plans, and walk-ins; customer portal, payment-method updates, subscription upgrades, and cancellation.
 - Vehicle management on a subscription: add, update, remove/unsubscribe, and swap the primary vehicle.
 - Self-service check-in and usage logging.
+- Product store: browse car-care products, cart checkout via Stripe, choose pickup at the store or local delivery (flat fee), track order status in the dashboard.
 - Reviews, FAQ, blog, contact and help forms.
 
 **Admin capabilities**
-- Bookings (including walk-in), users, subscriptions, services, add-ons, promo codes, QR codes, broadcast email, blog posts, contact triage, settings.
+- Bookings (including walk-in), users, subscriptions, services, add-ons, products catalog, product-order fulfillment (pickup/delivery, refunds, delivery-fee setting), promo codes, QR codes, broadcast email, blog posts, contact triage, settings.
 - Fleet inquiries, fleet contracts, fleet invoices, and fleet payment management.
 - Revenue breakdown reporting; Excel and PDF export.
 
@@ -75,7 +76,7 @@ Site copy expresses this as "Three Amazing Services, One Location."
 - *Fleet* — the B2B program, distinct from a customer with several personal vehicles.
 
 **Open / undecided**
-- Whether the `/products` retail storefront is a real merchandise line is **not confirmed**. Treat it as unverified: leave existing code alone, but do not add navigation, promotion, or proof that presents it as a live store until it is confirmed.
+- Nothing currently.
 
 ## Brand Commitments
 
@@ -95,7 +96,6 @@ Site copy expresses this as "Three Amazing Services, One Location."
 
 **Unverified — do not build new proof on these:**
 - The "4.9/5 from 500+ Reviews" badge on the homepage and About page is **not confirmed**. Existing instances stay as-is, but do not repeat, amplify, or design new social-proof moments around that number until it is verified against a real source.
-- The `/products` storefront (see Capabilities).
 
 **Must never be fabricated:** testimonials, customer names, review counts, ratings, wash volumes, revenue figures, awards, certifications, or partner logos. If a proof element is needed and no real evidence exists, ask before inventing one.
 
