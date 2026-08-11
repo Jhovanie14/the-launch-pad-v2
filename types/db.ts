@@ -23,3 +23,8 @@ export type SelfServicePlanRow = Tables["self_service_plans"]["Row"];
 export type ProfileRow = Tables["profiles"]["Row"];
 export type PromoCodeRow = Tables["promo_codes"]["Row"];
 export type ReviewRow = Tables["reviews"]["Row"];
+
+export type ProductRow = Tables["products"]["Row"];
+export type ProductOrderRow = Tables["product_orders"]["Row"];
+export type ProductOrderItemRow = Tables["product_order_items"]["Row"];
+export type StoreSettingsRow = Tables["store_settings"]["Row"];
