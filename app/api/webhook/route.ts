@@ -5,6 +5,11 @@ import {
   sendSubscriptionCancelledEmail,
   sendSubscriptionInvoiceEmail,
 } from "@/lib/email/subscription-emails";
+import { sendProductOrderConfirmationEmail } from "@/lib/email/product-order-emails";
+import {
+  processProductOrderCompleted,
+  processProductOrderExpired,
+} from "@/lib/products/processProductOrder";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
@@ -73,6 +78,14 @@ export async function POST(req: Request) {
         await handleCheckoutSessionCompleted(event);
         break;
 
+      // Product store: abandoned checkouts release their pending order.
+      case "checkout.session.expired":
+        await processProductOrderExpired(
+          supabase,
+          event.data.object as Stripe.Checkout.Session
+        );
+        break;
+
       case "customer.subscription.updated":
         await handleSubscriptionUpdated(event);
         break;
@@ -109,6 +122,13 @@ export async function POST(req: Request) {
 async function handleCheckoutSessionCompleted(event: Stripe.Event) {
   const session = event.data.object as Stripe.Checkout.Session;
 
+  // Product store orders return early — the mode === "payment" fallthrough
+  // below would otherwise misroute them into processBooking.
+  if (session.metadata?.payment_type === "product_order") {
+    await processProductOrder(session);
+    return;
+  }
+
   if (session.metadata?.payment_type === "walkin_booking") {
     await processWalkInBooking(session);
     return;
@@ -131,6 +151,41 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event) {
     } else {
       await processSubscription(session);
     }
+  }
+}
+
+// Product store: flip pending -> paid, decrement stock, email the customer.
+// Errors are swallowed like the sibling handlers so a failed side effect
+// doesn't release the idempotency claim and re-run money logic.
+async function processProductOrder(session: Stripe.Checkout.Session) {
+  try {
+    const result = await processProductOrderCompleted(supabase, session);
+    if (!result) return;
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("email, full_name")
+      .eq("id", result.order.user_id)
+      .maybeSingle();
+    if (!profile?.email) return;
+
+    await sendProductOrderConfirmationEmail({
+      to: profile.email,
+      name: profile.full_name ?? "there",
+      orderId: result.order.id,
+      items: result.items.map((i) => ({
+        name: i.name,
+        quantity: i.quantity,
+        unit_price: i.unit_price,
+      })),
+      subtotal: result.order.subtotal,
+      deliveryFee: result.order.delivery_fee,
+      total: result.order.total,
+      fulfillmentMethod: result.order.fulfillment_method as "pickup" | "delivery",
+    });
+    console.log("Product order confirmation email sent");
+  } catch (error) {
+    console.error("Error processing product order:", error);
   }
 }
 
