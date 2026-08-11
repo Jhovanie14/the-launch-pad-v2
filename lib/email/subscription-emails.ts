@@ -13,8 +13,8 @@ const resend = new Resend(process.env.RESEND_API_KEY);
  */
 const FAMILY_DISCOUNT_PERCENT = Math.round(FLOCK_DISCOUNT_RATE * 100);
 
-const FROM = "The Launch Pad Wash <noreply@thelaunchpadwash.com>";
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.thelaunchpadwash.com";
+export const FROM = "The Launch Pad Wash <noreply@thelaunchpadwash.com>";
+export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.thelaunchpadwash.com";
 
 // Shared base styles reused across all three emails
 const BASE_STYLES = `
@@ -36,7 +36,12 @@ const BASE_STYLES = `
   @media(max-width:600px){ .body{padding:24px 20px;} .header{padding:32px 20px;} }
 `;
 
-function emailWrapper(headerBg: string, headerContent: string, bodyContent: string): string {
+export function emailWrapper(
+  headerBg: string,
+  headerContent: string,
+  bodyContent: string,
+  footerNote = "This is an automated notification about your subscription.",
+): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -53,7 +58,7 @@ function emailWrapper(headerBg: string, headerContent: string, bodyContent: stri
         <tr>
           <td class="footer">
             <p style="margin:0;">The Launch Pad Wash &nbsp;·&nbsp; <a href="${SITE_URL}">thelaunchpadwash.com</a></p>
-            <p style="margin:6px 0 0;">This is an automated notification about your subscription.</p>
+            <p style="margin:6px 0 0;">${footerNote}</p>
           </td>
         </tr>
       </table>
