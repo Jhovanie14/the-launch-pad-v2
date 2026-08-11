@@ -34,8 +34,11 @@ import {
   X,
   ShowerHead,
   Car,
+  ShoppingBasket,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { useBooking } from "@/context/bookingContext";
+import { useProductCart } from "@/context/product-cart-context";
 // import { ThemeToggle } from "../theme-toggle";
 
 const services: {
@@ -105,6 +108,7 @@ function ListItem({
 
 export function UserNavbar() {
   const { openBookingModal } = useBooking();
+  const { count: cartCount } = useProductCart();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isAboutDropdownOpen, setIsAboutDropdownOpen] = useState(false);
@@ -180,12 +184,12 @@ export function UserNavbar() {
                   </NavigationMenuItem>
                 </NavigationMenuList>
               </NavigationMenu>
-              {/* <Link
+              <Link
                 href="/products"
-                className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
+                className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-lg font-medium text-accent-foreground hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
               >
                 Products
-              </Link> */}
+              </Link>
               <Link
                 href="/pricing"
                 className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-lg font-medium text-accent-foreground hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
@@ -214,6 +218,16 @@ export function UserNavbar() {
             >
               Book Online
             </Button>
+            {cartCount > 0 && (
+              <Link href="/products/cart" aria-label={`Cart, ${cartCount} items`}>
+                <Button size="sm" variant="ghost" className="relative">
+                  <ShoppingBasket className="w-5 h-5" />
+                  <Badge className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-900 px-1 text-xs text-white">
+                    {cartCount}
+                  </Badge>
+                </Button>
+              </Link>
+            )}
             <Link href="/login">
               <Button
                 size="sm"
@@ -309,6 +323,15 @@ export function UserNavbar() {
               >
                 <Car className="w-4 h-4" />
                 <span>Services</span>
+              </Link>
+
+              <Link
+                href="/products"
+                className="flex items-center space-x-2 text-lg font-medium hover:text-gray-700 dark:hover:text-gray-100"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <ShoppingBasket className="w-4 h-4" />
+                <span>Products</span>
               </Link>
 
               {/* --- ABOUT DROPDOWN --- */}
