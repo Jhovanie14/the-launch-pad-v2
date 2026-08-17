@@ -26,6 +26,7 @@ import {
   hasFlockDiscount,
 } from "@/lib/pricing/flockPricing";
 import SubscriptionCancelInfo from "@/components/user/subscription-cancel-info";
+import HoursChangeDialog from "@/components/hours-change-dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 
@@ -33,7 +34,7 @@ export default function DashboardPage() {
   const { user, userProfile, isLoading } = useAuth();
   const { openBookingModal } = useBooking();
   const { stats, recentBookings } = useBookingStats();
-  const { subscription } = useSubscription();
+  const { subscription, loading: subscriptionLoading } = useSubscription();
   const { subscription: selfServiceSubscription } =
     useSelfServiceSubscription();
 
@@ -158,6 +159,12 @@ export default function DashboardPage() {
 
   return (
     <main className="py-6">
+      {/* Mounted only once the plan is known, so the "Manage my plan" button
+          doesn't pop into an already-open dialog. Keyed to the express
+          detailing plan — self-service bays are 24/7 and unaffected. */}
+      {!subscriptionLoading && (
+        <HoursChangeDialog surface="dashboard" showPlanAction={!!subscription} />
+      )}
       <div className="space-y-6">
         {/* Header */}
         <div className="space-y-4">

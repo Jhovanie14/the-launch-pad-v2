@@ -20,6 +20,7 @@ import {
 import Image from "next/image";
 import { useState } from "react";
 import ServiceModal from "@/components/user/service-modal";
+import HoursChangeDialog from "@/components/hours-change-dialog";
 
 const reasons = [
   {
@@ -143,6 +144,9 @@ export default function Home() {
   >(null);
   return (
     <main className="flex-1">
+      {/* Informational only — middleware redirects signed-in users away from
+          "/", so this surface can never know whether a visitor holds a plan. */}
+      <HoursChangeDialog surface="landing" />
       {/* Full-bleed: the hero owns the whole viewport width so the photograph
           reads as a scene, not as an inset panel. */}
       <Hero />
