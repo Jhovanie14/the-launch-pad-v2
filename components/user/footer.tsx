@@ -235,9 +235,11 @@ export function Footer() {
               {/* <p className="text-white font-semibold text-sm mb-1">
                 $10 Handwash Special
               </p> */}
+              {/* Carries "starting September 18" so the line is accurate both
+                  before and after the change takes effect. */}
               <p className="text-xs text-gray-400">
-                “Our team members are available 7 days a week from 10:00 AM to
-                6:30 PM.”
+                Detailing: Thursday – Sunday, 9:30 AM – 6:30 PM (starting
+                September 18). Self-service bays open 24/7.
               </p>
               {/* <p className="text-xs text-gray-400">Sedans, Suvs, Trucks</p> */}
             </div>

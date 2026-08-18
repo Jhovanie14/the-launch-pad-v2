@@ -1,4 +1,28 @@
 export const faqData = [
+  // Detailing Hours leads the array on purpose: category order on the page is
+  // the order categories first appear here (see components/faq-section.tsx),
+  // and the printed QR code points at bare /faq with no anchor to scroll to.
+  {
+    id: "hours-1",
+    category: "Detailing Hours",
+    question: "What are the new detailing hours and days?",
+    answer:
+      "Starting September 18, our detailing services run Thursday through Sunday, 9:30 AM to 6:30 PM. Detailing is not available Monday through Wednesday. Our self-service wash bays are unaffected and stay open 24/7, so you can still wash your vehicle any day, at any hour. Detailing takes roughly 45 minutes to an hour, so please allow enough time before closing.",
+  },
+  {
+    id: "hours-2",
+    category: "Detailing Hours",
+    question: "Why did the detailing hours change?",
+    answer:
+      "Two reasons, and we want to be straightforward about both.\n\nOur team. Detailing is hands-on work, and running it seven days a week left our detailers without a real day off. Concentrating detailing into Thursday through Sunday gives them consecutive days to rest and recover, and that shows up directly in the quality of the work on your vehicle.\n\nRising costs. Supplies, water, utilities, and labor have all climbed steadily, and staffing a full detailing crew on our slowest days — Monday through Wednesday — cost more than those days brought in. Rather than raise prices or switch to cheaper products, we chose to focus detailing on the days our customers actually use it most.\n\nYour membership price stays exactly the same, and our self-service bays remain open 24/7. Thank you for understanding — this change is what lets us keep detailing quality high without passing higher costs on to you.",
+  },
+  {
+    id: "hours-3",
+    category: "Detailing Hours",
+    question: "I'm on a monthly plan. Does this change my price or my membership?",
+    answer:
+      "No. Your plan and pricing stay exactly the same — this affects only the days and times detailing is available. Self-service bay access is still 24/7, every day. If the new schedule no longer works for you, you can cancel anytime from your dashboard under Billing.",
+  },
   {
     id: "account-1",
     category: "Account & Login",
@@ -110,7 +134,7 @@ export const faqData = [
     category: "Payment & Policies",
     question: "What's your cancellation and refund policy?",
     answer:
-      "For individual services, cancellations made 2+ hours in advance receive full refunds. Membership cancellations require 30 days notice and can be processed through our app or by visiting our location. No refunds on partial months for memberships.",
+      "For individual services, cancellations made 2+ hours in advance receive full refunds. Memberships can be cancelled anytime — there is no contract and no notice period. You can cancel yourself from your dashboard under Billing, or by visiting our location. Your membership stays active through the end of the billing period you've already paid for, and partial months are not refunded.",
   },
   {
     id: "eco-1",

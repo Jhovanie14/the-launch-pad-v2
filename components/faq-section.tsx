@@ -32,7 +32,9 @@ export function FAQSection() {
                       {faqData.question}
                     </span>
                   </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground pb-4">
+                  {/* pre-line so answers can use blank lines as paragraph
+                      breaks; single-line answers render unchanged. */}
+                  <AccordionContent className="text-muted-foreground pb-4 whitespace-pre-line">
                     {faqData.answer}
                   </AccordionContent>
                 </AccordionItem>
