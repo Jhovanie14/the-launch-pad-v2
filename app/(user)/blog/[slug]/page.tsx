@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { OG_IMAGE, openGraph, twitter } from "@/lib/seo/openGraph";
 import { blogService } from "@/lib/services/blogService";
 import { createClient } from "@/utils/supabase/client";
 import Image from "next/image";
@@ -27,11 +28,15 @@ export async function generateMetadata({
       description: summary || undefined,
       alternates: { canonical: `/blog/${slug}` },
       openGraph: {
+        ...openGraph({
+          title: post.title,
+          description: summary,
+          path: `/blog/${slug}`,
+        }),
         type: "article",
-        title: post.title,
-        description: summary || undefined,
-        images: post.cover_image ? [post.cover_image] : undefined,
+        images: post.cover_image ? [post.cover_image] : [OG_IMAGE],
       },
+      twitter: twitter({ title: post.title, description: summary }),
     };
   } catch {
     // A missing post must not inherit the homepage's description and get

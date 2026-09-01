@@ -1,11 +1,17 @@
 import type { Metadata } from "next";
+import { openGraph, twitter } from "@/lib/seo/openGraph";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
+const TITLE = "About Us";
+const DESCRIPTION =
+  "Founded in 2024, The Launch Pad brings self-service wash bays, express detailing and rotating food trucks together at one Houston location on S Main St.";
+
 export const metadata: Metadata = {
-  title: "About Us",
-  description:
-    "Founded in 2024, The Launch Pad brings self-service wash bays, express detailing and rotating food trucks together at one Houston location on S Main St.",
+  title: TITLE,
+  description: DESCRIPTION,
   alternates: { canonical: "/about" },
+  openGraph: openGraph({ title: TITLE, description: DESCRIPTION, path: "/about" }),
+  twitter: twitter({ title: TITLE, description: DESCRIPTION }),
 };
 import {
   Car,

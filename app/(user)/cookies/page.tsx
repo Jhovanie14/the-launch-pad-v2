@@ -1,10 +1,16 @@
 import type { Metadata } from "next";
+import { openGraph, twitter } from "@/lib/seo/openGraph";
+
+const TITLE = "Cookie Policy";
+const DESCRIPTION =
+  "How The Launch Pad uses cookies and similar technologies on thelaunchpadwash.com, and how to manage your preferences.";
 
 export const metadata: Metadata = {
-  title: "Cookie Policy",
-  description:
-    "How The Launch Pad uses cookies and similar technologies on thelaunchpadwash.com, and how to manage your preferences.",
+  title: TITLE,
+  description: DESCRIPTION,
   alternates: { canonical: "/cookies" },
+  openGraph: openGraph({ title: TITLE, description: DESCRIPTION, path: "/cookies" }),
+  twitter: twitter({ title: TITLE, description: DESCRIPTION }),
 };
 
 export default function CookiePolicyPage() {
