@@ -57,5 +57,20 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "yearly",
       priority: 0.4,
     },
+
+    // Remaining indexable pages. These carry their own descriptions and
+    // canonicals, so they belong in the sitemap too.
+    ...["/how-it-works", "/about", "/reviews", "/products"].map((path) => ({
+      url: `${baseUrl}${path}`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.5,
+    })),
+    ...["/terms", "/privacy", "/cookies"].map((path) => ({
+      url: `${baseUrl}${path}`,
+      lastModified: new Date(),
+      changeFrequency: "yearly" as const,
+      priority: 0.2,
+    })),
   ];
 }
