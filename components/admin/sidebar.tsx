@@ -32,6 +32,9 @@ import LoadingDots from "../loading";
 
 interface AdminSidebarProps {
   user?: AuthUser;
+  /** Drawer state lives in AdminShell, so the header opener can drive it. */
+  open: boolean;
+  onClose: () => void;
 }
 
 const navigation = [
@@ -53,9 +56,8 @@ const navigation = [
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
-export function AdminSidebar({ user }: AdminSidebarProps) {
+export function AdminSidebar({ user, open, onClose }: AdminSidebarProps) {
   const pathname = usePathname();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { signOut } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [unreadCount, setUnreadCount] = useState<number>(0);
@@ -132,16 +134,17 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
     <>
       {isLoggingOut && <LoadingDots />}
       {/* Overlay for small screens */}
-      {sidebarOpen && (
+      {open && (
         <div
           className="fixed inset-0 z-40 bg-black/40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
+          onClick={onClose}
         />
       )}
 
       <div
+        id="admin-sidebar"
         className={`fixed inset-y-0 left-0 z-50 w-64 bg-sidebar border-r border-sidebar-border transform transition-transform duration-300 ease-in-out
-          ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
+          ${open ? "translate-x-0" : "-translate-x-full"}
           lg:translate-x-0 lg:static lg:inset-0 flex flex-col`}
       >
         {/* Sidebar Header */}
@@ -166,12 +169,18 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
             </div>
           </Link>
 
+          {/* Sits in the drawer header, in normal flow. This used to be
+              `fixed` at the same coordinates as the opener, and only escaped
+              stacking on top of it because the sidebar's transform quietly
+              made itself the containing block for fixed descendants. */}
           <Button
             variant="ghost"
-            className="fixed top-4 right-4 z-50 lg:hidden"
-            onClick={() => setSidebarOpen(false)}
+            size="icon"
+            aria-label="Close navigation"
+            className="shrink-0 lg:hidden"
+            onClick={onClose}
           >
-            <X className="h-8 w-8" />
+            <X className="h-6 w-6" />
           </Button>
         </div>
 
@@ -183,7 +192,7 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
               <Link
                 key={item.name}
                 href={item.href}
-                onClick={() => setSidebarOpen(false)}
+                onClick={onClose}
                 className={`group flex items-center rounded-md px-2 py-2 text-sm font-medium transition-colors
                   ${
                     isActive
@@ -237,17 +246,6 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
             </Button>
           </div>
         )}
-      </div>
-
-      {/* Mobile Hamburger Button */}
-      <div className="fixed top-4 right-4 z-50 lg:hidden">
-        <Button
-          variant="outline"
-          className="w-12 h-12 border-black"
-          onClick={() => setSidebarOpen(true)}
-        >
-          <Home className="w-14 h-14 text-black" />
-        </Button>
       </div>
     </>
   );

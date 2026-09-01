@@ -1,5 +1,5 @@
 import { getUserProfile } from "@/auth/actions";
-import { AdminSidebar } from "@/components/admin/sidebar";
+import { AdminShell } from "@/components/admin/admin-shell";
 import { PaymentNotification } from "@/components/payment-notification";
 import { Toaster } from "sonner";
 
@@ -11,11 +11,10 @@ export default async function AdminLayout({
   const profile = await getUserProfile();
 
   return (
-    <div className="flex h-screen bg-background">
-      <AdminSidebar user={profile} />
+    <AdminShell user={profile}>
       {children}
       <Toaster richColors position="top-right" />
       <PaymentNotification />
-    </div>
+    </AdminShell>
   );
 }

@@ -42,7 +42,7 @@ export default function BlogManagement() {
   }
 
   return (
-    <main className="flex-1 overflow-y-auto mt-16 lg:mt-0 p-6">
+    <main className="flex-1 overflow-y-auto p-6">
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-3xl font-bold">Blog Management</h1>

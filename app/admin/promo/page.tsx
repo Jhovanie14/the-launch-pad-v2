@@ -108,7 +108,7 @@ export default function AdminPromos() {
   if (loading) return <LoadingDots />;
 
   return (
-    <div className="p-8 max-w-6xl mx-auto mt-16 lg:mt-0 space-y-6">
+    <div className="p-8 max-w-6xl mx-auto space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>Add New Promo Code</CardTitle>
