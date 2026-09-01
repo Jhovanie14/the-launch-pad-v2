@@ -15,6 +15,11 @@ import {
 } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { useBooking } from "@/context/bookingContext";
+import {
+  BAY_MINIMUM_CARD,
+  BAY_MINIMUM_CASH,
+  usd,
+} from "@/lib/pricing/selfServiceRates";
 
 const cards = [
   {
@@ -28,8 +33,8 @@ const cards = [
       "Spot-free rinse & foam brush",
       "Vacuum stations",
     ],
-    price: "~$10",
-    priceSub: "avg. spend",
+    price: `from ${usd(BAY_MINIMUM_CASH)}`,
+    priceSub: `coins · ${usd(BAY_MINIMUM_CARD)} tap-to-pay`,
     cta: "View Bays",
     href: "/self-service",
     accent: "text-sky-300",
@@ -57,7 +62,9 @@ const cards = [
   {
     icon: Calendar,
     eyebrow: "Best Value",
-    label: "Memberships",
+    // "Memberships" alone read as *the* membership price, which collides with
+    // the separate $19.99/mo Self-Service Bay membership sold on /self-service.
+    label: "Unlimited Wash Plans",
     desc: "Unlimited washes, priority booking and exclusive member perks.",
     perks: [
       "Unlimited express washes",
@@ -65,7 +72,9 @@ const cards = [
       "15% off all detailing",
       "Cancel anytime",
     ],
-    price: "$39.99",
+    // Entry tier. Basic is $39.99, Deluxe $59.99 - quoting the bare number
+    // presented the cheapest tier as the only one.
+    price: "from $39.99",
     priceSub: "per month",
     cta: "See Plans",
     href: "/pricing",
