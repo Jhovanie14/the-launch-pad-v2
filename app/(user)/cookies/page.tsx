@@ -1,3 +1,12 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Cookie Policy",
+  description:
+    "How The Launch Pad uses cookies and similar technologies on thelaunchpadwash.com, and how to manage your preferences.",
+  alternates: { canonical: "/cookies" },
+};
+
 export default function CookiePolicyPage() {
   return (
     <main className="flex-1 container mx-auto px-4 py-8">

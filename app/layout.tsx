@@ -43,9 +43,9 @@ export const metadata: Metadata = {
   creator: "The Launch Pad",
   publisher: "The Launch Pad",
   metadataBase: new URL("https://www.thelaunchpadwash.com"),
-  alternates: {
-    canonical: "/",
-  },
+  // No canonical here on purpose. Metadata is inherited, so a root canonical
+  // makes every page in the site declare itself a duplicate of the homepage
+  // and asks Google not to index it. Each route sets its own instead.
   openGraph: {
     title: "The Launch Pad | Car Wash & Express Detailing in Houston, TX",
     description:

@@ -1,6 +1,44 @@
+import type { Metadata } from "next";
 import { blogService } from "@/lib/services/blogService";
 import { createClient } from "@/utils/supabase/client";
 import Image from "next/image";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  try {
+    const supabase = createClient();
+    const post = await blogService.getPostBySlug(supabase, slug);
+    if (!post) throw new Error("not found");
+
+    // Fall back to the body when a post has no excerpt, stripped of markup and
+    // trimmed to roughly what a search result will show.
+    const summary = (post.excerpt || post.content || "")
+      .replace(/<[^>]*>/g, " ")
+      .replace(/s+/g, " ")
+      .trim()
+      .slice(0, 155);
+
+    return {
+      title: post.title,
+      description: summary || undefined,
+      alternates: { canonical: `/blog/${slug}` },
+      openGraph: {
+        type: "article",
+        title: post.title,
+        description: summary || undefined,
+        images: post.cover_image ? [post.cover_image] : undefined,
+      },
+    };
+  } catch {
+    // A missing post must not inherit the homepage's description and get
+    // indexed as a duplicate.
+    return { title: "Post not found", robots: { index: false, follow: false } };
+  }
+}
 
 export default async function BlogPostPage({
   params,
