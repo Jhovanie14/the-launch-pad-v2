@@ -12,9 +12,14 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
+import {
+  TurnstileField,
+  captchaEnabled,
+  type TurnstileFieldHandle,
+} from "@/components/auth/turnstile-field";
 import { useSearchParams } from "next/navigation";
 import LoadingDots from "@/components/loading";
 
@@ -30,6 +35,8 @@ function LoginFormContent() {
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "";
   const { signIn } = useAuth();
+  const captcha = useRef<TurnstileFieldHandle>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -43,6 +50,8 @@ function LoginFormContent() {
 
     if (result?.errors || result?.message) {
       setErrors(result.errors || { message: result.message });
+      // Single-use token: reissue one so the next attempt can succeed.
+      captcha.current?.reset();
       setIsLoggingIn(false);
     }
   };
@@ -125,10 +134,12 @@ function LoginFormContent() {
                     </div>
                   )}
                 </div>
+                <TurnstileField ref={captcha} onToken={setCaptchaToken} />
+
                 <Button
                   type="submit"
                   className="w-full bg-blue-900 hover:bg-blue-800"
-                  disabled={isLoggingIn}
+                  disabled={isLoggingIn || (captchaEnabled && !captchaToken)}
                 >
                   Sign In
                 </Button>

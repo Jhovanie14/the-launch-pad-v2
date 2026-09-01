@@ -1,11 +1,18 @@
 "use client";
 
 import { useAuth } from "@/context/auth-context";
+import {
+  TurnstileField,
+  captchaEnabled,
+  type TurnstileFieldHandle,
+} from "@/components/auth/turnstile-field";
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 export default function ForgotPasswordPage() {
   const { forgotPassword } = useAuth();
+  const captcha = useRef<TurnstileFieldHandle>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [message, setMessage] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
@@ -22,6 +29,9 @@ export default function ForgotPasswordPage() {
     const form = e.currentTarget;
 
     const result = await forgotPassword(formData);
+
+    // Single-use token: reissue one so the next attempt can succeed.
+    if (!result?.success) captcha.current?.reset();
 
     setIsLoading(false);
 
@@ -108,9 +118,11 @@ export default function ForgotPasswordPage() {
               )}
             </div>
 
+            <TurnstileField ref={captcha} onToken={setCaptchaToken} />
+
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || (captchaEnabled && !captchaToken)}
               className="w-full bg-blue-900 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isLoading ? (

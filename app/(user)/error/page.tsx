@@ -1,13 +1,19 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useState, Suspense } from "react";
+import { useRef, useState, Suspense } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertCircle, CheckCircle2, Mail } from "lucide-react";
 import Link from "next/link";
+import {
+  TurnstileField,
+  captchaEnabled,
+  type TurnstileFieldHandle,
+} from "@/components/auth/turnstile-field";
+import { authErrorMessage } from "@/lib/auth/authErrorMessage";
 
 function ErrorContent() {
   const searchParams = useSearchParams();
@@ -28,6 +34,8 @@ function ErrorContent() {
     "idle" | "loading" | "sent" | "error"
   >("idle");
   const [resendError, setResendError] = useState("");
+  const captcha = useRef<TurnstileFieldHandle>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const handleResend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,12 +49,16 @@ function ErrorContent() {
       email,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/confirm?next=/dashboard`,
+        captchaToken: captchaToken ?? undefined,
       },
     });
 
     if (error) {
-      setResendError(error.message);
+      console.error("[auth] resend confirmation failed:", error);
+      setResendError(authErrorMessage(error, "resend"));
       setResendStatus("error");
+      // Single-use token: reissue one so the next attempt can succeed.
+      captcha.current?.reset();
     } else {
       setResendStatus("sent");
     }
@@ -103,7 +115,10 @@ function ErrorContent() {
                     />
                     <Button
                       type="submit"
-                      disabled={resendStatus === "loading"}
+                      disabled={
+                        resendStatus === "loading" ||
+                        (captchaEnabled && !captchaToken)
+                      }
                       className="bg-blue-900 hover:bg-blue-800 shrink-0"
                     >
                       {resendStatus === "loading" ? (
@@ -116,6 +131,13 @@ function ErrorContent() {
                       )}
                     </Button>
                   </div>
+
+                  <TurnstileField
+                    ref={captcha}
+                    onToken={setCaptchaToken}
+                    className="pt-1"
+                  />
+
                   {resendStatus === "error" && (
                     <p className="text-sm text-red-600">{resendError}</p>
                   )}

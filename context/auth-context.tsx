@@ -14,6 +14,8 @@ import {
   useRef,
 } from "react";
 import { z } from "zod";
+import { authErrorMessage } from "@/lib/auth/authErrorMessage";
+import { captchaTokenFrom } from "@/components/auth/turnstile-field";
 
 const signInSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -137,12 +139,12 @@ export function AuthContextProvider({
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
+      options: { captchaToken: captchaTokenFrom(formData) },
     });
 
     if (error) {
-      return {
-        message: "Invalid credentials",
-      };
+      console.error("[auth] sign-in failed:", error);
+      return { message: authErrorMessage(error, "signin") };
     }
     const next = (formData.get("next") as string) || "";
     if (next) {
@@ -202,20 +204,19 @@ export function AuthContextProvider({
     )}`;
 
     // If no existing user, proceed with signup
-    const { data, error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: emailRedirectTo,
+        captchaToken: captchaTokenFrom(formData),
         data: { full_name: fullName, terms_version: "v1.0" },
       },
     });
 
-    // console.log("Redirect URL:", `${siteUrl}/auth/confirm`);
-
     if (error) {
-      console.error("Signup error:", error);
-      return { message: error.message };
+      console.error("[auth] sign-up failed:", error);
+      return { message: authErrorMessage(error, "signup") };
     }
 
     return {
@@ -258,17 +259,14 @@ export function AuthContextProvider({
         ? window.location.origin
         : process.env.NEXT_PUBLIC_SITE_URL;
 
-    console.log("🌐 Current origin:", window.location.origin);
-    console.log("📍 Site URL being used:", siteUrl);
-    console.log("🔗 Full redirect URL:", `${siteUrl}/auth/reset-callback`);
-
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${siteUrl}/auth/reset-callback`,
+      captchaToken: captchaTokenFrom(formData),
     });
 
     if (error) {
-      console.error("Password reset error:", error);
-      return { message: error.message };
+      console.error("[auth] password reset failed:", error);
+      return { message: authErrorMessage(error, "reset") };
     }
 
     // Always return success message to prevent email enumeration

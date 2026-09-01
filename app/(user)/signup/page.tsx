@@ -10,9 +10,14 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
+import {
+  TurnstileField,
+  captchaEnabled,
+  type TurnstileFieldHandle,
+} from "@/components/auth/turnstile-field";
 
 export default function SignUpPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -26,6 +31,8 @@ export default function SignUpPage() {
   const [isSuccess, setIsSuccess] = useState(false);
 
   const { signUp } = useAuth();
+  const captcha = useRef<TurnstileFieldHandle>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -39,6 +46,11 @@ export default function SignUpPage() {
 
     
     const result = await signUp(formData);
+
+    // Turnstile tokens are single-use: without a reset, the retry after any
+    // failure here would come back as captcha_failed regardless of the fix.
+    if (!result?.success) captcha.current?.reset();
+
     if (result?.errors) {
       setErrors(result.errors);
     } else if (result?.message) {
@@ -180,10 +192,12 @@ export default function SignUpPage() {
                 </label>
               </div>
 
+              <TurnstileField ref={captcha} onToken={setCaptchaToken} />
+
               <Button
                 type="submit"
                 className="w-full bg-blue-900 hover:bg-blue-800"
-                disabled={isLoading}
+                disabled={isLoading || (captchaEnabled && !captchaToken)}
               >
                 {isLoading ? "Creating an account..." : "Create Account"}
               </Button>
