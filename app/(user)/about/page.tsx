@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export const metadata: Metadata = {
-  title: "About The Launch Pad",
+  title: "About Us",
   description:
     "Founded in 2024, The Launch Pad brings self-service wash bays, express detailing and rotating food trucks together at one Houston location on S Main St.",
   alternates: { canonical: "/about" },
