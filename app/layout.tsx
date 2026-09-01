@@ -2,6 +2,7 @@
 // 1. ROOT LAYOUT (app/layout.tsx)
 // ============================================
 import type { Metadata } from "next";
+import { OG_IMAGE } from "@/lib/seo/openGraph";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
@@ -52,14 +53,7 @@ export const metadata: Metadata = {
       "24/7 self-service car wash bays, professional express detailing, and monthly memberships. Visit us at 10410 S Main St, Houston. Book online today!",
     url: "https://www.thelaunchpadwash.com",
     siteName: "The Launch Pad",
-    images: [
-      {
-        url: "/thelaunchpad.png",
-        width: 1200,
-        height: 630,
-        alt: "The Launch Pad Car Wash and Detailing - Houston TX",
-      },
-    ],
+    images: [OG_IMAGE],
     locale: "en_US",
     type: "website",
   },
@@ -68,7 +62,7 @@ export const metadata: Metadata = {
     title: "The Launch Pad | Car Wash & Express Detailing in Houston, TX",
     description:
       "24/7 self-service car wash bays, professional express detailing, and monthly memberships at 10410 S Main St, Houston.",
-    images: ["/thelaunchpad.png"],
+    images: [OG_IMAGE.url],
   },
   robots: {
     index: true,
