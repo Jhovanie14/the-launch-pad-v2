@@ -2,6 +2,11 @@
 
 import { createClient } from "@/utils/supabase/client";
 import {
+  BAY_MINIMUM_CARD,
+  BAY_MINIMUM_CASH,
+  usd,
+} from "@/lib/pricing/selfServiceRates";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -203,7 +208,9 @@ export default function ServicePage() {
         "Vacuum stations available",
       ],
       time: "8-10 mins",
-      price: "Average customer spend $10",
+      price: `From ${usd(BAY_MINIMUM_CASH)} coins / ${usd(
+        BAY_MINIMUM_CARD
+      )} tap-to-pay`,
       color: "bg-blue-50 border-blue-200",
     },
     {

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Clock, DollarSign, Sparkles, X } from "lucide-react";
+import { CheckCircle, Clock, DollarSign, Info, Sparkles, X } from "lucide-react";
 import { motion } from "motion/react";
 import { pageRise, pageStagger } from "@/lib/motion";
 import { useRouter } from "next/navigation";
@@ -12,6 +12,14 @@ import { useSelfService } from "@/hooks/useSelfService";
 import LoadingDots from "@/components/loading";
 import { useState } from "react";
 import AuthPromptModal from "@/components/user/authPromptModal";
+import {
+  BAY_AVERAGE_SPEND,
+  BAY_CARD_HOLD,
+  BAY_CARD_HOLD_RELEASE,
+  BAY_MINIMUM_CARD,
+  BAY_MINIMUM_CASH,
+  usd,
+} from "@/lib/pricing/selfServiceRates";
 
 export default function SelfServicePage() {
   const router = useRouter();
@@ -62,8 +70,8 @@ export default function SelfServicePage() {
               variants={pageRise}
               className="mt-5 text-lg text-slate-600 md:text-xl"
             >
-              DIY car wash — pay-per-use $10 per visit, or get daily access for
-              just $19.99/month
+              DIY car wash — from {usd(BAY_MINIMUM_CASH)} a visit with coins, or
+              unlimited daily access for just $19.99/month
             </motion.p>
             <motion.p
               variants={pageRise}
@@ -108,27 +116,39 @@ export default function SelfServicePage() {
               >
                 <div className="text-center mb-4">
                   <h3 className="text-2xl font-bold text-slate-900 mb-2">
-                    Average customer spend
+                    Pay-per-use
                   </h3>
-                  <div className="text-4xl font-bold text-slate-900">$10</div>
-                  <p className="text-slate-600 text-sm">per visit</p>
+                  <div className="text-4xl font-bold text-slate-900">
+                    from {usd(BAY_MINIMUM_CASH)}
+                  </div>
+                  <p className="text-slate-600 text-sm">
+                    with coins &middot; {usd(BAY_MINIMUM_CARD)} with tap-to-pay
+                  </p>
                 </div>
                 <ul className="flex-1 space-y-3">
                   <li className="flex items-start gap-2">
                     <CheckCircle className="w-5 h-5 text-gray-600 mt-0.5 shrink-0" />
                     <span className="text-slate-700">
-                      Access to self-service equipment
+                      {usd(BAY_MINIMUM_CASH)} minimum with quarters or dollar
+                      coins &mdash; the machine takes both
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-5 h-5 text-gray-600 mt-0.5 shrink-0" />
+                    <span className="text-slate-700">
+                      {usd(BAY_MINIMUM_CARD)} minimum with tap-to-pay
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-5 h-5 text-gray-600 mt-0.5 shrink-0" />
+                    <span className="text-slate-700">
+                      Most customers spend about {usd(BAY_AVERAGE_SPEND)} a
+                      visit &mdash; you pay only for the time you use
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle className="w-5 h-5 text-gray-600 mt-0.5 shrink-0" />
                     <span className="text-slate-700">No commitment needed</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-5 h-5 text-gray-600 mt-0.5 shrink-0" />
-                    <span className="text-slate-700">
-                      Pay only when you use
-                    </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <X className="w-5 h-5 text-red-400 mt-0.5 shrink-0" />
@@ -141,14 +161,33 @@ export default function SelfServicePage() {
                     </span>
                   </li>
                 </ul>
-                <div className="mt-6 p-4 bg-red-50 rounded-lg border border-red-200">
+                <div className="mt-6 flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 p-4">
+                  <Info
+                    className="mt-0.5 h-5 w-5 shrink-0 text-amber-600"
+                    aria-hidden="true"
+                  />
+                  <p className="text-sm leading-relaxed text-slate-800">
+                    <strong className="text-amber-800">
+                      Paying by card? Your bank places a temporary{" "}
+                      {usd(BAY_CARD_HOLD)} hold.
+                    </strong>{" "}
+                    Whatever you don&apos;t spend is released in{" "}
+                    {BAY_CARD_HOLD_RELEASE}. It is an authorization from your
+                    bank, not a charge from us, and we can&apos;t release it any
+                    sooner. Paying with coins avoids the hold entirely.
+                  </p>
+                </div>
+
+                <div className="mt-4 p-4 bg-red-50 rounded-lg border border-red-200">
                   <p className="text-sm text-slate-800">
                     <strong className="text-red-600">
-                      Monthly cost if used 4x: $40.00
+                      4 visits a month at the {usd(BAY_AVERAGE_SPEND)} average:
+                      about {usd(BAY_AVERAGE_SPEND * 4)}
                     </strong>
                     <br />
                     <span className="text-red-600 text-xs font-semibold">
-                      That's $20.01 MORE than membership!
+                      Roughly {usd(BAY_AVERAGE_SPEND * 4 - 20)} more than the
+                      membership
                     </span>
                   </p>
                 </div>
