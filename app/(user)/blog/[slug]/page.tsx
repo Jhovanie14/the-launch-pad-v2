@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { OG_IMAGE, openGraph, twitter } from "@/lib/seo/openGraph";
 import { blogService } from "@/lib/services/blogService";
 import { createClient } from "@/utils/supabase/client";
+import { notFound } from "next/navigation";
 import Image from "next/image";
 
 export async function generateMetadata({
@@ -10,39 +11,38 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  try {
-    const supabase = createClient();
-    const post = await blogService.getPostBySlug(supabase, slug);
-    if (!post) throw new Error("not found");
+  const supabase = createClient();
+  const post = await blogService.getPostBySlug(supabase, slug);
 
-    // Fall back to the body when a post has no excerpt, stripped of markup and
-    // trimmed to roughly what a search result will show.
-    const summary = (post.excerpt || post.content || "")
-      .replace(/<[^>]*>/g, " ")
-      .replace(/s+/g, " ")
-      .trim()
-      .slice(0, 155);
-
-    return {
-      title: post.title,
-      description: summary || undefined,
-      alternates: { canonical: `/blog/${slug}` },
-      openGraph: {
-        ...openGraph({
-          title: post.title,
-          description: summary,
-          path: `/blog/${slug}`,
-        }),
-        type: "article",
-        images: post.cover_image ? [post.cover_image] : [OG_IMAGE],
-      },
-      twitter: twitter({ title: post.title, description: summary }),
-    };
-  } catch {
-    // A missing post must not inherit the homepage's description and get
-    // indexed as a duplicate.
+  if (!post) {
+    // Must not inherit the homepage's description and get indexed as a
+    // duplicate of it.
     return { title: "Post not found", robots: { index: false, follow: false } };
   }
+
+  // Fall back to the body when a post has no excerpt, stripped of markup and
+  // trimmed to roughly what a search result will show.
+  const summary = (post.excerpt || post.content || "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 155);
+
+  return {
+    title: post.title,
+    description: summary || undefined,
+    alternates: { canonical: `/blog/${slug}` },
+    openGraph: {
+      ...openGraph({
+        title: post.title,
+        description: summary,
+        path: `/blog/${slug}`,
+      }),
+      type: "article",
+      images: post.cover_image ? [post.cover_image] : [OG_IMAGE],
+    },
+    twitter: twitter({ title: post.title, description: summary }),
+  };
 }
 
 export default async function BlogPostPage({
@@ -54,14 +54,16 @@ export default async function BlogPostPage({
   const supabase = createClient();
   const post = await blogService.getPostBySlug(supabase, slug);
 
+  // Renders the branded 404 with a real 404 status, instead of throwing a 500.
+  if (!post) notFound();
+
   return (
     <main className="flex-1 container mx-auto px-4 py-8">
       <div className="max-w-7xl mx-auto">
         <div className="py-20">
           <div className="container mx-auto px-4 mb-12">
             <div className="max-w-4xl mx-auto">
-              {post ? (
-                <article>
+              <article>
                   <h1 className="text-4xl font-bold mb-4 text-blue-900">
                     {post.title}
                   </h1>
@@ -83,10 +85,7 @@ export default async function BlogPostPage({
                   <div className="prose prose-lg max-w-none">
                     <p className="whitespace-pre-line">{post.content}</p>
                   </div>
-                </article>
-              ) : (
-                <p>Loading...</p>
-              )}
+              </article>
             </div>
           </div>
           <div className="bg-gray-100 py-10">

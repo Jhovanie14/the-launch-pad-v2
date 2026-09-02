@@ -16,7 +16,10 @@ export const blogService = {
       .from("blog_posts")
       .select("*")
       .eq("slug", slug)
-      .single();
+      // maybeSingle, not single: a slug that matches nothing is an ordinary
+      // 404 for the caller to handle, not an exception. Real failures still
+      // populate `error` and still throw.
+      .maybeSingle();
 
     if (error) throw error;
     return data || null;
