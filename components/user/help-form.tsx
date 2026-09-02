@@ -2,16 +2,23 @@
 
 import type React from "react";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import {
+  TurnstileField,
+  captchaEnabled,
+  type TurnstileFieldHandle,
+} from "@/components/auth/turnstile-field";
 
 export function HelpForm() {
   const [concern, setConcern] = useState("");
   const [loading, setLoading] = useState(false);
+  const captcha = useRef<TurnstileFieldHandle>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -28,8 +35,6 @@ export function HelpForm() {
         body: JSON.stringify(data),
       });
 
-      console.log(data);
-
       if (res.ok) {
         toast.success(
           "Your message has been sent! We’ll get back to you soon."
@@ -44,6 +49,9 @@ export function HelpForm() {
       console.error("Error submitting form:", err);
       toast.error("Something went wrong while sending your message.");
     } finally {
+      // Single-use token: reissue one either way, since form.reset() clears
+      // the hidden input on success too.
+      captcha.current?.reset();
       setLoading(false);
     }
   };
@@ -158,10 +166,29 @@ export function HelpForm() {
           </p>
         </div>
 
+        {/* Hidden from people, tempting to naive bots. Deliberately not
+            type="hidden" - it has to look like a field worth filling. Anything
+            that fills it gets a 200 and no database row. */}
+        <div
+          aria-hidden="true"
+          className="absolute left-[-9999px] h-0 w-0 overflow-hidden"
+        >
+          <label htmlFor="company">Company</label>
+          <input
+            type="text"
+            id="company"
+            name="company"
+            tabIndex={-1}
+            autoComplete="off"
+          />
+        </div>
+
+        <TurnstileField ref={captcha} onToken={setCaptchaToken} />
+
         {/* Submit */}
         <Button
           type="submit"
-          disabled={loading}
+          disabled={loading || (captchaEnabled && !captchaToken)}
           className="w-full bg-blue-900 hover:bg-blue-900/90 text-primary-foreground font-semibold"
         >
           {loading ? "Submitting..." : "Submit Support Request"}
