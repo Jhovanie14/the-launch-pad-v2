@@ -1,5 +1,13 @@
+import type { Metadata } from "next";
 import { ArrowLeft, MapPin, Phone } from "lucide-react";
 import Link from "next/link";
+
+// Without this the tab reads "The Launch Pad | Car Wash & Express Detailing in
+// Houston, TX" on a page that is telling the visitor it found nothing.
+export const metadata: Metadata = {
+  title: "Page not found",
+  robots: { index: false, follow: false },
+};
 
 export default function NotFound() {
   return (
