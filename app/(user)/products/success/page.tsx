@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { orderStatusLabel } from "@/lib/products/orderStatus";
 import ClearCart from "./clear-cart";
+import TrackPurchase from "./track-purchase";
 
 interface ProductSuccessPageProps {
   searchParams: Promise<{ session_id?: string }>;
@@ -61,6 +62,13 @@ export default async function ProductSuccessPage({
   return (
     <main className="container mx-auto flex-1 px-4 py-16">
       <ClearCart />
+      {order && (
+        <TrackPurchase
+          orderId={order.id}
+          total={order.total}
+          items={items ?? []}
+        />
+      )}
       <div className="mx-auto max-w-xl space-y-6 text-center">
         <CheckCircle className="mx-auto h-16 w-16 text-green-600" />
         <h1 className="text-3xl font-bold">Thanks for your order!</h1>
@@ -117,7 +125,7 @@ export default async function ProductSuccessPage({
 
         <div className="flex justify-center gap-3">
           <Link href="/dashboard/orders">
-            <Button className="bg-blue-900 hover:bg-blue-800">
+            <Button>
               View my orders
             </Button>
           </Link>

@@ -4,6 +4,21 @@ import { round2, unitPrice, type CartItem } from "./cart";
 
 export type FulfillmentMethod = "pickup" | "delivery";
 
+/**
+ * Fulfillment methods a NEW order may choose.
+ *
+ * Delivery is paused until a third-party courier is integrated. This list
+ * governs new checkouts only: the database still accepts 'delivery', and past
+ * delivery orders keep their fee, their address, and every render and webhook
+ * path they had before. Restoring delivery is this list plus the choice in the
+ * cart UI — the pricing and fulfillment code below never stopped supporting it.
+ */
+export const OFFERED_FULFILLMENT_METHODS: readonly FulfillmentMethod[] = ["pickup"];
+
+function isOffered(method: string): method is FulfillmentMethod {
+  return (OFFERED_FULFILLMENT_METHODS as readonly string[]).includes(method);
+}
+
 export interface PricedOrderItem {
   product_id: string;
   name: string;
@@ -31,8 +46,15 @@ export async function priceOrder(
   if (!Array.isArray(items) || items.length === 0) {
     throw new ApiError("Your cart is empty", 400);
   }
-  if (fulfillmentMethod !== "pickup" && fulfillmentMethod !== "delivery") {
-    throw new ApiError("Choose pickup or delivery", 400);
+  if (!isOffered(fulfillmentMethod)) {
+    // Delivery gets its own message: it is a method the customer may have seen
+    // offered before, not a malformed request.
+    throw new ApiError(
+      fulfillmentMethod === "delivery"
+        ? "Delivery is not available at the moment — please choose pickup"
+        : "Choose a fulfillment method",
+      400,
+    );
   }
   for (const item of items) {
     if (
@@ -75,15 +97,10 @@ export async function priceOrder(
     priced.reduce((sum, i) => sum + i.unit_price * i.quantity, 0),
   );
 
-  let deliveryFee = 0;
-  if (fulfillmentMethod === "delivery") {
-    const { data: settings } = await db
-      .from("store_settings")
-      .select("delivery_fee")
-      .eq("id", 1)
-      .maybeSingle();
-    deliveryFee = round2(settings?.delivery_fee ?? 0);
-  }
+  // Always zero while pickup is the only offered method. The field stays on
+  // PricedOrder because product_orders.delivery_fee is NOT NULL and past
+  // orders carry real values in it.
+  const deliveryFee = 0;
 
   return { items: priced, subtotal, deliveryFee, total: round2(subtotal + deliveryFee) };
 }

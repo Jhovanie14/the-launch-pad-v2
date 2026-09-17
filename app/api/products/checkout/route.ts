@@ -34,28 +34,18 @@ export async function POST(req: Request) {
       },
       quantity: i.quantity,
     }));
-    if (priced.deliveryFee > 0) {
-      line_items.push({
-        price_data: {
-          currency: "usd",
-          product_data: { name: "Delivery fee" },
-          unit_amount: Math.round(priced.deliveryFee * 100),
-        },
-        quantity: 1,
-      });
-    }
 
+    // No delivery fee line item and no shipping address collection: priceOrder
+    // only accepts pickup while delivery is paused, so both were unreachable.
+    // Restoring delivery means restoring them alongside
+    // OFFERED_FULFILLMENT_METHODS in lib/products/checkout.ts.
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
       line_items,
       customer_email: user.email ?? undefined,
-      // Staff call/text about pickup readiness and delivery runs.
+      // Staff call or text the customer when the order is ready to collect.
       phone_number_collection: { enabled: true },
-      // Stripe collects the delivery address so we build no address form.
-      ...(fulfillmentMethod === "delivery"
-        ? { shipping_address_collection: { allowed_countries: ["US" as const] } }
-        : {}),
       success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/products/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/products/cart`,
       metadata: {

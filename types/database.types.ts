@@ -553,40 +553,55 @@ export type Database = {
           category: string
           created_at: string
           description: string | null
+          gallery: Json
           id: string
           image_url: string | null
           is_active: boolean
+          is_featured: boolean
           name: string
           price: number
           sale_price: number | null
+          slug: string
+          sort_order: number
           stock: number
           updated_at: string
+          video_url: string | null
         }
         Insert: {
           category: string
           created_at?: string
           description?: string | null
+          gallery?: Json
           id?: string
           image_url?: string | null
           is_active?: boolean
+          is_featured?: boolean
           name: string
           price: number
           sale_price?: number | null
+          slug: string
+          sort_order?: number
           stock?: number
           updated_at?: string
+          video_url?: string | null
         }
         Update: {
           category?: string
           created_at?: string
           description?: string | null
+          gallery?: Json
           id?: string
           image_url?: string | null
           is_active?: boolean
+          is_featured?: boolean
           name?: string
           price?: number
           sale_price?: number | null
+          slug?: string
+          sort_order?: number
           stock?: number
           updated_at?: string
+          video_url?: string | null
         }
         Relationships: []
       }
@@ -1001,16 +1016,31 @@ export type Database = {
       store_settings: {
         Row: {
           delivery_fee: number
+          hero_cta_label: string | null
+          hero_headline: string | null
+          hero_poster_url: string | null
+          hero_subcopy: string | null
+          hero_video_url: string | null
           id: number
           updated_at: string
         }
         Insert: {
           delivery_fee?: number
+          hero_cta_label?: string | null
+          hero_headline?: string | null
+          hero_poster_url?: string | null
+          hero_subcopy?: string | null
+          hero_video_url?: string | null
           id?: number
           updated_at?: string
         }
         Update: {
           delivery_fee?: number
+          hero_cta_label?: string | null
+          hero_headline?: string | null
+          hero_poster_url?: string | null
+          hero_subcopy?: string | null
+          hero_video_url?: string | null
           id?: number
           updated_at?: string
         }

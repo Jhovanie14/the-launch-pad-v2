@@ -144,16 +144,19 @@ describe("priceOrder totals", () => {
     ]);
   });
 
-  it("adds the delivery fee from store_settings for delivery orders", async () => {
+  it("rejects delivery while it is not an offered method", async () => {
     const { db } = fakeDb({ deliveryFee: 7.5 });
-    const priced = await priceOrder(db, [{ productId: "p2", quantity: 1 }], "delivery");
-    expect(priced.deliveryFee).toBe(7.5);
-    expect(priced.total).toBe(47.49);
+    await expect(
+      priceOrder(db, [{ productId: "p2", quantity: 1 }], "delivery"),
+    ).rejects.toMatchObject({
+      status: 400,
+      message: expect.stringContaining("Delivery is not available"),
+    });
   });
 
-  it("treats a missing settings row as free delivery", async () => {
-    const { db } = fakeDb({ deliveryFee: null });
-    const priced = await priceOrder(db, [{ productId: "p2", quantity: 1 }], "delivery");
+  it("never charges a delivery fee, even with one configured", async () => {
+    const { db } = fakeDb({ deliveryFee: 7.5 });
+    const priced = await priceOrder(db, [{ productId: "p2", quantity: 1 }], "pickup");
     expect(priced.deliveryFee).toBe(0);
     expect(priced.total).toBe(39.99);
   });
@@ -163,25 +166,25 @@ describe("createPendingOrder", () => {
   const priced = {
     items: [{ product_id: "p1", name: "Tire Shine Pro", unit_price: 19.99, quantity: 2 }],
     subtotal: 39.98,
-    deliveryFee: 7.5,
-    total: 47.48,
+    deliveryFee: 0,
+    total: 39.98,
   };
 
   it("inserts the order row and item snapshots", async () => {
-    const { db, calls } = fakeDb({ orderId: "order-9", deliveryFee: 7.5 });
+    const { db, calls } = fakeDb({ orderId: "order-9" });
     const result = await createPendingOrder(db, {
       userId: "user-1",
-      fulfillmentMethod: "delivery",
+      fulfillmentMethod: "pickup",
       priced,
     });
     expect(result).toEqual({ orderId: "order-9" });
     expect(calls.orderInserts[0]).toMatchObject({
       user_id: "user-1",
       status: "pending",
-      fulfillment_method: "delivery",
+      fulfillment_method: "pickup",
       subtotal: 39.98,
-      delivery_fee: 7.5,
-      total: 47.48,
+      delivery_fee: 0,
+      total: 39.98,
     });
     expect(calls.itemInserts[0]).toEqual([
       {

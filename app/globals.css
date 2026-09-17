@@ -120,3 +120,57 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ============================================================
+   Storefront theme — scoped to the /products route
+   ============================================================
+   The rest of the site runs light. The product range is photographed on black
+   under gold rim light, and the packaging itself is black and gold, so the
+   storefront carries its own palette rather than forcing that photography onto
+   a white page.
+
+   This is a class, not a global override: only the products route opts in, and
+   nothing else on the site shifts. Gold replaces blue as the accent here
+   because it is the colour of the product a customer actually holds. */
+
+@theme inline {
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-gold-deep: var(--gold-deep);
+  --font-display: var(--font-anton);
+}
+
+:root {
+  --gold: oklch(0.8 0.132 86);
+  --gold-soft: oklch(0.89 0.1 90);
+  --gold-deep: oklch(0.62 0.115 78);
+}
+
+.storefront {
+  --background: oklch(0.13 0.004 260);
+  --foreground: oklch(0.97 0.004 90);
+  --card: oklch(0.17 0.005 260);
+  --card-foreground: oklch(0.97 0.004 90);
+  --popover: oklch(0.17 0.005 260);
+  --popover-foreground: oklch(0.97 0.004 90);
+  --primary: var(--gold);
+  --primary-foreground: oklch(0.16 0.012 80);
+  --secondary: oklch(0.24 0.006 260);
+  --secondary-foreground: oklch(0.97 0.004 90);
+  --muted: oklch(0.24 0.006 260);
+  --muted-foreground: oklch(0.74 0.008 90);
+  --accent: oklch(0.27 0.008 260);
+  --accent-foreground: oklch(0.97 0.004 90);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 16%);
+  --ring: var(--gold);
+}
+
+/* Headline face. Anton is a single-weight display cut: it earns its keep at
+   large sizes and should never be used for body copy or UI labels. */
+.font-display {
+  font-family: var(--font-anton), var(--font-geist-sans), sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}

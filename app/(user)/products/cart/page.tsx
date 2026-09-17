@@ -8,11 +8,12 @@ import { toast } from "sonner";
 import { useAuth } from "@/context/auth-context";
 import { useProductCart } from "@/context/product-cart-context";
 import { cartTotals, unitPrice } from "@/lib/products/cart";
+import { cartAnalyticsItems, ecommercePayload } from "@/lib/analytics/ecommerce";
+import { trackEvent } from "@/lib/analytics/gtag";
 import AuthPromptModal from "@/components/user/authPromptModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Loader2, Minus, Plus, ShoppingBasket, Trash2 } from "lucide-react";
+import { Loader2, MapPin, Minus, Plus, ShoppingBasket, Trash2 } from "lucide-react";
 import type { ProductRow } from "@/types/db";
 
 const STORE_ADDRESS = "10410 S Main St, Houston, TX 77025";
@@ -23,28 +24,18 @@ export default function ProductCartPage() {
   const { items, remove, setQty } = useProductCart();
 
   const [products, setProducts] = useState<ProductRow[]>([]);
-  const [deliveryFee, setDeliveryFee] = useState(0);
-  const [method, setMethod] = useState<"pickup" | "delivery">("pickup");
   const [loading, setLoading] = useState(true);
   const [checkingOut, setCheckingOut] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
 
-  // (Re)load the products in the cart + the delivery fee. Also called after a
-  // checkout error so stale stock/prices refresh.
+  // (Re)load the products in the cart. Also called after a checkout error so
+  // stale stock and prices refresh.
   const loadData = async () => {
     const ids = items.map((i) => i.productId);
-    const [productsRes, settingsRes] = await Promise.all([
-      ids.length
-        ? supabase.from("products").select("*").in("id", ids)
-        : Promise.resolve({ data: [] as ProductRow[], error: null }),
-      supabase
-        .from("store_settings")
-        .select("delivery_fee")
-        .eq("id", 1)
-        .maybeSingle(),
-    ]);
+    const productsRes = ids.length
+      ? await supabase.from("products").select("*").in("id", ids)
+      : { data: [] as ProductRow[], error: null };
     setProducts(productsRes.data ?? []);
-    setDeliveryFee(settingsRes.data?.delivery_fee ?? 0);
     setLoading(false);
   };
 
@@ -53,7 +44,10 @@ export default function ProductCartPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items.length]);
 
-  const totals = cartTotals(items, products, deliveryFee, method);
+  // Pickup is the only method offered while delivery waits on a third-party
+  // courier, so there is no fee and nothing to choose. cartTotals keeps its
+  // delivery arguments — the maths comes back untouched when delivery does.
+  const totals = cartTotals(items, products, 0, "pickup");
 
   const handleCheckout = async () => {
     if (!user) {
@@ -61,11 +55,15 @@ export default function ProductCartPage() {
       return;
     }
     setCheckingOut(true);
+    trackEvent(
+      "begin_checkout",
+      ecommercePayload(cartAnalyticsItems(items, products)),
+    );
     try {
       const res = await fetch("/api/products/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items, fulfillment_method: method }),
+        body: JSON.stringify({ items, fulfillment_method: "pickup" }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -85,7 +83,7 @@ export default function ProductCartPage() {
   if (loading) {
     return (
       <main className="flex flex-1 items-center justify-center py-32">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-900" />
+        <Loader2 className="h-8 w-8 animate-spin text-gold" />
       </main>
     );
   }
@@ -99,7 +97,7 @@ export default function ProductCartPage() {
           Browse our car care products and add something you like.
         </p>
         <Link href="/products">
-          <Button className="bg-blue-900 hover:bg-blue-800">Shop products</Button>
+          <Button>Shop products</Button>
         </Link>
       </main>
     );
@@ -108,7 +106,7 @@ export default function ProductCartPage() {
   return (
     <main className="container mx-auto flex-1 px-4 py-8">
       <div className="mx-auto max-w-4xl space-y-6 py-10">
-        <h1 className="text-3xl font-bold text-blue-900">Your cart</h1>
+        <h1 className="text-3xl font-bold text-foreground">Your cart</h1>
 
         {/* Line items */}
         <Card>
@@ -201,47 +199,23 @@ export default function ProductCartPage() {
           </CardContent>
         </Card>
 
-        {/* Fulfillment choice */}
+        {/* Fulfillment: pickup only, so this states the arrangement rather
+            than asking the customer to choose between one option. */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">How do you want to get it?</CardTitle>
+            <CardTitle className="text-base">Collection</CardTitle>
           </CardHeader>
           <CardContent>
-            <RadioGroup
-              value={method}
-              onValueChange={(v) => setMethod(v as "pickup" | "delivery")}
-              className="space-y-3"
-            >
-              <label
-                htmlFor="pickup"
-                className="flex cursor-pointer items-start gap-3 rounded-lg border p-4 has-data-[state=checked]:border-blue-900"
-              >
-                <RadioGroupItem value="pickup" id="pickup" className="mt-1" />
-                <div>
-                  <p className="font-medium">Pickup at the store — Free</p>
-                  <p className="text-sm text-muted-foreground">
-                    {STORE_ADDRESS}. We&apos;ll email you when your order is
-                    ready.
-                  </p>
-                </div>
-              </label>
-              <label
-                htmlFor="delivery"
-                className="flex cursor-pointer items-start gap-3 rounded-lg border p-4 has-data-[state=checked]:border-blue-900"
-              >
-                <RadioGroupItem value="delivery" id="delivery" className="mt-1" />
-                <div>
-                  <p className="font-medium">
-                    Delivery —{" "}
-                    {deliveryFee > 0 ? `$${deliveryFee.toFixed(2)}` : "Free"}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    We deliver locally around Houston. You&apos;ll enter your
-                    address at checkout.
-                  </p>
-                </div>
-              </label>
-            </RadioGroup>
+            <div className="flex items-start gap-3">
+              <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-gold" />
+              <div>
+                <p className="font-medium">Pickup at the store — Free</p>
+                <p className="text-sm text-muted-foreground">
+                  {STORE_ADDRESS}. We&apos;ll email you when your order is
+                  ready to collect.
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -252,18 +226,12 @@ export default function ProductCartPage() {
               <span className="text-muted-foreground">Subtotal</span>
               <span>${totals.subtotal.toFixed(2)}</span>
             </div>
-            {method === "delivery" && (
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Delivery fee</span>
-                <span>${totals.deliveryFee.toFixed(2)}</span>
-              </div>
-            )}
             <div className="flex justify-between border-t pt-2 font-bold">
               <span>Total</span>
               <span>${totals.total.toFixed(2)}</span>
             </div>
             <Button
-              className="mt-4 w-full bg-blue-900 py-6 text-lg hover:bg-blue-800"
+              className="mt-4 w-full py-6 text-lg"
               onClick={handleCheckout}
               disabled={checkingOut}
             >
