@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   MAX_IMAGE_BYTES,
+  isVideoKind,
   rejectImage,
   storagePath,
   uploadTarget,
@@ -22,9 +23,33 @@ describe("uploadTarget", () => {
     });
   });
 
+  it("keeps hero media in its own folder, away from the product catalog", () => {
+    expect(uploadTarget("hero-video")).toEqual({
+      bucket: "product-videos",
+      folder: "hero",
+    });
+    expect(uploadTarget("hero-poster")).toEqual({
+      bucket: "product-images",
+      folder: "hero",
+    });
+  });
+
   it("returns null for anything else, so an unknown kind cannot pick a bucket", () => {
     expect(uploadTarget("avatars")).toBeNull();
     expect(uploadTarget("")).toBeNull();
+  });
+});
+
+describe("isVideoKind", () => {
+  it("is true for both video kinds, so each gets the video size and type limits", () => {
+    expect(isVideoKind("video")).toBe(true);
+    expect(isVideoKind("hero-video")).toBe(true);
+  });
+
+  it("is false for image kinds", () => {
+    expect(isVideoKind("image")).toBe(false);
+    expect(isVideoKind("gallery")).toBe(false);
+    expect(isVideoKind("hero-poster")).toBe(false);
   });
 });
 

@@ -4,10 +4,16 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { requireAdmin } from "@/lib/auth/guards";
 import { apiError, ApiError } from "@/lib/http/apiError";
 import { rejectVideo } from "@/lib/products/media";
-import { rejectImage, storagePath, uploadTarget } from "@/lib/products/upload";
+import {
+  isVideoKind,
+  rejectImage,
+  storagePath,
+  uploadTarget,
+} from "@/lib/products/upload";
 
 /**
- * Upload a product image, gallery image or video.
+ * Upload product media (image, gallery image, video) or storefront hero
+ * media (hero video, hero poster).
  *
  * Uploading straight from the browser meant every upload depended on the
  * storage.objects RLS policies resolving correctly for the signed-in admin,
@@ -37,10 +43,9 @@ export async function POST(req: Request) {
     const target = uploadTarget(kind);
     if (!target) throw new ApiError("Unknown upload kind", 400);
 
-    const problem =
-      kind === "video"
-        ? rejectVideo({ type: file.type, size: file.size })
-        : rejectImage({ type: file.type, size: file.size });
+    const problem = isVideoKind(kind)
+      ? rejectVideo({ type: file.type, size: file.size })
+      : rejectImage({ type: file.type, size: file.size });
     if (problem) throw new ApiError(problem, 400);
 
     const path = storagePath(target.folder, file.name, Date.now());

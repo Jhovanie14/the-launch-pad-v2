@@ -7,7 +7,12 @@
 
 export const MAX_IMAGE_BYTES = 10_485_760; // 10 MB
 
-export type UploadKind = "image" | "gallery" | "video";
+export type UploadKind =
+  | "image"
+  | "gallery"
+  | "video"
+  | "hero-video"
+  | "hero-poster";
 
 export interface UploadTarget {
   bucket: "product-images" | "product-videos";
@@ -18,7 +23,17 @@ const TARGETS: Record<UploadKind, UploadTarget> = {
   image: { bucket: "product-images", folder: "products" },
   gallery: { bucket: "product-images", folder: "products/gallery" },
   video: { bucket: "product-videos", folder: "products" },
+  // The storefront hero belongs to the shop, not to any product, so it is
+  // filed separately -- otherwise deleting a product's media risks the film
+  // the whole page opens with.
+  "hero-video": { bucket: "product-videos", folder: "hero" },
+  "hero-poster": { bucket: "product-images", folder: "hero" },
 };
+
+/** Which kinds are videos, and so take the video limits rather than the image ones. */
+export function isVideoKind(kind: string): boolean {
+  return kind === "video" || kind === "hero-video";
+}
 
 /**
  * Resolve the bucket and folder for a kind. Returns null for anything not on

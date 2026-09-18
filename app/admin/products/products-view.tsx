@@ -40,6 +40,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ProductStats } from "@/components/admin/product-stats";
+import { StorefrontHeroSettings } from "@/components/admin/storefront-hero-settings";
 import { LOW_STOCK_THRESHOLD } from "@/lib/products/inventory";
 import {
   MAX_VIDEO_BYTES,
@@ -624,6 +625,8 @@ export default function ProductsView() {
           </DialogContent>
         </Dialog>
       </div>
+
+      <StorefrontHeroSettings />
 
       <ProductStats products={products} />
 
