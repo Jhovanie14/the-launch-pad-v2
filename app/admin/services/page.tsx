@@ -21,7 +21,7 @@ export default async function ServicesPage() {
   const profile = await getUserProfile();
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden mx-auto p-6 md:px-6">
+    <div className="flex-1 flex flex-col overflow-hidden p-6 md:px-6">
       <ServicesView />
     </div>
   );
