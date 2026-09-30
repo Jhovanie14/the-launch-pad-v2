@@ -16,6 +16,10 @@ import {
   isDetailingOpenOn,
 } from "@/lib/booking/detailingDays";
 import {
+  promoAppliesToOneTime,
+  promoMatchesService,
+} from "@/lib/pricing/promoRules";
+import {
   AppliedPromo,
   DisplayPricing,
   computeDisplayPricing,
@@ -195,16 +199,13 @@ export function useBookingFlow(ctx: BookingAuthContext, step: BookingStep) {
       toast.error("This promo code is not active");
       return;
     }
-    if (data.applies_to !== "one_time" && data.applies_to !== "both") {
+    if (!promoAppliesToOneTime(data.applies_to)) {
       toast.error("This promo code cannot be used for one-time bookings");
       return;
     }
 
     if (data.restricted_to_service) {
-      const serviceName = (service?.name ?? "").toLowerCase();
-      const serviceCategory = (service?.category ?? "").toLowerCase();
-      const restriction = data.restricted_to_service.toLowerCase();
-      if (!serviceName.includes(restriction) && !serviceCategory.includes(restriction)) {
+      if (!promoMatchesService(data.restricted_to_service, service)) {
         toast.error(
           `This promo code is only valid for "${data.restricted_to_service}" bookings`
         );
