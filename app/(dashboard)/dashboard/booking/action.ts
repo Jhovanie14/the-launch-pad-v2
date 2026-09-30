@@ -2,11 +2,15 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { ServicePackage } from "@/lib/data/services";
-import { sendBookingConfirmationEmail } from "@/lib/email/sendConfirmation";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { computeBookingAmount } from "@/lib/pricing/computeBookingAmount";
 import { validatePromo } from "@/lib/pricing/validatePromo";
 import { ApiError } from "@/lib/http/apiError";
+import {
+  DETAILING_CLOSED_MESSAGE,
+  isDetailingOpenOn,
+} from "@/lib/booking/detailingDays";
+import { persistBooking } from "@/lib/booking/persistBooking";
 
 type CarData = {
   // License plate is OPTIONAL
@@ -14,15 +18,7 @@ type CarData = {
   // Direct vehicle ID — used as fallback when no plate
   vehicle_id?: string;
 
-  // Optional vehicle details
-  year?: number;
-  make?: string;
-  model?: string;
-  body_type?: string;
-  colors?: string[];
-
   // Booking details
-  price?: number;
   servicePackage?: ServicePackage;
   addOnsId?: string[] | null;
   appointmentDate?: Date;
@@ -38,190 +34,67 @@ type CarData = {
   promoCode?: string;
 };
 
-export async function createBooking(car: CarData, subscriberId?: string) {
-  const supabase = subscriberId ? createAdminClient() : await createClient();
+/**
+ * Online customer booking (guest or signed-in). Runs as the caller's own
+ * session and never trusts client prices. Admin bookings go through
+ * createAdminBooking in app/admin/booking/action.ts instead.
+ */
+export async function createBooking(car: CarData) {
+  const supabase = await createClient();
 
-  // Normalize license plate (optional - only process if provided)
-  const normalizedPlate = car.license_plate?.trim().toUpperCase();
+  const {
+    data: { user: currentUser },
+  } = await supabase.auth.getUser();
 
-  // Get current user (only needed for non-subscriber bookings)
-  let currentUser = null;
-  if (!subscriberId) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    currentUser = user;
+  const appointmentDate = car.appointmentDate?.toISOString().split("T")[0];
+  if (!appointmentDate || !isDetailingOpenOn(appointmentDate)) {
+    throw new ApiError(DETAILING_CLOSED_MESSAGE, 400);
   }
 
-  // Determine which user_id to use
-  const targetUserId = subscriberId || currentUser?.id || null;
-
-  console.log("🔍 Booking for:", {
-    isWalkIn: !!subscriberId,
-    targetUserId,
-    currentUser: currentUser?.id,
+  const admin = createAdminClient();
+  const isAuthenticated = !!currentUser;
+  const priced = await computeBookingAmount(admin, {
+    servicePackageId: car.servicePackage?.id ?? "",
+    addOnIds: car.addOnsId ?? [],
+    userId: currentUser?.id ?? null,
+    isAuthenticated,
+    paymentMethod: car.payment_method as "card" | "cash" | "subscription",
   });
 
-  let authoritativeTotal = car.totalPrice ?? 0;
-  let authoritativeServicePrice = car.servicePackage?.price ?? 0;
-
-  if (!subscriberId) {
-    // Self-serve booking: never trust client prices or payment method.
-    const admin = createAdminClient();
-    const isAuthenticated = !!currentUser;
-    const priced = await computeBookingAmount(admin, {
-      servicePackageId: car.servicePackage?.id ?? "",
-      addOnIds: car.addOnsId ?? [],
-      userId: currentUser?.id ?? null,
-      isAuthenticated,
-      paymentMethod: car.payment_method as "card" | "cash" | "subscription",
-    });
-
-    // Guests cannot pay cash; "subscription" requires an actually-free result.
-    if (car.payment_method === "cash" && !isAuthenticated) {
-      throw new ApiError("Cash payment requires an account", 400);
-    }
-    if (car.payment_method === "subscription" && !priced.isFree) {
-      throw new ApiError("No active subscription covers this service", 400);
-    }
-
-    // Apply promo server-side (ignored if invalid).
-    const promo = await validatePromo(admin, {
-      code: car.promoCode ?? "",
-      baseAmount: priced.amount,
-      userId: currentUser?.id ?? null,
-      serviceId: car.servicePackage?.id ?? "",
-    });
-
-    authoritativeServicePrice = priced.servicePrice;
-    authoritativeTotal = promo.discountedAmount;
+  // Guests cannot pay cash; "subscription" requires an actually-free result.
+  if (car.payment_method === "cash" && !isAuthenticated) {
+    throw new ApiError("Cash payment requires an account", 400);
+  }
+  if (car.payment_method === "subscription" && !priced.isFree) {
+    throw new ApiError("No active subscription covers this service", 400);
   }
 
-  // Use directly passed vehicle_id as base, then override via plate lookup if plate exists
-  let vehicleId: string | null = car.vehicle_id ?? null;
-
-  if (normalizedPlate) {
-    const { data: existing } = await supabase
-      .from("vehicles")
-      .select("id, user_id")
-      .eq("license_plate", normalizedPlate)
-      .maybeSingle();
-
-    vehicleId = existing?.id || null;
-
-    if (!vehicleId) {
-      const { data: inserted } = await supabase
-        .from("vehicles")
-        .insert({ user_id: targetUserId || null, license_plate: normalizedPlate })
-        .select("id")
-        .single();
-      vehicleId = inserted?.id || null;
-    } else if (!existing?.user_id && targetUserId) {
-      // Link unowned vehicle to the current user
-      await supabase
-        .from("vehicles")
-        .update({ user_id: targetUserId })
-        .eq("id", vehicleId);
-    }
-  }
-
-  // Insert booking
-  const { data: booking, error } = await supabase
-    .from("bookings")
-    .insert({
-      user_id: targetUserId,
-      vehicle_id: vehicleId,
-      service_package_id: car.servicePackage?.id,
-      service_package_name: car.servicePackage?.name,
-      service_package_price: authoritativeServicePrice,
-      appointment_date: car.appointmentDate?.toISOString().split("T")[0],
-      appointment_time: car.appointmentTime,
-      total_price: authoritativeTotal,
-      total_duration: car.totalDuration,
-      payment_method: car.payment_method,
-      status: "pending",
-      customer_name:
-        car.customerName || currentUser?.user_metadata?.full_name || null,
-      customer_email: car.customerEmail || currentUser?.email || null,
-      customer_phone: car.customerPhone || null,
-      notes: car.notes || null,
-      special_instructions: car.specialInstructions || null,
-      created_at: new Date().toISOString(),
-    })
-    .select("*")
-    .single();
-
-  if (error || !booking) {
-    console.error("Booking creation error:", error);
-    throw error;
-  }
-
-  // Insert selected add-ons into join table
-  if (car.addOnsId && car.addOnsId.length > 0) {
-    const addOnRows = car.addOnsId.map((addOnId) => ({
-      booking_id: booking.id,
-      add_on_id: addOnId,
-    }));
-
-    console.log("Inserting booking add-ons:", addOnRows);
-
-    const { data, error: addOnError } = await supabase
-      .from("booking_add_ons")
-      .insert(addOnRows);
-
-    if (addOnError) {
-      console.error("Error inserting booking add-ons:", addOnError);
-    } else {
-      console.log("Successfully inserted booking add-ons:", data);
-    }
-  }
-
-  let addOnNames: string[] = [];
-  if (car.addOnsId && car.addOnsId.length > 0) {
-    const { data: addOnsData, error: addOnsError } = await supabase
-      .from("add_ons")
-      .select("name")
-      .in("id", car.addOnsId);
-
-    if (addOnsError) {
-      console.error("Error fetching add-on names:", addOnsError);
-    } else {
-      addOnNames = addOnsData?.map((a) => a.name) || [];
-    }
-  }
-
-  console.log("EMAIL DEBUG:", {
-    bookingEmail: booking.customer_email,
-    carEmail: car.customerEmail,
+  // Apply promo server-side (ignored if invalid).
+  const promo = await validatePromo(admin, {
+    code: car.promoCode ?? "",
+    baseAmount: priced.amount,
+    userId: currentUser?.id ?? null,
+    serviceId: car.servicePackage?.id ?? "",
   });
 
-  // Send confirmation email
-  if (!booking.customer_email) {
-    return null;
-  } else if (booking.customer_email) {
-    // await sendBookingConfirmationEmail({
-    //   to: booking.customer_email,
-    //   customerName: booking.customer_name ?? "Customer",
-    //   bookingId: booking.id,
-    //   servicePackage: booking.service_package_name ?? "Service",
-    //   appointmentDate: booking.appointment_date,
-    //   appointmentTime: booking.appointment_time,
-    //   addOns: addOnNames,
-    // });
-    try {
-      await sendBookingConfirmationEmail({
-        to: booking.customer_email || car.customerEmail,
-        customerName: booking.customer_name ?? "Customer",
-        bookingId: booking.id,
-        servicePackage: booking.service_package_name ?? "Service",
-        appointmentDate: booking.appointment_date,
-        appointmentTime: booking.appointment_time,
-        addOns: addOnNames,
-      });
-    } catch (emailErr) {
-      console.error("Error sending booking confirmation email:", emailErr);
-    }
-  }
-
-  return booking;
+  return persistBooking(supabase, {
+    userId: currentUser?.id ?? null,
+    licensePlate: car.license_plate,
+    vehicleId: car.vehicle_id,
+    servicePackageId: car.servicePackage?.id,
+    servicePackageName: car.servicePackage?.name,
+    servicePackagePrice: priced.servicePrice,
+    addOnIds: car.addOnsId ?? [],
+    appointmentDate,
+    appointmentTime: car.appointmentTime,
+    totalPrice: promo.discountedAmount,
+    totalDuration: car.totalDuration,
+    paymentMethod: car.payment_method,
+    customerName:
+      car.customerName || currentUser?.user_metadata?.full_name || null,
+    customerEmail: car.customerEmail || currentUser?.email || null,
+    customerPhone: car.customerPhone,
+    notes: car.notes,
+    specialInstructions: car.specialInstructions,
+  });
 }

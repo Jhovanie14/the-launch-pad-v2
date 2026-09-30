@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { createBooking } from "@/app/(dashboard)/dashboard/booking/action";
+import { createAdminBooking } from "@/app/admin/booking/action";
 import { toast } from "sonner";
 import { useVehicleForm } from "@/hooks/useVehicleForm";
 
@@ -124,65 +124,54 @@ export function useBookingForm(onSuccess: () => void, subscriber?: any) {
       selectedAddOns.includes(a.id)
     );
 
-    const addOnsTotalPrice = selectedAddOnObjs.reduce(
-      (sum, a) => sum + Number(a.price || 0),
-      0
-    );
     const addOnsTotalDuration = selectedAddOnObjs.reduce(
       (sum, a) => sum + Number(a.duration || 0),
       0
     );
 
-    // 🔹 Calculate total price and duration
-    const servicePrice = selectedServiceObj
-      ? Number(selectedServiceObj.price || 0)
-      : 0;
+    // Price is computed on the server; only the duration is sent from here.
     const serviceDuration = selectedServiceObj
       ? Number(selectedServiceObj.duration || 0)
       : 0;
 
-    let totalPrice = subscriber
-      ? addOnsTotalPrice // subscriber pays only for add-ons
-      : servicePrice + addOnsTotalPrice;
-
-    // Apply promo code discount if provided
-    if (discountPercent > 0) {
-      totalPrice = totalPrice - (totalPrice * discountPercent) / 100;
-    }
-
     const totalDuration = serviceDuration + addOnsTotalDuration;
 
     setLoading(true);
+    const toastId = toast.loading("Creating booking...");
 
     try {
-      await toast.promise(
-        createBooking(
-          {
-            ...form,
-            ...vehicleInfo,
-            year: vehicleInfo.year ? Number(vehicleInfo.year) : undefined,
-            // license_plate is now optional - can be empty string or undefined
-            addOnsId: selectedAddOns,
-            appointmentDate: new Date(form.appointmentDate),
-            servicePackage: selectedServiceObj || null,
-            totalPrice,
-            totalDuration,
-            payment_method: paymentMethod, // 🔹 NEW: Pass payment method
-          },
-          subscriber?.user_id
-        ),
+      const result = await createAdminBooking(
         {
-          loading: "Creating booking...",
-          success: "Booking created successfully!",
-          error: "Failed to create booking.",
-        }
+          // license_plate is optional - can be empty string or undefined
+          license_plate: vehicleInfo.license_plate,
+          servicePackageId: selectedServiceObj?.id ?? "",
+          servicePackageName: selectedServiceObj?.name,
+          addOnsId: selectedAddOns,
+          appointmentDate: form.appointmentDate,
+          appointmentTime: form.appointmentTime,
+          totalDuration,
+          payment_method: paymentMethod as "cash" | "subscription",
+          discountPercent,
+          customerName: form.customerName,
+          customerEmail: form.customerEmail,
+          customerPhone: form.customerPhone,
+          notes: form.notes,
+        },
+        subscriber?.user_id
       );
 
+      if (!result.ok) {
+        toast.error(result.error, { id: toastId });
+        return;
+      }
+
+      toast.success("Booking created successfully!", { id: toastId });
       // Reset form after successful booking
       resetForm();
       onSuccess();
     } catch (err) {
       console.error("❌ Booking creation failed:", err);
+      toast.error("Failed to create booking.", { id: toastId });
     } finally {
       setLoading(false);
     }

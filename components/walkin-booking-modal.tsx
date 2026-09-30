@@ -25,6 +25,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useBookingForm } from "@/hooks/useBookingForm";
+import { planCoversCategory } from "@/lib/booking/pricingDisplay";
 import { createClient } from "@/utils/supabase/client";
 import { loadStripe } from "@stripe/stripe-js";
 
@@ -70,63 +71,22 @@ export default function WalkInBookingModal({
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "card">("cash");
   const [processingPayment, setProcessingPayment] = useState(false);
 
-  // Determine which tab to show based on subscription plan
-  const getSubscriptionTab = () => {
-    if (!subscriber?.subscription_plan?.name) return "quick";
-    const planName = subscriber.subscription_plan.name.toLowerCase();
-
-    // If plan name contains "exterior", show Quick Service
-    if (planName.includes("exterior")) {
-      return "quick";
-    }
-    // If plan name contains "express detail" or "express", show Express Detail
-    if (planName.includes("express detail") || planName.includes("express")) {
-      return "express";
-    }
-    // Default to quick
-    return "quick";
-  };
+  // Walk-ins book the service the plan covers, using the same rule the server
+  // prices with (a Quick plan covers Quick Service, not Express Detail). A plan
+  // name that matches neither category falls back to showing both tabs, and
+  // the server refuses anything the plan doesn't actually cover.
+  const planName: string = subscriber?.subscription_plan?.name ?? "";
+  const coversQuick = planCoversCategory(planName, "quick service");
+  const coversExpress = planCoversCategory(planName, "express detail");
+  const showAllTabs = !coversQuick && !coversExpress;
+  const shouldShowQuickTab = () => showAllTabs || coversQuick;
+  const shouldShowExpressTab = () => showAllTabs || coversExpress;
+  const getSubscriptionTab = (): "quick" | "express" =>
+    coversQuick || showAllTabs ? "quick" : "express";
 
   const [activeTab, setActiveTab] = useState<"quick" | "express">(() =>
     getSubscriptionTab(),
   );
-
-  // Determine which tabs to show based on subscription
-  const shouldShowQuickTab = () => {
-    if (!subscriber?.subscription_plan?.name) return true; // Default: show both if no plan info
-    const planName = subscriber.subscription_plan.name.toLowerCase();
-
-    // If plan is specifically for express detail, don't show quick tab
-    if (planName.includes("express detail") || planName.includes("express")) {
-      return false;
-    }
-
-    // If plan is for exterior, show quick tab
-    if (planName.includes("exterior")) {
-      return true;
-    }
-
-    // Default: show both tabs if plan doesn't match
-    return true;
-  };
-
-  const shouldShowExpressTab = () => {
-    if (!subscriber?.subscription_plan?.name) return true; // Default: show both if no plan info
-    const planName = subscriber.subscription_plan.name.toLowerCase();
-
-    // If plan is specifically for exterior, don't show express tab
-    if (planName.includes("exterior")) {
-      return false;
-    }
-
-    // If plan is for express detail, show express tab
-    if (planName.includes("express detail") || planName.includes("express")) {
-      return true;
-    }
-
-    // Default: show both tabs if plan doesn't match
-    return true;
-  };
 
   // Filter services by active tab
   const quickServices = services.filter(
@@ -140,26 +100,8 @@ export default function WalkInBookingModal({
 
   // Update active tab when subscriber changes
   useEffect(() => {
-    if (!subscriber?.subscription_plan?.name) {
-      setActiveTab("quick");
-      return;
-    }
-    const planName = subscriber.subscription_plan.name.toLowerCase();
-
-    // If plan name contains "exterior", show Quick Service
-    if (planName.includes("exterior")) {
-      setActiveTab("quick");
-    }
-    // If plan name contains "express detail" or "express", show Express Detail
-    else if (
-      planName.includes("express detail") ||
-      planName.includes("express")
-    ) {
-      setActiveTab("express");
-    } else {
-      setActiveTab("quick");
-    }
-  }, [subscriber]);
+    setActiveTab(coversQuick || showAllTabs ? "quick" : "express");
+  }, [coversQuick, showAllTabs]);
 
   // Auto-fill vehicle info when subscriber changes
   useEffect(() => {
