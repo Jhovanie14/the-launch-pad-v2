@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { getPageItems } from "@/lib/ui/pageItems";
 
 function Pagination({
   page,
@@ -11,7 +12,8 @@ function Pagination({
   pageSize: number;
   onPageChange: (p: number) => void;
 }) {
-  const totalPages = Math.ceil(total / pageSize);
+  // At least 1 so an empty list reads "Page 1 of 1", not "Page 1 of 0".
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   // New (always render)
   if (totalPages <= 1) {
@@ -23,7 +25,7 @@ function Pagination({
   }
 
   return (
-    <div className="flex items-center justify-center gap-2 mt-6">
+    <div className="flex flex-wrap items-center justify-center gap-2 mt-6">
       <Button
         variant="outline"
         size="sm"
@@ -33,16 +35,27 @@ function Pagination({
         Previous
       </Button>
 
-      {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-        <Button
-          key={p}
-          variant={p === page ? "default" : "outline"}
-          size="sm"
-          onClick={() => onPageChange(p)}
-        >
-          {p}
-        </Button>
-      ))}
+      {getPageItems(page, totalPages).map((p, i) =>
+        p === "gap" ? (
+          <span
+            key={`gap-${i}`}
+            className="px-1 text-sm text-muted-foreground"
+            aria-hidden="true"
+          >
+            …
+          </span>
+        ) : (
+          <Button
+            key={p}
+            variant={p === page ? "default" : "outline"}
+            size="sm"
+            onClick={() => onPageChange(p)}
+            aria-current={p === page ? "page" : undefined}
+          >
+            {p}
+          </Button>
+        )
+      )}
 
       <Button
         variant="outline"
