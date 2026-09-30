@@ -12,6 +12,10 @@ import {
   parseBookingSelection,
 } from "@/lib/booking/bookingParams";
 import {
+  DETAILING_CLOSED_MESSAGE,
+  isDetailingOpenOn,
+} from "@/lib/booking/detailingDays";
+import {
   AppliedPromo,
   DisplayPricing,
   computeDisplayPricing,
@@ -278,6 +282,12 @@ export function useBookingFlow(ctx: BookingAuthContext, step: BookingStep) {
     }) => {
       if (!service) {
         toast.error("Missing service selection. Please start over.");
+        return;
+      }
+      // The date picker already blocks these days; this catches a stale or
+      // hand-edited URL with a friendly message instead of a server error.
+      if (!selection.date || !isDetailingOpenOn(selection.date)) {
+        toast.error(DETAILING_CLOSED_MESSAGE);
         return;
       }
       setIsSubmitting(true);

@@ -16,9 +16,11 @@ import { useRouter } from "next/navigation";
 import LoadingDots from "@/components/loading";
 import { useBookingFlow } from "@/hooks/useBookingFlow";
 import type { BookingAuthContext } from "@/hooks/useBookingAuthContext";
+import { DETAILING_CLOSED_WEEKDAYS } from "@/lib/booking/detailingDays";
 
+// Detailing is open 9:30 AM – 6:30 PM and a service takes up to an hour, so
+// the last start time is 5:30 PM.
 const timeSlots = [
-  "9:00",
   "9:30",
   "10:00",
   "10:30",
@@ -36,8 +38,6 @@ const timeSlots = [
   "16:30",
   "17:00",
   "17:30",
-  "18:00",
-  "18:30",
 ];
 
 export default function DateTimeStep({ ctx }: { ctx: BookingAuthContext }) {
@@ -204,7 +204,10 @@ export default function DateTimeStep({ ctx }: { ctx: BookingAuthContext }) {
                     mode="single"
                     selected={selectedDate}
                     onSelect={setSelectedDate}
-                    disabled={{ before: new Date() }}
+                    disabled={[
+                      { before: new Date() },
+                      { dayOfWeek: [...DETAILING_CLOSED_WEEKDAYS] },
+                    ]}
                     className="rdp-custom"
                     footer={
                       selectedDate ? (
@@ -216,6 +219,9 @@ export default function DateTimeStep({ ctx }: { ctx: BookingAuthContext }) {
                       ) : (
                         <div className="text-center mt-4 p-3 text-muted-foreground">
                           <span className="text-sm">Please select a date</span>
+                          <p className="text-xs mt-1">
+                            Detailing is available Thursday – Sunday
+                          </p>
                         </div>
                       )
                     }

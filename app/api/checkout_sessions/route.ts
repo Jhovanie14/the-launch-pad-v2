@@ -7,6 +7,10 @@ import { buildLineItemUnitAmounts } from "@/lib/pricing/lineItems";
 import { validatePromo } from "@/lib/pricing/validatePromo";
 import { apiError, ApiError } from "@/lib/http/apiError";
 import { logger } from "@/lib/log/logger";
+import {
+  DETAILING_CLOSED_MESSAGE,
+  isDetailingOpenOn,
+} from "@/lib/booking/detailingDays";
 
 export async function POST(req: Request) {
   try {
@@ -17,6 +21,12 @@ export async function POST(req: Request) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
+
+    // Customer checkout only (admins use /api/create-booking-checkout), so the
+    // closed-day rule applies without exception.
+    if (!isDetailingOpenOn(String(body.appointmentDate ?? ""))) {
+      return apiError(new ApiError(DETAILING_CLOSED_MESSAGE, 400));
+    }
 
     const servicePackageId: string = body.servicePackageId ?? body.spid ?? "";
     const addOnIds: string[] = Array.isArray(body.addOns)

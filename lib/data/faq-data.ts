@@ -5,9 +5,9 @@ export const faqData = [
   {
     id: "hours-1",
     category: "Detailing Hours",
-    question: "What are the new detailing hours and days?",
+    question: "What are the detailing hours and days?",
     answer:
-      "Starting September 18, our detailing services run Thursday through Sunday, 9:30 AM to 6:30 PM. Detailing is not available Monday through Wednesday. Our self-service wash bays are unaffected and stay open 24/7, so you can still wash your vehicle any day, at any hour. Detailing takes roughly 45 minutes to an hour, so please allow enough time before closing.",
+      "Our detailing services run Thursday through Sunday, 9:30 AM to 6:30 PM. Detailing is not available Monday through Wednesday. Our self-service wash bays are unaffected and stay open 24/7, so you can still wash your vehicle any day, at any hour. Detailing takes roughly 45 minutes to an hour, so please allow enough time before closing.",
   },
   {
     id: "hours-2",

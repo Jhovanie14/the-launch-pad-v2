@@ -75,7 +75,7 @@ export default function HoursChangeDialog({
               aria-hidden="true"
             />
             <span className="text-amber-400 text-[11px] font-semibold uppercase tracking-wide">
-              Starting {HOURS_NOTICE_EFFECTIVE_LABEL}
+              As of {HOURS_NOTICE_EFFECTIVE_LABEL}
             </span>
           </div>
           <DialogTitle className="text-xl font-bold text-white leading-snug">
@@ -85,8 +85,8 @@ export default function HoursChangeDialog({
 
         <div className="px-6 pt-5 pb-2">
           <DialogDescription className="sr-only">
-            Detailing services move to Thursday through Sunday, 9:30 AM to 6:30
-            PM, starting {HOURS_NOTICE_EFFECTIVE_LABEL}.
+            Detailing services now run Thursday through Sunday, 9:30 AM to 6:30
+            PM, as of {HOURS_NOTICE_EFFECTIVE_LABEL}.
           </DialogDescription>
 
           {/* The one fact everything else supports. */}
