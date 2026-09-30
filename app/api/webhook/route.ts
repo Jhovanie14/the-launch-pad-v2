@@ -19,6 +19,7 @@ import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import type { AddOnRow } from "@/types/db";
+import { recordPromoRedemption } from "@/lib/pricing/validatePromo";
 
 /** Shape of booking metadata encoded as JSON in session.metadata.booking */
 interface BookingMetadata {
@@ -312,8 +313,12 @@ async function processNewBooking(session: Stripe.Checkout.Session) {
       );
     }
 
-    // Calculate totals
-    const totalPrice = servicePackagePrice + addOnsTotalPrice;
+    // Calculate totals. Record what Stripe actually charged (sale and promo
+    // included); the list-price sum is only a fallback.
+    const totalPrice =
+      session.amount_total != null
+        ? session.amount_total / 100
+        : servicePackagePrice + addOnsTotalPrice;
     const totalDuration = serviceDuration + addOnsTotalDuration;
 
     // 5. Create the booking
@@ -351,6 +356,16 @@ async function processNewBooking(session: Stripe.Checkout.Session) {
     }
 
     console.log("New booking created:", booking.id);
+
+    // Staff-applied promo: count the use now that payment has succeeded.
+    const promoCodeId = Number(session.metadata?.promo_code_id);
+    if (promoCodeId) {
+      await recordPromoRedemption(supabase, {
+        promoId: promoCodeId,
+        userId,
+        customerEmail: customer_email || null,
+      });
+    }
 
     // 6. Link add-ons to booking
     if (addOnIds.length > 0 && booking?.id) {

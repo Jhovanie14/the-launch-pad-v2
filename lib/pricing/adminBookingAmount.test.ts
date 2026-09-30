@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  applyAdminDiscount,
   computeAdminBookingAmount,
   PLAN_NOT_COVERED_MESSAGE,
 } from "./adminBookingAmount";
@@ -18,6 +17,7 @@ function fakeDb(fixtures: {
   addOns?: any[];
   subscription?: any;
   plan?: any;
+  promo?: any;
 }) {
   return {
     from(table: string) {
@@ -25,10 +25,12 @@ function fakeDb(fixtures: {
         select: () => api,
         eq: () => api,
         in: () => api,
+        ilike: () => api,
         maybeSingle: async () => {
           if (table === "service_packages") return { data: fixtures.service ?? null };
           if (table === "user_subscription") return { data: fixtures.subscription ?? null };
           if (table === "subscription_plans") return { data: fixtures.plan ?? null };
+          if (table === "promo_codes") return { data: fixtures.promo ?? null };
           return { data: null };
         },
       };
@@ -57,7 +59,7 @@ describe("computeAdminBookingAmount", () => {
       subscriberId: "u1",
       paymentMethod: "subscription",
     });
-    expect(result).toEqual({ servicePrice: 0, total: 0 });
+    expect(result).toEqual({ servicePrice: 0, total: 0, promoId: null });
   });
 
   it("refuses to book an uncovered service as free", async () => {
@@ -101,7 +103,7 @@ describe("computeAdminBookingAmount", () => {
       subscriberId: "u1",
       paymentMethod: "cash",
     });
-    expect(result).toEqual({ servicePrice: 0, total: sale(10) });
+    expect(result).toEqual({ servicePrice: 0, total: sale(10), promoId: null });
   });
 
   it("lets an admin take cash from a customer with no account", async () => {
@@ -111,9 +113,61 @@ describe("computeAdminBookingAmount", () => {
       addOnIds: [],
       subscriberId: null,
       paymentMethod: "cash",
-      discountPercent: 50,
     });
-    expect(result.total).toBe(applyAdminDiscount(sale(30), 50));
+    expect(result).toEqual({ servicePrice: sale(30), total: sale(30), promoId: null });
+  });
+
+  const promo = {
+    id: 7, is_active: true, applies_to: "one_time", max_uses: null,
+    used_count: 0, restricted_to_service: null, discount_percent: 0,
+    discount_amount: 0,
+  };
+
+  it("applies a percent promo code after the sale", async () => {
+    const db = fakeDb({
+      service: { id: "s1", price: 40, category: "quick service" },
+      promo: { ...promo, discount_type: "percent", discount_percent: 25 },
+    });
+    const result = await computeAdminBookingAmount(db, {
+      servicePackageId: "s1",
+      addOnIds: [],
+      subscriberId: null,
+      paymentMethod: "cash",
+      promoCode: "SAVE25",
+    });
+    expect(result.total).toBe(Number((sale(40) * 0.75).toFixed(2)));
+    expect(result.promoId).toBe(7);
+  });
+
+  it("applies a flat promo code", async () => {
+    const db = fakeDb({
+      service: { id: "s1", price: 40, category: "quick service" },
+      promo: { ...promo, discount_type: "flat", discount_amount: 10 },
+    });
+    const result = await computeAdminBookingAmount(db, {
+      servicePackageId: "s1",
+      addOnIds: [],
+      subscriberId: null,
+      paymentMethod: "cash",
+      promoCode: "TENOFF",
+    });
+    expect(result.total).toBe(Number((sale(40) - 10).toFixed(2)));
+    expect(result.promoId).toBe(7);
+  });
+
+  it("ignores a subscription-only code", async () => {
+    const db = fakeDb({
+      service: { id: "s1", price: 40, category: "quick service" },
+      promo: { ...promo, applies_to: "subscription", discount_type: "percent", discount_percent: 25 },
+    });
+    const result = await computeAdminBookingAmount(db, {
+      servicePackageId: "s1",
+      addOnIds: [],
+      subscriberId: null,
+      paymentMethod: "cash",
+      promoCode: "SUBONLY",
+    });
+    expect(result).toEqual({ servicePrice: sale(40), total: sale(40), promoId: null });
   });
 
   it("prices an add-ons-only booking from the database", async () => {
@@ -124,7 +178,7 @@ describe("computeAdminBookingAmount", () => {
       subscriberId: "u1",
       paymentMethod: "cash",
     });
-    expect(result).toEqual({ servicePrice: 0, total: sale(15) });
+    expect(result).toEqual({ servicePrice: 0, total: sale(15), promoId: null });
   });
 
   it("rejects a booking with no service and no add-ons", async () => {
@@ -136,17 +190,5 @@ describe("computeAdminBookingAmount", () => {
         paymentMethod: "cash",
       })
     ).rejects.toThrow("Select a service package or at least one add-on");
-  });
-});
-
-describe("applyAdminDiscount", () => {
-  it("applies the percentage", () => {
-    expect(applyAdminDiscount(80, 25)).toBe(60);
-  });
-
-  it("clamps out-of-range and non-numeric values", () => {
-    expect(applyAdminDiscount(80, -50)).toBe(80);
-    expect(applyAdminDiscount(80, 150)).toBe(0);
-    expect(applyAdminDiscount(80, Number.NaN)).toBe(80);
   });
 });

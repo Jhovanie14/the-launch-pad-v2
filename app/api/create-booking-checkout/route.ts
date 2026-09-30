@@ -6,6 +6,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { requireAdmin } from "@/lib/auth/guards";
 import { apiError, ApiError } from "@/lib/http/apiError";
 import { computeBookingAmount } from "@/lib/pricing/computeBookingAmount";
+import { validatePromo } from "@/lib/pricing/validatePromo";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
@@ -27,6 +28,7 @@ export async function POST(req: NextRequest) {
       add_on_ids,
       appointment_date,
       appointment_time,
+      promo_code,
     } = await req.json();
 
     const addOnIds: string[] = Array.isArray(add_on_ids)
@@ -35,7 +37,8 @@ export async function POST(req: NextRequest) {
         ? add_on_ids.split(",")
         : [];
 
-    const priced = await computeBookingAmount(createAdminClient(), {
+    const admin = createAdminClient();
+    const priced = await computeBookingAmount(admin, {
       servicePackageId: service_package_id ?? "",
       addOnIds,
       userId: null,
@@ -43,7 +46,15 @@ export async function POST(req: NextRequest) {
       paymentMethod: "card",
     });
 
-    if (priced.amount <= 0) {
+    // The code is re-checked here; the modal's discounted total is ignored.
+    const promo = await validatePromo(admin, {
+      code: typeof promo_code === "string" ? promo_code : "",
+      baseAmount: priced.amount,
+      userId: null,
+      serviceId: service_package_id ?? "",
+    });
+
+    if (promo.discountedAmount <= 0) {
       return apiError(new ApiError("Nothing to charge for this booking", 400));
     }
 
@@ -58,7 +69,7 @@ export async function POST(req: NextRequest) {
               name: "Car Wash Service Booking",
               description: `Booking for ${customer_name}`,
             },
-            unit_amount: Math.round(priced.amount * 100), // Convert to cents
+            unit_amount: Math.round(promo.discountedAmount * 100), // Convert to cents
           },
           quantity: 1,
         },
@@ -80,6 +91,8 @@ export async function POST(req: NextRequest) {
         add_on_ids,
         appointment_date,
         appointment_time,
+        // The webhook records the redemption once payment succeeds.
+        promo_code_id: promo.promoId !== null ? String(promo.promoId) : "",
         payment_type: "new_booking",
       },
       customer_email,

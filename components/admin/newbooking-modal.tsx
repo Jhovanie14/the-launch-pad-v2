@@ -16,6 +16,14 @@ import { useState, useEffect, useRef } from "react";
 import { loadStripe } from "@stripe/stripe-js";
 import { toast } from "sonner";
 import { createClient } from "@/utils/supabase/client";
+import {
+  computeDisplayPricing,
+  type AppliedPromo,
+} from "@/lib/booking/pricingDisplay";
+import {
+  promoAppliesToOneTime,
+  promoMatchesService,
+} from "@/lib/pricing/promoRules";
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
@@ -46,7 +54,7 @@ export default function NewBookingModal({
   } = useBookingForm(() => {
     // Reset modal-specific state after successful booking
     setPromoCode("");
-    setDiscountPercent(0);
+    setAppliedPromo(null);
     setPaymentMethod("cash");
     onOpenChange(false);
   });
@@ -54,20 +62,33 @@ export default function NewBookingModal({
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "card">("cash");
   const [processingPayment, setProcessingPayment] = useState(false);
   const [promoCode, setPromoCode] = useState("");
-  const [discountPercent, setDiscountPercent] = useState(0);
+  // The server re-checks the code and prices the booking itself; this only
+  // previews it. `restriction` is kept so switching to a service the code
+  // doesn't cover drops the preview discount, as the server would.
+  const [appliedPromo, setAppliedPromo] = useState<
+    (AppliedPromo & { restriction: string | null }) | null
+  >(null);
   const supabase = createClient();
 
-  const baseTotal = calculateTotal(
-    selectedService,
-    services,
-    selectedAddOns,
-    addOns
-  );
+  const selectedServiceObj = selectedService
+    ? services.find((s) => s.id === selectedService) ?? null
+    : null;
+  const activePromo =
+    appliedPromo &&
+    promoMatchesService(appliedPromo.restriction, selectedServiceObj)
+      ? appliedPromo
+      : null;
 
-  const totalAmount =
-    discountPercent > 0
-      ? baseTotal - (baseTotal * discountPercent) / 100
-      : baseTotal;
+  const pricing = computeDisplayPricing({
+    service: selectedServiceObj,
+    addOns: addOns.filter((a) => selectedAddOns.includes(a.id)),
+    planName: null,
+    isVehicleSubscribed: false,
+    promo: activePromo,
+  });
+  const baseTotal = pricing.originalTotal;
+  const totalAmount = pricing.finalTotal;
+  const promoSavings = Number((pricing.saleTotal - pricing.finalTotal).toFixed(2));
 
   // Track previous open state to reset only when modal closes
   const prevOpenRef = useRef(open);
@@ -78,7 +99,7 @@ export default function NewBookingModal({
     if (prevOpenRef.current && !open) {
       resetForm();
       setPromoCode("");
-      setDiscountPercent(0);
+      setAppliedPromo(null);
       setPaymentMethod("cash");
     }
     prevOpenRef.current = open;
@@ -92,30 +113,46 @@ export default function NewBookingModal({
 
     const { data, error } = await supabase
       .from("promo_codes")
-      .select("discount_percent, is_active, applies_to")
+      .select(
+        "discount_type, discount_percent, discount_amount, is_active, applies_to, restricted_to_service"
+      )
       .ilike("code", promoCode.trim())
       .maybeSingle();
 
+    setAppliedPromo(null);
+
     if (error || !data) {
       toast.error("Invalid promo code");
-      setDiscountPercent(0);
       return;
     }
 
     if (!data.is_active) {
       toast.error("This promo code is not active");
-      setDiscountPercent(0);
       return;
     }
 
-    if (data.applies_to !== "one_time" && data.applies_to !== "both") {
+    if (!promoAppliesToOneTime(data.applies_to)) {
       toast.error("This promo code cannot be used for one-time bookings");
-      setDiscountPercent(0);
       return;
     }
 
-    setDiscountPercent(data.discount_percent);
-    toast.success(`Promo applied! ${data.discount_percent}% off your total`);
+    if (!promoMatchesService(data.restricted_to_service, selectedServiceObj)) {
+      toast.error(
+        `This promo code is only valid for "${data.restricted_to_service}" bookings`
+      );
+      return;
+    }
+
+    const restriction = data.restricted_to_service ?? null;
+    if (data.discount_type === "flat") {
+      const value = Number(data.discount_amount) || 0;
+      setAppliedPromo({ type: "flat", value, restriction });
+      toast.success(`Promo applied! $${value.toFixed(2)} off your total`);
+    } else {
+      const value = Number(data.discount_percent) || 0;
+      setAppliedPromo({ type: "percent", value, restriction });
+      toast.success(`Promo applied! ${value}% off your total`);
+    }
   };
 
   const handleCreateBooking = async () => {
@@ -140,7 +177,7 @@ export default function NewBookingModal({
       await handleSubmit({
         skipVehicleValidation: false,
         paymentMethod: "cash",
-        discountPercent: discountPercent,
+        promoCode: activePromo ? promoCode.trim() : "",
       });
       return;
     }
@@ -164,8 +201,7 @@ export default function NewBookingModal({
             add_on_ids: JSON.stringify(selectedAddOns),
             appointment_date: form.appointmentDate,
             appointment_time: form.appointmentTime,
-            promo_code: promoCode || null,
-            discount_percent: discountPercent || 0,
+            promo_code: activePromo ? promoCode.trim() : null,
           }),
         });
 
@@ -372,10 +408,8 @@ export default function NewBookingModal({
               value={promoCode}
               onChange={(e) => {
                 setPromoCode(e.target.value);
-                // Clear discount if promo code is cleared
-                if (!e.target.value) {
-                  setDiscountPercent(0);
-                }
+                // Editing the code un-applies it until Apply is pressed again
+                setAppliedPromo(null);
               }}
               className="flex-1"
             />
@@ -386,12 +420,12 @@ export default function NewBookingModal({
             >
               Apply
             </Button>
-            {discountPercent > 0 && (
+            {appliedPromo && (
               <Button
                 variant="outline"
                 onClick={() => {
                   setPromoCode("");
-                  setDiscountPercent(0);
+                  setAppliedPromo(null);
                   toast.info("Promo code removed");
                 }}
               >
@@ -399,11 +433,14 @@ export default function NewBookingModal({
               </Button>
             )}
           </div>
-          {discountPercent > 0 && (
+          {activePromo && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-3">
               <p className="text-sm text-green-700 font-semibold">
-                Promo applied: {discountPercent}% off — You save $
-                {((baseTotal * discountPercent) / 100).toFixed(2)}
+                Promo applied:{" "}
+                {activePromo.type === "flat"
+                  ? `$${activePromo.value.toFixed(2)}`
+                  : `${activePromo.value}%`}{" "}
+                off — You save ${promoSavings.toFixed(2)}
               </p>
             </div>
           )}
@@ -413,7 +450,7 @@ export default function NewBookingModal({
             <div className="flex justify-between items-center">
               <span className="font-medium">Total Amount:</span>
               <div className="flex flex-col items-end">
-                {discountPercent > 0 && (
+                {totalAmount < baseTotal && (
                   <span className="text-sm text-gray-500 line-through">
                     ${baseTotal.toFixed(2)}
                   </span>
@@ -500,21 +537,4 @@ function VehicleField({
       {error && <p className="text-red-500 text-sm">{error}</p>}
     </div>
   );
-}
-
-function calculateTotal(
-  selectedService: string | null,
-  services: any[],
-  selectedAddOns: string[],
-  addOns: any[]
-): number {
-  const servicePrice = selectedService
-    ? services.find((s) => s.id === selectedService)?.price || 0
-    : 0;
-
-  const addOnsTotal = addOns
-    .filter((a) => selectedAddOns.includes(a.id))
-    .reduce((sum, a) => sum + Number(a.price || 0), 0);
-
-  return servicePrice + addOnsTotal;
 }

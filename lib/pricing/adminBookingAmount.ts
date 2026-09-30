@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { ApiError } from "@/lib/http/apiError";
 import { computeBookingAmount } from "@/lib/pricing/computeBookingAmount";
 import { applyHolidaySale } from "@/lib/booking/holidaySale";
+import { validatePromo } from "@/lib/pricing/validatePromo";
 
 export interface AdminPricingInput {
   /** Empty for an add-ons-only booking, which staff can still create. */
@@ -10,23 +11,19 @@ export interface AdminPricingInput {
   /** The subscriber being booked for; null for a regular customer. */
   subscriberId: string | null;
   paymentMethod: "cash" | "subscription";
-  /** Promo discount the admin applied in the modal. */
-  discountPercent?: number;
+  /** Promo code staff entered; checked by the same rules as online bookings. */
+  promoCode?: string;
 }
 
 export interface AdminPricingResult {
   servicePrice: number;
   total: number;
+  /** Set when the promo was accepted, so the caller can record the use. */
+  promoId: number | null;
 }
 
 export const PLAN_NOT_COVERED_MESSAGE =
   "This subscriber's plan doesn't cover the selected service or add-ons. Take payment by cash or card instead.";
-
-/** Clamp to 0–100 so a bad value can't raise the price or push it negative. */
-export function applyAdminDiscount(amount: number, percent = 0): number {
-  const p = Number.isFinite(percent) ? Math.min(100, Math.max(0, percent)) : 0;
-  return Number((amount * (1 - p / 100)).toFixed(2));
-}
 
 /**
  * Authoritative price for a booking an admin creates. Plan coverage is read
@@ -38,6 +35,16 @@ export async function computeAdminBookingAmount(
   db: SupabaseClient,
   input: AdminPricingInput
 ): Promise<AdminPricingResult> {
+  const withPromo = async (amount: number) => {
+    const promo = await validatePromo(db, {
+      code: input.promoCode ?? "",
+      baseAmount: amount,
+      userId: input.subscriberId,
+      serviceId: input.servicePackageId,
+    });
+    return { total: promo.discountedAmount, promoId: promo.promoId };
+  };
+
   // "subscription" means nothing is collected, so the plan must cover it all.
   const assertCovered = (amount: number) => {
     if (input.paymentMethod === "subscription" && amount > 0) {
@@ -59,10 +66,7 @@ export async function computeAdminBookingAmount(
     );
     const amount = Number(applyHolidaySale(addOnsTotal).toFixed(2));
     assertCovered(amount);
-    return {
-      servicePrice: 0,
-      total: applyAdminDiscount(amount, input.discountPercent),
-    };
+    return { servicePrice: 0, ...(await withPromo(amount)) };
   }
 
   const priced = await computeBookingAmount(db, {
@@ -75,8 +79,5 @@ export async function computeAdminBookingAmount(
 
   assertCovered(priced.amount);
 
-  return {
-    servicePrice: priced.servicePrice,
-    total: applyAdminDiscount(priced.amount, input.discountPercent),
-  };
+  return { servicePrice: priced.servicePrice, ...(await withPromo(priced.amount)) };
 }

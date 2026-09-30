@@ -6,6 +6,7 @@ import { AuthError, requireAdmin } from "@/lib/auth/guards";
 import { ApiError } from "@/lib/http/apiError";
 import { computeAdminBookingAmount } from "@/lib/pricing/adminBookingAmount";
 import { persistBooking } from "@/lib/booking/persistBooking";
+import { recordPromoRedemption } from "@/lib/pricing/validatePromo";
 
 export type AdminBookingInput = {
   license_plate?: string;
@@ -17,7 +18,7 @@ export type AdminBookingInput = {
   appointmentTime?: string;
   totalDuration?: number;
   payment_method: "cash" | "subscription";
-  discountPercent?: number;
+  promoCode?: string;
   customerName?: string;
   customerEmail?: string;
   customerPhone?: string;
@@ -60,7 +61,7 @@ export async function createAdminBooking(
       addOnIds,
       subscriberId: subscriberId ?? null,
       paymentMethod: input.payment_method,
-      discountPercent: input.discountPercent,
+      promoCode: input.promoCode,
     });
 
     const booking = await persistBooking(admin, {
@@ -82,6 +83,15 @@ export async function createAdminBooking(
       customerPhone: input.customerPhone,
       notes: input.notes,
     });
+
+    // Staff uses count toward the code's max_uses like online redemptions.
+    if (priced.promoId !== null) {
+      await recordPromoRedemption(admin, {
+        promoId: priced.promoId,
+        userId: subscriberId ?? null,
+        customerEmail: booking.customer_email ?? null,
+      });
+    }
 
     return { ok: true, bookingId: booking.id };
   } catch (err) {

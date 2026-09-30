@@ -101,7 +101,7 @@ export function useBookingForm(onSuccess: () => void, subscriber?: any) {
   const handleSubmit = async ({
     skipVehicleValidation = false,
     paymentMethod = "cash",
-    discountPercent = 0,
+    promoCode = "",
   } = {}) => {
     // ✅ Validate vehicle form
     if (!skipVehicleValidation && !validate()) {
@@ -151,7 +151,7 @@ export function useBookingForm(onSuccess: () => void, subscriber?: any) {
           appointmentTime: form.appointmentTime,
           totalDuration,
           payment_method: paymentMethod as "cash" | "subscription",
-          discountPercent,
+          promoCode,
           customerName: form.customerName,
           customerEmail: form.customerEmail,
           customerPhone: form.customerPhone,
