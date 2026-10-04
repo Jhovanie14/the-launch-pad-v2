@@ -41,12 +41,6 @@ yarn-error.log*
 next-env.d.ts
 
 # mcp, skills, agents (local tooling — not shared)
-.agents
-.claude/settings.local.json
-.claude/skills/
-.impeccable/
-.mcp.json
-skills-lock.json
 
 # supabase local/CLI state
 supabase/.temp/
