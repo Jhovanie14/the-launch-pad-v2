@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { legacyFirstPassBody } from "@/lib/blog/post";
 import { toCard, toPost, type FullRow } from "@/lib/blog/rows";
 
 const row: FullRow = {
@@ -21,6 +22,7 @@ const row: FullRow = {
   cta: { destination: "nowhere", buttonText: "" },
   published: true,
   created_at: "2026-09-30T09:00:00Z",
+  content: null,
 };
 
 describe("toCard", () => {
@@ -45,5 +47,20 @@ describe("toPost", () => {
     expect(post.faq).toEqual([]);
     expect(post.cta).toBeNull();
     expect(post.createdAt).toBeInstanceOf(Date);
+  });
+});
+
+describe("toPost with pre-template content", () => {
+  const legacy = "Opening line.\nBugs Become More Common During Summer\nSummer is bug season.\nWash them off early.";
+
+  it("lays out an untouched converted post from its original text", () => {
+    const post = toPost({ ...row, title: "Bugs", content: legacy, body: legacyFirstPassBody(legacy) });
+    expect(post.body.intro).toBe("Opening line.");
+    expect(post.body.sections.map((s) => s.heading)).toEqual(["Bugs Become More Common During Summer"]);
+  });
+
+  it("keeps a body someone has edited, even when original text exists", () => {
+    const edited = { intro: "Rewritten.", sections: [] };
+    expect(toPost({ ...row, content: legacy, body: edited }).body).toEqual(edited);
   });
 });

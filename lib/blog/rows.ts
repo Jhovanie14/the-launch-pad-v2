@@ -1,5 +1,12 @@
 import { normaliseCta, type BlogCta } from "./cta";
-import { normaliseBody, normaliseFaq, type BlogBody, type BlogFaq } from "./post";
+import {
+  legacyContentToBody,
+  legacyFirstPassBody,
+  normaliseBody,
+  normaliseFaq,
+  type BlogBody,
+  type BlogFaq,
+} from "./post";
 
 /**
  * Database rows → what pages render. The select lists live here beside the
@@ -10,7 +17,7 @@ import { normaliseBody, normaliseFaq, type BlogBody, type BlogFaq } from "./post
 export const CARD_COLUMNS =
   "id, slug, title, excerpt, meta_description, cover_image, cover_image_alt, published_at, updated_at, category:blog_categories(slug, name)";
 
-export const FULL_COLUMNS = `${CARD_COLUMNS}, seo_title, focus_keyword, category_id, author, body, faq, cta, published, created_at`;
+export const FULL_COLUMNS = `${CARD_COLUMNS}, seo_title, focus_keyword, category_id, author, body, faq, cta, published, created_at, content`;
 
 type CategoryEmbed = { slug: string; name: string } | { slug: string; name: string }[] | null;
 
@@ -37,6 +44,8 @@ export type FullRow = CardRow & {
   cta: unknown;
   published: boolean;
   created_at: string;
+  /** Pre-template plain text; null for posts written in the editor. */
+  content: string | null;
 };
 
 export type BlogCard = {
@@ -88,6 +97,20 @@ export function toCard(row: CardRow): BlogCard {
 }
 
 /**
+ * The body to render. A pre-template post whose body is still the migration's
+ * flat first pass is laid out from its original text instead — headings,
+ * lists and paragraph breaks recovered (legacyContentToBody) — so it reads
+ * properly without rewriting the data. Once it is saved from the editor, the
+ * stored body differs and is used as is.
+ */
+function bodyOf(row: FullRow): BlogBody {
+  const stored = normaliseBody(row.body);
+  if (!row.content?.trim()) return stored;
+  const untouched = JSON.stringify(stored) === JSON.stringify(legacyFirstPassBody(row.content));
+  return untouched ? legacyContentToBody(row.content, row.title) : stored;
+}
+
+/**
  * Re-normalise on read: what reaches a page is held to the same allow-list as
  * what was saved, whatever is in the column.
  */
@@ -98,7 +121,7 @@ export function toPost(row: FullRow): BlogPostFull {
     focusKeyword: row.focus_keyword,
     categoryId: row.category_id,
     author: row.author,
-    body: normaliseBody(row.body),
+    body: bodyOf(row),
     faq: normaliseFaq(row.faq),
     cta: normaliseCta(row.cta),
     published: row.published,

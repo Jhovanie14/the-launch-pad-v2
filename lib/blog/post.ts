@@ -229,8 +229,34 @@ function richBlock(b: LegacyBlock): unknown {
  * of contents and readable lists instead of a wall of equal paragraphs.
  *
  * The 20261007000000 migration did a simpler first pass in SQL (paragraphs
- * only); scripts/reconvert-legacy-blog.ts upgrades untouched posts to this.
+ * only); posts still holding that are laid out with this at read time
+ * (lib/blog/rows.ts).
  */
+/**
+ * What the 20261007000000 migration's SQL backfill produced: paragraphs only,
+ * the first one as the intro. A stored body equal to this has never been
+ * saved from the editor, so it can be laid out again from `content`.
+ */
+export function legacyFirstPassBody(content: string | null | undefined): BlogBody {
+  const paragraphs = introParagraphs((content ?? "").replace(/\r\n?/g, "\n"));
+  if (paragraphs.length === 0) return { intro: "", sections: [] };
+  const [first, ...rest] = paragraphs;
+  return normaliseBody({
+    intro: first,
+    sections: rest.length
+      ? [
+          {
+            heading: "",
+            content: {
+              type: "doc",
+              content: rest.map((text) => ({ type: "paragraph", content: [{ type: "text", text }] })),
+            },
+          },
+        ]
+      : [],
+  });
+}
+
 export function legacyContentToBody(content: string | null | undefined, title = ""): BlogBody {
   const blocks = (content ?? "")
     .replace(/\r\n?/g, "\n")
