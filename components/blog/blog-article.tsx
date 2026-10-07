@@ -91,16 +91,26 @@ export function BlogArticle({
           <Breadcrumbs items={crumbs} />
 
           <header className="mx-auto max-w-3xl text-center">
-            {post.categoryName && (
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-700">{post.categoryName}</p>
-            )}
-            <h1 className="mt-4 text-balance text-4xl font-semibold tracking-tight text-blue-900 md:text-5xl">
+            <h1 className="text-balance text-4xl font-semibold leading-[1.1] tracking-tight text-blue-900 md:text-5xl">
               {post.title}
             </h1>
             {post.excerpt && (
-              <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground">{post.excerpt}</p>
+              <p className="mx-auto mt-5 max-w-2xl text-pretty text-lg leading-relaxed text-muted-foreground sm:text-xl">
+                {post.excerpt}
+              </p>
             )}
-            <p className="mt-6 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs tabular-nums text-muted-foreground">
+            <p className="mt-7 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-sm tabular-nums text-muted-foreground">
+              {post.categorySlug && post.categoryName && (
+                <>
+                  <Link
+                    href={`/blog/category/${post.categorySlug}`}
+                    className="font-medium text-blue-900 underline-offset-4 hover:underline"
+                  >
+                    {post.categoryName}
+                  </Link>
+                  <span aria-hidden>·</span>
+                </>
+              )}
               <span>{`By ${post.author}`}</span>
               <span aria-hidden>·</span>
               <time dateTime={published.toISOString()}>{formatPostDate(published)}</time>
@@ -143,7 +153,7 @@ export function BlogArticle({
             {/* Table of contents — a disclosure on small screens, a sticky rail on large. */}
             {hasToc && (
               <aside>
-                <div className="lg:sticky lg:top-24">
+                <div className="lg:sticky lg:top-36">
                   <details className="group rounded-xl border bg-card p-5 lg:hidden">
                     <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-medium text-foreground [&::-webkit-details-marker]:hidden">
                       In this guide
@@ -152,7 +162,7 @@ export function BlogArticle({
                     <TocList items={toc} className="mt-4" />
                   </details>
                   <nav aria-label="In this guide" className="hidden lg:block">
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">In this guide</p>
+                    <p className="text-sm font-semibold text-foreground">In this guide</p>
                     <TocList items={toc} className="mt-4" />
                   </nav>
                 </div>
@@ -161,11 +171,9 @@ export function BlogArticle({
 
             <div className="min-w-0 max-w-[68ch]">
               {intro.length > 0 && (
-                <div className="blog-prose">
+                <div className="blog-prose blog-lead">
                   {intro.map((p, i) => (
-                    <p key={i} className={i === 0 ? "text-xl leading-relaxed text-foreground" : undefined}>
-                      {p}
-                    </p>
+                    <p key={i}>{p}</p>
                   ))}
                 </div>
               )}
@@ -174,15 +182,20 @@ export function BlogArticle({
                 <section
                   key={anchors[i]}
                   aria-labelledby={section.heading ? anchors[i] : undefined}
-                  className="mt-12"
+                  // An untitled section continues the text above it; a headed
+                  // one opens with more space above the heading than below.
+                  className={section.heading ? "mt-14 first:mt-0" : "mt-0"}
                 >
                   {section.heading && (
-                    <h2 id={anchors[i]} className="scroll-mt-28 text-2xl font-semibold tracking-tight text-blue-900 sm:text-3xl">
+                    <h2
+                      id={anchors[i]}
+                      className="scroll-mt-36 text-balance text-2xl font-semibold leading-tight tracking-tight text-blue-900 sm:text-[1.75rem]"
+                    >
                       {section.heading}
                     </h2>
                   )}
                   <div
-                    className="blog-prose mt-5"
+                    className={section.heading ? "blog-prose mt-4" : "blog-prose"}
                     dangerouslySetInnerHTML={{
                       __html: renderRichDocToHtml(section.content, { internalHosts: INTERNAL_HOSTS }),
                     }}
@@ -193,11 +206,8 @@ export function BlogArticle({
               {/* Call to action — always present: a reader who has just learned
                   how to look after their car should be one click from booking. */}
               <aside className="mt-16 overflow-hidden rounded-xl bg-blue-900 p-8 text-white sm:p-10">
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/70">
-                  The Launch Pad · 10410 S Main St
-                </p>
-                <p className="mt-4 text-2xl font-semibold tracking-tight sm:text-3xl">{cta.heading}</p>
-                <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/80">{cta.body}</p>
+                <p className="text-balance text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">{cta.heading}</p>
+                <p className="mt-3 max-w-xl text-base leading-relaxed text-blue-100">{cta.body}</p>
                 <div className="mt-7 flex flex-wrap items-center gap-4">
                   <Button asChild size="lg" className="bg-white text-blue-900 hover:bg-white/90">
                     <Link href={cta.href}>
@@ -206,16 +216,19 @@ export function BlogArticle({
                     </Link>
                   </Button>
                   {cta.href !== "/services" && (
-                    <Link href="/services" className="text-sm text-white/80 underline underline-offset-4 hover:text-white">
+                    <Link href="/services" className="text-sm text-blue-100 underline underline-offset-4 hover:text-white">
                       Or see all three services
                     </Link>
                   )}
                 </div>
+                <p className="mt-8 border-t border-white/15 pt-5 text-sm text-blue-100">
+                  10410 S Main St, Houston · Self-service bays open 24/7
+                </p>
               </aside>
 
               {post.faq.length > 0 && (
                 <section aria-labelledby="faq" className="mt-16">
-                  <h2 id="faq" className="scroll-mt-28 text-2xl font-semibold tracking-tight text-blue-900 sm:text-3xl">
+                  <h2 id="faq" className="scroll-mt-36 text-2xl font-semibold tracking-tight text-blue-900 sm:text-3xl">
                     Frequently asked questions
                   </h2>
                   <div className="mt-6 divide-y border-y">
@@ -245,12 +258,9 @@ export function BlogArticle({
         {related.length > 0 && (
           <section aria-labelledby="related" className={`${BLOG_CONTAINER} mt-24`}>
             <div className="flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-700">Keep reading</p>
-                <h2 id="related" className="mt-3 text-2xl font-semibold tracking-tight text-blue-900 sm:text-3xl">
-                  {post.categoryName ? `More on ${post.categoryName.toLowerCase()}` : "More from the blog"}
-                </h2>
-              </div>
+              <h2 id="related" className="text-2xl font-semibold tracking-tight text-blue-900 sm:text-[1.75rem]">
+                {post.categoryName ? `More on ${post.categoryName.toLowerCase()}` : "More from the blog"}
+              </h2>
               <Link href="/blog" className="text-sm font-medium text-blue-900 underline underline-offset-4">
                 All posts
               </Link>

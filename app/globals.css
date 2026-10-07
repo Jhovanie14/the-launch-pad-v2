@@ -183,23 +183,44 @@
    typography plugin. The editor shares it so what is written is what is read. */
 
 .blog-prose {
-  color: color-mix(in oklab, var(--foreground) 82%, var(--background));
+  /* Near-black rather than muted gray: long-form text is read, not scanned,
+     and it is read on phones in daylight at the site. */
+  color: color-mix(in oklab, var(--foreground) 88%, var(--background));
   font-size: 1.125rem;
-  line-height: 1.75;
+  line-height: 1.72;
   overflow-wrap: break-word;
+  text-wrap: pretty;
+}
+
+/* Rhythm in em, so it holds at every text size. The last element sheds its
+   margin so section spacing comes from the layout, not stacked margins. */
+.blog-prose > :last-child {
+  margin-bottom: 0;
 }
 
 .blog-prose p {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.15em;
+}
+
+/* The opening paragraph of a post: larger, full-strength, the hook. */
+.blog-lead > p:first-child {
+  font-size: 1.25rem;
+  line-height: 1.6;
+  color: var(--foreground);
 }
 
 .blog-prose h3 {
-  margin-top: 2rem;
-  margin-bottom: 0.75rem;
-  font-size: 1.25rem;
+  margin: 2em 0 0.55em;
+  font-size: 1.2rem;
   font-weight: 600;
   line-height: 1.3;
+  letter-spacing: -0.01em;
   color: var(--foreground);
+  text-wrap: balance;
+}
+
+.blog-prose > h3:first-child {
+  margin-top: 0;
 }
 
 .blog-prose strong {
@@ -221,9 +242,16 @@
   text-decoration-color: var(--color-blue-900, #1c398e);
 }
 
+.blog-prose a:focus-visible {
+  outline: 2px solid var(--color-blue-900, #1c398e);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
 .blog-prose ul,
 .blog-prose ol {
-  margin: 0 0 1.25rem 1.5rem;
+  margin: 0 0 1.25em;
+  padding-left: 1.35em;
 }
 
 .blog-prose ul,
@@ -237,16 +265,21 @@
 }
 
 .blog-prose li {
-  margin-bottom: 0.5rem;
-  padding-left: 0.25rem;
+  margin-bottom: 0.4em;
+  padding-left: 0.3em;
 }
 
 .blog-prose li > p {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0;
 }
 
 .blog-prose li::marker {
   color: var(--color-blue-900, #1c398e);
+}
+
+.blog-prose ol > li::marker {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .blog-editor-content .ProseMirror {

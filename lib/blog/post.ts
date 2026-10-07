@@ -131,29 +131,149 @@ export function postSummary(post: {
   return first.length > 200 ? `${first.slice(0, 197).trimEnd()}…` : first;
 }
 
+// ---------------------------------------------------------------------------
+// Pre-template posts
+// ---------------------------------------------------------------------------
+
+type LegacyBlock =
+  | { kind: "heading"; level: 1 | 2 | 3; text: string }
+  | { kind: "paragraph"; text: string }
+  | { kind: "list"; items: string[] };
+
+const RULE = /^(?:-{3,}|\*{3,}|_{3,})$/;
+const MD_HEADING = /^(#{1,6})\s+(.+?)\s*#*$/;
+const BULLET = /^[-*•]\s+/;
+const SENTENCE_END = /[.!?,;:…]$/;
+
+/** Letters and digits only, lowercased — for "is this block just the title again?". */
+function looseKey(s: string): string {
+  return s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
+}
+
+/** Short, starts like a title, and does not end like a sentence. */
+function looksLikeHeading(line: string): boolean {
+  return line.length <= 90 && /^[\p{Lu}\p{N}]/u.test(line) && !SENTENCE_END.test(line);
+}
+
+/** Two or more short lines, none of which ends like a sentence. */
+function looksLikeList(lines: string[]): boolean {
+  return lines.length >= 2 && lines.every((l) => l.length <= 80 && !SENTENCE_END.test(l));
+}
+
+function classify(block: string): LegacyBlock | null {
+  const lines = block
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+  if (lines.length === 0) return null;
+  if (lines.length === 1) {
+    const [line] = lines;
+    if (RULE.test(line)) return null;
+    const md = MD_HEADING.exec(line);
+    if (md) return { kind: "heading", level: Math.min(md[1].length, 3) as 1 | 2 | 3, text: md[2] };
+    if (looksLikeHeading(line)) return { kind: "heading", level: 2, text: line };
+    return { kind: "paragraph", text: line };
+  }
+  if (lines.every((l) => BULLET.test(l))) return { kind: "list", items: lines.map((l) => l.replace(BULLET, "")) };
+  if (looksLikeList(lines)) return { kind: "list", items: lines };
+  return { kind: "paragraph", text: lines.join(" ") };
+}
+
 /**
- * The plain-text `content` of a pre-template post, as the template. Mirrors
- * the backfill in supabase/migrations/20261007000000_blog_seo.sql — change
- * one, change both.
+ * Some posts were typed with single line breaks between paragraphs. A block
+ * of three or more lines where most END like sentences is that, not a hard-
+ * wrapped paragraph (whose lines break mid-sentence) — split it line by line.
  */
-export function legacyContentToBody(content: string | null | undefined): BlogBody {
-  const paragraphs = introParagraphs((content ?? "").replace(/\r\n?/g, "\n"));
-  if (paragraphs.length === 0) return { intro: "", sections: [] };
-  const [first, ...rest] = paragraphs;
-  return {
-    intro: first.slice(0, BLOG_LIMITS.intro),
-    sections: rest.length
-      ? [
-          {
-            heading: "",
-            content: {
-              type: "doc",
-              content: rest.map((text) => ({ type: "paragraph", content: [{ type: "text", text }] })),
-            },
-          },
-        ]
-      : [],
-  };
+function splitLinePerParagraph(block: string): string[] {
+  const lines = block
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+  const sentences = lines.filter((l) => /[.!?]["”’)]?$/.test(l)).length;
+  return lines.length >= 3 && sentences * 2 >= lines.length ? lines : [block];
+}
+
+const plain = (s: string) => s.replace(/\*\*(.+?)\*\*/g, "$1");
+
+/** `**bold**` → bold marks; everything else is text. */
+function inlines(s: string): unknown[] {
+  return s
+    .split(/(\*\*.+?\*\*)/g)
+    .filter(Boolean)
+    .map((part) =>
+      /^\*\*.+\*\*$/.test(part)
+        ? { type: "text", text: part.slice(2, -2), marks: [{ type: "bold" }] }
+        : { type: "text", text: part },
+    );
+}
+
+function richBlock(b: LegacyBlock): unknown {
+  if (b.kind === "list") {
+    return {
+      type: "bulletList",
+      content: b.items.map((i) => ({ type: "listItem", content: [{ type: "paragraph", content: inlines(i) }] })),
+    };
+  }
+  if (b.kind === "heading") return { type: "heading", attrs: { level: 3 }, content: inlines(b.text) };
+  return { type: "paragraph", content: inlines(b.text) };
+}
+
+/**
+ * The plain-text `content` of a pre-template post, as the template.
+ *
+ * Those posts were typed into a textarea, so their structure is implied rather
+ * than marked up: a short line with no closing punctuation is a heading
+ * ("Bugs Become More Common During Summer", "1. Park Your Vehicle…"), a block
+ * of short lines is a list, and a few posts use markdown (#, **bold**, ---).
+ * Recovering that structure is what gives a converted post real H2s, a table
+ * of contents and readable lists instead of a wall of equal paragraphs.
+ *
+ * The 20261007000000 migration did a simpler first pass in SQL (paragraphs
+ * only); scripts/reconvert-legacy-blog.ts upgrades untouched posts to this.
+ */
+export function legacyContentToBody(content: string | null | undefined, title = ""): BlogBody {
+  const blocks = (content ?? "")
+    .replace(/\r\n?/g, "\n")
+    .split(/\n\s*\n/)
+    .flatMap(splitLinePerParagraph)
+    .map(classify)
+    .filter((b): b is LegacyBlock => b !== null);
+
+  // Many posts open by repeating their title, which the page already shows as the H1.
+  const first = blocks[0];
+  if (
+    first &&
+    ((first.kind === "heading" && first.level === 1) ||
+      (first.kind !== "list" && !!title && looseKey(first.text) === looseKey(title)))
+  ) {
+    blocks.shift();
+  }
+
+  const isSectionHeading = (b: LegacyBlock | undefined) => b?.kind === "heading" && b.level <= 2;
+  const intro: string[] = [];
+  let i = 0;
+  if (blocks.some(isSectionHeading)) {
+    // Leading paragraphs are the intro — except one that introduces a list ("We offer:").
+    while (blocks[i]?.kind === "paragraph" && blocks[i + 1]?.kind !== "list") {
+      intro.push(plain((blocks[i++] as { text: string }).text));
+    }
+  } else if (blocks[0]?.kind === "paragraph") {
+    intro.push(plain(blocks[0].text));
+    i = 1;
+  }
+
+  const sections: { heading: string; content: { type: "doc"; content: unknown[] } }[] = [];
+  for (const b of blocks.slice(i)) {
+    if (isSectionHeading(b)) {
+      sections.push({ heading: plain((b as { text: string }).text), content: { type: "doc", content: [] } });
+      continue;
+    }
+    if (sections.length === 0) sections.push({ heading: "", content: { type: "doc", content: [] } });
+    sections[sections.length - 1].content.content.push(richBlock(b));
+  }
+
+  // Through the normaliser, so the result obeys the same limits and allow-list as a saved post.
+  return normaliseBody({ intro: intro.join("\n\n"), sections });
 }
 
 const TIME_ZONE = "America/Chicago";

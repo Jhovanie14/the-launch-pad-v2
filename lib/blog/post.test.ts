@@ -41,27 +41,122 @@ describe("normalisers", () => {
 });
 
 describe("legacyContentToBody", () => {
-  const para = (text: string) => ({ type: "paragraph", content: [{ type: "text", text }] });
+  const text = (t: string, bold = false) =>
+    bold ? { type: "text", text: t, marks: [{ type: "bold" }] } : { type: "text", text: t };
+  const p = (...content: unknown[]) => ({ type: "paragraph", content });
+  const ul = (...items: string[]) => ({
+    type: "bulletList",
+    content: items.map((i) => ({ type: "listItem", content: [p(text(i))] })),
+  });
+  const doc = (...content: unknown[]) => ({ type: "doc", content });
 
-  it("makes the first paragraph the intro and the rest one untitled section", () => {
-    expect(legacyContentToBody("First line\nwraps\n\nSecond\n\n\nThird")).toEqual({
-      intro: "First line wraps",
-      sections: [{ heading: "", content: { type: "doc", content: [para("Second"), para("Third")] } }],
+  it("drops a first block that repeats the title", () => {
+    const body = legacyContentToBody("How Do You Use a Self-Service Car Wash?\n\nStart here.", "How Do You Use a Self-Service Car Wash?");
+    expect(body.intro).toBe("Start here.");
+  });
+
+  it("turns short unpunctuated lines into section headings, keeping step numbers", () => {
+    const body = legacyContentToBody(
+      "Opening line.\n\n1. Park Your Vehicle in the Wash Bay\n\nPull into a bay.\n\nBugs Become More Common During Summer\n\nSummer is bug season.",
+    );
+    expect(body.intro).toBe("Opening line.");
+    expect(body.sections).toEqual([
+      { heading: "1. Park Your Vehicle in the Wash Bay", content: doc(p(text("Pull into a bay."))) },
+      { heading: "Bugs Become More Common During Summer", content: doc(p(text("Summer is bug season."))) },
+    ]);
+  });
+
+  it("keeps questions and short sentences as paragraphs", () => {
+    const body = legacyContentToBody("Intro.\n\nWhat order should I use the settings?\n\nUnfortunately, that is not what happens.");
+    expect(body.sections).toEqual([
+      {
+        heading: "",
+        content: doc(p(text("What order should I use the settings?")), p(text("Unfortunately, that is not what happens."))),
+      },
+    ]);
+  });
+
+  it("reads blocks of short lines as bullet lists, with or without markers", () => {
+    const body = legacyContentToBody(
+      "Intro.\n\nWhat Builds Up\n\nYour car may collect:\n\nDust\nPollen\nRoad film\n\n- Fewer swirls\n- Less fading",
+    );
+    expect(body.sections[0]).toEqual({
+      heading: "What Builds Up",
+      content: doc(p(text("Your car may collect:")), ul("Dust", "Pollen", "Road film"), ul("Fewer swirls", "Less fading")),
+    });
+  });
+
+  it("splits a post typed with single line breaks into its paragraphs and headings", () => {
+    const body = legacyContentToBody(
+      "Fall brings cooler temperatures and plenty of debris.\nFallen Leaves Can Be Hard on Your Car\nLeaves trap moisture against the paint.\nThey also stain clear coat.",
+    );
+    expect(body).toEqual({
+      intro: "Fall brings cooler temperatures and plenty of debris.",
+      sections: [
+        {
+          heading: "Fallen Leaves Can Be Hard on Your Car",
+          content: doc(p(text("Leaves trap moisture against the paint.")), p(text("They also stain clear coat."))),
+        },
+      ],
+    });
+  });
+
+  it("joins wrapped sentence lines into one paragraph", () => {
+    const body = legacyContentToBody("Intro.\n\nCome in anytime, as often as you like.  \nPerfect for busy drivers who want a spotless car.");
+    expect(body.sections[0].content).toEqual(
+      doc(p(text("Come in anytime, as often as you like. Perfect for busy drivers who want a spotless car."))),
+    );
+  });
+
+  it("understands markdown headings, rules and bold", () => {
+    const body = legacyContentToBody(
+      "# Top 5 Benefits of Joining\n\nWhen you join our **Car Wash Club**, you save.\n\n---\n\n## 1. Unlimited Washes\n\nCome in anytime.\n\n### The fine print\n\nNo contract.",
+    );
+    expect(body.intro).toBe("When you join our Car Wash Club, you save.");
+    expect(body.sections).toEqual([
+      {
+        heading: "1. Unlimited Washes",
+        content: doc(
+          p(text("Come in anytime.")),
+          { type: "heading", attrs: { level: 3 }, content: [text("The fine print")] },
+          p(text("No contract.")),
+        ),
+      },
+    ]);
+  });
+
+  it("keeps bold inside section paragraphs", () => {
+    const body = legacyContentToBody("Intro.\n\nDiscounts\n\nSubscribers get **15% off** detailing.");
+    expect(body.sections[0].content).toEqual(doc(p(text("Subscribers get "), text("15% off", true), text(" detailing."))));
+  });
+
+  it("starts an untitled section when a list comes before the first heading", () => {
+    const body = legacyContentToBody("Intro.\n\nWe offer:\n\nWashing\nWaxing\n\nWhy Members Save\n\nOne price.");
+    expect(body.intro).toBe("Intro.");
+    expect(body.sections.map((s) => s.heading)).toEqual(["", "Why Members Save"]);
+  });
+
+  it("with no headings, keeps the first paragraph as the intro and the rest as one section", () => {
+    expect(legacyContentToBody("First line\nwraps on.\n\nSecond one.\n\n\nThird one.")).toEqual({
+      intro: "First line wraps on.",
+      sections: [{ heading: "", content: doc(p(text("Second one.")), p(text("Third one."))) }],
     });
   });
 
   it("handles Windows line endings", () => {
-    expect(legacyContentToBody("One\r\n\r\nTwo").intro).toBe("One");
-    expect(legacyContentToBody("One\r\n\r\nTwo").sections).toHaveLength(1);
+    const body = legacyContentToBody("One.\r\n\r\nTwo.");
+    expect(body.intro).toBe("One.");
+    expect(body.sections).toHaveLength(1);
   });
 
   it("produces no section from a single paragraph", () => {
-    expect(legacyContentToBody("Only this")).toEqual({ intro: "Only this", sections: [] });
+    expect(legacyContentToBody("Only this.")).toEqual({ intro: "Only this.", sections: [] });
   });
 
   it("returns the empty template for nothing", () => {
     expect(legacyContentToBody(null)).toEqual({ intro: "", sections: [] });
     expect(legacyContentToBody("  \n\n  ")).toEqual({ intro: "", sections: [] });
+    expect(legacyContentToBody("Same Title", "Same Title")).toEqual({ intro: "", sections: [] });
   });
 });
 
