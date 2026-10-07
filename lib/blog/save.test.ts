@@ -125,3 +125,11 @@ describe("saveErrorFromDb", () => {
     expect(saveErrorFromDb(null)).toBeNull();
   });
 });
+
+describe("legacy live posts", () => {
+  it("can be saved with a hand-typed, non-canonical slug", () => {
+    const legacy: ExistingPost = { ...live, slug: "Old_Post Title-" };
+    const result = plan({ ...complete(), slug: "Old_Post Title-" }, { existing: legacy });
+    expect(result.ok && result.values.slug).toBe("Old_Post Title-");
+  });
+});

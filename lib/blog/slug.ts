@@ -69,7 +69,10 @@ export function resolveSlugForSave(args: {
   const cleaned = requested?.trim() ? slugify(requested) : "";
 
   if (existing && isSlugLocked(existing)) {
-    if (cleaned && cleaned !== existing.slug) {
+    // Compare the RAW value: pre-template posts carry hand-typed slugs that
+    // slugify() would "correct", and a live address must round-trip as is.
+    const raw = requested?.trim() ?? "";
+    if (raw && raw !== existing.slug) {
       return {
         ok: false,
         error:

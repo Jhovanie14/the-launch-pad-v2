@@ -6,7 +6,7 @@ import { publishedPostBySlug, publishedSlugs, relatedPosts } from "@/lib/blog/qu
 import { OG_IMAGE, SITE_NAME } from "@/lib/seo/openGraph";
 
 // Cached and refreshed every 5 minutes; every save/publish/unpublish also
-// revalidates /blog immediately (app/actions/blog.ts), so an unpublished post
+// revalidates the (user)/blog layout immediately (lib/blog/revalidate.ts), so an unpublished post
 // 404s straight away rather than at the next interval.
 export const revalidate = 300;
 

@@ -52,6 +52,8 @@ export type ChecklistInput = {
   cta: BlogCta | null;
   /** Hosts that count as "our site" for absolute links (e.g. the prod domain). */
   internalHosts?: string[];
+  /** Ever published: the address is fixed as stored, so its format is not the editor's to fix. */
+  slugLocked?: boolean;
 };
 
 export type ChecklistResult = {
@@ -123,7 +125,7 @@ export function seoChecklist(input: ChecklistInput): ChecklistResult {
     item(
       "slug",
       "Web address",
-      isValidSlug(input.slug.trim()),
+      !!input.slugLocked || isValidSlug(input.slug.trim()),
       `/blog/${input.slug.trim()}`,
       "Add a web address — letters, numbers and hyphens only.",
       { required: true },

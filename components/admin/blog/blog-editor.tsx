@@ -157,8 +157,9 @@ export function BlogEditor({
         faq: payload.faq.filter((f) => f.question.trim() && f.answer.trim()),
         cta: normaliseCta(payload.cta),
         internalHosts: INTERNAL_HOSTS,
+        slugLocked: initial.slugLocked,
       }),
-    [title, seoTitle, metaDescription, effectiveSlug, focusKeyword, coverImage, coverImageAlt, payload],
+    [title, seoTitle, metaDescription, effectiveSlug, focusKeyword, coverImage, coverImageAlt, payload, initial.slugLocked],
   );
 
   // Dirty tracking against what the server last accepted, so leaving the page

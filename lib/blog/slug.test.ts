@@ -86,3 +86,20 @@ describe("slug lock rule", () => {
     expect(resolveSlugForSave({ requested: "", title: "???", existing: null }).ok).toBe(false);
   });
 });
+
+describe("legacy slugs on locked posts", () => {
+  // Pre-template posts had hand-typed slugs; once live they cannot change,
+  // so they must round-trip unchanged even when they are not canonical.
+  const legacy = { slug: "Old_Post Title-", publishedAt: "2025-01-01T00:00:00Z" };
+
+  it("keeps a non-canonical locked slug when the same value is posted back", () => {
+    expect(resolveSlugForSave({ requested: "Old_Post Title-", title: "x", existing: legacy })).toEqual({
+      ok: true,
+      slug: "Old_Post Title-",
+    });
+  });
+
+  it("still refuses a different value", () => {
+    expect(resolveSlugForSave({ requested: "old-post-title", title: "x", existing: legacy }).ok).toBe(false);
+  });
+});

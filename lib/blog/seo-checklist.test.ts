@@ -167,3 +167,15 @@ describe("containsKeyword", () => {
     expect(containsKeyword("anything", "")).toBe(false);
   });
 });
+
+describe("locked slugs", () => {
+  it("passes the web address item for a locked legacy slug", () => {
+    const input = { ...good(), slug: "Old_Post Title-", slugLocked: true };
+    expect(byId(input, "slug").status).toBe("pass");
+    expect(seoChecklist(input).canPublish).toBe(true);
+  });
+
+  it("still fails an invalid slug that is not locked", () => {
+    expect(byId({ ...good(), slug: "Old_Post Title-" }, "slug").status).toBe("fail");
+  });
+});

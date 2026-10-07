@@ -19,6 +19,7 @@ import {
   type SaveFailure,
   type SaveIntent,
 } from "@/lib/blog/save";
+import { BLOG_REVALIDATION_TARGETS } from "@/lib/blog/revalidate";
 import { SITE_HOST } from "@/lib/blog/site";
 import { isValidSlug, slugify } from "@/lib/blog/slug";
 import { createAdminClient } from "@/utils/supabase/admin";
@@ -48,10 +49,7 @@ async function adminOrNull() {
 }
 
 function revalidateBlog() {
-  // "layout" covers every page under /blog: posts, categories, preview, RSS.
-  revalidatePath("/blog", "layout");
-  revalidatePath("/admin/blog", "layout");
-  revalidatePath("/sitemap.xml");
+  for (const { path, type } of BLOG_REVALIDATION_TARGETS) revalidatePath(path, type);
 }
 
 /**
@@ -107,7 +105,10 @@ export async function unpublishBlogPost(id: string): Promise<BlogActionResult> {
 
   const { data, error } = await admin
     .from("blog_posts")
-    .update({ published: false, updated_at: new Date().toISOString() })
+    // No updated_at bump: the editor is keyed on updated_at, and remounting it
+    // here would throw away unsaved edits — and "unpublish it first" is exactly
+    // what a refused save of a live post tells the editor to do.
+    .update({ published: false })
     .eq("id", id)
     .eq("published", true)
     .select("id")

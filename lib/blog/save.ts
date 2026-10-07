@@ -155,6 +155,7 @@ export function planSave(args: {
       faq,
       cta,
       internalHosts: args.internalHosts,
+      slugLocked: !!existing?.published_at,
     });
     if (!checklist.canPublish) {
       return {
