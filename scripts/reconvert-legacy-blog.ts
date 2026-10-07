@@ -11,9 +11,10 @@
  *   node node_modules/jiti/lib/jiti-cli.mjs scripts/reconvert-legacy-blog.ts           # dry run
  *   node node_modules/jiti/lib/jiti-cli.mjs scripts/reconvert-legacy-blog.ts --apply   # write
  *
- * Run supabase/migrations/20261008000000_blog_updated_at.sql first: while the
- * dashboard's updated_at trigger exists, every write here would re-stamp the
- * post as "updated today". --apply refuses until the dates are restored.
+ * Order does not matter against supabase/migrations/20261008000000_blog_updated_at.sql:
+ * while the dashboard's updated_at trigger exists, these writes re-stamp the
+ * posts as "updated today", and that migration restores every date stamped on
+ * 7–8 Oct 2026.
  */
 import { createClient } from "@supabase/supabase-js";
 import { introParagraphs, legacyContentToBody, normaliseBody, type BlogBody } from "../lib/blog/post";
@@ -69,14 +70,6 @@ async function main() {
   if (!apply) {
     console.log("\nDry run — nothing written. Re-run with --apply to write.");
     return;
-  }
-
-  const stamped = eligible.filter((p) => p.updated_at !== (p.published_at ?? p.created_at));
-  if (stamped.length) {
-    console.error(
-      `\nRefusing: ${stamped.length} post(s) still carry the migration's "updated" stamp. Run supabase/migrations/20261008000000_blog_updated_at.sql first.`,
-    );
-    process.exit(1);
   }
 
   for (const p of eligible) {

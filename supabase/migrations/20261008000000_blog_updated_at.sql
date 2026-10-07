@@ -33,9 +33,12 @@ end;
 $$;
 
 -- The original edit dates were overwritten and cannot be recovered; the
--- first publication date is the honest replacement. Only rows stamped on the
--- migration day (UTC) are touched.
+-- first publication date is the honest replacement. Only rows stamped on
+-- 7–8 Oct 2026 (UTC) are touched: the migration day, and the day
+-- scripts/reconvert-legacy-blog.ts upgraded the converted bodies (while the
+-- trigger still existed, that write re-stamped them too). The old admin could
+-- not save in that window, so no genuine edit is overwritten.
 update public.blog_posts
 set updated_at = coalesce(published_at, created_at)
 where updated_at >= timestamptz '2026-10-07 00:00:00+00'
-  and updated_at <  timestamptz '2026-10-08 00:00:00+00';
+  and updated_at <  timestamptz '2026-10-09 00:00:00+00';
