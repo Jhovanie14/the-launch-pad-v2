@@ -9,7 +9,7 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       // Signed-in surfaces and endpoints: nothing here is a useful landing
       // page, and /admin already redirects anonymous traffic away.
-      disallow: ["/admin", "/dashboard", "/api", "/auth"],
+      disallow: ["/admin", "/dashboard", "/api", "/auth", "/blog/preview"],
     },
     sitemap: `${BASE_URL}/sitemap.xml`,
   };
