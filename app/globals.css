@@ -174,3 +174,105 @@
   font-weight: 400;
   letter-spacing: 0.01em;
 }
+
+/* ============================================================
+   Blog prose — post bodies, and the admin editor that writes them
+   ============================================================
+   Section bodies are HTML from lib/blog/rich-text.ts (paragraphs, H3, lists,
+   bold, italic, links — nothing else), so a small hand-written set beats a
+   typography plugin. The editor shares it so what is written is what is read. */
+
+.blog-prose {
+  color: color-mix(in oklab, var(--foreground) 82%, var(--background));
+  font-size: 1.125rem;
+  line-height: 1.75;
+  overflow-wrap: break-word;
+}
+
+.blog-prose p {
+  margin-bottom: 1.25rem;
+}
+
+.blog-prose h3 {
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--foreground);
+}
+
+.blog-prose strong {
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.blog-prose a,
+.blog-editor-content .ProseMirror a {
+  color: var(--color-blue-900, #1c398e);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklab, var(--color-blue-900, #1c398e) 35%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  transition: text-decoration-color 0.2s ease;
+}
+
+.blog-prose a:hover {
+  text-decoration-color: var(--color-blue-900, #1c398e);
+}
+
+.blog-prose ul,
+.blog-prose ol {
+  margin: 0 0 1.25rem 1.5rem;
+}
+
+.blog-prose ul,
+.blog-editor-content .ProseMirror ul {
+  list-style: disc;
+}
+
+.blog-prose ol,
+.blog-editor-content .ProseMirror ol {
+  list-style: decimal;
+}
+
+.blog-prose li {
+  margin-bottom: 0.5rem;
+  padding-left: 0.25rem;
+}
+
+.blog-prose li > p {
+  margin-bottom: 0.5rem;
+}
+
+.blog-prose li::marker {
+  color: var(--color-blue-900, #1c398e);
+}
+
+.blog-editor-content .ProseMirror {
+  min-height: 9rem;
+  outline: none;
+}
+
+.blog-editor-content .ProseMirror > * + * {
+  margin-top: 0.75rem;
+}
+
+.blog-editor-content .ProseMirror h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.blog-editor-content .ProseMirror ul,
+.blog-editor-content .ProseMirror ol {
+  padding-left: 1.5rem;
+}
+
+.blog-editor-content .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: var(--muted-foreground);
+}
