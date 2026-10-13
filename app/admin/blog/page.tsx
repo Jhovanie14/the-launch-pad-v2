@@ -1,154 +1,128 @@
-"use client";
-
-import { useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import Link from "next/link";
+import { Newspaper, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Pencil, Plus, Trash2 } from "lucide-react";
-import { useBlog } from "@/hooks/useBlog";
-import { BlogPost } from "@/types";
-import { BlogPostForm } from "@/components/blog-post.form";
-import LoadingDots from "@/components/loading";
+import { adminPosts, type AdminBlogRow } from "@/lib/blog/admin-queries";
+import { formatPostDate } from "@/lib/blog/post";
 
-export default function BlogManagement() {
-  // const [posts, setPosts] = useState<BlogPost[]>([]);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
+export const dynamic = "force-dynamic";
+export const metadata = { title: "Blog — Admin" };
 
-  const {
-    posts,
-    loading,
-    error,
-    handleCreatePost,
-    handleUpdatePost,
-    handleDeletePost,
-  } = useBlog();
+const GROUPS = [
+  {
+    key: "published",
+    label: "Published",
+    meaning: "Live on the site, in the sitemap and in search results.",
+    match: (p: AdminBlogRow) => p.published,
+  },
+  {
+    key: "drafts",
+    label: "Drafts",
+    meaning: "Only admins can see these. Use Preview to read one as a visitor would.",
+    match: (p: AdminBlogRow) => !p.published,
+  },
+] as const;
 
-  if (loading) {
-    return <LoadingDots />;
-  }
+function PostRow({ post }: { post: AdminBlogRow }) {
+  const wasLive = !post.published && post.publishedAt !== null;
+  return (
+    <li className="flex flex-col gap-4 border-t py-5 first:border-t-0 sm:flex-row sm:items-center sm:justify-between sm:gap-10">
+      <div className="min-w-0 flex-1">
+        <h3 className="text-lg font-semibold">
+          <Link href={`/admin/blog/${post.id}`} className="hover:underline">
+            {post.title}
+          </Link>
+        </h3>
+        <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs tabular-nums text-muted-foreground">
+          <span className="break-all">{`/blog/${post.slug}`}</span>
+          <span aria-hidden>·</span>
+          <span>{post.categoryName ?? "No category"}</span>
+          <span aria-hidden>·</span>
+          <span>
+            {post.published && post.publishedAt
+              ? `Published ${formatPostDate(post.publishedAt)}`
+              : `Edited ${formatPostDate(post.updatedAt)}`}
+          </span>
+          {wasLive && (
+            <>
+              <span aria-hidden>·</span>
+              <span className="text-amber-700">Unpublished</span>
+            </>
+          )}
+        </p>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <Button variant="outline" size="sm" asChild>
+          <Link href={`/admin/blog/${post.id}`}>Edit</Link>
+        </Button>
+        <Button variant="ghost" size="sm" asChild>
+          <Link
+            href={post.published ? `/blog/${post.slug}` : `/blog/preview/${post.id}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {post.published ? "View" : "Preview"}
+          </Link>
+        </Button>
+      </div>
+    </li>
+  );
+}
+
+export default async function AdminBlogPage() {
+  const posts = await adminPosts();
 
   return (
     <main className="flex-1 overflow-y-auto p-6">
-      {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Blog Management</h1>
-
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button
-              className="gap-2 bg-blue-900 hover:bg-blue-700"
-              onClick={() => {
-                setEditingPost(null);
-                setDialogOpen(true);
-              }}
-            >
-              <Plus className="w-4 h-4" />
-              New Post
-            </Button>
-          </DialogTrigger>
-
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
-            <DialogHeader>
-              <DialogTitle>
-                {editingPost ? "Edit Blog Post" : "Create New Blog Post"}
-              </DialogTitle>
-            </DialogHeader>
-
-            <BlogPostForm
-              onSubmit={editingPost ? handleUpdatePost : handleCreatePost}
-              onClose={() => setDialogOpen(false)}
-              defaultValues={editingPost || undefined}
-            />
-          </DialogContent>
-        </Dialog>
+      <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+        <div className="max-w-xl">
+          <h1 className="text-3xl font-bold">Blog</h1>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            Write car care guides that bring Houston drivers to the site from Google. Every post follows the same
+            template, and the checklist beside the editor says when it is ready.
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/admin/blog/categories">Categories</Link>
+          </Button>
+          <Button asChild className="bg-blue-900 text-white hover:bg-blue-800">
+            <Link href="/admin/blog/new">
+              <Plus className="size-4" aria-hidden /> New post
+            </Link>
+          </Button>
+        </div>
       </div>
 
-      {/* Posts Grid */}
       {posts.length === 0 ? (
-        <p className="text-muted-foreground">No blog posts yet. Create one!</p>
+        <div className="mt-12 flex flex-col items-center rounded-xl border border-dashed p-12 text-center">
+          <Newspaper className="size-6 text-muted-foreground" aria-hidden />
+          <p className="mt-4 font-semibold">No posts yet</p>
+          <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+            Start with the question customers ask you most. The template takes you through the rest.
+          </p>
+          <Button asChild className="mt-5 bg-blue-900 text-white hover:bg-blue-800">
+            <Link href="/admin/blog/new">Write the first post</Link>
+          </Button>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {posts.map((post) => (
-            <Card
-              key={post.id}
-              className="flex flex-col hover:shadow-md transition-shadow"
-            >
-              <div className="relative aspect-video overflow-hidden rounded-t-lg bg-muted">
-                {post.cover_image ? (
-                  <img
-                    src={post.cover_image}
-                    alt={post.title}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      console.error("Image failed to load:", post.cover_image);
-                      e.currentTarget.style.display = "none";
-                    }}
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                    No image
-                  </div>
-                )}
-              </div>
-
-              <CardHeader>
-                <CardTitle className="line-clamp-2">{post.title}</CardTitle>
-              </CardHeader>
-
-              <CardContent className="flex-1">
-                <CardDescription className="line-clamp-2 mb-5">
-                  {post.excerpt}
-                </CardDescription>
-                <div>
-                  <p className="text-sm text-muted-foreground">{post.author}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {post.published ? "Published" : "Draft"}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {new Date(post.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-              </CardContent>
-              <CardFooter className="space-x-3 p-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1"
-                  onClick={() => {
-                    setEditingPost(post);
-                    setDialogOpen(true);
-                  }}
-                >
-                  <Pencil className="w-4 h-4" />
-                  Edit
-                </Button>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 text-destructive"
-                  onClick={() => handleDeletePost(post)}
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Delete
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
+        <div className="mt-10 grid gap-12">
+          {GROUPS.map((group) => {
+            const rows = posts.filter(group.match);
+            if (rows.length === 0) return null;
+            return (
+              <section key={group.key}>
+                <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  {`${group.label} · ${rows.length}`}
+                </h2>
+                <p className="mt-1.5 text-sm text-muted-foreground">{group.meaning}</p>
+                <ul className="mt-4 rounded-xl border bg-card px-6 shadow-sm">
+                  {rows.map((post) => (
+                    <PostRow key={post.id} post={post} />
+                  ))}
+                </ul>
+              </section>
+            );
+          })}
         </div>
       )}
     </main>

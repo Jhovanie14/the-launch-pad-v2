@@ -69,44 +69,109 @@ export type Database = {
         }
         Relationships: []
       }
-      blog_posts: {
+      blog_categories: {
         Row: {
-          author: string | null
-          content: string | null
-          cover_image: string | null
-          created_at: string | null
-          excerpt: string | null
+          created_at: string
+          description: string | null
           id: string
-          published: boolean | null
+          name: string
           slug: string
-          title: string
-          updated_at: string | null
+          sort_order: number
+          updated_at: string
         }
         Insert: {
-          author?: string | null
-          content?: string | null
-          cover_image?: string | null
-          created_at?: string | null
-          excerpt?: string | null
+          created_at?: string
+          description?: string | null
           id?: string
-          published?: boolean | null
+          name: string
           slug: string
-          title: string
-          updated_at?: string | null
+          sort_order?: number
+          updated_at?: string
         }
         Update: {
-          author?: string | null
-          content?: string | null
-          cover_image?: string | null
-          created_at?: string | null
-          excerpt?: string | null
+          created_at?: string
+          description?: string | null
           id?: string
-          published?: boolean | null
+          name?: string
           slug?: string
-          title?: string
-          updated_at?: string | null
+          sort_order?: number
+          updated_at?: string
         }
         Relationships: []
+      }
+      blog_posts: {
+        Row: {
+          author: string
+          body: Json
+          category_id: string | null
+          content: string | null
+          cover_image: string | null
+          cover_image_alt: string | null
+          created_at: string
+          cta: Json | null
+          excerpt: string | null
+          faq: Json
+          focus_keyword: string | null
+          id: string
+          meta_description: string | null
+          published: boolean
+          published_at: string | null
+          seo_title: string | null
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author?: string
+          body?: Json
+          category_id?: string | null
+          content?: string | null
+          cover_image?: string | null
+          cover_image_alt?: string | null
+          created_at?: string
+          cta?: Json | null
+          excerpt?: string | null
+          faq?: Json
+          focus_keyword?: string | null
+          id?: string
+          meta_description?: string | null
+          published?: boolean
+          published_at?: string | null
+          seo_title?: string | null
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author?: string
+          body?: Json
+          category_id?: string | null
+          content?: string | null
+          cover_image?: string | null
+          cover_image_alt?: string | null
+          created_at?: string
+          cta?: Json | null
+          excerpt?: string | null
+          faq?: Json
+          focus_keyword?: string | null
+          id?: string
+          meta_description?: string | null
+          published?: boolean
+          published_at?: string | null
+          seo_title?: string | null
+          slug?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_posts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "blog_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       booking_add_ons: {
         Row: {

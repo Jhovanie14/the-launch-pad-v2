@@ -182,27 +182,3 @@ export type AddOn = {
   is_active: boolean;
   created_at: string | null;
 };
-
-export type BlogPost = {
-  id: string;
-  title: string;
-  slug: string;
-  excerpt: string;
-  content: string;
-  author: string;
-  cover_image: string; // Changed to snake_case to match DB
-  published: boolean;
-  created_at: string; // Changed to snake_case to match DB
-};
-
-export type BlogPostFormData = {
-  id?: string;
-  title: string;
-  slug: string;
-  excerpt: string;
-  content: string;
-  author: string;
-  cover_image: string;
-  //   tags: string[];
-  published: boolean;
-};

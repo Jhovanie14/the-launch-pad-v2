@@ -1,4 +1,5 @@
 import { MetadataRoute } from "next";
+import { blogSitemapEntries } from "@/lib/blog/queries";
 import { getActiveProducts } from "@/lib/products/queries";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -8,6 +9,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // search ("tire shine houston"), so they belong in the sitemap individually
   // rather than hiding behind the catalog page.
   const products = await getActiveProducts();
+  const blog = await blogSitemapEntries(baseUrl);
 
   return [
     // Home
@@ -56,13 +58,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "yearly",
       priority: 0.5,
     },
-    // Blog
-    {
-      url: `${baseUrl}/blog`,
-      lastModified: new Date(),
-      changeFrequency: "yearly",
-      priority: 0.4,
-    },
+    // Blog: /blog (dated by its newest post), each category with a published
+    // post, and every published post. Fail-soft — see blogSitemapEntries.
+    ...blog,
 
     // Remaining indexable pages. These carry their own descriptions and
     // canonicals, so they belong in the sitemap too.
