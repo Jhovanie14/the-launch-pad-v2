@@ -8,6 +8,7 @@ import {
   flockUnitAmountCents,
   flockVehiclePrice,
   flockVehicleSavings,
+  findReusableFlockPrice,
   hasFlockDiscount,
   isCommercialPlan,
   subscriptionTotal,
@@ -127,5 +128,36 @@ describe("flockPriceMetadata", () => {
   it("tags every additional-vehicle price as a flock item regardless of plan type", () => {
     expect(flockPriceMetadata("p", commercial).is_flock_item).toBe("true");
     expect(flockPriceMetadata("p", personal).is_flock_item).toBe("true");
+  });
+});
+
+describe("findReusableFlockPrice", () => {
+  const flock = (id: string, unit_amount = 3899, interval = "month") => ({
+    id,
+    unit_amount,
+    recurring: { interval, interval_count: 1 },
+    metadata: { is_flock_item: "true", is_flock_discount: "true" },
+  });
+  const target = { unitAmount: 3899, interval: "month", intervalCount: 1 };
+
+  it("reuses a matching flock price the subscription is not using yet", () => {
+    expect(findReusableFlockPrice([flock("price_a")], target, [])?.id).toBe("price_a");
+  });
+
+  it("skips a price already on the subscription — Stripe rejects a duplicate price", () => {
+    // Second family vehicle: the first one already holds price_a.
+    expect(findReusableFlockPrice([flock("price_a")], target, ["price_a"])).toBeUndefined();
+    expect(
+      findReusableFlockPrice([flock("price_a"), flock("price_b")], target, ["price_a"])?.id
+    ).toBe("price_b");
+  });
+
+  it("ignores prices with the wrong amount, interval or no flock tag", () => {
+    const untagged = { ...flock("price_c"), metadata: {} };
+    const legacy = { ...flock("price_d"), metadata: { is_flock_discount: "true" } };
+    expect(findReusableFlockPrice([flock("price_x", 5999)], target, [])).toBeUndefined();
+    expect(findReusableFlockPrice([flock("price_y", 3899, "year")], target, [])).toBeUndefined();
+    expect(findReusableFlockPrice([untagged], target, [])).toBeUndefined();
+    expect(findReusableFlockPrice([legacy], target, [])?.id).toBe("price_d");
   });
 });

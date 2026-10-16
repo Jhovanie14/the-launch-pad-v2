@@ -4,6 +4,7 @@ import { ensureVehicle } from "@/utils/vehicle";
 import { sendFamilyVehicleAddedEmail } from "@/lib/email/subscription-emails";
 import {
   MAX_VEHICLES_PER_SUBSCRIPTION,
+  findReusableFlockPrice,
   flockDiscountPercent,
   flockPriceMetadata,
   flockUnitAmountCents,
@@ -183,21 +184,23 @@ async function handler(req: Request) {
     "discount:", `${discountPercent}%`
   );
 
-  // Reuse an existing additional-vehicle price for this product/interval/amount.
-  // `is_flock_item` covers both rates; `is_flock_discount` is the legacy tag
-  // written before commercial plans were separated out.
+  // Reuse an existing additional-vehicle price for this product/interval/amount,
+  // skipping any price this subscription already holds — Stripe rejects a
+  // second item on the same price, which blocked the second family vehicle.
   const existingPrices = await stripe.prices.list({
     product: productId,
     active: true,
     limit: 100,
   });
 
-  const existingPrice = existingPrices.data.find(
-    (p) =>
-      p.unit_amount === targetAmount &&
-      p.recurring?.interval === primaryItem.price.recurring!.interval &&
-      (p.metadata?.is_flock_item === "true" ||
-        p.metadata?.is_flock_discount === "true")
+  const existingPrice = findReusableFlockPrice(
+    existingPrices.data,
+    {
+      unitAmount: targetAmount,
+      interval: primaryItem.price.recurring!.interval,
+      intervalCount: primaryItem.price.recurring!.interval_count,
+    },
+    stripeSub.items.data.map((item) => item.price.id)
   );
 
   const additionalVehiclePrice =

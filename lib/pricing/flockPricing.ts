@@ -116,3 +116,39 @@ export function flockPriceMetadata(
     flock_multiplier: String(flockMultiplier(plan)),
   };
 }
+
+/** The slice of a Stripe Price that reuse matching reads. */
+export interface FlockPriceLike {
+  id: string;
+  unit_amount: number | null;
+  recurring: { interval: string; interval_count?: number | null } | null;
+  metadata?: Record<string, string> | null;
+}
+
+/**
+ * Pick an existing additional-vehicle price to reuse for a new item.
+ *
+ * Stripe rejects a subscription holding two items on the same Price, so any
+ * price already on the subscription (`usedPriceIds`) is skipped — otherwise
+ * the second family vehicle collides with the first. Returns undefined when
+ * the caller must create a fresh price.
+ */
+export function findReusableFlockPrice<P extends FlockPriceLike>(
+  prices: P[],
+  target: { unitAmount: number; interval: string; intervalCount?: number | null },
+  usedPriceIds: Iterable<string>
+): P | undefined {
+  const used = new Set(usedPriceIds);
+  const intervalCount = target.intervalCount ?? 1;
+  return prices.find(
+    (p) =>
+      !used.has(p.id) &&
+      p.unit_amount === target.unitAmount &&
+      p.recurring?.interval === target.interval &&
+      (p.recurring?.interval_count ?? 1) === intervalCount &&
+      // `is_flock_item` covers both rates; `is_flock_discount` is the legacy
+      // tag written before commercial plans were separated out.
+      (p.metadata?.is_flock_item === "true" ||
+        p.metadata?.is_flock_discount === "true")
+  );
+}
