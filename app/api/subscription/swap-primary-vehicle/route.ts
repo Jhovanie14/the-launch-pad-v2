@@ -120,15 +120,13 @@ async function handler(req: Request) {
     );
   }
 
-  // Resolve the old primary's Stripe item id (fallback if not stored in DB)
+  // Resolve the old primary's Stripe item id (fallback if not stored in DB).
+  // The live subscription also tells us whether that item still exists.
   let oldPrimaryItemId: string | null = oldPrimary.stripe_item_id ?? null;
-  let stripeSub: Awaited<ReturnType<typeof stripe.subscriptions.retrieve>> | null = null;
+  const stripeSub = await stripe.subscriptions.retrieve(sub.stripe_subscription_id);
+  const liveItemIds = new Set(stripeSub.items.data.map((item) => item.id));
 
-  if (!oldPrimaryItemId || !target.stripe_item_id) {
-    stripeSub = await stripe.subscriptions.retrieve(sub.stripe_subscription_id);
-  }
-
-  if (!oldPrimaryItemId && stripeSub) {
+  if (!oldPrimaryItemId) {
     const byMetadata = stripeSub.items.data.find(
       (item: any) => item.price?.metadata?.vehicle_index === "0"
     );
@@ -137,7 +135,7 @@ async function handler(req: Request) {
 
   let targetItemId: string | null = target.stripe_item_id ?? null;
 
-  if (!targetItemId && stripeSub) {
+  if (!targetItemId) {
     const targetIndex = allSubVehicles.findIndex((v) => v.id === target.id);
     targetItemId = stripeSub.items.data[targetIndex]?.id ?? null;
   }
@@ -149,30 +147,34 @@ async function handler(req: Request) {
     );
   }
 
-  // Promote the target vehicle's Stripe item to the full base price
-  await stripe.subscriptionItems.update(targetItemId, {
-    price: fullPriceId,
+  // Promote the target to the full base price and remove the old primary in a
+  // single update. The old primary is usually on that same full price, and
+  // Stripe rejects two items sharing a price — so promoting first, then
+  // deleting, failed there. One update is checked against the end state.
+  const deleteOldPrimary =
+    !!oldPrimaryItemId &&
+    oldPrimaryItemId !== targetItemId &&
+    liveItemIds.has(oldPrimaryItemId);
+
+  if (!deleteOldPrimary) {
+    console.warn(
+      "[swap-primary-vehicle] old primary stripe item not on subscription — skipping Stripe delete:",
+      oldPrimaryItemId
+    );
+  }
+
+  await stripe.subscriptions.update(sub.stripe_subscription_id, {
+    items: [
+      { id: targetItemId, price: fullPriceId },
+      ...(deleteOldPrimary ? [{ id: oldPrimaryItemId!, deleted: true }] : []),
+    ],
     proration_behavior: "create_prorations",
   });
 
-  console.log("[swap-primary-vehicle] promoted item to full price:", targetItemId);
-
-  // Remove the old primary's Stripe item
-  if (oldPrimaryItemId) {
-    try {
-      await stripe.subscriptionItems.del(oldPrimaryItemId, {
-        proration_behavior: "create_prorations",
-      });
-      console.log("[swap-primary-vehicle] old primary stripe item deleted:", oldPrimaryItemId);
-    } catch (stripeErr: any) {
-      console.warn(
-        "[swap-primary-vehicle] stripe delete of old primary failed, continuing with DB update:",
-        stripeErr?.message
-      );
-    }
-  } else {
-    console.warn("[swap-primary-vehicle] no old primary stripe item id found — skipping Stripe delete");
-  }
+  console.log(
+    "[swap-primary-vehicle] promoted item to full price:", targetItemId,
+    deleteOldPrimary ? `and deleted old primary ${oldPrimaryItemId}` : ""
+  );
 
   // DB: remove old primary row, promote target row
   const { error: deleteError } = await admin
