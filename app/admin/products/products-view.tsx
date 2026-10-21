@@ -50,6 +50,7 @@ import {
   toGallery,
 } from "@/lib/products/media";
 import { rejectImage } from "@/lib/products/upload";
+import { uploadProductMedia } from "@/lib/products/upload-media";
 import { uniqueSlug } from "@/lib/products/slug";
 import { cn } from "@/lib/utils";
 import type { ProductRow } from "@/types/db";
@@ -132,28 +133,6 @@ export default function ProductsView() {
     toast.error(`Failed to upload ${kind}: ${detail}`);
   };
 
-  /**
-   * Upload via the admin API route rather than the browser storage client.
-   *
-   * The route authorises with requireAdmin and writes with the service-role
-   * key, so uploads no longer depend on the storage.objects RLS policies
-   * resolving for the signed-in user -- the failure that surfaced only as
-   * "new row violates row-level security policy".
-   */
-  const uploadTo = async (
-    kind: "image" | "gallery" | "video",
-    file: File,
-  ): Promise<string | null> => {
-    const body = new FormData();
-    body.append("file", file);
-    body.append("kind", kind);
-
-    const res = await fetch("/api/admin/product-media", { method: "POST", body });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || `Upload failed (${res.status})`);
-    return data.url ?? null;
-  };
-
   const handleImageUpload = async (file: File) => {
     try {
       setPendingUploads((n) => n + 1);
@@ -162,7 +141,7 @@ export default function ProductsView() {
         toast.error(problem);
         return;
       }
-      const url = await uploadTo("image", file);
+      const url = await uploadProductMedia("image", file);
       if (url) setForm((prev) => ({ ...prev, image_url: url }));
     } catch (error) {
       uploadFailed("image", error);
@@ -203,7 +182,7 @@ export default function ProductsView() {
       while (next < accepted.length) {
         const i = next++;
         try {
-          urls[i] = await uploadTo("gallery", accepted[i]);
+          urls[i] = await uploadProductMedia("gallery", accepted[i]);
         } catch (error) {
           console.error(`Error uploading gallery image ${accepted[i].name}:`, error);
           failures.push(error);
@@ -258,7 +237,7 @@ export default function ProductsView() {
     }
     try {
       setPendingUploads((n) => n + 1);
-      const url = await uploadTo("video", file);
+      const url = await uploadProductMedia("video", file);
       if (url) setForm((prev) => ({ ...prev, video_url: url }));
     } catch (error) {
       uploadFailed("video", error);

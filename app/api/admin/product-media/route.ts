@@ -12,19 +12,20 @@ import {
 } from "@/lib/products/upload";
 
 /**
- * Upload product media (image, gallery image, video) or storefront hero
- * media (hero video, hero poster).
+ * Start an upload of product media (image, gallery image, video) or storefront
+ * hero media (hero video, hero poster).
  *
- * Uploading straight from the browser meant every upload depended on the
- * storage.objects RLS policies resolving correctly for the signed-in admin,
- * which failed opaquely with "new row violates row-level security policy".
- * This follows the pattern the rest of the app already uses for privileged
- * writes (see the product_orders policies, which are deliberately absent):
- * authorise here with requireAdmin, then write with the service-role client.
+ * The file itself never comes through here. A Vercel function rejects request
+ * bodies over 4.5 MB (413 FUNCTION_PAYLOAD_TOO_LARGE) before this code runs,
+ * which failed nearly every video. Instead the browser sends the file's name,
+ * type and size; this route authorises with requireAdmin, validates, and
+ * returns a signed upload URL minted with the service-role client. The browser
+ * then uploads straight to Storage -- see uploadProductMedia.
  *
- * Authorisation is therefore enforced by this route, not by storage policies.
- * The policies stay in place as defence in depth for anything else holding a
- * user token.
+ * Signing with the service role keeps uploads independent of the
+ * storage.objects RLS policies resolving for the signed-in admin, the failure
+ * that surfaced as "new row violates row-level security policy". The
+ * product-videos bucket's own type and size limits still apply to the upload.
  */
 export async function POST(req: Request) {
   try {
@@ -32,11 +33,13 @@ export async function POST(req: Request) {
     const admin = createAdminClient();
     await requireAdmin(supabase, admin);
 
-    const form = await req.formData();
-    const file = form.get("file");
-    const kind = String(form.get("kind") ?? "");
+    const body = await req.json().catch(() => ({}));
+    const kind = String(body.kind ?? "");
+    const filename = String(body.filename ?? "");
+    const type = String(body.type ?? "");
+    const size = Number(body.size);
 
-    if (!(file instanceof File)) {
+    if (!filename || !Number.isFinite(size) || size <= 0) {
       throw new ApiError("No file was uploaded", 400);
     }
 
@@ -44,32 +47,32 @@ export async function POST(req: Request) {
     if (!target) throw new ApiError("Unknown upload kind", 400);
 
     const problem = isVideoKind(kind)
-      ? rejectVideo({ type: file.type, size: file.size })
-      : rejectImage({ type: file.type, size: file.size });
+      ? rejectVideo({ type, size })
+      : rejectImage({ type, size });
     if (problem) throw new ApiError(problem, 400);
 
     const path = storagePath(
       target.folder,
-      file.name,
+      filename,
       Date.now(),
       crypto.randomUUID().slice(0, 8),
     );
 
-    const { error: uploadError } = await admin.storage
-      .from(target.bucket)
-      .upload(path, file, { contentType: file.type, upsert: false });
-    if (uploadError) {
-      // Surface the storage message: at this point the caller is a verified
-      // admin, so it is a genuine storage problem worth reading.
-      throw new ApiError(`Upload failed: ${uploadError.message}`, 502);
+    const storage = admin.storage.from(target.bucket);
+    const { data, error } = await storage.createSignedUploadUrl(path);
+    if (error || !data) {
+      throw new ApiError(
+        `Upload failed: ${error?.message ?? "no upload URL returned"}`,
+        502,
+      );
     }
 
-    const { data } = admin.storage.from(target.bucket).getPublicUrl(path);
-    if (!data?.publicUrl) {
-      throw new ApiError("Upload succeeded but no public URL was returned", 500);
-    }
-
-    return NextResponse.json({ url: data.publicUrl });
+    return NextResponse.json({
+      bucket: target.bucket,
+      path,
+      token: data.token,
+      url: storage.getPublicUrl(path).data.publicUrl,
+    });
   } catch (err) {
     return apiError(err);
   }

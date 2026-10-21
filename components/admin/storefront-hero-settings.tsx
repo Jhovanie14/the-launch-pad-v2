@@ -15,6 +15,7 @@ import {
   type HeroSettings,
 } from "@/lib/products/storefront";
 import { MAX_VIDEO_BYTES, VIDEO_MIME_TYPES } from "@/lib/products/media";
+import { uploadProductMedia } from "@/lib/products/upload-media";
 
 /** Shown as placeholders — these are what /products falls back to when blank. */
 const DEFAULTS = {
@@ -36,7 +37,7 @@ const EMPTY: HeroSettings = {
  * The storefront hero, editable without a deploy.
  *
  * Reads come straight from store_settings (public read). Writes go through
- * /api/admin/store-settings and uploads through /api/admin/product-media,
+ * /api/admin/store-settings and uploads are signed by /api/admin/product-media,
  * both of which authorise server-side — the row's own update policy gates on a
  * subquery against profiles and is not dependable from the browser.
  */
@@ -68,20 +69,15 @@ export function StorefrontHeroSettings() {
     setHero((prev) => ({ ...prev, [field]: value === "" ? null : value }));
 
   const upload = async (file: File, which: "video" | "poster") => {
-    const body = new FormData();
-    body.append("file", file);
-    body.append("kind", which === "video" ? "hero-video" : "hero-poster");
     try {
       setUploading(which);
-      const res = await fetch("/api/admin/product-media", {
-        method: "POST",
-        body,
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || `Upload failed (${res.status})`);
+      const url = await uploadProductMedia(
+        which === "video" ? "hero-video" : "hero-poster",
+        file,
+      );
       setHero((prev) => ({
         ...prev,
-        [which === "video" ? "hero_video_url" : "hero_poster_url"]: data.url,
+        [which === "video" ? "hero_video_url" : "hero_poster_url"]: url,
       }));
       toast.success(`Hero ${which} uploaded — remember to save.`);
     } catch (error) {
