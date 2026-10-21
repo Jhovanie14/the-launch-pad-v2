@@ -1,6 +1,7 @@
 import { stripe } from "@/lib/stripe/stripe";
 import { createAdminClient } from "@/utils/supabase/admin";
 import {
+  findReusableFlockPrice,
   flockPriceMetadata,
   isCommercialPlan,
 } from "@/lib/pricing/flockPricing";
@@ -161,6 +162,10 @@ export async function GET(req: NextRequest) {
     // full plan price are legacy discounts.
     const [, ...additionalItems] = stripeSub.items.data;
 
+    // Stripe rejects two items on one price, so every additional vehicle on
+    // this subscription needs its own full-rate price.
+    const usedPriceIds = new Set(stripeSub.items.data.map((item) => item.price.id));
+
     for (const item of additionalItems) {
       const currentAmount = item.price.unit_amount ?? null;
 
@@ -198,12 +203,18 @@ export async function GET(req: NextRequest) {
           limit: 100,
         });
 
-        const reusable = existing.data.find(
-          (p) =>
-            p.unit_amount === fullAmount &&
-            p.recurring?.interval === item.price.recurring?.interval &&
-            p.metadata?.is_flock_item === "true" &&
-            p.metadata?.is_flock_discount === "false"
+        const reusable = findReusableFlockPrice(
+          existing.data.filter(
+            (p) =>
+              p.metadata?.is_flock_item === "true" &&
+              p.metadata?.is_flock_discount === "false"
+          ),
+          {
+            unitAmount: fullAmount,
+            interval: item.price.recurring!.interval,
+            intervalCount: item.price.recurring!.interval_count,
+          },
+          usedPriceIds
         );
 
         const targetPrice =
@@ -225,6 +236,7 @@ export async function GET(req: NextRequest) {
           price: targetPrice.id,
           proration_behavior: "none",
         });
+        usedPriceIds.add(targetPrice.id);
 
         result.items.push({
           stripe_item_id: item.id,
