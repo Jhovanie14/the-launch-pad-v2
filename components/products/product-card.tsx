@@ -11,10 +11,9 @@ import { trackEvent } from "@/lib/analytics/gtag";
 /**
  * Grid card: portrait image, no video.
  *
- * The product photography is shot 9:16 while the clips are 16:9, so swapping
- * one for the other on hover would make the card jump. The grid stays stills
- * only -- which also keeps it fast at fifty products -- and video is used where
- * it has room to work: the featured panels and the detail page.
+ * The grid stays stills only -- swapping in a clip on hover would make the
+ * card jump, and stills keep it fast at fifty products -- and video is used
+ * where it has room to work: the featured panels and the detail page.
  */
 export function ProductCard({ product, index }: { product: ProductRow; index: number }) {
   const soldOut = product.stock === 0;
@@ -69,17 +68,22 @@ export function ProductCard({ product, index }: { product: ProductRow; index: nu
         <p className="text-[0.65rem] uppercase tracking-[0.25em] text-gold">
           {product.category}
         </p>
-        <h3 className="mt-2 text-base font-medium leading-snug">
+        <h3 className="mt-2 line-clamp-3 text-base font-medium leading-snug">
           <Link
             href={`/products/${product.slug}`}
             onClick={trackSelect}
+            title={product.name}
             className="hover:text-gold"
           >
             {product.name}
           </Link>
         </h3>
-        <PriceTag product={product} className="mt-3" />
-        <AddToCartButton product={product} size="sm" className="mt-4 w-full" />
+        {/* mt-auto pins price and button to the card's foot, so they line up
+            across a row however many lines each name takes. */}
+        <div className="mt-auto pt-3">
+          <PriceTag product={product} />
+          <AddToCartButton product={product} size="sm" className="mt-4 w-full" />
+        </div>
       </div>
     </motion.article>
   );
