@@ -6,7 +6,7 @@ import { useReducedMotion } from "motion/react";
 import { cn } from "@/lib/utils";
 
 interface ProductVideoProps {
-  /** Landscape clip. Null falls back to the poster image alone. */
+  /** The clip. Null falls back to the poster image alone. */
   src: string | null;
   /** Always supply one: it is what renders first and what reduced motion gets. */
   poster: string | null;

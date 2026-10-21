@@ -75,15 +75,19 @@ export default async function ProductDetailPage({ params }: PageProps) {
     <main className="flex-1">
       <TrackViewItem product={product} />
 
+      {/* Portrait clip, centred. Its width is derived from the viewport height
+          so the whole 9:16 frame fits on screen rather than being cropped. */}
       {product.video_url && (
-        <ProductVideo
-          src={product.video_url}
-          poster={product.image_url}
-          alt={product.name}
-          priority
-          sizes="100vw"
-          className="aspect-video max-h-[70svh] w-full"
-        />
+        <div className="border-b border-border/60 bg-secondary/30 px-4 py-8 sm:py-10">
+          <ProductVideo
+            src={product.video_url}
+            poster={product.image_url}
+            alt={product.name}
+            priority
+            sizes="40vh"
+            className="mx-auto aspect-[9/16] w-[min(100%,40svh)]"
+          />
+        </div>
       )}
 
       <div className="mx-auto max-w-7xl px-4 py-12 sm:py-16">

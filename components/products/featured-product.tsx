@@ -9,7 +9,7 @@ import { ProductVideo } from "./product-video";
 import { AddToCartButton, PriceTag } from "./product-actions";
 
 /**
- * One featured product: a landscape clip against its copy, sides alternating
+ * One featured product: a portrait clip against its copy, sides alternating
  * down the page.
  *
  * This is the tier that lets a small catalog still feel like a launch. It stays
@@ -39,8 +39,10 @@ export function FeaturedProduct({
             src={product.video_url}
             poster={product.image_url}
             alt={product.name}
-            sizes="(min-width: 1024px) 50vw, 100vw"
-            className="aspect-video w-full"
+            sizes="45vh"
+            // Width follows the viewport height so the full 9:16 frame stays
+            // on screen; at 50vw wide it would be far taller than the window.
+            className="mx-auto aspect-[9/16] w-[min(100%,45svh)]"
           />
         </motion.div>
 
