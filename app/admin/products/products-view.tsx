@@ -23,6 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   FileText,
   ImageOff,
+  ImagePlus,
   Loader2,
   Pencil,
   Plus,
@@ -50,7 +51,14 @@ import {
 } from "@/lib/products/media";
 import { rejectImage } from "@/lib/products/upload";
 import { uniqueSlug } from "@/lib/products/slug";
+import { cn } from "@/lib/utils";
 import type { ProductRow } from "@/types/db";
+
+/**
+ * Gallery images upload this many at a time. Enough to make a batch of ten
+ * feel quick, few enough not to swamp the admin's connection or the route.
+ */
+const GALLERY_CONCURRENCY = 3;
 
 const EMPTY_FORM = {
   name: "",
@@ -72,7 +80,15 @@ export default function ProductsView() {
 
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
+  // A count, not a flag: a gallery batch can still be running when the admin
+  // starts a video upload, and the first to finish must not clear the other.
+  const [pendingUploads, setPendingUploads] = useState(0);
+  const uploading = pendingUploads > 0;
+  const [galleryProgress, setGalleryProgress] = useState<{
+    done: number;
+    total: number;
+  } | null>(null);
+  const [galleryDragging, setGalleryDragging] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [editProduct, setEditProduct] = useState<ProductRow | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -140,7 +156,7 @@ export default function ProductsView() {
 
   const handleImageUpload = async (file: File) => {
     try {
-      setUploading(true);
+      setPendingUploads((n) => n + 1);
       const problem = rejectImage(file);
       if (problem) {
         toast.error(problem);
@@ -151,26 +167,78 @@ export default function ProductsView() {
     } catch (error) {
       uploadFailed("image", error);
     } finally {
-      setUploading(false);
+      setPendingUploads((n) => n - 1);
     }
   };
 
-  const handleGalleryUpload = async (file: File) => {
-    try {
-      setUploading(true);
+  /**
+   * Upload a whole selection of gallery images at once.
+   *
+   * Files that fail validation are skipped up front and named in one toast,
+   * rather than aborting the batch. The rest upload a few at a time, and the
+   * results are appended in the order the admin picked them -- not the order
+   * they happened to finish -- so the gallery reads as intended.
+   */
+  const handleGalleryUpload = async (files: File[]) => {
+    if (files.length === 0 || galleryProgress) return;
+
+    const skipped: string[] = [];
+    const accepted = files.filter((file) => {
       const problem = rejectImage(file);
-      if (problem) {
-        toast.error(problem);
-        return;
+      if (problem) skipped.push(`${file.name}: ${problem}`);
+      return !problem;
+    });
+    if (skipped.length > 0) {
+      toast.error(
+        `Skipped ${skipped.length} file${skipped.length === 1 ? "" : "s"}`,
+        { description: skipped.join("\n") },
+      );
+    }
+    if (accepted.length === 0) return;
+
+    const urls: (string | null)[] = accepted.map(() => null);
+    const failures: unknown[] = [];
+    let next = 0;
+    const worker = async () => {
+      while (next < accepted.length) {
+        const i = next++;
+        try {
+          urls[i] = await uploadTo("gallery", accepted[i]);
+        } catch (error) {
+          console.error(`Error uploading gallery image ${accepted[i].name}:`, error);
+          failures.push(error);
+        }
+        setGalleryProgress((prev) => prev && { ...prev, done: prev.done + 1 });
       }
-      const url = await uploadTo("gallery", file);
-      if (url) {
-        setForm((prev) => ({ ...prev, gallery: [...prev.gallery, url] }));
-      }
-    } catch (error) {
-      uploadFailed("gallery image", error);
+    };
+
+    setPendingUploads((n) => n + 1);
+    setGalleryProgress({ done: 0, total: accepted.length });
+    try {
+      await Promise.all(
+        Array.from(
+          { length: Math.min(GALLERY_CONCURRENCY, accepted.length) },
+          worker,
+        ),
+      );
     } finally {
-      setUploading(false);
+      const added = urls.filter((url): url is string => Boolean(url));
+      if (added.length > 0) {
+        setForm((prev) => ({ ...prev, gallery: [...prev.gallery, ...added] }));
+        toast.success(
+          `Added ${added.length} image${added.length === 1 ? "" : "s"} to the gallery`,
+        );
+      }
+      if (failures.length > 0) {
+        const first = failures[0];
+        const detail =
+          first instanceof Error ? first.message : String(first ?? "unknown error");
+        toast.error(
+          `${failures.length} gallery image${failures.length === 1 ? "" : "s"} failed to upload: ${detail}`,
+        );
+      }
+      setGalleryProgress(null);
+      setPendingUploads((n) => n - 1);
     }
   };
 
@@ -189,13 +257,13 @@ export default function ProductsView() {
       return;
     }
     try {
-      setUploading(true);
+      setPendingUploads((n) => n + 1);
       const url = await uploadTo("video", file);
       if (url) setForm((prev) => ({ ...prev, video_url: url }));
     } catch (error) {
       uploadFailed("video", error);
     } finally {
-      setUploading(false);
+      setPendingUploads((n) => n - 1);
     }
   };
 
@@ -479,7 +547,7 @@ export default function ProductsView() {
           }}
         />
         <p className="text-xs text-muted-foreground">
-          Landscape (16:9), silent, 5–10 seconds. MP4 or WebM, under{" "}
+          Portrait (9:16), silent, 5–10 seconds. MP4 or WebM, under{" "}
           {Math.round(MAX_VIDEO_BYTES / 1_048_576)} MB. Replacing it here
           updates the live page.
         </p>
@@ -490,7 +558,9 @@ export default function ProductsView() {
               muted
               controls
               playsInline
-              className="w-full max-w-sm rounded-md"
+              // object-contain, so a clip that is not quite 9:16 shows its
+              // real framing here instead of being silently cropped.
+              className="aspect-[9/16] w-44 rounded-md bg-black object-contain"
             />
             <Button
               type="button"
@@ -506,18 +576,64 @@ export default function ProductsView() {
 
       <div className="space-y-2 md:col-span-2">
         <Label htmlFor="gallery">Gallery images</Label>
-        <Input
-          id="gallery"
-          type="file"
-          accept="image/*"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) handleGalleryUpload(file);
-            e.target.value = "";
+        <label
+          onDragOver={(e) => {
+            e.preventDefault();
+            if (!galleryProgress) setGalleryDragging(true);
           }}
-        />
+          onDragLeave={(e) => {
+            // dragleave also fires when moving onto the zone's own children.
+            if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+              setGalleryDragging(false);
+            }
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            setGalleryDragging(false);
+            handleGalleryUpload(Array.from(e.dataTransfer.files));
+          }}
+          className={cn(
+            "flex flex-col items-center justify-center gap-1 rounded-md border border-dashed px-4 py-6 text-center text-sm transition-colors focus-within:ring-2 focus-within:ring-ring",
+            galleryProgress
+              ? "cursor-wait border-border opacity-80"
+              : galleryDragging
+                ? "cursor-copy border-primary bg-primary/5"
+                : "cursor-pointer border-border hover:bg-muted/50",
+          )}
+        >
+          {galleryProgress ? (
+            <>
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              <span className="font-medium" aria-live="polite">
+                Uploading {galleryProgress.done} of {galleryProgress.total}…
+              </span>
+            </>
+          ) : (
+            <>
+              <ImagePlus className="h-5 w-5 text-muted-foreground" />
+              <span className="font-medium">
+                Drop images here, or click to choose
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Select as many as you like. They are added in the order picked.
+              </span>
+            </>
+          )}
+          <input
+            id="gallery"
+            type="file"
+            accept="image/*"
+            multiple
+            disabled={Boolean(galleryProgress)}
+            className="sr-only"
+            onChange={(e) => {
+              handleGalleryUpload(Array.from(e.target.files ?? []));
+              e.target.value = "";
+            }}
+          />
+        </label>
         <p className="text-xs text-muted-foreground">
-          Extra shots for the product page. Add one at a time.
+          Extra shots for the product page, shown after the main image.
         </p>
         {form.gallery.length > 0 && (
           <div className="flex flex-wrap gap-2">

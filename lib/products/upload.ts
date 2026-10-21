@@ -60,14 +60,20 @@ export function rejectImage(file: { type: string; size: number }): string | null
  * Build the object path. Only the extension is taken from the uploaded
  * filename — the name itself is discarded — so a crafted name cannot traverse
  * out of the folder or collide with another object.
+ *
+ * The timestamp alone is not unique: a bulk gallery upload sends several files
+ * at once, and two landing in the same millisecond would collide (uploads use
+ * upsert: false, so the second fails). The caller supplies a random suffix.
  */
 export function storagePath(
   folder: string,
   filename: string,
   now: number,
+  suffix: string,
 ): string {
   const dot = filename.lastIndexOf(".");
   const raw = dot === -1 ? "" : filename.slice(dot + 1);
   const ext = raw.toLowerCase().replace(/[^a-z0-9]/g, "") || "bin";
-  return `${folder}/${now}.${ext}`;
+  const tag = suffix.toLowerCase().replace(/[^a-z0-9]/g, "");
+  return `${folder}/${now}${tag ? `-${tag}` : ""}.${ext}`;
 }

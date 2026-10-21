@@ -77,21 +77,32 @@ describe("rejectImage", () => {
 
 describe("storagePath", () => {
   it("keeps the extension and namespaces by folder", () => {
-    const path = storagePath("products", "Tire Shine.JPG", 1700000000000);
-    expect(path).toBe("products/1700000000000.jpg");
+    const path = storagePath("products", "Tire Shine.JPG", 1700000000000, "a1b2c3d4");
+    expect(path).toBe("products/1700000000000-a1b2c3d4.jpg");
   });
 
   it("falls back to bin when there is no extension", () => {
-    expect(storagePath("products", "noext", 1)).toBe("products/1.bin");
+    expect(storagePath("products", "noext", 1, "x9")).toBe("products/1-x9.bin");
   });
 
   it("does not let a crafted filename escape the folder", () => {
     // "../../secret.png" must not become a path traversal.
-    const path = storagePath("products", "../../secret.png", 5);
-    expect(path).toBe("products/5.png");
+    const path = storagePath("products", "../../secret.png", 5, "ab");
+    expect(path).toBe("products/5-ab.png");
   });
 
   it("strips anything non-alphanumeric from the extension", () => {
-    expect(storagePath("products", "x.p n g!", 7)).toBe("products/7.png");
+    expect(storagePath("products", "x.p n g!", 7, "ab")).toBe("products/7-ab.png");
+  });
+
+  it("gives files uploaded in the same millisecond distinct paths", () => {
+    // A bulk gallery upload sends several files at once.
+    expect(storagePath("products/gallery", "a.jpg", 9, "1111")).not.toBe(
+      storagePath("products/gallery", "b.jpg", 9, "2222"),
+    );
+  });
+
+  it("does not let the suffix escape the folder either", () => {
+    expect(storagePath("products", "a.png", 3, "../x")).toBe("products/3-x.png");
   });
 });

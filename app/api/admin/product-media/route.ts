@@ -48,7 +48,12 @@ export async function POST(req: Request) {
       : rejectImage({ type: file.type, size: file.size });
     if (problem) throw new ApiError(problem, 400);
 
-    const path = storagePath(target.folder, file.name, Date.now());
+    const path = storagePath(
+      target.folder,
+      file.name,
+      Date.now(),
+      crypto.randomUUID().slice(0, 8),
+    );
 
     const { error: uploadError } = await admin.storage
       .from(target.bucket)
