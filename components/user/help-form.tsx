@@ -3,6 +3,7 @@
 import type React from "react";
 
 import { useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,8 +15,16 @@ import {
   type TurnstileFieldHandle,
 } from "@/components/auth/turnstile-field";
 
+// Pre-filled when a customer arrives from "Request a vehicle change" on the
+// billing page, so staff get the plates they need in one go.
+const VEHICLE_CHANGE_SUBJECT = "Change my subscribed vehicle";
+const VEHICLE_CHANGE_MESSAGE =
+  "Vehicle to remove (plate):\nNew vehicle (plate, make, model):\nReason (sold / upgraded / other):\n";
+
 export function HelpForm() {
-  const [concern, setConcern] = useState("");
+  const isVehicleChange = useSearchParams()?.get("topic") === "vehicle-change";
+  const initialConcern = isVehicleChange ? "vehicle_change" : "";
+  const [concern, setConcern] = useState(initialConcern);
   const [loading, setLoading] = useState(false);
   const captcha = useRef<TurnstileFieldHandle>(null);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
@@ -40,7 +49,7 @@ export function HelpForm() {
           "Your message has been sent! We’ll get back to you soon."
         );
         form.reset();
-        setConcern("");
+        setConcern(initialConcern);
       } else {
         const err = await res.json();
         toast.error(err?.error || "Failed to send your message. Try again.");
@@ -107,6 +116,7 @@ export function HelpForm() {
             <option value="feedback">Feedback / Suggestions</option>
             <option value="payment">Payment Inquiry</option>
             <option value="booking">Booking Issue</option>
+            <option value="vehicle_change">Change My Subscribed Vehicle</option>
             <option value="account">Account & Login</option>
             <option value="billing">Billing & Payments</option>
             <option value="technical">Technical Issue</option>
@@ -142,6 +152,7 @@ export function HelpForm() {
             id="concern"
             name="concern"
             placeholder="Brief description of your issue"
+            defaultValue={isVehicleChange ? VEHICLE_CHANGE_SUBJECT : undefined}
             required
           />
         </div>
@@ -153,6 +164,7 @@ export function HelpForm() {
             id="message"
             name="message"
             placeholder="Please provide as much detail as possible to help us assist you better..."
+            defaultValue={isVehicleChange ? VEHICLE_CHANGE_MESSAGE : undefined}
             rows={5}
             required
           />
