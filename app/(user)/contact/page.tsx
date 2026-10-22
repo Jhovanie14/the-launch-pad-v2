@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -94,8 +94,10 @@ export default function Contact() {
             </div>
           </div>
 
-          {/* Right Container - Form */}
-          <HelpForm />
+          {/* Right Container - Form (reads ?topic=, so it needs a Suspense boundary) */}
+          <Suspense>
+            <HelpForm />
+          </Suspense>
         </div>
       </div>
     </main>
