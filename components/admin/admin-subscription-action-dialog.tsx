@@ -32,6 +32,8 @@ export interface AdminSubscriptionAction {
   refresh: "express" | "self_service";
   /** A required text input sent alongside the reason, e.g. the plate to add. */
   field?: { name: string; label: string; placeholder?: string; uppercase?: boolean };
+  /** Small print under the consequence; defaults to the "only when asked" reminder. */
+  note?: string;
 }
 
 interface AdminSubscriptionActionDialogProps {
@@ -94,7 +96,7 @@ export function AdminSubscriptionActionDialog({ action, onClose, onDone }: Admin
             </span>
             <span className="block">{action?.consequence}</span>
             <span className="block text-sm text-muted-foreground">
-              Only do this when the customer has asked for it.
+              {action?.note ?? "Only do this when the customer has asked for it, or a manager has approved it."}
             </span>
           </AlertDialogDescription>
         </AlertDialogHeader>

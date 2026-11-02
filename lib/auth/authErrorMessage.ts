@@ -42,6 +42,10 @@ const BY_CODE: Record<string, (action: AuthAction) => string> = {
   weak_password: () =>
     "Please choose a stronger password â€” at least 8 characters, mixing letters and numbers.",
   email_address_invalid: () => "Please enter a valid email address.",
+  // Our own code: the "Before User Created" hook refused a blocked email
+  // (supabase/migrations/20261103000000_customer_blocks.sql).
+  signup_blocked: () =>
+    "Sign-ups with this email are not available. Please contact us if you have questions.",
 };
 
 /**
@@ -60,6 +64,7 @@ function codeFromMessage(message: string): string | undefined {
   if (m.includes("invalid login credentials")) return "invalid_credentials";
   if (m.includes("already registered") || m.includes("already been registered"))
     return "user_already_exists";
+  if (m.includes("sign-ups with this email are not available")) return "signup_blocked";
   return undefined;
 }
 
@@ -68,11 +73,11 @@ export function authErrorMessage(error: unknown, action: AuthAction): string {
 
   const { code, message } = error as { code?: unknown; message?: unknown };
 
-  // The code is authoritative; the message is only a fallback for old responses.
-  const resolved =
-    (typeof code === "string" && code) ||
-    (typeof message === "string" ? codeFromMessage(message) : undefined);
-
-  const handler = resolved ? BY_CODE[resolved] : undefined;
+  // A known code is authoritative. The message is the fallback — for old
+  // responses with no code, and for auth hook rejections, which arrive under
+  // a generic code with our own message.
+  const byCode = typeof code === "string" ? BY_CODE[code] : undefined;
+  const fromMessage = typeof message === "string" ? codeFromMessage(message) : undefined;
+  const handler = byCode ?? (fromMessage ? BY_CODE[fromMessage] : undefined);
   return handler ? handler(action) : GENERIC;
 }

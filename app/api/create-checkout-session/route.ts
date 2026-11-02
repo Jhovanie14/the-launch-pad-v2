@@ -1,6 +1,8 @@
 import { stripe } from "@/lib/stripe/stripe";
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { ensureVehicle } from "@/utils/vehicle";
+import { CUSTOMER_BLOCKED_MESSAGE, findCustomerBlock } from "@/lib/customers/customerBlocks";
 import {
   flockPriceMetadata,
   flockUnitAmountCents,
@@ -52,6 +54,19 @@ async function handler(req: Request) {
         headers: { "Content-Type": "application/json" },
       }
     );
+  }
+
+  // Staff-blocked customers and cars can't start a membership. Checked before
+  // any vehicle row or Stripe price is created.
+  const blocked = await findCustomerBlock(createAdminClient(), {
+    email,
+    plates: vehiclesList.map((v) => v.license_plate),
+  });
+  if (blocked) {
+    return new Response(JSON.stringify({ error: CUSTOMER_BLOCKED_MESSAGE }), {
+      status: 403,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   // Ensure all vehicles exist and get their IDs

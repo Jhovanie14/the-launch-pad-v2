@@ -7,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { User, Mail, Car, Calendar, Crown, Pencil, X, Phone, Shield, Ban, LockOpen, Plus } from "lucide-react";
+import { User, Mail, Car, Calendar, Crown, Pencil, X, Phone, Shield, ShieldBan, Ban, LockOpen, Plus } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -88,6 +88,9 @@ export default function AdminUsersPage() {
   // Vehicle-change history within the cooldown window, by customer
   const [vehicleChanges, setVehicleChanges] = useState<Record<string, VehicleChangeEvent[]>>({});
 
+  // Staff blocks (email / plates), by the customer they were made for
+  const [customerBlocks, setCustomerBlocks] = useState<Record<string, { kind: string; value: string }[]>>({});
+
   // User detail modal
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [userDetail, setUserDetail] = useState<any>(null);
@@ -122,7 +125,17 @@ export default function AdminUsersPage() {
       loadExpressUsageCounts(),
       loadSelfServiceUsageCounts(),
       loadVehicleChanges(),
+      loadCustomerBlocks(),
     ]);
+  }
+
+  async function loadCustomerBlocks() {
+    const { data } = await supabase.from("customer_blocks").select("user_id, kind, value");
+    const byUser: Record<string, { kind: string; value: string }[]> = {};
+    (data || []).forEach((b: any) => {
+      if (b.user_id) (byUser[b.user_id] ||= []).push(b);
+    });
+    setCustomerBlocks(byUser);
   }
 
   async function loadVehicleChanges() {
@@ -275,7 +288,7 @@ export default function AdminUsersPage() {
         ? `${plate} is removed from billing now. The customer gets a prorated credit for the rest of this period and an email.`
         : plan.kind === "promote"
           ? `${plate} is the primary vehicle, so ${plan.newPrimary.vehicle?.license_plate ?? "the next vehicle"} becomes the primary at the full plan price and ${plate} is removed now, with prorations. The customer gets an email.`
-          : `${plate} is the only vehicle, so the whole subscription cancels on ${periodEndLabel(sub)}. No refund — the customer keeps access until then and gets an email.`;
+          : `${plate} is the only vehicle, so the whole subscription cancels on ${periodEndLabel(sub)} and won't renew. No refund — the customer keeps access until then. No automatic email is sent, so let the customer know yourself.`;
     return {
       endpoint: "/api/admin/subscriptions/unsubscribe",
       body: { userId: sub.user_id, scope: "vehicle", subscriptionVehicleId: sv.id },
@@ -294,7 +307,7 @@ export default function AdminUsersPage() {
       body: { userId: sub.user_id, scope: "subscription", product },
       customerName: customerNameOf(sub),
       title: "Cancel Subscription",
-      consequence: `The whole subscription cancels on ${periodEndLabel(sub)}. No refund — the customer keeps access until then and gets an email.`,
+      consequence: `The whole subscription cancels on ${periodEndLabel(sub)} and won't renew. No refund — the customer keeps access until then. No automatic email is sent, so let the customer know yourself.`,
       confirmLabel: "Yes, Cancel Subscription",
       destructive: true,
       refresh: product,
@@ -334,6 +347,73 @@ export default function AdminUsersPage() {
       destructive: false,
       refresh: "express",
     };
+  }
+
+  function blockCustomerAction(userId: string, customerName: string): AdminSubscriptionAction {
+    return {
+      endpoint: "/api/admin/customer-blocks",
+      body: { userId },
+      customerName,
+      title: "Block Customer",
+      consequence:
+        "Their email and every license plate on their account go on the block list. Nobody can sign up with that email, and neither the email nor those plates can start a membership or be added to one. Their current subscription is not changed — cancel it separately. No email is sent.",
+      confirmLabel: "Block Customer",
+      destructive: true,
+      refresh: "express",
+      note: "Only with a manager's approval.",
+    };
+  }
+
+  function unblockCustomerAction(userId: string, customerName: string): AdminSubscriptionAction {
+    const values = (customerBlocks[userId] || []).map((b) => b.value).join(", ");
+    return {
+      endpoint: "/api/admin/customer-blocks/unblock",
+      body: { userId },
+      customerName,
+      title: "Unblock Customer",
+      consequence: `Removes the block on ${values || "this customer"}. They can sign up and buy a membership again.`,
+      confirmLabel: "Unblock",
+      destructive: false,
+      refresh: "express",
+      note: "Only with a manager's approval.",
+    };
+  }
+
+  /** Block / Unblock button for a customer, shown on their cards and profile. */
+  function renderBlockButton(userId: string, customerName: string, onOpen?: () => void) {
+    const blocked = !!customerBlocks[userId]?.length;
+    return (
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={(e) => {
+          e.stopPropagation();
+          onOpen?.();
+          setAdminAction(blocked ? unblockCustomerAction(userId, customerName) : blockCustomerAction(userId, customerName));
+        }}
+        className={
+          blocked
+            ? "flex items-center gap-2"
+            : "flex items-center gap-2 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+        }
+      >
+        {blocked ? <LockOpen size={16} /> : <ShieldBan size={16} />}
+        {blocked ? "Unblock Customer" : "Block Customer"}
+      </Button>
+    );
+  }
+
+  function renderBlockedBadge(userId: string) {
+    const blocks = customerBlocks[userId];
+    if (!blocks?.length) return null;
+    return (
+      <Badge
+        className="bg-red-100 text-red-800 border border-red-200 whitespace-normal"
+        title={`Blocked: ${blocks.map((b) => b.value).join(", ")}`}
+      >
+        Blocked
+      </Badge>
+    );
   }
 
   function filterList(list: any[], key?: string) {
@@ -423,6 +503,7 @@ export default function AdminUsersPage() {
                           <Badge variant="secondary" className="text-xs">
                             <Shield size={10} className="mr-1" />{u.role || "User"}
                           </Badge>
+                          {renderBlockedBadge(u.id)}
                         </div>
                         <p className="text-sm text-muted-foreground flex items-center gap-1 truncate">
                           <Mail size={12} /> {u.email}
@@ -555,6 +636,7 @@ export default function AdminUsersPage() {
                               Cancels {periodEndLabel(sub)}
                             </Badge>
                           )}
+                          {renderBlockedBadge(sub.user_id)}
                           {(() => {
                             const lock = vehicleChangeLock(vehicleChanges[sub.user_id] || []);
                             return lock.locked ? (
@@ -660,6 +742,7 @@ export default function AdminUsersPage() {
                             </Button>
                           ) : null;
                         })()}
+                        {renderBlockButton(sub.user_id, customerNameOf(sub))}
                       </div>
                     </div>
                   ))}
@@ -761,6 +844,7 @@ export default function AdminUsersPage() {
                               Cancels {periodEndLabel(selfSub)}
                             </Badge>
                           )}
+                          {renderBlockedBadge(selfSub.user_id)}
                           {/* Usage Pulse */}
                           {(() => {
                             const count = selfServiceUsage[selfSub.id] || 0;
@@ -816,6 +900,7 @@ export default function AdminUsersPage() {
                             Cancel Subscription
                           </Button>
                         )}
+                        {renderBlockButton(selfSub.user_id, customerNameOf(selfSub))}
                       </div>
                     </div>
                   ))}
@@ -914,6 +999,7 @@ export default function AdminUsersPage() {
             loadExpressSubs();
           }
           loadVehicleChanges();
+          loadCustomerBlocks();
         }}
       />
 
@@ -950,6 +1036,16 @@ export default function AdminUsersPage() {
                   <Badge variant="secondary">{selectedUser?.role || "User"}</Badge>
                 </p>
                 <p className="text-muted-foreground">Joined {new Date(selectedUser?.created_at).toLocaleDateString()}</p>
+                {selectedUser && selectedUser.role !== "admin" && (
+                  <div className="flex flex-wrap items-center gap-2 pt-2">
+                    {renderBlockedBadge(selectedUser.id)}
+                    {renderBlockButton(
+                      selectedUser.id,
+                      selectedUser.full_name || selectedUser.email || "Customer",
+                      () => setSelectedUser(null),
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Subscriptions */}
