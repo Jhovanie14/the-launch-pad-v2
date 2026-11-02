@@ -65,6 +65,13 @@ export const faqData = [
     answer:
       "On a personal plan, every additional vehicle you add receives a 35% discount off the base plan price. For example, if your plan is $59.99/month, each additional vehicle is billed at $38.99/month instead. Commercial plans work differently: because those rates are already set for commercial vehicles, every vehicle on a commercial plan is billed at the full plan price with no family discount. In both cases, the first month a vehicle is added may show a slightly different amount due to proration (a partial charge for the remaining days of your current billing cycle). From the following billing date onward, you will see the regular rate for every vehicle on your account.",
   },
+  {
+    id: "billing-5",
+    category: "Billing & Payments",
+    question: "Can I swap the vehicle on my subscription?",
+    answer:
+      "Yes — you can change a vehicle on your subscription once every 6 months. A change means removing one vehicle and adding a different one, in either order. You can always remove a vehicle you no longer own, or cancel your membership, at any time; and adding an extra vehicle without removing one never counts as a change. If you have already made a change in the last 6 months and have sold or replaced your car, go to Help & Support and choose \"Change My Subscribed Vehicle\", call us at (832) 219-8320, or visit us in the shop and we will take care of it for you.",
+  },
   // {
   //   id: "technical-1",
   //   category: "Technical Issues",

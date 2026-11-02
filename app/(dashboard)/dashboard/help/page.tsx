@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { HelpForm } from "@/components/user/help-form";
 // import { FAQSection } from "@/components/faq-section";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -94,7 +94,10 @@ export default function HelpPage() {
 
               {/* Form */}
               <div className="lg:col-span-2">
-                <HelpForm />
+                {/* HelpForm reads ?topic= to pre-fill vehicle change requests */}
+                <Suspense>
+                  <HelpForm />
+                </Suspense>
               </div>
             </div>
           </TabsContent>

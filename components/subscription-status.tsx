@@ -55,6 +55,19 @@ export default function SubscriptionStatus({
 
   const vehicleCount = subscription?.vehicles?.length ?? 0;
 
+  // One vehicle change per 6 months — the add-vehicle route enforces it; this
+  // just shows the customer when their next change is available.
+  const [changeLock, setChangeLock] = useState<{ locked: boolean; unlocksAt?: string; lastChangeAt?: string }>({
+    locked: false,
+  });
+
+  useEffect(() => {
+    fetch("/api/subscription/vehicle-change-status")
+      .then((r) => (r.ok ? r.json() : { locked: false }))
+      .then((d) => setChangeLock(d))
+      .catch(() => {});
+  }, [vehicleCount]);
+
   useEffect(() => {
     setInvoiceLoading(true);
     fetch("/api/subscription-upcoming-invoice")
@@ -568,9 +581,26 @@ export default function SubscriptionStatus({
           </div>
         </div>
 
+        {/* Vehicle change used — adding is locked until the cooldown ends */}
+        {subscription.status === "active" &&
+          pricing.vehiclePricing.length < MAX_VEHICLES_PER_SUBSCRIPTION &&
+          changeLock.locked && changeLock.unlocksAt && (
+            <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+              <Info className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
+              <p>
+                You&apos;ve used your vehicle change for now
+                {changeLock.lastChangeAt &&
+                  ` (${new Date(changeLock.lastChangeAt).toLocaleDateString()})`}
+                . You can add a vehicle again on{" "}
+                <strong>{new Date(changeLock.unlocksAt).toLocaleDateString()}</strong>.
+              </p>
+            </div>
+          )}
+
         {/* Add another vehicle */}
         {subscription.status === "active" &&
-          pricing.vehiclePricing.length < MAX_VEHICLES_PER_SUBSCRIPTION && (
+          pricing.vehiclePricing.length < MAX_VEHICLES_PER_SUBSCRIPTION &&
+          !changeLock.locked && (
             <div className="pt-1">
               <Button
                 variant="outline"
@@ -595,6 +625,19 @@ export default function SubscriptionStatus({
               </Button>
             </div>
           )}
+
+        {/* Vehicle change policy + a non-app route for anyone who'd rather not do it here */}
+        {subscription.status === "active" && (
+          <div className="flex flex-col gap-2 rounded-lg border border-border bg-muted/40 p-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-muted-foreground">
+              Vehicles can be changed once every 6 months. Sold or upgraded your car? Send us a
+              request or visit us in the shop and we&apos;ll do it for you.
+            </p>
+            <Button asChild variant="outline" size="sm" className="shrink-0">
+              <Link href="/dashboard/help?topic=vehicle-change">Request a vehicle change</Link>
+            </Button>
+          </div>
+        )}
 
         {/* Unsubscribe Everything */}
         {subscription.status === "active" && !subscription.cancel_at_period_end && (

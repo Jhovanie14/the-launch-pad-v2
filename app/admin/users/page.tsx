@@ -7,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { User, Mail, Car, Calendar, Crown, Pencil, X, Phone, Shield } from "lucide-react";
+import { User, Mail, Car, Calendar, Crown, Pencil, X, Phone, Shield, Ban, LockOpen, Plus } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,25 @@ import WalkInProgressModal from "@/components/walkin-progress-modal";
 import SelfServiceCheckInModal from "@/components/self-service-checkin-modal";
 import SelfServiceUsageModal from "@/components/self-service-useage-modal";
 import UpdateVehicleModal from "@/components/update-vehicle-modal";
+import {
+  AdminSubscriptionActionDialog,
+  type AdminSubscriptionAction,
+} from "@/components/admin/admin-subscription-action-dialog";
+import {
+  orderSubscriptionVehicles,
+  planVehicleUnsubscribe,
+} from "@/lib/subscriptions/vehicleUnsubscribe";
+import {
+  VEHICLE_CHANGE_COOLDOWN_MONTHS,
+  addMonths,
+  vehicleChangeLock,
+  type VehicleChangeEvent,
+} from "@/lib/subscriptions/vehicleChangeLimit";
+import {
+  MAX_VEHICLES_PER_SUBSCRIPTION,
+  flockVehiclePrice,
+  isCommercialPlan,
+} from "@/lib/pricing/flockPricing";
 import { toast } from "sonner";
 
 export default function AdminUsersPage() {
@@ -63,6 +82,12 @@ export default function AdminUsersPage() {
   const [updateVehicleSub, setUpdateVehicleSub] = useState<any>(null);
   const [updateVehicleType, setUpdateVehicleType] = useState<"express" | "selfservice">("express");
 
+  // Admin subscription action confirm (unsubscribe / cancel / unlock)
+  const [adminAction, setAdminAction] = useState<AdminSubscriptionAction | null>(null);
+
+  // Vehicle-change history within the cooldown window, by customer
+  const [vehicleChanges, setVehicleChanges] = useState<Record<string, VehicleChangeEvent[]>>({});
+
   // User detail modal
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [userDetail, setUserDetail] = useState<any>(null);
@@ -96,7 +121,21 @@ export default function AdminUsersPage() {
       loadSelfServiceSubs(),
       loadExpressUsageCounts(),
       loadSelfServiceUsageCounts(),
+      loadVehicleChanges(),
     ]);
+  }
+
+  async function loadVehicleChanges() {
+    const since = addMonths(new Date(), -VEHICLE_CHANGE_COOLDOWN_MONTHS).toISOString();
+    const { data } = await supabase
+      .from("subscription_vehicle_changes")
+      .select("user_id, kind, created_at")
+      .gte("created_at", since);
+    const byUser: Record<string, VehicleChangeEvent[]> = {};
+    (data || []).forEach((e: any) => {
+      (byUser[e.user_id] ||= []).push(e);
+    });
+    setVehicleChanges(byUser);
   }
 
   async function loadUsers() {
@@ -113,6 +152,8 @@ export default function AdminUsersPage() {
         profiles(*),
         subscription_vehicles (
           id,
+          is_primary,
+          created_at,
           vehicle:vehicles (
             id,
             year,
@@ -126,6 +167,7 @@ export default function AdminUsersPage() {
         subscription_plan:subscription_plans (
           name,
           description,
+          is_commercial,
           monthly_price,
           yearly_price
         )
@@ -211,6 +253,88 @@ export default function AdminUsersPage() {
     setUpdateVehicleType(type);
     setShowUpdateVehicle(true);
   };
+
+  function periodEndLabel(sub: any) {
+    return sub.current_period_end
+      ? new Date(sub.current_period_end).toLocaleDateString()
+      : "the end of the billing period";
+  }
+
+  function customerNameOf(sub: any) {
+    return sub.profiles?.full_name || sub.profiles?.email || "Customer";
+  }
+
+  // Same decision the server makes, so the confirm text matches what happens.
+  function unsubscribeVehicleAction(sub: any, sv: any): AdminSubscriptionAction | null {
+    const vehicles = orderSubscriptionVehicles(sub.subscription_vehicles || []) as any[];
+    const plan = planVehicleUnsubscribe(vehicles, sv.id);
+    if (!plan) return null;
+    const plate = sv.vehicle?.license_plate ?? "this vehicle";
+    const consequence =
+      plan.kind === "remove-family"
+        ? `${plate} is removed from billing now. The customer gets a prorated credit for the rest of this period and an email.`
+        : plan.kind === "promote"
+          ? `${plate} is the primary vehicle, so ${plan.newPrimary.vehicle?.license_plate ?? "the next vehicle"} becomes the primary at the full plan price and ${plate} is removed now, with prorations. The customer gets an email.`
+          : `${plate} is the only vehicle, so the whole subscription cancels on ${periodEndLabel(sub)}. No refund — the customer keeps access until then and gets an email.`;
+    return {
+      endpoint: "/api/admin/subscriptions/unsubscribe",
+      body: { userId: sub.user_id, scope: "vehicle", subscriptionVehicleId: sv.id },
+      customerName: customerNameOf(sub),
+      title: `Unsubscribe ${plate}`,
+      consequence,
+      confirmLabel: "Yes, Unsubscribe",
+      destructive: true,
+      refresh: "express",
+    };
+  }
+
+  function cancelSubscriptionAction(sub: any, product: "express" | "self_service"): AdminSubscriptionAction {
+    return {
+      endpoint: "/api/admin/subscriptions/unsubscribe",
+      body: { userId: sub.user_id, scope: "subscription", product },
+      customerName: customerNameOf(sub),
+      title: "Cancel Subscription",
+      consequence: `The whole subscription cancels on ${periodEndLabel(sub)}. No refund — the customer keeps access until then and gets an email.`,
+      confirmLabel: "Yes, Cancel Subscription",
+      destructive: true,
+      refresh: product,
+    };
+  }
+
+  function addVehicleAction(sub: any): AdminSubscriptionAction {
+    const plan = sub.subscription_plan;
+    const cycle = sub.billing_cycle === "year" ? "year" : "month";
+    const basePrice = Number((cycle === "year" ? plan?.yearly_price : plan?.monthly_price) ?? 0);
+    const rate = flockVehiclePrice(basePrice, plan);
+    const lock = vehicleChangeLock(vehicleChanges[sub.user_id] || []);
+    const lockNote = lock.locked
+      ? ` This customer has already used their vehicle change (locked until ${lock.unlocksAt.toLocaleDateString()}); adding as staff overrides that and counts as their change.`
+      : "";
+    return {
+      endpoint: "/api/admin/subscriptions/add-vehicle",
+      body: { userId: sub.user_id },
+      customerName: customerNameOf(sub),
+      title: "Add a Vehicle",
+      consequence: `The vehicle is added now at $${rate.toFixed(2)}/${cycle}${isCommercialPlan(plan) ? " (commercial plans bill every vehicle at the full price)" : " (family rate)"}. The customer is charged a prorated amount for the rest of this period and gets an email.${lockNote}`,
+      confirmLabel: "Add Vehicle",
+      destructive: false,
+      refresh: "express",
+      field: { name: "licensePlate", label: "License plate", placeholder: "e.g. ABC1234", uppercase: true },
+    };
+  }
+
+  function unlockVehicleChangeAction(sub: any, unlocksAt: Date): AdminSubscriptionAction {
+    return {
+      endpoint: "/api/admin/subscriptions/unlock-vehicle-change",
+      body: { userId: sub.user_id },
+      customerName: customerNameOf(sub),
+      title: "Allow a Vehicle Change",
+      consequence: `This customer has used their vehicle change for the last ${VEHICLE_CHANGE_COOLDOWN_MONTHS} months (normally unlocks ${unlocksAt.toLocaleDateString()}). Unlocking lets them add a vehicle now; their next change after that starts a new ${VEHICLE_CHANGE_COOLDOWN_MONTHS}-month period. Use for genuine cases like a sold or written-off car.`,
+      confirmLabel: "Allow Change",
+      destructive: false,
+      refresh: "express",
+    };
+  }
 
   function filterList(list: any[], key?: string) {
     if (!search) return list;
@@ -368,19 +492,19 @@ export default function AdminUsersPage() {
                                   )}
                                 </div>
                                 <div className="space-y-1.5">
-                                  {sub.subscription_vehicles.map((sv: any, idx: number) => (
+                                  {orderSubscriptionVehicles(sub.subscription_vehicles).map((sv: any) => (
                                     <div
                                       key={sv.id}
                                       className="text-sm text-muted-foreground flex items-center gap-2"
                                     >
                                       <span
-                                        className={`w-2 h-2 rounded-full shrink-0 ${idx === 0 ? "bg-blue-500" : "bg-green-500"}`}
+                                        className={`w-2 h-2 rounded-full shrink-0 ${sv.is_primary ? "bg-blue-500" : "bg-green-500"}`}
                                       />
                                       <span className="flex items-center gap-1.5 flex-wrap">
                                         <span
-                                          className={`text-xs font-semibold px-1.5 py-0.5 rounded ${idx === 0 ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}`}
+                                          className={`text-xs font-semibold px-1.5 py-0.5 rounded ${sv.is_primary ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}`}
                                         >
-                                          {idx === 0 ? "Primary" : "Family"}
+                                          {sv.is_primary ? "Primary" : "Family"}
                                         </span>
                                         {sv.vehicle.year} {sv.vehicle.make}{" "}
                                         {sv.vehicle.model}
@@ -398,6 +522,16 @@ export default function AdminUsersPage() {
                                           {sv.vehicle.license_plate}
                                         </span>
                                       </span>
+                                      {!sub.cancel_at_period_end && (
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={() => setAdminAction(unsubscribeVehicleAction(sub, sv))}
+                                          className="h-7 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                                        >
+                                          Unsubscribe
+                                        </Button>
+                                      )}
                                     </div>
                                   ))}
                                 </div>
@@ -410,6 +544,22 @@ export default function AdminUsersPage() {
                               ? "Express Active"
                               : "Inactive"}
                           </Badge>
+                          {sub.cancel_at_period_end && (
+                            <Badge className="bg-amber-100 text-amber-800 border border-amber-200">
+                              Cancels {periodEndLabel(sub)}
+                            </Badge>
+                          )}
+                          {(() => {
+                            const lock = vehicleChangeLock(vehicleChanges[sub.user_id] || []);
+                            return lock.locked ? (
+                              <Badge
+                                className="bg-slate-100 text-slate-700 border border-slate-200"
+                                title={`Vehicle change used ${lock.lastChangeAt.toLocaleDateString()}`}
+                              >
+                                Vehicle change locked until {lock.unlocksAt.toLocaleDateString()}
+                              </Badge>
+                            ) : null;
+                          })()}
                           {/* Usage Pulse */}
                           {(() => {
                             const count = expressUsage[sub.user_id] || 0;
@@ -440,7 +590,7 @@ export default function AdminUsersPage() {
                       </div>
 
                       {/* Action Buttons */}
-                      <div className="flex gap-2 pt-2">
+                      <div className="flex flex-wrap gap-2 pt-2">
                         <Button
                           size="sm"
                           onClick={() => handleCreateWalkIn(sub)}
@@ -467,6 +617,43 @@ export default function AdminUsersPage() {
                           <Pencil size={16} />
                           Update Vehicle
                         </Button>
+                        {!sub.cancel_at_period_end &&
+                          (sub.subscription_vehicles?.length ?? 0) < MAX_VEHICLES_PER_SUBSCRIPTION && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setAdminAction(addVehicleAction(sub))}
+                              className="flex items-center gap-2"
+                            >
+                              <Plus size={16} />
+                              Add Vehicle
+                            </Button>
+                          )}
+                        {!sub.cancel_at_period_end && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setAdminAction(cancelSubscriptionAction(sub, "express"))}
+                            className="flex items-center gap-2 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                          >
+                            <Ban size={16} />
+                            Cancel Subscription
+                          </Button>
+                        )}
+                        {(() => {
+                          const lock = vehicleChangeLock(vehicleChanges[sub.user_id] || []);
+                          return lock.locked && !sub.cancel_at_period_end ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setAdminAction(unlockVehicleChangeAction(sub, lock.unlocksAt))}
+                              className="flex items-center gap-2"
+                            >
+                              <LockOpen size={16} />
+                              Allow Vehicle Change
+                            </Button>
+                          ) : null;
+                        })()}
                       </div>
                     </div>
                   ))}
@@ -562,6 +749,11 @@ export default function AdminUsersPage() {
                           <Badge className="bg-green-500 text-white">
                             Self-Service Active
                           </Badge>
+                          {selfSub.cancel_at_period_end && (
+                            <Badge className="bg-amber-100 text-amber-800 border border-amber-200">
+                              Cancels {periodEndLabel(selfSub)}
+                            </Badge>
+                          )}
                           {/* Usage Pulse */}
                           {(() => {
                             const count = selfServiceUsage[selfSub.id] || 0;
@@ -580,7 +772,7 @@ export default function AdminUsersPage() {
                       </div>
 
                       {/* Action Buttons */}
-                      <div className="flex gap-2 pt-2">
+                      <div className="flex flex-wrap gap-2 pt-2">
                         <Button
                           size="sm"
                           onClick={() => handleSelfServiceCheckIn(selfSub)}
@@ -606,6 +798,17 @@ export default function AdminUsersPage() {
                           <Pencil size={16} />
                           Update Vehicle
                         </Button>
+                        {!selfSub.cancel_at_period_end && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setAdminAction(cancelSubscriptionAction(selfSub, "self_service"))}
+                            className="flex items-center gap-2 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                          >
+                            <Ban size={16} />
+                            Cancel Subscription
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -692,6 +895,20 @@ export default function AdminUsersPage() {
           }}
         />
       )}
+
+      {/* Admin Subscription Action Confirm */}
+      <AdminSubscriptionActionDialog
+        action={adminAction}
+        onClose={() => setAdminAction(null)}
+        onDone={(done) => {
+          if (done.refresh === "self_service") {
+            loadSelfServiceSubs();
+          } else {
+            loadExpressSubs();
+          }
+          loadVehicleChanges();
+        }}
+      />
 
       {/* User Detail Modal */}
       <Dialog open={!!selectedUser} onOpenChange={(o) => { if (!o) setSelectedUser(null); }}>
