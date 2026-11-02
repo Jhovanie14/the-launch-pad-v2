@@ -107,6 +107,18 @@ describe("authErrorMessage", () => {
     });
   });
 
+  it("shows the blocked-signup message from the auth hook, whatever code it arrives under", () => {
+    expect(
+      authErrorMessage(
+        {
+          code: "unexpected_failure",
+          message: "Sign-ups with this email are not available. Please contact us if you have questions.",
+        },
+        "signup"
+      )
+    ).toMatch(/Sign-ups with this email are not available/);
+  });
+
   it("prefers the code over a conflicting message", () => {
     // A captcha code with a rate-limit-shaped message must resolve as captcha.
     const msg = authErrorMessage(

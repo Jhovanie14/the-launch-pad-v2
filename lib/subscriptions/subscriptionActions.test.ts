@@ -37,9 +37,16 @@ const LOCKED_HISTORY = [
 function fakeDb(opts: {
   reads: Record<string, unknown>;
   insertErrors?: Record<string, unknown>;
+  /** Rows find_customer_block returns — a match means blocked. */
+  blocks?: unknown[];
 }) {
   const inserts: { table: string; row: any }[] = [];
+  const rpcCalls: { fn: string; args: any }[] = [];
   const db = {
+    rpc: async (fn: string, args: any) => {
+      rpcCalls.push({ fn, args });
+      return { data: opts.blocks ?? [], error: null };
+    },
     auth: {
       admin: { getUserById: async () => ({ data: { user: { email: "customer@example.com" } } }) },
     },
@@ -62,7 +69,7 @@ function fakeDb(opts: {
       return builder;
     },
   } as any;
-  return { db, inserts };
+  return { db, inserts, rpcCalls };
 }
 
 function activeSub(vehicleCount: number) {
@@ -215,6 +222,25 @@ describe("addSubscriptionVehicle", () => {
 
     expect(err.status).toBe(400);
     expect(stripe.subscriptionItems.create).not.toHaveBeenCalled();
+  });
+
+  it("refuses a blocked customer or plate before touching Stripe, for staff too", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { db, inserts, rpcCalls } = fakeDb({
+      reads: baseReads(),
+      blocks: [{ kind: "license_plate", value: "ABC 1234" }],
+    });
+
+    const err = await addSubscriptionVehicle(db, USER, "abc1234", ADMIN).catch((e) => e);
+
+    expect(err).toBeInstanceOf(ApiError);
+    expect(err.status).toBe(403);
+    expect(rpcCalls).toEqual([
+      { fn: "find_customer_block", args: { p_email: "customer@example.com", p_plates: ["ABC1234"] } },
+    ]);
+    expect(stripe.subscriptions.retrieve).not.toHaveBeenCalled();
+    expect(inserts).toEqual([]);
+    warn.mockRestore();
   });
 
   it("rejects an empty plate", async () => {

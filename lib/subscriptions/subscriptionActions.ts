@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { stripe } from "@/lib/stripe/stripe";
 import { ApiError } from "@/lib/http/apiError";
 import { ensureVehicle } from "@/utils/vehicle";
+import { assertNotBlocked } from "@/lib/customers/customerBlocks";
 import {
   sendFamilyVehicleAddedEmail,
   sendFamilyVehicleRemovedEmail,
@@ -384,7 +385,10 @@ export async function addSubscriptionVehicle(
     throw new ApiError(`Maximum ${MAX_VEHICLES_PER_SUBSCRIPTION} vehicles allowed per subscription`, 400);
   }
 
-  // Checked before anything touches Stripe.
+  // Checked before anything touches Stripe. A blocked customer or plate is
+  // refused for staff too — unblock first if that's really intended.
+  await assertNotBlocked(db, { email: (await customerContact(db, userId)).email, plates: [plate] });
+
   if (actor.kind === "customer") {
     const lock = await loadVehicleChangeLock(db, userId);
     if (lock.locked) {
