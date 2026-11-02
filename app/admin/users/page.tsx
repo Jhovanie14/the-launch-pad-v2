@@ -361,8 +361,8 @@ export default function AdminUsersPage() {
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="container mx-auto px-4 py-10">
-        <div className="p-6">
+      <div className="container mx-auto px-4 py-6 md:py-10">
+        <div className="md:p-6">
           <Card className="mb-6">
             <CardHeader>
               <CardTitle className="text-xl">Admin – Users Overview</CardTitle>
@@ -387,11 +387,16 @@ export default function AdminUsersPage() {
           </div>
 
           <Tabs value={tab} onValueChange={handleTabChange}>
-            <TabsList>
+            {/* Short labels on phones so all three tabs fit the width */}
+            <TabsList className="w-full sm:w-fit">
               <TabsTrigger value="users">Users</TabsTrigger>
-              <TabsTrigger value="express">Express Subscribers</TabsTrigger>
+              <TabsTrigger value="express">
+                <span className="sm:hidden">Express</span>
+                <span className="hidden sm:inline">Express Subscribers</span>
+              </TabsTrigger>
               <TabsTrigger value="selfservice">
-                Self-Service Subscribers
+                <span className="sm:hidden">Self-Service</span>
+                <span className="hidden sm:inline">Self-Service Subscribers</span>
               </TabsTrigger>
             </TabsList>
 
@@ -451,22 +456,23 @@ export default function AdminUsersPage() {
                   {filterList(expressSubs, "profiles").map((sub) => (
                     <div
                       key={sub.id}
-                      className="p-5 border rounded-lg space-y-3 hover:border-primary/50 transition-colors"
+                      className="p-4 md:p-5 border rounded-lg space-y-3 hover:border-primary/50 transition-colors"
                     >
                       {/* Subscriber Info */}
-                      <div className="flex flex-col-reverse md:flex-row md:justify-between items-start">
-                        <div className="space-y-2">
-                          <div className="flex  items-center gap-2 font-medium text-blue-900 text-lg">
-                            <Crown size={16} />
-                            Subscription Plan: {sub.subscription_plan.name}
+                      <div className="flex flex-col-reverse gap-3 md:flex-row md:justify-between items-start">
+                        <div className="space-y-2 w-full min-w-0 md:flex-1">
+                          <div className="flex items-start gap-2 font-medium text-blue-900 text-lg break-words">
+                            <Crown size={16} className="shrink-0 mt-1.5" />
+                            <span className="min-w-0">Subscription Plan: {sub.subscription_plan.name}</span>
                           </div>
 
-                          <p className="font-semibold text-lg flex items-center gap-2">
-                            <User size={18} />
-                            {sub.profiles.full_name}
+                          <p className="font-semibold text-lg flex items-center gap-2 break-words">
+                            <User size={18} className="shrink-0" />
+                            <span className="min-w-0">{sub.profiles.full_name}</span>
                           </p>
-                          <p className="text-sm text-muted-foreground flex items-center gap-2">
-                            <Mail size={14} /> {sub.profiles.email}
+                          <p className="text-sm text-muted-foreground flex items-start gap-2">
+                            <Mail size={14} className="shrink-0 mt-0.5" />
+                            <span className="min-w-0 break-all">{sub.profiles.email}</span>
                           </p>
                           {sub.profiles.phone && (
                             <p className="text-sm text-muted-foreground">
@@ -478,7 +484,7 @@ export default function AdminUsersPage() {
                           {sub.subscription_vehicles &&
                             sub.subscription_vehicles.length > 0 && (
                               <div className="bg-muted/30 p-3 rounded-md mt-2">
-                                <div className="flex items-center gap-2 mb-2">
+                                <div className="flex flex-wrap items-center gap-2 mb-2">
                                   <p className="font-semibold flex items-center gap-2 text-sm">
                                     <Car size={14} /> Registered Vehicles
                                   </p>
@@ -491,16 +497,16 @@ export default function AdminUsersPage() {
                                     </Badge>
                                   )}
                                 </div>
-                                <div className="space-y-1.5">
+                                <div className="space-y-2">
                                   {orderSubscriptionVehicles(sub.subscription_vehicles).map((sv: any) => (
                                     <div
                                       key={sv.id}
-                                      className="text-sm text-muted-foreground flex items-center gap-2"
+                                      className="text-sm text-muted-foreground flex items-start gap-2"
                                     >
                                       <span
-                                        className={`w-2 h-2 rounded-full shrink-0 ${sv.is_primary ? "bg-blue-500" : "bg-green-500"}`}
+                                        className={`w-2 h-2 mt-2 rounded-full shrink-0 ${sv.is_primary ? "bg-blue-500" : "bg-green-500"}`}
                                       />
-                                      <span className="flex items-center gap-1.5 flex-wrap">
+                                      <span className="flex flex-1 min-w-0 items-center gap-x-1.5 gap-y-1 flex-wrap">
                                         <span
                                           className={`text-xs font-semibold px-1.5 py-0.5 rounded ${sv.is_primary ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}`}
                                         >
@@ -527,7 +533,7 @@ export default function AdminUsersPage() {
                                           size="sm"
                                           variant="ghost"
                                           onClick={() => setAdminAction(unsubscribeVehicleAction(sub, sv))}
-                                          className="h-7 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                                          className="h-7 px-2 shrink-0 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
                                         >
                                           Unsubscribe
                                         </Button>
@@ -538,7 +544,7 @@ export default function AdminUsersPage() {
                               </div>
                             )}
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <Badge className="bg-green-500 text-white">
                             {sub.status === "active"
                               ? "Express Active"
@@ -553,7 +559,7 @@ export default function AdminUsersPage() {
                             const lock = vehicleChangeLock(vehicleChanges[sub.user_id] || []);
                             return lock.locked ? (
                               <Badge
-                                className="bg-slate-100 text-slate-700 border border-slate-200"
+                                className="bg-slate-100 text-slate-700 border border-slate-200 whitespace-normal"
                                 title={`Vehicle change used ${lock.lastChangeAt.toLocaleDateString()}`}
                               >
                                 Vehicle change locked until {lock.unlocksAt.toLocaleDateString()}
@@ -678,17 +684,18 @@ export default function AdminUsersPage() {
                   {filterList(selfServiceSubs, "profiles").map((selfSub) => (
                     <div
                       key={selfSub.id}
-                      className="p-5 border rounded-lg space-y-3 hover:border-green-500/50 transition-colors"
+                      className="p-4 md:p-5 border rounded-lg space-y-3 hover:border-green-500/50 transition-colors"
                     >
                       {/* Subscriber Info */}
-                      <div className="flex flex-col-reverse md:flex-row md:justify-between items-start">
-                        <div className="space-y-2">
-                          <p className="font-semibold text-lg flex items-center gap-2">
-                            <User size={18} />
-                            {selfSub.profiles.full_name}
+                      <div className="flex flex-col-reverse gap-3 md:flex-row md:justify-between items-start">
+                        <div className="space-y-2 w-full min-w-0 md:flex-1">
+                          <p className="font-semibold text-lg flex items-center gap-2 break-words">
+                            <User size={18} className="shrink-0" />
+                            <span className="min-w-0">{selfSub.profiles.full_name}</span>
                           </p>
-                          <p className="text-sm text-muted-foreground flex items-center gap-2">
-                            <Mail size={14} /> {selfSub.profiles.email}
+                          <p className="text-sm text-muted-foreground flex items-start gap-2">
+                            <Mail size={14} className="shrink-0 mt-0.5" />
+                            <span className="min-w-0 break-all">{selfSub.profiles.email}</span>
                           </p>
                           {selfSub.profiles.phone && (
                             <p className="text-sm text-muted-foreground">
@@ -698,7 +705,7 @@ export default function AdminUsersPage() {
 
                           {/* Subscription Details */}
                           <div className="bg-green-50 p-3 rounded-md text-sm space-y-1">
-                            <p>
+                            <p className="break-all">
                               <strong>Plan ID:</strong>{" "}
                               {selfSub.self_service_plan_id}
                             </p>
@@ -723,10 +730,10 @@ export default function AdminUsersPage() {
                                     (v: any) => (
                                       <div
                                         key={`${v.id}-${v.vehicle_id}`}
-                                        className="text-sm text-muted-foreground flex items-center gap-2"
+                                        className="text-sm text-muted-foreground flex items-start gap-2"
                                       >
-                                        <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                                        <span>
+                                        <span className="w-2 h-2 mt-2 shrink-0 bg-green-500 rounded-full"></span>
+                                        <span className="min-w-0 break-words">
                                           {v.vehicles.year} {v.vehicles.make}{" "}
                                           {v.vehicles.model}
                                           {" - "}
@@ -745,7 +752,7 @@ export default function AdminUsersPage() {
                               </div>
                             )}
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <Badge className="bg-green-500 text-white">
                             Self-Service Active
                           </Badge>
