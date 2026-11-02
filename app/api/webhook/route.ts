@@ -1001,7 +1001,12 @@ async function handleSubscriptionUpdated(event: Stripe.Event) {
   // record so we can safely read the dynamic field we know may be present.
   const prevAttrs = (event.data.previous_attributes ?? {}) as Record<string, unknown>;
 
-  if (wasCancelJustScheduled(prevAttrs, cancelAtPeriodEnd) && result.userId) {
+  // Not when staff cancelled (cancelAtPeriodEndParams tags those): the email
+  // says "You've requested to cancel" and offers to keep the plan, which is
+  // wrong when the business ended it. Staff tell the customer themselves.
+  const canceledByStaff = subscription.metadata?.canceled_by === "admin";
+
+  if (wasCancelJustScheduled(prevAttrs, cancelAtPeriodEnd) && result.userId && !canceledByStaff) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("email, full_name")
