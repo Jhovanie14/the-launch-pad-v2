@@ -37,7 +37,7 @@ const LOCKED_HISTORY = [
 function fakeDb(opts: {
   reads: Record<string, unknown>;
   insertErrors?: Record<string, unknown>;
-  /** Rows find_customer_block returns — a match means blocked. */
+  /** Rows find_customer_block returns â€” a match means blocked. */
   blocks?: unknown[];
 }) {
   const inserts: { table: string; row: any }[] = [];

@@ -73,7 +73,7 @@ export function authErrorMessage(error: unknown, action: AuthAction): string {
 
   const { code, message } = error as { code?: unknown; message?: unknown };
 
-  // A known code is authoritative. The message is the fallback — for old
+  // A known code is authoritative. The message is the fallback â€” for old
   // responses with no code, and for auth hook rejections, which arrive under
   // a generic code with our own message.
   const byCode = typeof code === "string" ? BY_CODE[code] : undefined;
