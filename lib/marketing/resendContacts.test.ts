@@ -11,13 +11,15 @@ const EMAIL = "sam@example.com";
 function fakeResend(opts: {
   update?: () => Promise<{ error: unknown }>;
   create?: () => Promise<{ error: unknown }>;
+  contactUpdate?: () => Promise<{ error: unknown }>;
   list?: () => Promise<{ data: { data: { id: string; subscription: "opt_in" | "opt_out" }[] } | null; error: unknown }>;
 } = {}) {
   const update = vi.fn(opts.update ?? (async () => ({ error: null })));
   const create = vi.fn(opts.create ?? (async () => ({ error: null })));
   const list = vi.fn(opts.list ?? (async () => ({ data: { data: [] }, error: null })));
-  const resend = { contacts: { create, topics: { update, list } } } as unknown as ResendContactsLike;
-  return { resend, update, create, list };
+  const contactUpdate = vi.fn(opts.contactUpdate ?? (async () => ({ error: null })));
+  const resend = { contacts: { create, update: contactUpdate, topics: { update, list } } } as unknown as ResendContactsLike;
+  return { resend, update, create, list, contactUpdate };
 }
 
 const notFound = async () => ({ error: { statusCode: 404, name: "not_found", message: "Contact not found" } });
@@ -40,6 +42,24 @@ describe("syncContactToResend", () => {
       firstName: "Sam",
       topics: [{ id: TOPIC, subscription: "opt_in" }],
     });
+  });
+
+  it("clears a global unsubscribe when the customer opts in again", async () => {
+    const { resend, contactUpdate } = fakeResend();
+    const ok = await syncContactToResend(resend, TOPIC, { email: EMAIL, subscribed: true });
+    expect(ok).toBe(true);
+    expect(contactUpdate).toHaveBeenCalledWith({ email: EMAIL, unsubscribed: false });
+  });
+
+  it("leaves the global unsubscribe alone when opting out", async () => {
+    const { resend, contactUpdate } = fakeResend();
+    await syncContactToResend(resend, TOPIC, { email: EMAIL, subscribed: false });
+    expect(contactUpdate).not.toHaveBeenCalled();
+  });
+
+  it("reports failure when clearing the global unsubscribe fails", async () => {
+    const { resend } = fakeResend({ contactUpdate: async () => ({ error: { statusCode: 500 } }) });
+    await expect(syncContactToResend(resend, TOPIC, { email: EMAIL, subscribed: true })).resolves.toBe(false);
   });
 
   it("does not create a contact just to opt it out", async () => {

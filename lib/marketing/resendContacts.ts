@@ -21,6 +21,7 @@ export interface ResendContactsLike {
       firstName?: string;
       topics: { id: string; subscription: TopicSubscription }[];
     }): Promise<ResendResult>;
+    update(o: { email: string; unsubscribed: boolean }): Promise<ResendResult>;
     topics: {
       update(o: {
         email: string;
@@ -62,7 +63,19 @@ export async function syncContactToResend(
 
   try {
     const { error } = await resend.contacts.topics.update({ email: c.email, topics });
-    if (!error) return true;
+    if (!error) {
+      if (!c.subscribed) return true;
+      // Opting in on our site is the customer's latest explicit choice, so it
+      // also lifts an earlier "unsubscribe from everything" in Resend;
+      // otherwise Resend would never deliver and its next contact.updated
+      // event would flip our row back to unsubscribed.
+      const cleared = await resend.contacts.update({ email: c.email, unsubscribed: false });
+      if (cleared.error) {
+        console.error(`${LOG} clearing global unsubscribe failed:`, cleared.error);
+        return false;
+      }
+      return true;
+    }
     if (!isNotFound(error)) {
       console.error(`${LOG} topic update failed:`, error);
       return false;
