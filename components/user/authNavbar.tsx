@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AuthUser } from "@/types";
@@ -74,7 +75,22 @@ export function AuthNavbar() {
       <>
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 justify-between items-center">
-            <div className="flex">
+            <div className="flex items-center">
+              <Link
+                href="/dashboard"
+                className="flex shrink-0 items-center gap-2 rounded focus-visible:outline-2 focus-visible:outline-amber-500"
+              >
+                <Image
+                  src="/thelaunchpad.png"
+                  alt="The Launch Pad"
+                  width={40}
+                  height={40}
+                  className="h-10 w-10 object-contain"
+                />
+                <span className="hidden text-sm font-black tracking-tight text-slate-950 lg:inline">
+                  THE LAUNCH PAD
+                </span>
+              </Link>
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                 {navLinks.map((link) => {
                   const isActive = pathName === link.href;
