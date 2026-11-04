@@ -116,6 +116,11 @@ describe("pickNow", () => {
     expect(pickNow({ bookings: [inProgress], logs: [], orders: [], now: NOW })?.kind).toBe("upcoming");
   });
 
+  it("ignores an in-progress booking staff never closed", () => {
+    const forgotten = booking({ status: "in_progress", appointment_date: "2026-10-20" });
+    expect(pickNow({ bookings: [forgotten], logs: [], orders: [], now: NOW })).toBeNull();
+  });
+
   it("ignores a bay session left open from an earlier day", () => {
     const stale = log({ check_in_time: "2026-11-04T15:00:00Z" });
     expect(pickNow({ bookings: [], logs: [stale], orders: [], now: NOW })).toBeNull();

@@ -150,9 +150,17 @@ function businessToday(now: Date): { date: string; minutes: number } {
  * so a customer running late (or whose car is mid-detail) still sees it.
  */
 function isUpcoming(b: HomeBooking, now: Date): boolean {
-  if (b.status === "in_progress") return true;
   if (!UPCOMING_STATUSES.has(b.status) || !b.appointment_date) return false;
-  return b.appointment_date >= businessToday(now).date;
+  const today = businessToday(now).date;
+  // In progress: keep from yesterday on (a detail can run past midnight), but
+  // not one staff simply never closed.
+  if (b.status === "in_progress") return b.appointment_date >= previousDay(today);
+  return b.appointment_date >= today;
+}
+
+function previousDay(date: string): string {
+  const [y, m, d] = date.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d - 1)).toISOString().slice(0, 10);
 }
 
 /** A bay check-in older than this is a session staff forgot to close, not "now". */

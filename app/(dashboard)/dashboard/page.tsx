@@ -171,7 +171,11 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={openBookingModal}
-              className="flex min-h-11 w-full items-center justify-between rounded-lg bg-amber-400 px-4 font-bold text-amber-950 hover:bg-amber-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300"
+              className={
+                isMember
+                  ? "flex min-h-11 w-full items-center justify-between rounded-lg px-4 font-semibold text-white hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-amber-400"
+                  : "flex min-h-11 w-full items-center justify-between rounded-lg bg-amber-400 px-4 font-bold text-amber-950 hover:bg-amber-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300"
+              }
             >
               <span className="flex items-center gap-2">
                 <CalendarPlus aria-hidden className="size-4" /> Book a detail
@@ -182,7 +186,7 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => setBayOpen(true)}
-                className="flex min-h-11 w-full items-center gap-2 rounded-lg px-4 font-semibold text-white hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-amber-400"
+                className="flex min-h-11 w-full items-center gap-2 rounded-lg bg-amber-400 px-4 font-bold text-amber-950 hover:bg-amber-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300"
               >
                 <IdCard aria-hidden className="size-4" /> Show at the bay
               </button>
