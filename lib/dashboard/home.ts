@@ -10,7 +10,7 @@ import { buildBookingSearch } from "@/lib/booking/bookingParams";
 export const BUSINESS_TIME_ZONE = "America/Chicago";
 
 export interface HomeVehicle {
-  year?: number | null;
+  year?: number | string | null;
   make?: string | null;
   model?: string | null;
   license_plate?: string | null;

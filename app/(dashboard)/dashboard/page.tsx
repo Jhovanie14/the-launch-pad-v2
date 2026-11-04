@@ -1,412 +1,239 @@
 "use client";
 
-import { useBooking } from "@/context/bookingContext";
-import { Button } from "@/components/ui/button";
+/*
+  THESIS: The home is the customer's pass and their next move, not a stat board. It refuses the
+  stock stat-card grid + "Welcome back" scaffold.
+  OWN-WORLD: The marketing site's world: slate-950 surfaces, amber-400 for the one primary action,
+  service hues sky (self-service) / amber (express detailing) / violet (membership), Geist black
+  weight for dates and plan names, plates drawn as real white plates in Geist Mono.
+  STORY: A member sees they're covered and which cars, and can flash it at the bay; a booker sees
+  their next detail or books again in one tap; a new customer meets the three services.
+  FIRST VIEWPORT: Members: the membership pass fills the top (plan, Active-through, cars + plates,
+  "Show at the bay"), the Now card under it. Others: the Now card leads. Phone: a bottom dock
+  Book / Show at bay / Shop; desktop: a side rail with the same actions and the site strip.
+  FORM: Membership card + thumb dock, candidate 6 of 7, seed key 03bd3211.
+  FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the
+  verdict, and DESIGN.md
+*/
+
+import Link from "next/link";
+import { useMemo, useState } from "react";
+import { ArrowRight, CalendarPlus, IdCard, ShoppingBag } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
-import { useBookingStats } from "@/hooks/useBooking";
-import RecentBookings from "@/components/recent-bookings";
-import QuickActions from "@/components/qucik-actions";
-import StatCard from "@/components/stats-card";
+import { useBooking } from "@/context/bookingContext";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useSelfServiceSubscription } from "@/hooks/useSelfServiceSubscription";
-import { Subscription, SelfServiceSubscription } from "@/types";
-import {
-  Crown,
-  Calendar,
-  CreditCard,
-  Car,
-  Sparkles,
-  ArrowRight,
-  Wrench,
-} from "lucide-react";
-import { useMemo } from "react";
-import {
-  flockVehiclePrice,
-  flockVehicleSavings,
-  hasFlockDiscount,
-} from "@/lib/pricing/flockPricing";
-import SubscriptionCancelInfo from "@/components/user/subscription-cancel-info";
+import { useDashboardHome } from "@/hooks/useDashboardHome";
 import HoursChangeDialog from "@/components/hours-change-dialog";
-import { Card, CardContent } from "@/components/ui/card";
-import Link from "next/link";
+import { MemberPass, type MemberPassProps, type PassVehicle } from "@/components/dashboard-home/member-pass";
+import { NowCard } from "@/components/dashboard-home/now-card";
+import { VisitsList } from "@/components/dashboard-home/visits-list";
+import { ActionDock } from "@/components/dashboard-home/action-dock";
+import { MarketingOptInRow } from "@/components/dashboard-home/marketing-opt-in-row";
+import { buildPastVisits, membershipStatusLine, pickNow, vehicleLabel } from "@/lib/dashboard/home";
+
+type PassData = Omit<MemberPassProps, "showing" | "onShowingChange">;
+
+function toPassVehicles(
+  vehicles: Array<{ id: string; year?: number | string | null; make?: string | null; model?: string | null; license_plate?: string | null; is_primary?: boolean }> = [],
+): PassVehicle[] {
+  return [...vehicles]
+    .sort((a, b) => Number(!!b.is_primary) - Number(!!a.is_primary))
+    .map((v) => ({
+      id: v.id,
+      label: vehicleLabel(v),
+      plate: v.license_plate || null,
+      isPrimary: !!v.is_primary,
+    }));
+}
 
 export default function DashboardPage() {
   const { user, userProfile, isLoading } = useAuth();
   const { openBookingModal } = useBooking();
-  const { stats, recentBookings } = useBookingStats();
-  const { subscription, loading: subscriptionLoading } = useSubscription();
-  const { subscription: selfServiceSubscription } =
-    useSelfServiceSubscription();
+  const express = useSubscription();
+  const selfService = useSelfServiceSubscription();
+  const home = useDashboardHome();
+  const [bayOpen, setBayOpen] = useState(false);
+  const [now] = useState(() => new Date());
 
-  // Calculate express subscription pricing and details
-  const subscriptionDetails = useMemo(() => {
-    if (!subscription || !subscription.subscription_plans) {
-      return null;
+  const holderName = userProfile?.full_name || user?.user_metadata?.full_name || user?.email || "Member";
+  const firstName = String(holderName).split(/\s+/)[0];
+
+  const passes = useMemo(() => {
+    const list: PassData[] = [];
+    const ex = express.subscription;
+    if (ex?.subscription_plans) {
+      list.push({
+        kind: "express",
+        holderName,
+        planName: ex.subscription_plans.name,
+        description: ex.subscription_plans.description,
+        statusLine: membershipStatusLine(ex),
+        cancelling: ex.cancel_at_period_end,
+        vehicles: toPassVehicles(ex.vehicles),
+      });
     }
-
-    const basePrice =
-      subscription.billing_cycle === "month"
-        ? Number(subscription.subscription_plans.monthly_price ?? 0)
-        : Number(subscription.subscription_plans.yearly_price ?? 0);
-
-    const plan = subscription.subscription_plans;
-    const planHasDiscount = hasFlockDiscount(plan);
-
-    const vehicles = subscription.vehicles || [];
-    const vehiclePricing = vehicles.map((_vehicle: NonNullable<Subscription["vehicles"]>[number], index: number) => {
-      const isFirstVehicle = index === 0;
-      return {
-        price: isFirstVehicle ? basePrice : flockVehiclePrice(basePrice, plan),
-        isDiscounted: !isFirstVehicle && planHasDiscount,
-      };
-    });
-
-    const totalPrice = vehiclePricing.reduce(
-      (sum: number, item) => sum + item.price,
-      0
-    );
-    const totalSavings = vehiclePricing.reduce(
-      (sum: number, item) =>
-        sum + (item.isDiscounted ? flockVehicleSavings(basePrice, plan) : 0),
-      0
-    );
-
-    return {
-      planName: subscription.subscription_plans.name,
-      basePrice,
-      totalPrice,
-      totalSavings,
-      vehicleCount: vehicles.length,
-      isFlock: vehicles.length > 1,
-      billingCycle: subscription.billing_cycle,
-      currentPeriodStart: subscription.current_period_start,
-      currentPeriodEnd: subscription.current_period_end,
-      status: subscription.status,
-      cancelAtPeriodEnd: subscription.cancel_at_period_end,
-    };
-  }, [subscription]);
-
-  // Calculate self-service subscription pricing and details
-  const selfServiceDetails = useMemo(() => {
-    if (
-      !selfServiceSubscription ||
-      !selfServiceSubscription.subscription_plans
-    ) {
-      return null;
+    const ss = selfService.subscription;
+    if (ss?.subscription_plans) {
+      list.push({
+        kind: "self_service",
+        holderName,
+        planName: ss.subscription_plans.name,
+        description: ss.subscription_plans.description,
+        statusLine: membershipStatusLine(ss),
+        cancelling: ss.cancel_at_period_end,
+        vehicles: toPassVehicles(ss.vehicles),
+      });
     }
+    return list;
+  }, [express.subscription, selfService.subscription, holderName]);
 
-    const basePrice = Number(
-      selfServiceSubscription.subscription_plans.monthly_price ?? 0
-    );
+  const nowItem = useMemo(
+    () => pickNow({ bookings: home.bookings, logs: home.logs, orders: home.orders, now }),
+    [home.bookings, home.logs, home.orders, now],
+  );
+  const visits = useMemo(
+    () => buildPastVisits({ bookings: home.bookings, logs: home.logs, orders: home.orders }),
+    [home.bookings, home.logs, home.orders],
+  );
 
-    const vehicles = selfServiceSubscription.vehicles || [];
-    const vehiclePricing = vehicles.map((_vehicle: SelfServiceSubscription["vehicles"][number], index: number) => {
-      const isFirstVehicle = index === 0;
-      return {
-        price: isFirstVehicle ? basePrice : basePrice * 0.9,
-        isDiscounted: !isFirstVehicle,
-      };
-    });
+  const membershipLoading = express.loading || selfService.loading;
+  const membershipError = express.error || selfService.error;
+  const isMember = passes.length > 0;
+  const isNewCustomer =
+    !home.loading && !home.error && home.bookings.length === 0 && home.logs.length === 0 && home.orders.length === 0;
 
-    const totalPrice = vehiclePricing.reduce(
-      (sum: number, item) => sum + item.price,
-      0
-    );
-    const totalSavings = vehiclePricing.reduce(
-      (sum: number, item) => sum + (item.isDiscounted ? basePrice * 0.1 : 0),
-      0
-    );
-
-    return {
-      planName: selfServiceSubscription.subscription_plans.name,
-      basePrice,
-      totalPrice,
-      totalSavings,
-      vehicleCount: vehicles.length,
-      isFlock: vehicles.length > 1,
-      billingCycle: selfServiceSubscription.billing_cycle || "month",
-      currentPeriodStart: selfServiceSubscription.current_period_start,
-      currentPeriodEnd: selfServiceSubscription.current_period_end,
-      status: selfServiceSubscription.status,
-      cancelAtPeriodEnd: selfServiceSubscription.cancel_at_period_end,
-    };
-  }, [selfServiceSubscription]);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="bg-white shadow-sm border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
-              <div className="animate-pulse bg-gray-200 h-6 w-48 rounded"></div>
-            </div>
-          </div>
-        </div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="space-y-6">
-            <div className="animate-pulse bg-white rounded-lg p-6 h-48"></div>
-            <div className="animate-pulse bg-white rounded-lg p-6 h-64"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // if (!user) {
-  //   return <div>Please log in.</div>;
-  // }
+  if (isLoading || !user) return <HomeSkeleton />;
 
   return (
-    <main className="py-6">
-      {/* Mounted only once the plan is known, so the "Manage my plan" button
-          doesn't pop into an already-open dialog. Keyed to the express
-          detailing plan — self-service bays are 24/7 and unaffected. */}
-      {!subscriptionLoading && (
-        <HoursChangeDialog surface="dashboard" showPlanAction={!!subscription} />
-      )}
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="space-y-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-            <p className="text-muted-foreground mt-1">
-              Welcome back, {userProfile?.full_name || user?.email}
-            </p>
+    <div className="pb-28 lg:pb-0">
+      <HoursChangeDialog surface="dashboard" showPlanAction={!!express.subscription} />
+
+      <h1 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">Hi, {firstName}</h1>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start">
+        <div className="space-y-6">
+          {membershipLoading ? (
+            <div aria-hidden className="h-64 animate-pulse rounded-2xl bg-slate-900/90 motion-reduce:animate-none" />
+          ) : membershipError ? (
+            <InlineError
+              message="Couldn't load your membership."
+              onRetry={() => {
+                express.refetch();
+                selfService.reload();
+              }}
+            />
+          ) : (
+            passes.map((p, i) => (
+              <MemberPass
+                key={p.kind}
+                {...p}
+                {...(i === 0 ? { showing: bayOpen, onShowingChange: setBayOpen } : {})}
+              />
+            ))
+          )}
+
+          {home.loading ? (
+            <div aria-hidden className="h-40 animate-pulse rounded-2xl bg-slate-900/90 motion-reduce:animate-none" />
+          ) : (
+            <NowCard now={nowItem} isMember={isMember} isNewCustomer={isNewCustomer} onBook={openBookingModal} />
+          )}
+
+          {!isNewCustomer && (
+            <VisitsList visits={visits} userId={user.id} error={home.error} onRetry={home.reload} now={now} />
+          )}
+
+          <MarketingOptInRow />
+        </div>
+
+        <aside aria-label="Quick actions and site info" className="space-y-4 lg:sticky lg:top-24">
+          <div className="hidden space-y-2 rounded-2xl bg-slate-950 p-4 ring-1 ring-white/10 lg:block">
+            <button
+              type="button"
+              onClick={openBookingModal}
+              className="flex min-h-11 w-full items-center justify-between rounded-lg bg-amber-400 px-4 font-bold text-amber-950 hover:bg-amber-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300"
+            >
+              <span className="flex items-center gap-2">
+                <CalendarPlus aria-hidden className="size-4" /> Book a detail
+              </span>
+              <ArrowRight aria-hidden className="size-4" />
+            </button>
+            {isMember && (
+              <button
+                type="button"
+                onClick={() => setBayOpen(true)}
+                className="flex min-h-11 w-full items-center gap-2 rounded-lg px-4 font-semibold text-white hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-amber-400"
+              >
+                <IdCard aria-hidden className="size-4" /> Show at the bay
+              </button>
+            )}
+            <Link
+              href="/products"
+              className="flex min-h-11 w-full items-center gap-2 rounded-lg px-4 font-semibold text-white hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-amber-400"
+            >
+              <ShoppingBag aria-hidden className="size-4" /> Shop car care
+            </Link>
           </div>
 
-          {/* Express Detailing Subscription Banner */}
-          {subscription && subscriptionDetails && (
-            <Card className="relative bg-linear-to-r from-blue-900 to-blue-800 text-white border-0 shadow-lg">
-              <span className="absolute top-4 right-4 inline-flex items-center gap-1.5 px-3 py-1 bg-green-500 text-white text-xs font-semibold rounded-full shadow">
-                <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                Active
-              </span>
-              <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <div className="flex items-start gap-4 flex-1">
-                    <div className="w-14 h-14 bg-white/20 rounded-lg flex items-center justify-center shrink-0">
-                      <Crown className="w-8 h-8 text-yellow-300" />
-                    </div>
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h2 className="text-xl font-bold">
-                          {subscriptionDetails.planName}
-                        </h2>
-                        <span className="inline-flex items-center px-2 py-1 bg-blue-700/50 rounded-full text-xs font-medium">
-                          Express Detailing
-                        </span>
-                        {subscriptionDetails.isFlock && (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-white/20 rounded-full text-xs font-medium">
-                            <Sparkles className="w-3 h-3" aria-hidden="true" />
-                            Multi-vehicle
-                          </span>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-                        <div className="flex items-center gap-2">
-                          <Car className="w-4 h-4 text-blue-200" />
-                          <span className="text-blue-100">
-                            {subscriptionDetails.vehicleCount} Vehicle
-                            {subscriptionDetails.vehicleCount !== 1 ? "s" : ""}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <CreditCard className="w-4 h-4 text-blue-200" />
-                          <span className="text-blue-100">
-                            ${subscriptionDetails.totalPrice.toFixed(2)}/
-                            {subscriptionDetails.billingCycle}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-blue-200" />
-                          <span className="text-blue-100">
-                            Next:{" "}
-                            {new Date(
-                              subscriptionDetails.currentPeriodEnd
-                            ).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
-                      {subscriptionDetails.isFlock &&
-                        subscriptionDetails.totalSavings > 0 && (
-                          <p className="mt-1 flex items-center gap-1.5 text-xs text-blue-200">
-                            <Sparkles
-                              className="h-3 w-3 shrink-0"
-                              aria-hidden="true"
-                            />
-                            You're saving $
-                            {subscriptionDetails.totalSavings.toFixed(2)}/
-                            {subscriptionDetails.billingCycle} with your family
-                            discount
-                          </p>
-                        )}
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      asChild
-                      variant="secondary"
-                      className="bg-white text-blue-900 hover:bg-blue-50"
-                    >
-                      <Link href="/dashboard/billing">
-                        Manage Subscription
-                        <ArrowRight className="w-4 h-4 ml-2" />
-                      </Link>
-                    </Button>
-                    {subscriptionDetails.cancelAtPeriodEnd && (
-                      <SubscriptionCancelInfo subscription={subscription} />
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Self-Service Subscription Banner */}
-          {selfServiceSubscription && selfServiceDetails && (
-            <Card className="relative bg-linear-to-r from-purple-900 to-purple-800 text-white border-0 shadow-lg">
-              <span className="absolute top-4 right-4 inline-flex items-center gap-1.5 px-3 py-1 bg-green-500 text-white text-xs font-semibold rounded-full shadow">
-                <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                Active
-              </span>
-              <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <div className="flex items-start gap-4 flex-1">
-                    <div className="w-14 h-14 bg-white/20 rounded-lg flex items-center justify-center shrink-0">
-                      <Wrench className="w-8 h-8 text-yellow-300" />
-                    </div>
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h2 className="text-xl font-bold">
-                          {selfServiceDetails.planName}
-                        </h2>
-                        <span className="inline-flex items-center px-2 py-1 bg-purple-700/50 rounded-full text-xs font-medium">
-                          Self-Service
-                        </span>
-                        {selfServiceDetails.isFlock && (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-white/20 rounded-full text-xs font-medium">
-                            <Sparkles className="w-3 h-3" />
-                            Flock Subscription
-                          </span>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-                        <div className="flex items-center gap-2">
-                          <Car className="w-4 h-4 text-purple-200" />
-                          <span className="text-purple-100">
-                            {selfServiceDetails.vehicleCount} Vehicle
-                            {selfServiceDetails.vehicleCount !== 1 ? "s" : ""}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <CreditCard className="w-4 h-4 text-purple-200" />
-                          <span className="text-purple-100">
-                            ${selfServiceDetails.totalPrice.toFixed(2)}/
-                            {selfServiceDetails.billingCycle}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-purple-200" />
-                          <span className="text-purple-100">
-                            {selfServiceDetails.currentPeriodEnd
-                              ? `Next: ${new Date(
-                                  selfServiceDetails.currentPeriodEnd
-                                ).toLocaleDateString()}`
-                              : "Active"}
-                          </span>
-                        </div>
-                      </div>
-                      {selfServiceDetails.isFlock &&
-                        selfServiceDetails.totalSavings > 0 && (
-                          <p className="text-xs text-purple-200 mt-1">
-                            ✨ You're saving $
-                            {selfServiceDetails.totalSavings.toFixed(2)}/
-                            {selfServiceDetails.billingCycle} with your flock
-                            discount!
-                          </p>
-                        )}
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      asChild
-                      variant="secondary"
-                      className="bg-white text-purple-900 hover:bg-purple-50"
-                    >
-                      <Link href="/dashboard/billing">
-                        Manage Subscription
-                        <ArrowRight className="w-4 h-4 ml-2" />
-                      </Link>
-                    </Button>
-                    {selfServiceDetails.cancelAtPeriodEnd && (
-                      <div className="text-xs text-purple-200 text-center">
-                        Scheduled for cancellation
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* No Subscription CTA */}
-          {!subscription && (
-            <Card className="border-2 border-dashed border-gray-300">
-              <CardContent className="p-6 text-center">
-                <Crown className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Unlock Premium Features
-                </h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  Subscribe to get unlimited car washes and exclusive benefits
-                </p>
-                <Button asChild className="bg-blue-900 hover:bg-blue-800">
-                  <Link href="/dashboard/pricing">View Plans</Link>
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* Weather Notice — shown only to active subscribers */}
-        {(subscription || selfServiceSubscription) && (
-          <div className="flex items-start gap-3 bg-sky-50 border border-sky-200 rounded-lg px-4 py-3 text-xs text-sky-800 leading-relaxed">
-            <span className="text-base shrink-0">⛅</span>
-            <p>
-              <span className="font-semibold">Weather Notice:</span> In the event of rain or inclement weather, our location may temporarily suspend services. Subscription fees are non-refundable for weather-related closures. Full access resumes once normal operations continue.{" "}
-              <Link href="/terms" className="underline font-medium hover:text-sky-900">
-                See Terms §1.8
-              </Link>
-            </p>
-          </div>
-        )}
-
-        {/* Stats */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <StatCard
-            title="Total Bookings"
-            value={stats.thisMonth}
-            note={`${stats.difference >= 0 ? "+" : ""}${stats.difference} from last month`}
-          />
-          <StatCard
-            title="Active Bookings"
-            value={stats.active}
-            note="+1 from yesterday"
-          />
-          <StatCard
-            title="Completed"
-            value={stats.completed}
-            note="+4 from last week"
-          />
-        </div>
-
-        {/* Bookings + Actions */}
-        <div className="grid gap-6 md:grid-cols-2">
-          <RecentBookings bookings={recentBookings} />
-          <QuickActions onBook={openBookingModal} />
-        </div>
+          <SiteStrip />
+        </aside>
       </div>
-    </main>
+
+      <ActionDock onBook={openBookingModal} onShowPass={isMember ? () => setBayOpen(true) : undefined} />
+    </div>
+  );
+}
+
+function SiteStrip() {
+  return (
+    <div className="rounded-2xl bg-white p-4 text-sm ring-1 ring-slate-200">
+      <p className="font-semibold text-slate-950">10410 S Main St, Houston</p>
+      <dl className="mt-2 space-y-1 text-slate-700">
+        <div className="flex justify-between gap-3">
+          <dt>Self-service bays</dt>
+          <dd className="font-medium text-slate-950">Open 24/7</dd>
+        </div>
+        <div className="flex justify-between gap-3">
+          <dt>Express detailing</dt>
+          <dd className="font-medium text-slate-950">Thu–Sun, 9:30–6:30</dd>
+        </div>
+      </dl>
+      <Link
+        href="/terms"
+        className="mt-3 inline-block rounded text-slate-700 underline underline-offset-4 hover:text-slate-950 focus-visible:outline-2 focus-visible:outline-amber-500"
+      >
+        Weather and closure policy
+      </Link>
+    </div>
+  );
+}
+
+function InlineError({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div role="alert" className="rounded-2xl bg-slate-950 p-5 text-white ring-1 ring-white/10">
+      <p className="font-semibold">{message}</p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="mt-3 min-h-11 rounded-lg border border-white/25 px-4 font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-amber-400"
+      >
+        Try again
+      </button>
+    </div>
+  );
+}
+
+function HomeSkeleton() {
+  return (
+    <div aria-busy="true" aria-label="Loading your dashboard" className="space-y-6">
+      <div className="h-8 w-40 animate-pulse rounded bg-slate-200 motion-reduce:animate-none" />
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+        <div className="space-y-6">
+          <div className="h-64 animate-pulse rounded-2xl bg-slate-900/90 motion-reduce:animate-none" />
+          <div className="h-40 animate-pulse rounded-2xl bg-slate-900/90 motion-reduce:animate-none" />
+        </div>
+        <div className="hidden h-48 animate-pulse rounded-2xl bg-slate-200 lg:block motion-reduce:animate-none" />
+      </div>
+    </div>
   );
 }
