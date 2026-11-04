@@ -1,16 +1,33 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
+import { requireAdmin } from "@/lib/auth/guards";
+import { apiError, ApiError } from "@/lib/http/apiError";
+import { escapeHtml } from "@/lib/email/escapeHtml";
+import { parseBookingId, recipientFromBooking } from "@/lib/email/bookingRecipient";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// Staff-only: sent when an admin marks a booking completed. The recipient is
+// always the booking's own customer, never an address from the request body.
 export async function POST(req: Request) {
   try {
-    const { email, name, bookingId } = await req.json();
-    console.log("🟢 Tip email request received:", { email, name, bookingId });
+    const supabase = await createClient();
+    const admin = createAdminClient();
+    await requireAdmin(supabase, admin);
 
-    const tipLink = `https://buy.stripe.com/bJeaEW32W1WD4tHeq9cwg01?booking=${bookingId}`;
+    const bookingId = parseBookingId(await req.json().catch(() => null));
+    const { data: booking } = await admin
+      .from("bookings")
+      .select("id, customer_email, customer_name")
+      .eq("id", bookingId)
+      .maybeSingle();
+    const { email, name } = recipientFromBooking(booking);
 
-    const data = await resend.emails.send({
+    const tipLink = `https://buy.stripe.com/bJeaEW32W1WD4tHeq9cwg01?booking=${encodeURIComponent(bookingId)}`;
+
+    const { error: sendError } = await resend.emails.send({
       from: "The Launch Pad Wash <noreply@thelaunchpadwash.com>",
       to: email,
       subject: "✨ Your car looks incredible — help us celebrate!",
@@ -197,7 +214,7 @@ export async function POST(req: Request) {
                   <!-- Content -->
                   <tr>
                     <td class="content">
-                      <p class="greeting">Hey ${name || "there"},</p>
+                      <p class="greeting">Hey ${escapeHtml(name) || "there"},</p>
                       
                       <div class="message-card">
                         <p class="message-text">
@@ -281,11 +298,13 @@ export async function POST(req: Request) {
       `,
     });
 
-    console.log("✅ Resend response:", data);
+    if (sendError) {
+      console.error("[send-tip-email] Resend error:", sendError);
+      throw new ApiError("Failed to send tip email", 502);
+    }
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("❌ Error sending tip email:", error);
-    return NextResponse.json({ success: false, error });
+  } catch (err) {
+    return apiError(err);
   }
 }
