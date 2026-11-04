@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { Car, Pencil, Plus, Trash2 } from "lucide-react";
 import { useUserVehicles } from "@/hooks/useUserVehicles";
 import UpdateVehicleModal from "@/components/update-vehicle-modal";
+import { MarketingConsentSwitch } from "@/components/settings/marketing-consent-switch";
 
 interface UserProfileProps {
   user: AuthUser;
@@ -267,6 +268,8 @@ export function UserProfile({ user }: UserProfileProps) {
               <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>
             )}
           </div>
+
+          <MarketingConsentSwitch />
         </CardContent>
       </Card>
 
