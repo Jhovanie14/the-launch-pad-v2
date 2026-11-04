@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/utils/supabase/admin";
-import { getConsentStatus, recordConsent } from "@/lib/marketing/consent";
+import { getConsentRow, recordConsent } from "@/lib/marketing/consent";
 import {
   getResend,
   getTopicSubscription,
@@ -47,7 +47,7 @@ export async function POST(req: Request) {
     const topicId = process.env.RESEND_MARKETING_TOPIC_ID;
     const resend = getResend();
 
-    const current = await getConsentStatus(admin, email);
+    const row = await getConsentRow(admin, email);
     const topic =
       event.type === "contact.updated" && topicId
         ? await getTopicSubscription(resend, topicId, email)
@@ -56,7 +56,8 @@ export async function POST(req: Request) {
     const decision = decideFromContactEvent(
       { type: event.type, data: { email, unsubscribed: event.data.unsubscribed } },
       topic,
-      current,
+      row?.status ?? null,
+      row ? row.resend_synced_at === null : false,
     );
     if (decision) {
       const result = await recordConsent(admin, { email, ...decision });

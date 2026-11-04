@@ -50,6 +50,19 @@ describe("decideFromContactEvent", () => {
     expect(decideFromContactEvent(updated(), null, "subscribed")).toBeNull();
   });
 
+  it("does not re-subscribe from stale Resend state while our opt-out is still unsynced", () => {
+    // Customer opted out on our site while Resend was down: Resend still says opt_in.
+    expect(decideFromContactEvent(updated(), "opt_in", "unsubscribed", true)).toBeNull();
+  });
+
+  it("still honours a Resend unsubscribe while our change is unsynced", () => {
+    // An unsubscribe click must win even if our pending change says subscribed.
+    expect(decideFromContactEvent(updated(), "opt_out", "subscribed", true)).toEqual({
+      action: "unsubscribe",
+      source: "resend_unsubscribe",
+    });
+  });
+
   it("ignores contacts we have no row for", () => {
     expect(decideFromContactEvent(updated(), "opt_in", null)).toBeNull();
     expect(decideFromContactEvent(updated(true), "opt_out", null)).toBeNull();
