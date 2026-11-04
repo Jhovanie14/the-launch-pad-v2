@@ -144,8 +144,10 @@ export default function PrivacyPolicyPage() {
               <li className="flex gap-3">
                 <span className="font-semibold min-w-fit">Communications:</span>
                 <span>
-                  to send service confirmations, essential notices, policy
-                  updates, and—where permitted—limited marketing communications.
+                  to send service confirmations, essential notices and policy
+                  updates, and—only if you opt in at sign-up, when booking, or
+                  in your account settings—occasional emails about our
+                  products and offers.
                 </span>
               </li>
               <li className="flex gap-3">
@@ -262,8 +264,11 @@ export default function PrivacyPolicyPage() {
             <p className="text-foreground leading-relaxed">
               You may review and update account details (including vehicle
               information, subscription, and add-ons) by logging into your
-              account. You may opt out of marketing emails by using the
-              unsubscribe link in those communications. You may also request
+              account. Marketing emails are sent only with your consent, and
+              you can withdraw it at any time by using the unsubscribe link in
+              any marketing email or the email preferences switch in your
+              account settings. Booking confirmations and receipts are still
+              sent. You may also request
               access to or deletion of your personal information, subject to
               applicable legal and operational retention obligations. Requests
               may be submitted to the contact information below.
