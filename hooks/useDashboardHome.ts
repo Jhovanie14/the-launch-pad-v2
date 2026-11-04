@@ -15,6 +15,7 @@ export function useDashboardHome() {
   const [bookings, setBookings] = useState<HomeBooking[]>([]);
   const [logs, setLogs] = useState<HomeUsageLog[]>([]);
   const [orders, setOrders] = useState<HomeOrder[]>([]);
+  const [reviewedIds, setReviewedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,7 +27,7 @@ export function useDashboardHome() {
     setLoading(true);
     setError(null);
     try {
-      const [b, l, o] = await Promise.all([
+      const [b, l, o, r] = await Promise.all([
         supabase
           .from("bookings")
           .select(
@@ -48,12 +49,17 @@ export function useDashboardHome() {
           .not("status", "in", "(pending,cancelled)")
           .order("created_at", { ascending: false })
           .limit(10),
+        supabase.from("reviews").select("booking_id").eq("user_id", user.id),
       ]);
       const firstError = b.error ?? l.error ?? o.error;
       if (firstError) throw firstError;
       setBookings((b.data ?? []) as unknown as HomeBooking[]);
       setLogs((l.data ?? []) as unknown as HomeUsageLog[]);
       setOrders((o.data ?? []) as HomeOrder[]);
+      // Reviews are a nicety: if they fail to load, just don't ask for one.
+      setReviewedIds(
+        r.error ? new Set(((b.data ?? []) as { id: string }[]).map((x) => x.id)) : new Set((r.data ?? []).map((x) => x.booking_id as string)),
+      );
     } catch (err) {
       console.error("[dashboard] home data failed to load:", err);
       setError("Couldn't load your visits.");
@@ -66,5 +72,9 @@ export function useDashboardHome() {
     load();
   }, [load]);
 
-  return { bookings, logs, orders, loading, error, reload: load };
+  const markReviewed = useCallback((bookingId: string) => {
+    setReviewedIds((prev) => new Set(prev).add(bookingId));
+  }, []);
+
+  return { bookings, logs, orders, reviewedIds, markReviewed, loading, error, reload: load };
 }

@@ -107,7 +107,10 @@ export default function DashboardPage() {
 
   return (
     <div className="pb-28 lg:pb-0">
-      <HoursChangeDialog surface="dashboard" showPlanAction={!!express.subscription} />
+      {/* Mounted once the plan is known, so "Manage my plan" never pops into an open dialog. */}
+      {!express.loading && (
+        <HoursChangeDialog surface="dashboard" showPlanAction={!!express.subscription} />
+      )}
 
       <h1 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">Hi, {firstName}</h1>
 
@@ -133,20 +136,37 @@ export default function DashboardPage() {
             ))
           )}
 
-          {home.loading ? (
+          {/* Never guess: until we know their bookings and membership, show a placeholder;
+              if bookings failed, say so instead of "nothing booked". */}
+          {home.loading || membershipLoading ? (
             <div aria-hidden className="h-40 animate-pulse rounded-2xl bg-slate-900/90 motion-reduce:animate-none" />
+          ) : home.error ? (
+            <InlineError message="Couldn't load your bookings." onRetry={home.reload} />
           ) : (
-            <NowCard now={nowItem} isMember={isMember} isNewCustomer={isNewCustomer} onBook={openBookingModal} />
+            <NowCard
+              now={nowItem}
+              isMember={isMember}
+              isNewCustomer={isNewCustomer && !membershipError}
+              hasPass={isMember}
+              onBook={openBookingModal}
+            />
           )}
 
           {!isNewCustomer && (
-            <VisitsList visits={visits} userId={user.id} error={home.error} onRetry={home.reload} now={now} />
+            <VisitsList
+              visits={visits}
+              userId={user.id}
+              reviewedIds={home.reviewedIds}
+              onReviewed={home.markReviewed}
+              error={home.error}
+              onRetry={home.reload}
+              now={now}
+            />
           )}
 
-          <MarketingOptInRow />
         </div>
 
-        <aside aria-label="Quick actions and site info" className="space-y-4 lg:sticky lg:top-24">
+        <aside aria-label="Visit the site" className="space-y-4 lg:sticky lg:top-24">
           <div className="hidden space-y-2 rounded-2xl bg-slate-950 p-4 ring-1 ring-white/10 lg:block">
             <button
               type="button"
@@ -179,6 +199,11 @@ export default function DashboardPage() {
         </aside>
       </div>
 
+      {/* Last on every screen size: an ask, never in the way. */}
+      <div className="mt-6 lg:max-w-[calc(100%-19.5rem)]">
+        <MarketingOptInRow />
+      </div>
+
       <ActionDock onBook={openBookingModal} onShowPass={isMember ? () => setBayOpen(true) : undefined} />
     </div>
   );
@@ -195,12 +220,12 @@ function SiteStrip() {
         </div>
         <div className="flex justify-between gap-3">
           <dt>Express detailing</dt>
-          <dd className="font-medium text-slate-950">Thu–Sun, 9:30–6:30</dd>
+          <dd className="font-medium text-slate-950">Thu–Sun, 9:30 AM–6:30 PM</dd>
         </div>
       </dl>
       <Link
         href="/terms"
-        className="mt-3 inline-block rounded text-slate-700 underline underline-offset-4 hover:text-slate-950 focus-visible:outline-2 focus-visible:outline-amber-500"
+        className="mt-3 inline-block rounded text-slate-700 underline underline-offset-4 hover:text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-950"
       >
         Weather and closure policy
       </Link>

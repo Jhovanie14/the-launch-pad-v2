@@ -109,6 +109,18 @@ describe("pickNow", () => {
     expect(pickNow({ bookings: [today], logs: [], orders: [], now: NOW })?.kind).toBe("upcoming");
   });
 
+  it("keeps today's booking after its start time (running late, or being detailed)", () => {
+    const startedAt9 = booking({ appointment_date: "2026-11-06", appointment_time: "09:00:00" });
+    expect(pickNow({ bookings: [startedAt9], logs: [], orders: [], now: NOW })?.kind).toBe("upcoming");
+    const inProgress = booking({ status: "in_progress", appointment_date: "2026-11-05" });
+    expect(pickNow({ bookings: [inProgress], logs: [], orders: [], now: NOW })?.kind).toBe("upcoming");
+  });
+
+  it("ignores a bay session left open from an earlier day", () => {
+    const stale = log({ check_in_time: "2026-11-04T15:00:00Z" });
+    expect(pickNow({ bookings: [], logs: [stale], orders: [], now: NOW })).toBeNull();
+  });
+
   it("ignores past, cancelled and completed bookings", () => {
     const now = pickNow({
       bookings: [
@@ -160,7 +172,10 @@ describe("buildPastVisits", () => {
 
 describe("rebookHref", () => {
   it("goes straight to date and time with the same service and car", () => {
-    expect(rebookHref(booking({}))).toBe("/dashboard/booking/datetime?vehicle_id=v1&service=svc-1");
+    // The plate is what the booking flow uses to recognise a car on the membership.
+    expect(rebookHref(booking({}))).toBe(
+      "/dashboard/booking/datetime?license_plate=ABC1234&vehicle_id=v1&service=svc-1",
+    );
   });
 
   it("starts at service choice when the service is unknown", () => {

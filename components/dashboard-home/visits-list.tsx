@@ -15,20 +15,31 @@ const KIND_DOT: Record<VisitItem["kind"], string> = {
 
 const REVIEW_WINDOW_DAYS = 14;
 
+// Focus outline that stays visible (3:1+) on a white surface.
+const LIGHT_FOCUS = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-950";
+const ROW_ACTION = cn(
+  "inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-slate-800 ring-1 ring-slate-200 hover:bg-slate-50",
+  LIGHT_FOCUS,
+);
+
 /**
  * Past details, bay visits and product orders in one list, colour-coded the
  * way the marketing site codes the services. A detail can be booked again in
- * one tap; the most recent recent detail asks once how it went.
+ * one tap; the latest detail, if recent and not yet reviewed, asks how it went.
  */
 export function VisitsList({
   visits,
   userId,
+  reviewedIds,
+  onReviewed,
   error,
   onRetry,
   now,
 }: {
   visits: VisitItem[];
   userId: string;
+  reviewedIds: Set<string>;
+  onReviewed: (bookingId: string) => void;
   error: string | null;
   onRetry: () => void;
   now: Date;
@@ -36,7 +47,8 @@ export function VisitsList({
   const [reviewing, setReviewing] = useState<string | null>(null);
   const latestDetail = visits.find((v) => v.kind === "detail");
   const askForReview =
-    latestDetail &&
+    !!latestDetail &&
+    !reviewedIds.has(latestDetail.id) &&
     now.getTime() - new Date(latestDetail.at).getTime() < REVIEW_WINDOW_DAYS * 86_400_000;
 
   return (
@@ -47,7 +59,7 @@ export function VisitsList({
         </h2>
         <Link
           href="/dashboard/bookings"
-          className="rounded text-sm font-medium text-slate-700 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-amber-500"
+          className={cn("rounded text-sm font-medium text-slate-700 underline-offset-4 hover:underline", LIGHT_FOCUS)}
         >
           All bookings
         </Link>
@@ -56,7 +68,11 @@ export function VisitsList({
       {error ? (
         <p className="mt-4 text-sm text-slate-700">
           {error}{" "}
-          <button type="button" onClick={onRetry} className="font-semibold text-slate-950 underline underline-offset-4">
+          <button
+            type="button"
+            onClick={onRetry}
+            className={cn("rounded font-semibold text-slate-950 underline underline-offset-4", LIGHT_FOCUS)}
+          >
             Try again
           </button>
         </p>
@@ -67,33 +83,28 @@ export function VisitsList({
       ) : (
         <ol className="mt-4 divide-y divide-slate-100">
           {visits.map((v) => (
-            <li key={`${v.kind}-${v.id}`} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3">
-              <span aria-hidden className={cn("size-2.5 shrink-0 rounded-full", KIND_DOT[v.kind])} />
-              <time dateTime={v.at} className="w-14 shrink-0 text-sm font-semibold tabular-nums text-slate-500">
-                {formatShortDate(v.at)}
-              </time>
-              <span className="min-w-0 flex-1 basis-40">
-                <span className="block font-semibold text-slate-950">{v.title}</span>
-                {v.detail && <span className="block text-sm text-slate-600">{v.detail}</span>}
-              </span>
+            <li key={`${v.kind}-${v.id}`} className="py-3">
+              <div className="flex items-center gap-4">
+                <span aria-hidden className={cn("size-2.5 shrink-0 rounded-full", KIND_DOT[v.kind])} />
+                <time dateTime={v.at} className="w-14 shrink-0 text-sm font-semibold tabular-nums text-slate-500">
+                  {formatShortDate(v.at)}
+                </time>
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold text-slate-950">{v.title}</span>
+                  {v.detail && <span className="block text-sm text-slate-600">{v.detail}</span>}
+                </span>
+              </div>
               {v.kind === "detail" && v.booking && (
-                <span className="flex basis-full flex-wrap gap-2 pl-[6.125rem] sm:basis-auto sm:pl-0">
+                <div className="mt-2 flex flex-wrap gap-2">
                   {askForReview && latestDetail?.id === v.id && (
-                    <button
-                      type="button"
-                      onClick={() => setReviewing(v.id)}
-                      className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-slate-800 ring-1 ring-slate-200 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-amber-500"
-                    >
+                    <button type="button" onClick={() => setReviewing(v.id)} className={ROW_ACTION}>
                       <Star aria-hidden className="size-4" /> How was it?
                     </button>
                   )}
-                  <Link
-                    href={rebookHref(v.booking)}
-                    className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-slate-800 ring-1 ring-slate-200 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-amber-500"
-                  >
+                  <Link href={rebookHref(v.booking)} className={ROW_ACTION}>
                     <RotateCcw aria-hidden className="size-4" /> Book again
                   </Link>
-                </span>
+                </div>
               )}
             </li>
           ))}
@@ -106,7 +117,10 @@ export function VisitsList({
           userId={userId}
           open={!!reviewing}
           onOpenChange={(open) => !open && setReviewing(null)}
-          onSubmitted={() => setReviewing(null)}
+          onSubmitted={() => {
+            onReviewed(reviewing);
+            setReviewing(null);
+          }}
         />
       )}
     </section>

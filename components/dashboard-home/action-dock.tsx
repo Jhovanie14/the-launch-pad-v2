@@ -23,11 +23,16 @@ export function ActionDock({
       className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-slate-950/95 px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] backdrop-blur lg:hidden"
     >
       <div className="mx-auto flex max-w-md gap-2">
-        <button type="button" onClick={onBook} className={`${DOCK_ITEM} bg-amber-400 text-amber-950 hover:bg-amber-300`}>
+        {/* One amber target: the pass for members (they're at the bay), Book for everyone else. */}
+        <button
+          type="button"
+          onClick={onBook}
+          className={`${DOCK_ITEM} ${onShowPass ? "text-white hover:bg-white/10" : "bg-amber-400 text-amber-950 hover:bg-amber-300"}`}
+        >
           <CalendarPlus aria-hidden className="size-5" /> Book
         </button>
         {onShowPass ? (
-          <button type="button" onClick={onShowPass} className={`${DOCK_ITEM} text-white hover:bg-white/10`}>
+          <button type="button" onClick={onShowPass} className={`${DOCK_ITEM} bg-amber-400 text-amber-950 hover:bg-amber-300`}>
             <IdCard aria-hidden className="size-5" /> Show at bay
           </button>
         ) : (

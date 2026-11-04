@@ -144,14 +144,19 @@ function businessToday(now: Date): { date: string; minutes: number } {
   };
 }
 
+/**
+ * Still relevant to show: anything being worked on right now, and any
+ * pending/confirmed booking from today onward. Today's booking stays all day,
+ * so a customer running late (or whose car is mid-detail) still sees it.
+ */
 function isUpcoming(b: HomeBooking, now: Date): boolean {
+  if (b.status === "in_progress") return true;
   if (!UPCOMING_STATUSES.has(b.status) || !b.appointment_date) return false;
-  const today = businessToday(now);
-  if (b.appointment_date > today.date) return true;
-  if (b.appointment_date < today.date) return false;
-  const t = parseTime(b.appointment_time);
-  return !t || t.h * 60 + t.m >= today.minutes;
+  return b.appointment_date >= businessToday(now).date;
 }
+
+/** A bay check-in older than this is a session staff forgot to close, not "now". */
+const OPEN_SESSION_MAX_MS = 6 * 60 * 60 * 1000;
 
 function appointmentSortKey(b: HomeBooking): string {
   return `${b.appointment_date ?? ""} ${(b.appointment_time ?? "").padStart(8, "0")}`;
@@ -164,7 +169,12 @@ export function pickNow(input: {
   orders: HomeOrder[];
   now: Date;
 }): NowItem | null {
-  const checkedIn = input.logs.find((l) => !l.check_out_time && l.status === "in_progress");
+  const checkedIn = input.logs.find(
+    (l) =>
+      !l.check_out_time &&
+      l.status === "in_progress" &&
+      input.now.getTime() - new Date(l.check_in_time).getTime() < OPEN_SESSION_MAX_MS,
+  );
   if (checkedIn) return { kind: "checked_in", log: checkedIn };
 
   const upcoming = input.bookings
@@ -236,7 +246,8 @@ export function buildPastVisits(
 export function rebookHref(b: HomeBooking): string {
   if (!b.service_package_id) return "/dashboard/booking/service";
   const search = buildBookingSearch({
-    licensePlate: "",
+    // The booking flow recognises a car on the membership by its plate.
+    licensePlate: b.vehicle?.license_plate ?? "",
     vehicleId: b.vehicle_id ?? "",
     serviceId: b.service_package_id,
     addOnIds: [],

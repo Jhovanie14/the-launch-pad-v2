@@ -9,7 +9,6 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
 import { LicensePlate } from "./license-plate";
 
 export interface PassVehicle {
@@ -33,8 +32,8 @@ export interface MemberPassProps {
 }
 
 const KIND = {
-  express: { label: "Express membership", chip: "bg-violet-400/15 text-violet-200 ring-violet-300/30" },
-  self_service: { label: "Self-service plan", chip: "bg-sky-400/15 text-sky-200 ring-sky-300/30" },
+  express: { label: "Express membership", tone: "text-violet-300" },
+  self_service: { label: "Self-service plan", tone: "text-sky-300" },
 } as const;
 
 /**
@@ -53,10 +52,10 @@ export function MemberPass({ showing: controlled, onShowingChange, ...props }: M
       aria-labelledby={`pass-${props.kind}`}
       className="rounded-2xl bg-slate-950 p-5 text-white shadow-[0_18px_40px_-24px_rgb(2_6_23/0.9)] ring-1 ring-white/10 sm:p-7"
     >
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <span className={cn("rounded-full px-3 py-1 text-xs font-semibold ring-1", kind.chip)}>
-          {kind.label}
-        </span>
+      <div className="flex items-start justify-between gap-3">
+        <h2 id={`pass-${props.kind}`} className="text-3xl font-black tracking-tight text-balance sm:text-4xl">
+          {props.planName}
+        </h2>
         <Link
           href="/dashboard/billing"
           className="rounded-md px-2 py-1 text-sm font-medium text-slate-300 underline-offset-4 hover:text-white hover:underline focus-visible:outline-2 focus-visible:outline-amber-400"
@@ -64,12 +63,10 @@ export function MemberPass({ showing: controlled, onShowingChange, ...props }: M
           Manage
         </Link>
       </div>
-
-      <h2 id={`pass-${props.kind}`} className="mt-4 text-3xl font-black tracking-tight text-balance sm:text-4xl">
-        {props.planName}
-      </h2>
-      <p className={cn("mt-1 text-base font-semibold", props.cancelling ? "text-amber-300" : "text-slate-300")}>
-        {props.statusLine}
+      <p className="mt-1 text-base font-semibold">
+        <span className={kind.tone}>{kind.label}</span>
+        <span className="text-slate-400"> · </span>
+        <span className={props.cancelling ? "text-amber-300" : "text-slate-200"}>{props.statusLine}</span>
       </p>
       {props.description && (
         <p className="mt-3 max-w-prose text-sm leading-relaxed text-slate-400">{props.description}</p>
@@ -111,9 +108,11 @@ function BayPass({
 }: MemberPassProps & { open: boolean; onOpenChange: (open: boolean) => void }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-dvh max-h-dvh w-screen max-w-none flex-col justify-center gap-0 rounded-none border-0 bg-slate-950 p-6 text-white sm:max-w-none sm:p-12">
-        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-300">The Launch Pad</p>
-        <DialogTitle className="mt-4 text-4xl font-black leading-none tracking-tight sm:text-6xl">
+      <DialogContent
+        showCloseButton={false}
+        className="flex h-dvh max-h-dvh w-screen max-w-none flex-col justify-start gap-0 overflow-y-auto rounded-none border-0 bg-slate-950 p-6 text-white motion-reduce:animate-none sm:max-w-none sm:justify-[safe_center] sm:p-12"
+      >
+        <DialogTitle className="text-4xl font-black leading-none tracking-tight sm:text-6xl">
           {p.holderName}
         </DialogTitle>
         <DialogDescription className="mt-3 text-xl font-semibold text-slate-200 sm:text-2xl">

@@ -78,7 +78,7 @@ export function AuthNavbar() {
             <div className="flex items-center">
               <Link
                 href="/dashboard"
-                className="flex shrink-0 items-center gap-2 rounded focus-visible:outline-2 focus-visible:outline-amber-500"
+                className="flex shrink-0 items-center gap-2 rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-950"
               >
                 <Image
                   src="/thelaunchpad.png"

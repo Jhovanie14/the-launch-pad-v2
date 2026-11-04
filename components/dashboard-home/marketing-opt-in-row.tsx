@@ -78,7 +78,7 @@ export function MarketingOptInRow() {
           type="button"
           onClick={subscribe}
           disabled={saving}
-          className="min-h-11 rounded-lg bg-slate-950 px-4 font-semibold text-white hover:bg-slate-800 disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500"
+          className="min-h-11 rounded-lg bg-slate-950 px-4 font-semibold text-white hover:bg-slate-800 disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-950"
         >
           Yes, email me
         </button>
@@ -86,7 +86,7 @@ export function MarketingOptInRow() {
           type="button"
           onClick={dismiss}
           disabled={saving}
-          className="min-h-11 rounded-lg px-4 font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-amber-500"
+          className="min-h-11 rounded-lg px-4 font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-slate-950"
         >
           No thanks
         </button>
