@@ -20,6 +20,8 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import type { AddOnRow } from "@/types/db";
 import { recordPromoRedemption } from "@/lib/pricing/validatePromo";
+import { recordConsent } from "@/lib/marketing/consent";
+import { bookingMetaOptsIn } from "@/lib/marketing/bookingConsent";
 
 /** Shape of booking metadata encoded as JSON in session.metadata.booking */
 interface BookingMetadata {
@@ -37,6 +39,8 @@ interface BookingMetadata {
   nm: string;
   ph: string;
   si: string;
+  /** 1 when a guest ticked the marketing opt-in; absent otherwise. */
+  mk?: number;
   addOns?: Array<{ id: string }>;
 }
 
@@ -662,6 +666,22 @@ async function processBooking(session: Stripe.Checkout.Session) {
     }
 
     console.log("Booking inserted!", bookingRows);
+
+    // Guest marketing opt-in, recorded only now that the booking is paid and
+    // saved. A replayed event returns above (duplicate checks), so this runs
+    // once; recordConsent is idempotent anyway. Never affects the booking.
+    if (bookingMetaOptsIn(bookingMeta)) {
+      try {
+        await recordConsent(supabase, {
+          email: bookingMeta.em,
+          action: "subscribe",
+          source: "booking",
+          firstName: bookingMeta.nm?.trim().split(/\s+/)[0] || null,
+        });
+      } catch (consentError) {
+        console.error("Failed to record guest marketing consent:", consentError);
+      }
+    }
 
     let addOnIds: string[] = [];
 

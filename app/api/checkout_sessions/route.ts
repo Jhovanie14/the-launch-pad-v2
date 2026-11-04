@@ -119,6 +119,9 @@ export async function POST(req: Request) {
       nm: user?.user_metadata?.full_name ?? body.customerName ?? "",
       ph: body.customerPhone ?? "",
       si: body.specialInstructions ?? "",
+      // Guest marketing opt-in, recorded by the webhook after payment
+      // (lib/marketing/bookingConsent.ts). Only present when ticked.
+      ...(!user && body.marketingOptIn === true ? { mk: 1 } : {}),
     };
 
     const bookingJson = JSON.stringify(bookingData);

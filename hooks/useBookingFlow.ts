@@ -35,6 +35,8 @@ export interface GuestInfo {
   name: string;
   email: string;
   phone: string;
+  /** Guest ticked "Email me product news and offers" (never pre-ticked). */
+  marketingOptIn: boolean;
 }
 
 // Single source of truth for an in-progress booking. Step state lives in the
@@ -337,6 +339,7 @@ export function useBookingFlow(ctx: BookingAuthContext, step: BookingStep) {
             customerName: opts.guest?.name ?? ctx.userFullName ?? "Guest",
             customerEmail: opts.guest?.email ?? ctx.userEmail ?? "",
             customerPhone: opts.guest?.phone,
+            marketingOptIn: opts.guest?.marketingOptIn === true,
             promoCode,
           }),
         });

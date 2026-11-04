@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -74,6 +75,7 @@ export default function ConfirmationStep({ ctx }: { ctx: BookingAuthContext }) {
     name: "",
     email: "",
     phone: "",
+    marketingOptIn: false,
   });
   const [guestErrors, setGuestErrors] = useState<Record<string, string>>({});
 
@@ -380,6 +382,24 @@ export default function ConfirmationStep({ ctx }: { ctx: BookingAuthContext }) {
               {guestErrors.phone && (
                 <p className="text-red-500 text-sm mt-1">{guestErrors.phone}</p>
               )}
+            </div>
+
+            <div className="flex items-start gap-2">
+              <Checkbox
+                id="guest-marketing"
+                checked={guestInfo.marketingOptIn}
+                onCheckedChange={(checked) =>
+                  setGuestInfo({ ...guestInfo, marketingOptIn: checked === true })
+                }
+                className="mt-0.5"
+              />
+              <Label
+                htmlFor="guest-marketing"
+                className="text-sm font-normal text-muted-foreground leading-snug"
+              >
+                Email me product news and offers. You can unsubscribe at any
+                time.
+              </Label>
             </div>
           </div>
 
