@@ -1,0 +1,609 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-04T23:15:48.261Z",
+  "title": "Design System: The Launch Pad",
+  "extensions": {
+    "colorMeta": {
+      "signal-amber": {
+        "role": "primary",
+        "displayName": "Signal Amber",
+        "canonical": "oklch(82.8% 0.189 84.429)",
+        "tonalRamp": [
+          "oklch(27.9% 0.077 45.635)",
+          "oklch(41.4% 0.112 45.904)",
+          "oklch(47.3% 0.137 46.201)",
+          "oklch(55.5% 0.163 48.998)",
+          "oklch(66.6% 0.179 58.318)",
+          "oklch(82.8% 0.189 84.429)",
+          "oklch(92.4% 0.12 95.746)",
+          "oklch(98.7% 0.022 95.277)"
+        ],
+        "utility": "amber-400"
+      },
+      "signal-amber-bright": {
+        "role": "primary",
+        "displayName": "Signal Amber Bright",
+        "canonical": "oklch(87.9% 0.169 91.605)",
+        "tonalRamp": [
+          "oklch(27.9% 0.077 45.635)",
+          "oklch(41.4% 0.112 45.904)",
+          "oklch(47.3% 0.137 46.201)",
+          "oklch(55.5% 0.163 48.998)",
+          "oklch(66.6% 0.179 58.318)",
+          "oklch(82.8% 0.189 84.429)",
+          "oklch(92.4% 0.12 95.746)",
+          "oklch(98.7% 0.022 95.277)"
+        ],
+        "utility": "amber-300"
+      },
+      "signal-ink": {
+        "role": "primary",
+        "displayName": "Signal Ink",
+        "canonical": "oklch(27.9% 0.077 45.635)",
+        "tonalRamp": [
+          "oklch(27.9% 0.077 45.635)",
+          "oklch(41.4% 0.112 45.904)",
+          "oklch(47.3% 0.137 46.201)",
+          "oklch(55.5% 0.163 48.998)",
+          "oklch(66.6% 0.179 58.318)",
+          "oklch(82.8% 0.189 84.429)",
+          "oklch(92.4% 0.12 95.746)",
+          "oklch(98.7% 0.022 95.277)"
+        ],
+        "utility": "amber-950"
+      },
+      "self-service-sky": {
+        "role": "secondary",
+        "displayName": "Self-service Sky",
+        "canonical": "oklch(82.8% 0.111 230.318)",
+        "tonalRamp": [
+          "oklch(29.3% 0.066 243.157)",
+          "oklch(39.1% 0.09 240.876)",
+          "oklch(44.3% 0.11 240.79)",
+          "oklch(50% 0.134 242.749)",
+          "oklch(58.8% 0.158 241.966)",
+          "oklch(74.6% 0.16 232.661)",
+          "oklch(90.1% 0.058 230.902)",
+          "oklch(97.7% 0.013 236.62)"
+        ],
+        "utility": "sky-300"
+      },
+      "self-service-sky-dot": {
+        "role": "secondary",
+        "displayName": "Self-service Sky Dot",
+        "canonical": "oklch(74.6% 0.16 232.661)",
+        "tonalRamp": [
+          "oklch(29.3% 0.066 243.157)",
+          "oklch(39.1% 0.09 240.876)",
+          "oklch(44.3% 0.11 240.79)",
+          "oklch(50% 0.134 242.749)",
+          "oklch(58.8% 0.158 241.966)",
+          "oklch(74.6% 0.16 232.661)",
+          "oklch(90.1% 0.058 230.902)",
+          "oklch(97.7% 0.013 236.62)"
+        ],
+        "utility": "sky-400"
+      },
+      "membership-violet": {
+        "role": "tertiary",
+        "displayName": "Membership Violet",
+        "canonical": "oklch(81.1% 0.111 293.571)",
+        "tonalRamp": [
+          "oklch(28.3% 0.141 291.089)",
+          "oklch(38% 0.189 293.745)",
+          "oklch(43.2% 0.232 292.759)",
+          "oklch(49.1% 0.27 292.581)",
+          "oklch(54.1% 0.281 293.009)",
+          "oklch(70.2% 0.183 293.541)",
+          "oklch(89.4% 0.057 293.283)",
+          "oklch(96.9% 0.016 293.756)"
+        ],
+        "utility": "violet-300"
+      },
+      "membership-violet-dot": {
+        "role": "tertiary",
+        "displayName": "Membership Violet Dot",
+        "canonical": "oklch(70.2% 0.183 293.541)",
+        "tonalRamp": [
+          "oklch(28.3% 0.141 291.089)",
+          "oklch(38% 0.189 293.745)",
+          "oklch(43.2% 0.232 292.759)",
+          "oklch(49.1% 0.27 292.581)",
+          "oklch(54.1% 0.281 293.009)",
+          "oklch(70.2% 0.183 293.541)",
+          "oklch(89.4% 0.057 293.283)",
+          "oklch(96.9% 0.016 293.756)"
+        ],
+        "utility": "violet-400"
+      },
+      "night": {
+        "role": "neutral",
+        "displayName": "Night",
+        "canonical": "oklch(12.9% 0.042 264.695)",
+        "tonalRamp": [
+          "oklch(12.9% 0.042 264.695)",
+          "oklch(20.8% 0.042 265.755)",
+          "oklch(27.9% 0.041 260.031)",
+          "oklch(37.2% 0.044 257.287)",
+          "oklch(44.6% 0.043 257.281)",
+          "oklch(70.4% 0.04 256.788)",
+          "oklch(92.9% 0.013 255.508)",
+          "oklch(98.4% 0.003 247.858)"
+        ],
+        "utility": "slate-950"
+      },
+      "dusk": {
+        "role": "neutral",
+        "displayName": "Dusk",
+        "canonical": "oklch(20.8% 0.042 265.755)",
+        "tonalRamp": [
+          "oklch(12.9% 0.042 264.695)",
+          "oklch(20.8% 0.042 265.755)",
+          "oklch(27.9% 0.041 260.031)",
+          "oklch(37.2% 0.044 257.287)",
+          "oklch(44.6% 0.043 257.281)",
+          "oklch(70.4% 0.04 256.788)",
+          "oklch(92.9% 0.013 255.508)",
+          "oklch(98.4% 0.003 247.858)"
+        ],
+        "utility": "slate-900"
+      },
+      "graphite": {
+        "role": "neutral",
+        "displayName": "Graphite",
+        "canonical": "oklch(27.9% 0.041 260.031)",
+        "tonalRamp": [
+          "oklch(12.9% 0.042 264.695)",
+          "oklch(20.8% 0.042 265.755)",
+          "oklch(27.9% 0.041 260.031)",
+          "oklch(37.2% 0.044 257.287)",
+          "oklch(44.6% 0.043 257.281)",
+          "oklch(70.4% 0.04 256.788)",
+          "oklch(92.9% 0.013 255.508)",
+          "oklch(98.4% 0.003 247.858)"
+        ],
+        "utility": "slate-800"
+      },
+      "pale-steel": {
+        "role": "neutral",
+        "displayName": "Pale Steel",
+        "canonical": "oklch(96.8% 0.007 247.896)",
+        "tonalRamp": [
+          "oklch(12.9% 0.042 264.695)",
+          "oklch(20.8% 0.042 265.755)",
+          "oklch(27.9% 0.041 260.031)",
+          "oklch(37.2% 0.044 257.287)",
+          "oklch(44.6% 0.043 257.281)",
+          "oklch(70.4% 0.04 256.788)",
+          "oklch(92.9% 0.013 255.508)",
+          "oklch(98.4% 0.003 247.858)"
+        ],
+        "utility": "slate-100"
+      },
+      "mist": {
+        "role": "neutral",
+        "displayName": "Mist",
+        "canonical": "oklch(92.9% 0.013 255.508)",
+        "tonalRamp": [
+          "oklch(12.9% 0.042 264.695)",
+          "oklch(20.8% 0.042 265.755)",
+          "oklch(27.9% 0.041 260.031)",
+          "oklch(37.2% 0.044 257.287)",
+          "oklch(44.6% 0.043 257.281)",
+          "oklch(70.4% 0.04 256.788)",
+          "oklch(92.9% 0.013 255.508)",
+          "oklch(98.4% 0.003 247.858)"
+        ],
+        "utility": "slate-200"
+      },
+      "haze": {
+        "role": "neutral",
+        "displayName": "Haze",
+        "canonical": "oklch(86.9% 0.022 252.894)",
+        "tonalRamp": [
+          "oklch(12.9% 0.042 264.695)",
+          "oklch(20.8% 0.042 265.755)",
+          "oklch(27.9% 0.041 260.031)",
+          "oklch(37.2% 0.044 257.287)",
+          "oklch(44.6% 0.043 257.281)",
+          "oklch(70.4% 0.04 256.788)",
+          "oklch(92.9% 0.013 255.508)",
+          "oklch(98.4% 0.003 247.858)"
+        ],
+        "utility": "slate-300"
+      },
+      "fog": {
+        "role": "neutral",
+        "displayName": "Fog",
+        "canonical": "oklch(70.4% 0.04 256.788)",
+        "tonalRamp": [
+          "oklch(12.9% 0.042 264.695)",
+          "oklch(20.8% 0.042 265.755)",
+          "oklch(27.9% 0.041 260.031)",
+          "oklch(37.2% 0.044 257.287)",
+          "oklch(44.6% 0.043 257.281)",
+          "oklch(70.4% 0.04 256.788)",
+          "oklch(92.9% 0.013 255.508)",
+          "oklch(98.4% 0.003 247.858)"
+        ],
+        "utility": "slate-400"
+      },
+      "pewter": {
+        "role": "neutral",
+        "displayName": "Pewter",
+        "canonical": "oklch(55.4% 0.046 257.417)",
+        "tonalRamp": [
+          "oklch(12.9% 0.042 264.695)",
+          "oklch(20.8% 0.042 265.755)",
+          "oklch(27.9% 0.041 260.031)",
+          "oklch(37.2% 0.044 257.287)",
+          "oklch(44.6% 0.043 257.281)",
+          "oklch(70.4% 0.04 256.788)",
+          "oklch(92.9% 0.013 255.508)",
+          "oklch(98.4% 0.003 247.858)"
+        ],
+        "utility": "slate-500"
+      },
+      "slate-text": {
+        "role": "neutral",
+        "displayName": "Slate Text",
+        "canonical": "oklch(44.6% 0.043 257.281)",
+        "tonalRamp": [
+          "oklch(12.9% 0.042 264.695)",
+          "oklch(20.8% 0.042 265.755)",
+          "oklch(27.9% 0.041 260.031)",
+          "oklch(37.2% 0.044 257.287)",
+          "oklch(44.6% 0.043 257.281)",
+          "oklch(70.4% 0.04 256.788)",
+          "oklch(92.9% 0.013 255.508)",
+          "oklch(98.4% 0.003 247.858)"
+        ],
+        "utility": "slate-600"
+      },
+      "slate-body": {
+        "role": "neutral",
+        "displayName": "Slate Body",
+        "canonical": "oklch(37.2% 0.044 257.287)",
+        "tonalRamp": [
+          "oklch(12.9% 0.042 264.695)",
+          "oklch(20.8% 0.042 265.755)",
+          "oklch(27.9% 0.041 260.031)",
+          "oklch(37.2% 0.044 257.287)",
+          "oklch(44.6% 0.043 257.281)",
+          "oklch(70.4% 0.04 256.788)",
+          "oklch(92.9% 0.013 255.508)",
+          "oklch(98.4% 0.003 247.858)"
+        ],
+        "utility": "slate-700"
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "oklch(12.9% 0.042 264.695)",
+          "oklch(20.8% 0.042 265.755)",
+          "oklch(27.9% 0.041 260.031)",
+          "oklch(37.2% 0.044 257.287)",
+          "oklch(44.6% 0.043 257.281)",
+          "oklch(70.4% 0.04 256.788)",
+          "oklch(92.9% 0.013 255.508)",
+          "oklch(98.4% 0.003 247.858)"
+        ],
+        "utility": "white"
+      },
+      "canvas": {
+        "role": "neutral",
+        "displayName": "Canvas",
+        "canonical": "oklch(98.5% 0.002 247.839)",
+        "tonalRamp": [
+          "oklch(13% 0.028 261.692)",
+          "oklch(21% 0.034 264.665)",
+          "oklch(27.8% 0.033 256.848)",
+          "oklch(37.3% 0.034 259.733)",
+          "oklch(44.6% 0.03 256.802)",
+          "oklch(70.7% 0.022 261.325)",
+          "oklch(92.8% 0.006 264.531)",
+          "oklch(98.5% 0.002 247.839)"
+        ],
+        "utility": "gray-50"
+      },
+      "legacy-navy": {
+        "role": "legacy",
+        "displayName": "Legacy Navy",
+        "canonical": "oklch(37.9% 0.146 265.522)",
+        "tonalRamp": [
+          "oklch(28.2% 0.091 267.935)",
+          "oklch(37.9% 0.146 265.522)",
+          "oklch(42.4% 0.199 265.638)",
+          "oklch(48.8% 0.243 264.376)",
+          "oklch(54.6% 0.245 262.881)",
+          "oklch(70.7% 0.165 254.624)",
+          "oklch(88.2% 0.059 254.128)",
+          "oklch(97% 0.014 254.604)"
+        ],
+        "utility": "blue-900"
+      },
+      "storefront-gold": {
+        "role": "scoped",
+        "displayName": "Storefront Gold",
+        "canonical": "oklch(0.8 0.132 86)",
+        "tonalRamp": [
+          "oklch(0.2 0.04 86)",
+          "oklch(0.3 0.06 86)",
+          "oklch(0.42 0.08 84)",
+          "oklch(0.52 0.1 80)",
+          "oklch(0.62 0.115 78)",
+          "oklch(0.8 0.132 86)",
+          "oklch(0.89 0.1 90)",
+          "oklch(0.96 0.04 90)"
+        ],
+        "utility": "--gold (only inside .storefront)"
+      },
+      "shadcn-primary": {
+        "role": "legacy",
+        "displayName": "shadcn Primary (neutral)",
+        "canonical": "oklch(0.205 0 0)",
+        "tonalRamp": [
+          "oklch(0.145 0 0)",
+          "oklch(0.205 0 0)",
+          "oklch(0.269 0 0)",
+          "oklch(0.371 0 0)",
+          "oklch(0.556 0 0)",
+          "oklch(0.708 0 0)",
+          "oklch(0.922 0 0)",
+          "oklch(0.985 0 0)"
+        ],
+        "utility": "--primary"
+      }
+    },
+    "typographyMeta": {
+      "display-hero": {
+        "displayName": "Display Hero",
+        "purpose": "Marketing hero headline only; steps to 3.75/4.5/6rem at sm/md/lg."
+      },
+      "display": {
+        "displayName": "Display",
+        "purpose": "Plan names, appointment date/time, check-in and welcome headings; 2.25rem from 640px."
+      },
+      "bay-display": {
+        "displayName": "Bay Display",
+        "purpose": "Holder name on the full-screen bay pass; 3.75rem from 640px."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Page greeting and the idle Now-card prompt; 1.875rem from 640px."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Section headings on white surfaces (Your visits)."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Detail lines under display headings."
+      },
+      "body-small": {
+        "displayName": "Body Small",
+        "purpose": "Descriptions and secondary lines; relaxed leading, max 65ch."
+      },
+      "label-action": {
+        "displayName": "Action Label",
+        "purpose": "Text on amber-filled primary controls."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Quiet controls and status lines."
+      },
+      "dock-label": {
+        "displayName": "Dock Label",
+        "purpose": "Icon-over-label phone dock items."
+      },
+      "plate": {
+        "displayName": "Plate",
+        "purpose": "License plates inline; Geist Mono, uppercase. The only mono use."
+      },
+      "plate-xl": {
+        "displayName": "Plate XL",
+        "purpose": "License plates on the full-screen bay pass; 2.25rem from 640px."
+      }
+    },
+    "shadows": [
+      {
+        "name": "pass-lift",
+        "value": "0 18px 40px -24px rgb(2 6 23 / 0.9)",
+        "purpose": "Under the member pass only; reads as a held card."
+      },
+      {
+        "name": "plate-edge",
+        "value": "0 1px 0 rgb(0 0 0 / 0.25)",
+        "purpose": "Stamped bottom lip under license plates."
+      },
+      {
+        "name": "hero-cta-glow",
+        "value": "0 10px 15px -3px oklch(76.9% 0.188 70.08 / 0.2), 0 4px 6px -4px oklch(76.9% 0.188 70.08 / 0.2)",
+        "purpose": "Marketing hero Book online button only."
+      },
+      {
+        "name": "hairline-ring-dark",
+        "value": "0 0 0 1px rgb(255 255 255 / 0.1)",
+        "purpose": "1px ring on every dark surface (Tailwind ring-1 ring-white/10); not elevation."
+      },
+      {
+        "name": "hairline-ring-light",
+        "value": "0 0 0 1px oklch(92.9% 0.013 255.508)",
+        "purpose": "1px Mist ring on white surfaces and row actions; not elevation."
+      }
+    ],
+    "motion": [
+      {
+        "name": "color-state",
+        "value": "150ms cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "Tailwind transition-colors default for hover fills on all controls."
+      },
+      {
+        "name": "hero-rise",
+        "value": "0.85s cubic-bezier(0.16, 1, 0.3, 1); from opacity 0, translateY(18px), blur(6px); stagger 0.09s",
+        "purpose": "The one authored entrance, marketing hero only; collapses to visible under reduced motion."
+      },
+      {
+        "name": "arrow-nudge",
+        "value": "translateX(2px) on group hover",
+        "purpose": "Welcome service rows; transition-none under reduced motion."
+      },
+      {
+        "name": "skeleton-pulse",
+        "value": "Tailwind animate-pulse",
+        "purpose": "Loading placeholders; animate-none under reduced motion."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "MotionConfig reducedMotion=\"user\" + motion-reduce: variants",
+        "purpose": "Global respect for the OS setting; the bay pass dialog drops its entrance animation."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "xl",
+        "value": "1280px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button (amber)",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single amber action per viewport, e.g. Show at the bay or Book a detail.",
+      "html": "<button type=\"button\" class=\"ds-btn-primary\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><polyline points=\"15 3 21 3 21 9\"/><polyline points=\"9 21 3 21 3 15\"/><line x1=\"21\" x2=\"14\" y1=\"3\" y2=\"10\"/><line x1=\"3\" x2=\"10\" y1=\"21\" y2=\"14\"/></svg>Show at the bay</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 20px; border: 0; border-radius: 10px; background: oklch(82.8% 0.189 84.429); color: oklch(27.9% 0.077 45.635); font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 1rem; font-weight: 700; cursor: pointer; transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-primary:hover { background: oklch(87.9% 0.169 91.605); } .ds-btn-primary:focus-visible { outline: 2px solid oklch(87.9% 0.169 91.605); outline-offset: 2px; }"
+    },
+    {
+      "name": "Quiet Button (on dark)",
+      "kind": "button",
+      "refersTo": "button-quiet-dark",
+      "description": "Every non-primary action on Night or Dusk surfaces, e.g. View or change, Try again.",
+      "html": "<div class=\"ds-dark-stage\"><button type=\"button\" class=\"ds-btn-quiet\">View or change</button></div>",
+      "css": ".ds-dark-stage { background: oklch(20.8% 0.042 265.755); padding: 20px; border-radius: 16px; } .ds-btn-quiet { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border: 1px solid rgb(255 255 255 / 0.2); border-radius: 10px; background: transparent; color: #fff; font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-quiet:hover { background: rgb(255 255 255 / 0.1); } .ds-btn-quiet:focus-visible { outline: 2px solid oklch(82.8% 0.189 84.429); }"
+    },
+    {
+      "name": "Solid and Ghost Buttons (on light)",
+      "kind": "button",
+      "refersTo": "button-solid-light",
+      "description": "Decision pair on white surfaces, as in the marketing opt-in row.",
+      "html": "<div class=\"ds-btn-pair\"><button type=\"button\" class=\"ds-btn-solid\">Yes, email me</button><button type=\"button\" class=\"ds-btn-ghost\">No thanks</button></div>",
+      "css": ".ds-btn-pair { display: flex; gap: 8px; } .ds-btn-solid, .ds-btn-ghost { min-height: 44px; padding: 0 16px; border: 0; border-radius: 10px; font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-solid { background: oklch(12.9% 0.042 264.695); color: #fff; } .ds-btn-solid:hover { background: oklch(27.9% 0.041 260.031); } .ds-btn-solid:disabled { opacity: 0.6; } .ds-btn-ghost { background: transparent; color: oklch(37.2% 0.044 257.287); } .ds-btn-ghost:hover { background: oklch(96.8% 0.007 247.896); } .ds-btn-solid:focus-visible, .ds-btn-ghost:focus-visible { outline: 2px solid oklch(12.9% 0.042 264.695); outline-offset: 2px; }"
+    },
+    {
+      "name": "Row Action",
+      "kind": "button",
+      "refersTo": "row-action",
+      "description": "Small ringed actions inside the white visits list: Book again, How was it?",
+      "html": "<a href=\"#\" class=\"ds-row-action\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8\"/><path d=\"M3 3v5h5\"/></svg>Book again</a>",
+      "css": ".ds-row-action { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px; border-radius: 10px; box-shadow: 0 0 0 1px oklch(92.9% 0.013 255.508); background: #fff; color: oklch(27.9% 0.041 260.031); font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 0.875rem; font-weight: 600; text-decoration: none; } .ds-row-action:hover { background: oklch(98.4% 0.003 247.858); } .ds-row-action:focus-visible { outline: 2px solid oklch(12.9% 0.042 264.695); outline-offset: 2px; }"
+    },
+    {
+      "name": "License Plate",
+      "kind": "custom",
+      "refersTo": "license-plate",
+      "description": "A plate drawn as a plate; the only use of Geist Mono. Inline and XL sizes.",
+      "html": "<div class=\"ds-plate-stage\"><span class=\"ds-plate\">KJX 4821</span><span class=\"ds-plate ds-plate--xl\">KJX 4821</span></div>",
+      "css": ".ds-plate-stage { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 20px; background: oklch(12.9% 0.042 264.695); border-radius: 16px; } .ds-plate { display: inline-flex; align-items: center; padding: 2px 8px; border: 1px solid oklch(86.9% 0.022 252.894); border-radius: 5px; background: #fff; color: oklch(12.9% 0.042 264.695); font-family: 'Geist Mono', ui-monospace, monospace; font-size: 0.875rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; box-shadow: 0 1px 0 rgb(0 0 0 / 0.25); } .ds-plate--xl { padding: 8px 16px; font-size: 2.25rem; letter-spacing: 0.14em; }"
+    },
+    {
+      "name": "Member Pass",
+      "kind": "card",
+      "refersTo": "surface-pass",
+      "description": "Signature: the membership as something to show at the bay. Night surface, pass-lift shadow, plates, one amber action.",
+      "html": "<section class=\"ds-pass\"><div class=\"ds-pass__top\"><h2 class=\"ds-pass__plan\">Deluxe Unlimited</h2><a href=\"#\" class=\"ds-pass__manage\">Manage</a></div><p class=\"ds-pass__status\"><span class=\"ds-tint-violet\">Express membership</span><span class=\"ds-pass__sep\"> · </span><span>Active through Dec 4</span></p><ul class=\"ds-pass__cars\"><li><span class=\"ds-pass__car\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"currentColor\" stroke=\"currentColor\" class=\"ds-pass__star\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z\"/></svg>2021 Toyota Camry <small>Primary vehicle</small></span><span class=\"ds-plate\">KJX 4821</span></li></ul><button type=\"button\" class=\"ds-btn-primary\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><polyline points=\"15 3 21 3 21 9\"/><polyline points=\"9 21 3 21 3 15\"/><line x1=\"21\" x2=\"14\" y1=\"3\" y2=\"10\"/><line x1=\"3\" x2=\"10\" y1=\"21\" y2=\"14\"/></svg>Show at the bay</button></section>",
+      "css": ".ds-pass { max-width: 560px; padding: 28px; border-radius: 16px; background: oklch(12.9% 0.042 264.695); color: #fff; font-family: Geist, ui-sans-serif, system-ui, sans-serif; box-shadow: 0 18px 40px -24px rgb(2 6 23 / 0.9), 0 0 0 1px rgb(255 255 255 / 0.1); } .ds-pass__top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; } .ds-pass__plan { margin: 0; font-size: 2.25rem; font-weight: 900; letter-spacing: -0.025em; line-height: 1.1; text-wrap: balance; } .ds-pass__manage { padding: 4px 8px; border-radius: 8px; color: oklch(86.9% 0.022 252.894); font-size: 0.875rem; font-weight: 500; text-decoration: none; } .ds-pass__manage:hover { color: #fff; text-decoration: underline; text-underline-offset: 4px; } .ds-pass__manage:focus-visible { outline: 2px solid oklch(82.8% 0.189 84.429); } .ds-pass__status { margin: 4px 0 0; font-weight: 600; color: oklch(92.9% 0.013 255.508); } .ds-pass__sep { color: oklch(70.4% 0.04 256.788); } .ds-tint-violet { color: oklch(81.1% 0.111 293.571); } .ds-pass__cars { list-style: none; margin: 20px 0; padding: 0; border-top: 1px solid rgb(255 255 255 / 0.1); border-bottom: 1px solid rgb(255 255 255 / 0.1); } .ds-pass__cars li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 16px; padding: 12px 0; } .ds-pass__car { display: flex; align-items: center; gap: 8px; color: oklch(96.8% 0.007 247.896); font-weight: 500; } .ds-pass__car small { font-size: 0.75rem; font-weight: 400; color: oklch(86.9% 0.022 252.894); } .ds-pass__star { color: oklch(82.8% 0.189 84.429); } .ds-plate { display: inline-flex; padding: 2px 8px; border: 1px solid oklch(86.9% 0.022 252.894); border-radius: 5px; background: #fff; color: oklch(12.9% 0.042 264.695); font-family: 'Geist Mono', ui-monospace, monospace; font-size: 0.875rem; font-weight: 600; letter-spacing: 0.12em; box-shadow: 0 1px 0 rgb(0 0 0 / 0.25); } .ds-btn-primary { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 20px; border: 0; border-radius: 10px; background: oklch(82.8% 0.189 84.429); color: oklch(27.9% 0.077 45.635); font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 1rem; font-weight: 700; cursor: pointer; transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-primary:hover { background: oklch(87.9% 0.169 91.605); } .ds-btn-primary:focus-visible { outline: 2px solid oklch(87.9% 0.169 91.605); outline-offset: 2px; }"
+    },
+    {
+      "name": "Visits List",
+      "kind": "card",
+      "refersTo": "surface-light",
+      "description": "White surface for history: service dots, tabular dates, ringed row actions.",
+      "html": "<section class=\"ds-visits\"><div class=\"ds-visits__head\"><h2>Your visits</h2><a href=\"#\">All bookings</a></div><ol><li><span class=\"ds-dot ds-dot--amber\"></span><time>Oct 30</time><span class=\"ds-visits__body\"><b>Express detail</b><small>2021 Toyota Camry</small></span></li><li><span class=\"ds-dot ds-dot--sky\"></span><time>Oct 22</time><span class=\"ds-visits__body\"><b>Self-service bay</b><small>42 min</small></span></li><li><span class=\"ds-dot ds-dot--violet\"></span><time>Oct 15</time><span class=\"ds-visits__body\"><b>Product order</b><small>Picked up</small></span></li></ol></section>",
+      "css": ".ds-visits { max-width: 560px; padding: 28px; border-radius: 16px; background: #fff; box-shadow: 0 0 0 1px oklch(92.9% 0.013 255.508); font-family: Geist, ui-sans-serif, system-ui, sans-serif; color: oklch(12.9% 0.042 264.695); } .ds-visits__head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; } .ds-visits__head h2 { margin: 0; font-size: 1.25rem; font-weight: 900; letter-spacing: -0.025em; } .ds-visits__head a { border-radius: 4px; color: oklch(37.2% 0.044 257.287); font-size: 0.875rem; font-weight: 500; text-decoration: none; } .ds-visits__head a:hover { text-decoration: underline; text-underline-offset: 4px; } .ds-visits__head a:focus-visible { outline: 2px solid oklch(12.9% 0.042 264.695); outline-offset: 2px; } .ds-visits ol { list-style: none; margin: 16px 0 0; padding: 0; } .ds-visits li { display: flex; align-items: center; gap: 16px; padding: 12px 0; } .ds-visits li + li { border-top: 1px solid oklch(96.8% 0.007 247.896); } .ds-dot { width: 10px; height: 10px; flex-shrink: 0; border-radius: 9999px; } .ds-dot--amber { background: oklch(82.8% 0.189 84.429); } .ds-dot--sky { background: oklch(74.6% 0.16 232.661); } .ds-dot--violet { background: oklch(70.2% 0.183 293.541); } .ds-visits time { width: 56px; flex-shrink: 0; font-size: 0.875rem; font-weight: 600; font-variant-numeric: tabular-nums; color: oklch(55.4% 0.046 257.417); } .ds-visits__body b { display: block; font-weight: 600; } .ds-visits__body small { display: block; font-size: 0.875rem; color: oklch(44.6% 0.043 257.281); }"
+    },
+    {
+      "name": "Action Dock",
+      "kind": "nav",
+      "refersTo": "dock-item",
+      "description": "Phone-only thumb dock: three 56px actions, one amber by the One Amber Rule.",
+      "html": "<nav aria-label=\"Quick actions\" class=\"ds-dock\"><button type=\"button\" class=\"ds-dock__item\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M8 2v4\"/><path d=\"M16 2v4\"/><path d=\"M21 13V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8\"/><path d=\"M3 10h18\"/><path d=\"M16 19h6\"/><path d=\"M19 16v6\"/></svg>Book</button><button type=\"button\" class=\"ds-dock__item ds-dock__item--primary\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M16 10h2\"/><path d=\"M16 14h2\"/><path d=\"M6.17 15a3 3 0 0 1 5.66 0\"/><circle cx=\"9\" cy=\"11\" r=\"2\"/><rect x=\"2\" y=\"5\" width=\"20\" height=\"14\" rx=\"2\"/></svg>Show at bay</button><a href=\"#\" class=\"ds-dock__item\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z\"/><path d=\"M3 6h18\"/><path d=\"M16 10a4 4 0 0 1-8 0\"/></svg>Shop</a></nav>",
+      "css": ".ds-dock { display: flex; gap: 8px; max-width: 28rem; padding: 8px 12px; border-top: 1px solid rgb(255 255 255 / 0.1); background: oklch(12.9% 0.042 264.695 / 0.95); backdrop-filter: blur(8px); } .ds-dock__item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 56px; border: 0; border-radius: 14px; background: transparent; color: #fff; font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 0.75rem; font-weight: 600; text-decoration: none; cursor: pointer; transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-dock__item:hover { background: rgb(255 255 255 / 0.1); } .ds-dock__item--primary { background: oklch(82.8% 0.189 84.429); color: oklch(27.9% 0.077 45.635); } .ds-dock__item--primary:hover { background: oklch(87.9% 0.169 91.605); } .ds-dock__item:focus-visible { outline: 2px solid oklch(82.8% 0.189 84.429); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The 24/7 Bay",
+    "overview": "The customer world looks like the site after dark: deep slate surfaces, white type, and one amber light that marks where to go next. It was built for a person standing at 10410 S Main St with a phone in one hand (see PRODUCT.md for who uses the product and why). The membership pass, the next appointment and the thumb dock are the bay at night. History, site facts and requests sit on plain white cards next to the dark blocks. That is the whole tonal story: dark for what matters now and who you are, white for everything you might read later.\n\nThe world is shared by the marketing hero (`components/user/hero.tsx`) and the new customer dashboard home (`app/(dashboard)/dashboard/page.tsx`, on branch `feat/dashboard-home`). The page's opening comment is the direction contract. It rejects the stock stat-card grid and the \"Welcome back\" scaffold, and it makes the home \"the customer's pass and their next move.\" Display type is Geist at its heaviest weight (900) with tight tracking. Monospace appears only on license plates, which are drawn as real white plates so an attendant can match them by eye. Three service hues act as a legend, not decoration: sky for self-service, amber for express detailing, violet for membership.\n\nThis document records what is built, and the product is not yet one world. The brand colors are **Tailwind palette utilities, not design tokens**. `app/globals.css` still carries the neutral shadcn `--primary` (near-black, see `shadcn-primary`), so any shadcn `Button` left at its default renders gray-black, not amber. The frontmatter colors are Tailwind v4's own OKLCH values for the utilities the code uses, and each one below gives its utility name in parentheses because that is how the code expresses it. Several surfaces still use older looks and are listed under Divergences in Do's and Don'ts.",
+    "keyCharacteristics": [
+      "Slate-night and slate-dusk surfaces for identity and time-sensitive content. White cards with a hairline ring for history, site info and requests.",
+      "One amber-filled action per viewport. Every other control is quiet.",
+      "Service hues sky / amber / violet used as text tints and small dots, never as fills.",
+      "Geist Sans at 900 weight with tight tracking for dates, plan names and greetings.",
+      "Geist Mono only on license plates, which are drawn as physical white plates.",
+      "44px minimum touch targets, 56px dock targets, visible focus outlines tuned to the surface.",
+      "Reduced motion respected globally (`MotionConfig reducedMotion=\"user\"`) and per element (`motion-reduce:`)."
+    ],
+    "rules": [
+      {
+        "name": "The One Amber Rule",
+        "body": "Exactly one amber-filled control per viewport. When a member pass is on screen, it owns the amber (\"Show at the bay\"). The Now card's actions then turn quiet (`hasPass`), the desktop rail's \"Book a detail\" goes quiet, and the phone dock gives its amber slot to \"Show at bay\". Without a pass, \"Book\" takes the amber.",
+        "section": "colors"
+      },
+      {
+        "name": "The Hue Is a Legend Rule",
+        "body": "Sky, amber and violet tell you which service you are looking at. They appear as text tints (the -300 shades) and 10px dots (the -400 shades) and never as surface fills. Amber fill is reserved for the action.",
+        "section": "colors"
+      },
+      {
+        "name": "The Black Weight Rule",
+        "body": "Display moments in this world (dates, plan names, the greeting, section titles) are Geist at 900 with tight tracking. They are never bold-700 headings in a second family.",
+        "section": "typography"
+      },
+      {
+        "name": "The Mono Is a Plate Rule",
+        "body": "Geist Mono is for license plates, not for prices, IDs or \"technical\" flavor.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tone-Not-Shadow Rule",
+        "body": "Separate blocks by surface tone (Canvas / white / Dusk / Night) and hairline rings. Add a shadow only when the object is physical (the pass, a plate).",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** give each viewport exactly one Signal Amber filled control with Signal Ink text. Turn every other action quiet (transparent with a white/20 outline on dark, ghost or ringed on white).",
+      "**Do** put identity and time-sensitive content (pass, next appointment, check-in, actions) on Night or Dusk. Put history, site facts and requests on white 16px-corner surfaces with a 1px Mist ring.",
+      "**Do** tint by service and nothing else: sky = self-service, amber = express detailing, violet = membership (and, in the visits list, product orders). Use -300 for text and -400 for dots.",
+      "**Do** set dates, plan names and greetings in Geist 900 with -0.025em tracking (-0.035em on the hero), with balanced wrapping and dates kept on one line.",
+      "**Do** draw license plates with the License Plate component. That is the only use of Geist Mono.",
+      "**Do** keep every target at least 44px tall (dock 56px, bay \"Done\" 48px), and give focus a 2px outline: Signal Amber on dark, Night with a 2px offset on white.",
+      "**Do** respect reduced motion. `MotionConfig reducedMotion=\"user\"` is global, and add `motion-reduce:animate-none` / `transition-none` to any pulse, dialog entrance or arrow nudge. Content must start visible.",
+      "**Do** show placeholders while data loads and an inline error card with \"Try again\" on failure, so \"nothing booked\" is never shown as a guess.",
+      "**Do** keep the seasonal brand treatment. The Christmas logo (`/public/xmas-launchpad-logo.png`) and the snow effect (`components/snow-effect.tsx`, currently commented out in `app/layout.tsx`) are deliberate brand commitments (PRODUCT.md), not dead code."
+    ],
+    "donts": [
+      "**Don't** put an eyebrow or kicker label above a heading. The heading carries itself.",
+      "**Don't** build stat-card or hero-metric grids (\"Total Bookings\", big number + small label). The home is a pass and a next move.",
+      "**Don't** invent numbers, counts, ratings or \"+N from last week\" notes. Show only real data (PRODUCT.md, \"Only claim what is true\").",
+      "**Don't** use colored side borders (a `border-left` / `border-right` stripe over 1px) on cards, rows, callouts or alerts. Use a 10px dot or a text tint.",
+      "**Don't** fill a surface with a service hue, and don't add a second amber-filled button to a screen that already has one.",
+      "**Don't** leave a shadcn `Button` on its default variant in this world. `--primary` is still neutral near-black. Style it to the amber, quiet or light variants above.",
+      "**Don't** use blue-900 in new customer-world work. It is the legacy accent."
+    ]
+  }
+}
