@@ -72,12 +72,12 @@ export function VisitsList({
               <time dateTime={v.at} className="w-14 shrink-0 text-sm font-semibold tabular-nums text-slate-500">
                 {formatShortDate(v.at)}
               </time>
-              <span className="min-w-0 flex-1">
+              <span className="min-w-0 flex-1 basis-40">
                 <span className="block font-semibold text-slate-950">{v.title}</span>
                 {v.detail && <span className="block text-sm text-slate-600">{v.detail}</span>}
               </span>
               {v.kind === "detail" && v.booking && (
-                <span className="flex gap-2">
+                <span className="flex basis-full flex-wrap gap-2 pl-[6.125rem] sm:basis-auto sm:pl-0">
                   {askForReview && latestDetail?.id === v.id && (
                     <button
                       type="button"

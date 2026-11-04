@@ -55,7 +55,14 @@ export function NowCard({
       <Shell label="Your next detail">
         <p className="text-sm font-semibold text-amber-300">{b.service_package_name ?? "Express detailing"}</p>
         <p className="mt-2 text-3xl font-black tracking-tight text-balance sm:text-4xl">
-          {formatAppointment(date, b.appointment_time)}
+          {formatAppointment(date, b.appointment_time)
+            .split(" · ")
+            .map((part, i) => (
+              <span key={part} className="whitespace-nowrap">
+                {i > 0 && " · "}
+                {part}
+              </span>
+            ))}
         </p>
         <p className="mt-1 text-slate-300">
           {[vehicleLabel(b.vehicle), "10410 S Main St"].filter(Boolean).join(" · ")}
