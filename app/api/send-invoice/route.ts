@@ -1,20 +1,32 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { Resend } from "resend";
+import { requireAdmin } from "@/lib/auth/guards";
+import { apiError, ApiError } from "@/lib/http/apiError";
+import { escapeHtml } from "@/lib/email/escapeHtml";
+import { parseBookingId, recipientFromBooking } from "@/lib/email/bookingRecipient";
 
+// Staff-only: sent when an admin marks a booking completed. The receipt always
+// goes to the booking's own customer, never to an address from the request body.
 export async function POST(req: Request) {
   try {
-    const { email, name, bookingId } = await req.json();
     const supabase = await createClient();
+    const admin = createAdminClient();
+    await requireAdmin(supabase, admin);
+
+    const bookingId = parseBookingId(await req.json().catch(() => null));
     const resend = new Resend(process.env.RESEND_API_KEY!);
 
     // 1️⃣ Fetch booking and its add-ons
-    const { data: booking, error } = await supabase
+    const { data: booking, error } = await admin
       .from("bookings")
       .select(
         `
         id,
+        customer_email,
+        customer_name,
         service_package_name,
         service_package_price,
         total_price,
@@ -29,12 +41,11 @@ export async function POST(req: Request) {
       `
       )
       .eq("id", bookingId)
-      .single();
+      .maybeSingle();
 
-    if (error || !booking) {
-      console.error("Booking not found:", error);
-      return NextResponse.json({ error: "Booking not found" }, { status: 404 });
-    }
+    if (error) throw error;
+    if (!booking) throw new ApiError("Booking not found", 404);
+    const { email, name } = recipientFromBooking(booking);
 
     // Flatten add-ons from nested relation
     const addOns = booking.booking_add_ons?.map((ba: any) => ba.add_ons) || [];
@@ -199,12 +210,12 @@ export async function POST(req: Request) {
     const pdfBase64 = Buffer.from(pdfBytes).toString("base64");
 
     // 3️⃣ Send Email via Resend
-    await resend.emails.send({
+    const { error: sendError } = await resend.emails.send({
       from: "The Launch Pad Wash <noreply@thelaunchpadwash.com>",
       to: email,
       subject: "Your Car Wash Receipt",
       html: `
-        <p>Hi ${name},</p>
+        <p>Hi ${escapeHtml(name) || "there"},</p>
         <p>Thank you for your booking! Please find your receipt attached below.</p>
         <p>– The The Launch Pad Team</p>
       `,
@@ -216,12 +227,13 @@ export async function POST(req: Request) {
       ],
     });
 
+    if (sendError) {
+      console.error("[send-invoice] Resend error:", sendError);
+      throw new ApiError("Failed to send invoice", 502);
+    }
+
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error("Invoice generation failed:", err);
-    return NextResponse.json(
-      { error: "Failed to send invoice" },
-      { status: 500 }
-    );
+    return apiError(err);
   }
 }

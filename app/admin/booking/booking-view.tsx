@@ -346,20 +346,12 @@ export default function BookingsView() {
           await fetch("/api/send-tip-email", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email: booking.customer_email,
-              name: booking.customer_name,
-              bookingId: booking.id,
-            }),
+            body: JSON.stringify({ bookingId: booking.id }),
           });
           await fetch("/api/send-invoice", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email: booking.customer_email,
-              name: booking.customer_name,
-              bookingId: booking.id,
-            }),
+            body: JSON.stringify({ bookingId: booking.id }),
           });
         }
       }
