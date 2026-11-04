@@ -1,6 +1,18 @@
 import { type EmailOtpType } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
+import { applySignupConsent } from "@/lib/marketing/signupConsent";
+
+/** Records the signup marketing tick, now that the email is verified. */
+async function recordSignupConsent(supabase: Awaited<ReturnType<typeof createClient>>) {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) await applySignupConsent(createAdminClient(), user);
+  } catch (err) {
+    console.error("[auth/confirm] signup consent skipped:", err);
+  }
+}
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -30,6 +42,7 @@ export async function GET(request: NextRequest) {
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      await recordSignupConsent(supabase);
       return NextResponse.redirect(redirectTo);
     }
 
@@ -54,6 +67,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!error) {
+      await recordSignupConsent(supabase);
       return NextResponse.redirect(redirectTo);
     }
 

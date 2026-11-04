@@ -210,7 +210,13 @@ export function AuthContextProvider({
       options: {
         emailRedirectTo: emailRedirectTo,
         captchaToken: captchaTokenFrom(formData),
-        data: { full_name: fullName, terms_version: "v1.0" },
+        data: {
+          full_name: fullName,
+          terms_version: "v1.0",
+          // Recorded as marketing consent only once the email is confirmed
+          // (app/auth/confirm -> lib/marketing/signupConsent.ts).
+          marketing_opt_in: formData.get("marketing") === "on",
+        },
       },
     });
 

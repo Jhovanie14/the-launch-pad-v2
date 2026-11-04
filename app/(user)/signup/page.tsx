@@ -191,6 +191,18 @@ export default function SignUpPage() {
                   .
                 </label>
               </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="marketing"
+                  name="marketing"
+                  className="h-4 w-4 text-blue-900 border-gray-300 rounded"
+                />
+                <label htmlFor="marketing" className="text-sm text-gray-600">
+                  Email me product news and offers. You can unsubscribe at any
+                  time.
+                </label>
+              </div>
 
               <TurnstileField ref={captcha} onToken={setCaptchaToken} />
 
