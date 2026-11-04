@@ -57,9 +57,16 @@ export async function recordConsent(
     return { outcome: "skipped_blocked", synced: false };
   }
 
+  // One person = one row = one Resend contact. Resend keys contacts by the
+  // literal address, so keep the spelling we first stored (e.g. a later
+  // "John.Doe@gmail.com" stays "johndoe@gmail.com"); otherwise an unsubscribe
+  // could reach only one of two contacts for the same inbox.
+  const existing = await getConsentRow(db, email);
+  const canonicalEmail = existing?.email ?? email;
+
   const now = new Date().toISOString();
   const row: Record<string, unknown> = {
-    email,
+    email: canonicalEmail,
     status: subscribed ? "subscribed" : "unsubscribed",
     source: input.source,
     updated_at: now,
@@ -79,7 +86,11 @@ export async function recordConsent(
   const outcome: ConsentStatus = subscribed ? "subscribed" : "unsubscribed";
   let synced = false;
   try {
-    synced = await (deps.sync ?? defaultSync)({ email, firstName: input.firstName, subscribed });
+    synced = await (deps.sync ?? defaultSync)({
+      email: canonicalEmail,
+      firstName: input.firstName,
+      subscribed,
+    });
   } catch (err) {
     console.error("[marketing] Resend sync threw:", err);
   }
@@ -98,23 +109,38 @@ export async function recordConsent(
   return { outcome, synced };
 }
 
-/** The stored consent for this email (normalized like customer_blocks), or null. */
-export async function getConsentStatus(
-  db: SupabaseClient,
-  email: string,
-): Promise<ConsentStatus | null> {
+export interface ConsentRow {
+  id: string;
+  email: string;
+  status: ConsentStatus;
+  updated_at: string;
+  resend_synced_at: string | null;
+}
+
+/** The stored row for this email (normalized like customer_blocks), or null. Throws on DB errors. */
+export async function getConsentRow(db: SupabaseClient, email: string): Promise<ConsentRow | null> {
   const trimmed = email?.trim() ?? "";
   if (!trimmed) return null;
 
   const { data: normalized, error: normError } = await db.rpc("normalize_block_email", {
     p_email: trimmed,
   });
-  if (normError || !normalized) return null;
+  if (normError) throw normError;
+  if (!normalized) return null;
 
-  const { data } = await db
+  const { data, error } = await db
     .from("marketing_consents")
-    .select("status")
+    .select("id, email, status, updated_at, resend_synced_at")
     .eq("normalized_email", normalized as string)
     .maybeSingle();
-  return (data?.status as ConsentStatus | undefined) ?? null;
+  if (error) throw error;
+  return (data as ConsentRow | null) ?? null;
+}
+
+/** The stored consent status for this email, or null. */
+export async function getConsentStatus(
+  db: SupabaseClient,
+  email: string,
+): Promise<ConsentStatus | null> {
+  return (await getConsentRow(db, email))?.status ?? null;
 }

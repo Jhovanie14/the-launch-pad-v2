@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { getConsentStatus, recordConsent } from "./consent";
+import { getConsentRow, getConsentStatus, recordConsent } from "./consent";
 
 const ROW_ID = "row-1";
 
-function fakeDb(opts: { blocked?: boolean; stored?: { status: string } | null } = {}) {
+function fakeDb(opts: { blocked?: boolean; stored?: Record<string, unknown> | null } = {}) {
   const calls = {
     upserts: [] as { row: Record<string, unknown>; opts: Record<string, unknown> }[],
     updates: [] as { values: Record<string, unknown>; col: string; val: unknown }[],
@@ -160,6 +160,27 @@ describe("recordConsent", () => {
       },
     );
     expect(result).toEqual({ outcome: "subscribed", synced: false });
+  });
+});
+
+describe("recordConsent with an existing row", () => {
+  it("keeps the stored spelling so one person stays one Resend contact", async () => {
+    const { db, calls } = fakeDb({
+      stored: { id: ROW_ID, email: "johndoe@gmail.com", status: "subscribed", updated_at: "2026-11-01T00:00:00.000Z", resend_synced_at: "2026-11-01T00:00:01.000Z" },
+    });
+    const sync = okSync();
+    await recordConsent(db, { email: "John.Doe@gmail.com", action: "unsubscribe", source: "resend_unsubscribe" }, { sync });
+    expect(calls.upserts[0].row.email).toBe("johndoe@gmail.com");
+    expect(sync).toHaveBeenCalledWith({ email: "johndoe@gmail.com", firstName: undefined, subscribed: false });
+  });
+});
+
+describe("getConsentRow", () => {
+  it("returns the stored row matched on the normalized email", async () => {
+    const stored = { id: ROW_ID, email: "sam@example.com", status: "subscribed", updated_at: "2026-11-01T00:00:00.000Z", resend_synced_at: null };
+    const { db, calls } = fakeDb({ stored });
+    await expect(getConsentRow(db, "Sam@Example.com")).resolves.toEqual(stored);
+    expect(calls.selects[0]).toEqual({ col: "normalized_email", val: "sam@example.com" });
   });
 });
 
