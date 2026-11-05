@@ -1,7 +1,4 @@
-import { CheckCircle, Package, Calendar, CreditCard, Car } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { Car, CheckCircle2, Clock, Crown, Mail } from "lucide-react";
 import Link from "next/link";
 import { stripe } from "@/lib/stripe/stripe";
 import Stripe from "stripe";
@@ -18,6 +15,21 @@ interface SubscriptionSuccessPageProps {
   searchParams: { session_id?: string };
 }
 
+const DATE_FORMAT: Intl.DateTimeFormatOptions = {
+  month: "long",
+  day: "numeric",
+  year: "numeric",
+  timeZone: "America/Chicago",
+};
+
+function formatDate(value: string | null | undefined) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? null
+    : date.toLocaleDateString("en-US", DATE_FORMAT);
+}
+
 export default async function SubscriptionSuccessPage({
   searchParams,
 }: SubscriptionSuccessPageProps) {
@@ -32,7 +44,7 @@ export default async function SubscriptionSuccessPage({
   const session = await stripe.checkout.sessions.retrieve(params.session_id);
 
   if (session.status === "open") {
-    return redirect("/subscription/plans");
+    return redirect("/dashboard/pricing");
   }
 
   if (session.mode !== "subscription" || !session.subscription) {
@@ -249,7 +261,7 @@ export default async function SubscriptionSuccessPage({
   }
 
   const orderData = {
-    date: new Date(subscription.created_at).toLocaleDateString(),
+    date: formatDate(subscription.created_at),
     orderNumber: subscription.stripe_subscription_id,
     paymentMethod: "Card",
     planName: plan?.name ?? "Premium Plan",
@@ -257,219 +269,218 @@ export default async function SubscriptionSuccessPage({
     totalPrice,
     totalSavings,
     billingCycle: subscription.billing_cycle,
-    startDate: new Date(subscription.current_period_start).toLocaleDateString(),
-    nextBillingDate: subscription.current_period_end
-      ? new Date(subscription.current_period_end).toLocaleDateString()
-      : "N/A",
+    startDate: formatDate(subscription.current_period_start),
+    nextBillingDate: formatDate(subscription.current_period_end),
     vehicles: vehiclePricing,
     isFlock: vehiclesToDisplay.length > 1,
     discountPercent: flockDiscountPercent(plan),
     hasVehicleData: vehicles.length > 0, // Whether we have actual vehicle data from DB
   };
 
+  const cycle =
+    orderData.billingCycle === "month"
+      ? "month"
+      : orderData.billingCycle === "year"
+        ? "year"
+        : null;
+  const perCycle = cycle ? ` / ${cycle}` : "";
+  const status = String(subscription.status ?? "");
+  const isActive = status === "active" || status === "trialing";
+  const extraVehicles = orderData.vehicles.length - 1;
+
   return (
-    <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl mx-auto">
-        {/* Success Header */}
-        <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
-            <CheckCircle className="h-16 w-16 text-green-600" />
-          </div>
-          <h1 className="text-3xl font-bold text-primary mb-2">
-            Subscription Activated!
-          </h1>
-          <p className="text-muted-foreground text-lg">
-            Thank you for subscribing. Your subscription is now active.
+    <div>
+      <h1 className="flex items-center gap-3 text-3xl font-black tracking-tight text-balance text-ink">
+        {isActive ? (
+          <CheckCircle2 aria-hidden className="size-8 shrink-0 text-brand-blue" />
+        ) : (
+          <Clock aria-hidden className="size-8 shrink-0 text-ink-subtle" />
+        )}
+        {isActive ? "You're a member" : "Thanks, we're finishing your sign-up"}
+      </h1>
+      <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
+        {isActive
+          ? `Your ${orderData.planName} membership is active. It's on your Home page, ready to show at the bay.`
+          : `Your payment went through and ${orderData.planName} is being set up. Check Billing in a few minutes.`}
+      </p>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+        {/* What you bought */}
+        <section
+          aria-labelledby="bought"
+          className="rounded-2xl bg-night p-5 text-on-night shadow-[0_18px_40px_-24px_rgb(8_20_52/0.9)] ring-1 ring-white/10 sm:p-7"
+        >
+          <h2 id="bought" className="text-3xl font-black tracking-tight text-balance sm:text-4xl">
+            {orderData.planName}
+          </h2>
+          <p className="mt-1 text-base font-semibold">
+            <span className="inline-flex items-center gap-1.5 text-svc-member">
+              <Crown aria-hidden className="size-4" />
+              Express membership
+            </span>
+            {status && (
+              <>
+                <span className="text-on-night-subtle"> · </span>
+                <span className="capitalize text-on-night-muted">
+                  {status.replace(/_/g, " ")}
+                </span>
+              </>
+            )}
           </p>
-        </div>
 
-        {/* Subscription Details Card */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5" />
-              Subscription Details
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Subscription Info */}
-            <div className="flex justify-between items-center text-sm">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Calendar className="h-4 w-4" />
-                Activation Date
-              </div>
-              <span className="font-medium">{orderData.date}</span>
-            </div>
-
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-muted-foreground">Subscription ID</span>
-              <span className="font-medium font-mono text-xs">
-                {orderData.orderNumber}
-              </span>
-            </div>
-
-            <div className="flex justify-between items-center text-sm">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <CreditCard className="h-4 w-4" />
-                Payment Method
-              </div>
-              <span className="font-medium">{orderData.paymentMethod}</span>
-            </div>
-
-            <Separator />
-
-            {/* Plan Details */}
-            <div className="space-y-3">
-              <h4 className="font-medium">Plan Information</h4>
-
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Plan</span>
-                <span className="font-medium">{orderData.planName}</span>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Billing Cycle</span>
-                <span className="font-medium capitalize">
-                  {orderData.billingCycle}ly
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Base Price</span>
-                <span className="font-medium">
-                  ${orderData.basePrice.toFixed(2)}/{orderData.billingCycle}
-                </span>
-              </div>
-
-              {/* Vehicles Section */}
-              {orderData.vehicles.length > 0 ? (
-                <div className="space-y-2 pt-2">
-                  <h4 className="text-sm font-medium">
-                    {orderData.isFlock ? "Flock Vehicles" : "Vehicle"}
-                    {!orderData.hasVehicleData && (
-                      <span className="ml-2 text-xs text-muted-foreground">
-                        (Details loading...)
-                      </span>
-                    )}
-                  </h4>
-                  <div className="space-y-2">
-                    {orderData.vehicles.map((item, index: number) => (
-                      <div
-                        key={item.vehicle.id || index}
-                        className="flex justify-between items-start p-2 bg-muted/50 rounded-md"
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <Car className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm font-medium">
-                              {item.displayName}
-                            </span>
-                            {item.isDiscounted && (
-                              <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
-                                {orderData.discountPercent}% family discount
-                              </span>
-                            )}
-                          </div>
-                          {item.vehicle.body_type && (
-                            <p className="text-xs text-muted-foreground mt-1 ml-6">
-                              {item.vehicle.body_type}
-                            </p>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          {item.isDiscounted && (
-                            <p className="text-xs text-muted-foreground line-through">
-                              ${orderData.basePrice.toFixed(2)}
-                            </p>
-                          )}
-                          <p className="text-sm font-semibold">
-                            ${item.price.toFixed(2)}
-                            <span className="text-xs text-muted-foreground ml-1">
-                              /{orderData.billingCycle}
-                            </span>
+          {orderData.vehicles.length > 0 ? (
+            <>
+              <h3 className="mt-5 text-sm font-semibold text-on-night-muted">
+                {orderData.vehicles.length === 1 ? "Vehicle" : `${orderData.vehicles.length} vehicles`}
+                {!orderData.hasVehicleData && " (details still loading)"}
+              </h3>
+              <ul className="mt-2 divide-y divide-white/10 border-y border-white/10">
+                {orderData.vehicles.map((item, index: number) => (
+                  <li
+                    key={item.vehicle.id || index}
+                    className="flex items-start justify-between gap-4 py-3"
+                  >
+                    <div className="flex min-w-0 items-start gap-2">
+                      <Car aria-hidden className="mt-0.5 size-4 shrink-0 text-on-night-subtle" />
+                      <div className="min-w-0">
+                        <p className="font-medium text-on-night">
+                          {orderData.hasVehicleData ? item.displayName : `Vehicle ${index + 1}`}
+                        </p>
+                        {(item.vehicle.body_type || item.isDiscounted) && (
+                          <p className="mt-0.5 text-xs text-on-night-subtle">
+                            {[
+                              item.vehicle.body_type,
+                              item.isDiscounted ? `${orderData.discountPercent}% off as an additional vehicle` : null,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
                           </p>
-                        </div>
+                        )}
                       </div>
-                    ))}
-                  </div>
-                  {orderData.isFlock && orderData.totalSavings > 0 && (
-                    <div className="flex justify-between items-center pt-2 border-t border-border">
-                      <span className="text-sm text-green-600 font-medium">
-                        Total Flock Savings
-                      </span>
-                      <span className="text-sm font-semibold text-green-600">
-                        -${orderData.totalSavings.toFixed(2)}/
-                        {orderData.billingCycle}
-                      </span>
                     </div>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-2 pt-2">
-                  <p className="text-sm text-muted-foreground">
-                    Vehicle information is being processed. Please check back in a
-                    moment.
-                  </p>
-                </div>
-              )}
-            </div>
+                    <p className="shrink-0 text-right tabular-nums">
+                      {item.isDiscounted && (
+                        <span className="block text-xs text-on-night-subtle line-through">
+                          ${orderData.basePrice.toFixed(2)}
+                        </span>
+                      )}
+                      <span className="font-semibold">${item.price.toFixed(2)}</span>
+                      <span className="text-xs text-on-night-muted">{perCycle}</span>
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <p className="mt-5 max-w-prose text-sm leading-relaxed text-on-night-muted">
+              Your vehicles are still being added. They&apos;ll appear on Home
+              and in Billing within a few minutes.
+            </p>
+          )}
 
-            <Separator />
-
-            {/* Billing Info */}
-            <div className="space-y-2">
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">Started</span>
-                <span>{orderData.startDate}</span>
-              </div>
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">Next Billing Date</span>
-                <span>{orderData.nextBillingDate}</span>
-              </div>
-              <div className="flex justify-between items-center font-semibold text-lg">
-                <span>Total Amount Due Today</span>
-                <span className="text-primary">
+          <dl className="mt-1 divide-y divide-white/10 border-b border-white/10">
+            <div className="flex items-baseline justify-between gap-4 py-3">
+              <dt className="font-semibold text-on-night">Total</dt>
+              <dd className="text-right">
+                <span className="text-2xl font-black tracking-tight tabular-nums">
                   ${orderData.totalPrice.toFixed(2)}
                 </span>
-              </div>
-              {orderData.isFlock && (
-                <p className="text-xs text-muted-foreground text-right">
-                  ${orderData.basePrice.toFixed(2)} base +{" "}
-                  {orderData.vehicles.length - 1} additional vehicle
-                  {orderData.vehicles.length - 1 === 1 ? "" : "s"}
-                  {orderData.discountPercent > 0
-                    ? ` at ${orderData.discountPercent}% off`
-                    : " at the full plan rate"}
-                </p>
-              )}
+                <span className="text-sm font-semibold text-on-night-muted">{perCycle}</span>
+              </dd>
             </div>
-          </CardContent>
-        </Card>
+            {orderData.nextBillingDate && (
+              <div className="flex items-baseline justify-between gap-4 py-3">
+                <dt className="text-on-night-muted">Renews on</dt>
+                <dd className="text-right font-semibold">{orderData.nextBillingDate}</dd>
+              </div>
+            )}
+          </dl>
 
-        {/* Action Buttons */}
-        <div className="space-y-4">
-          <Button asChild className="w-full bg-blue-900" size="lg">
-            <Link href="/dashboard/billing">Manage Subscription</Link>
-          </Button>
-
-          <div className="flex gap-4">
-            <Button asChild variant="outline" className="flex-1 bg-transparent">
-              <Link href="/dashboard">Go to Dashboard</Link>
-            </Button>
-            <Button asChild variant="outline" className="flex-1 bg-transparent">
-              <Link href="/support">Contact Support</Link>
-            </Button>
+          <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+            <Link
+              href="/dashboard"
+              className="inline-flex min-h-11 items-center justify-center rounded-lg bg-flame px-5 font-bold text-on-flame transition-colors hover:bg-flame-bright focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-flame-bright"
+            >
+              Go to Home
+            </Link>
+            <Link
+              href="/dashboard/billing"
+              className="inline-flex min-h-11 items-center justify-center rounded-lg border border-white/20 px-4 font-semibold text-on-night hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-flame"
+            >
+              Manage in Billing
+            </Link>
           </div>
-        </div>
+        </section>
 
-        {/* Footer Message */}
-        <div className="text-center mt-8 p-4 bg-card rounded-lg border">
-          <p className="text-sm text-muted-foreground">
-            A confirmation email has been sent to your registered email address.
-            You can manage your subscription, update payment methods, or cancel
-            anytime from your dashboard.
+        {/* Receipt */}
+        <section
+          aria-labelledby="receipt"
+          className="rounded-2xl bg-paper p-5 text-sm ring-1 ring-line sm:p-7"
+        >
+          <h2 id="receipt" className="text-xl font-black tracking-tight text-ink">
+            Receipt details
+          </h2>
+          <dl className="mt-4 divide-y divide-line-soft border-y border-line-soft">
+            <div className="flex items-start justify-between gap-4 py-3">
+              <dt className="text-ink-muted">Plan price</dt>
+              <dd className="text-right font-semibold text-ink tabular-nums">
+                ${orderData.basePrice.toFixed(2)}
+                {perCycle}
+              </dd>
+            </div>
+            {orderData.isFlock && (
+              <div className="flex items-start justify-between gap-4 py-3">
+                <dt className="text-ink-muted">Additional vehicles</dt>
+                <dd className="text-right font-semibold text-ink">
+                  {extraVehicles}{" "}
+                  {orderData.discountPercent > 0
+                    ? `at ${orderData.discountPercent}% off`
+                    : "at the full plan rate"}
+                </dd>
+              </div>
+            )}
+            {orderData.isFlock && orderData.totalSavings > 0 && (
+              <div className="flex items-start justify-between gap-4 py-3">
+                <dt className="text-ink-muted">You save</dt>
+                <dd className="text-right font-semibold text-ink tabular-nums">
+                  ${orderData.totalSavings.toFixed(2)}
+                  {perCycle}
+                </dd>
+              </div>
+            )}
+            {orderData.startDate && (
+              <div className="flex items-start justify-between gap-4 py-3">
+                <dt className="text-ink-muted">Started</dt>
+                <dd className="text-right font-semibold text-ink">{orderData.startDate}</dd>
+              </div>
+            )}
+            <div className="flex items-start justify-between gap-4 py-3">
+              <dt className="text-ink-muted">Next payment</dt>
+              <dd className="text-right font-semibold text-ink">
+                {orderData.nextBillingDate ?? "Shown in Billing"}
+              </dd>
+            </div>
+            <div className="flex items-start justify-between gap-4 py-3">
+              <dt className="text-ink-muted">Paid with</dt>
+              <dd className="text-right font-semibold text-ink">{orderData.paymentMethod}</dd>
+            </div>
+            <div className="py-3">
+              <dt className="text-ink-muted">Reference</dt>
+              <dd className="mt-1 break-all text-xs text-ink-subtle">{orderData.orderNumber}</dd>
+            </div>
+          </dl>
+          <p className="mt-4 flex items-start gap-2 leading-relaxed text-ink-muted">
+            <Mail aria-hidden className="mt-0.5 size-4 shrink-0 text-ink-subtle" />
+            Your receipt goes to the email on your account. You can add
+            vehicles, update your card or cancel anytime from Billing.
           </p>
-        </div>
+          <Link
+            href="/dashboard/help"
+            className="-mx-2 mt-3 flex min-h-11 items-center rounded-lg px-2 font-semibold text-ink hover:bg-line-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+          >
+            Questions? Get help and support
+          </Link>
+        </section>
       </div>
     </div>
   );

@@ -1,28 +1,33 @@
 "use client";
 
-import { CheckCircle } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 
 export default function SubscriptionUpgradeSuccessPage() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4 text-center">
-      <CheckCircle className="h-16 w-16 text-green-600 mb-4" />
-      <h1 className="text-3xl font-bold text-primary mb-2">
-        Subscription Upgraded!
+    <div>
+      <h1 className="flex items-center gap-3 text-3xl font-black tracking-tight text-balance text-ink">
+        <CheckCircle2 aria-hidden className="size-8 shrink-0 text-brand-blue" />
+        Your plan is upgraded
       </h1>
-      <p className="text-muted-foreground max-w-md mb-6">
-        Your subscription has been successfully upgraded. Your billing cycle and
-        payment have been updated automatically.
+      <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
+        Your billing cycle and payment were updated automatically. Billing
+        shows your new plan, price and next payment date.
       </p>
 
-      <div className="flex gap-4">
-        <Button asChild className="bg-blue-900">
-          <Link href="/dashboard/billing">Go to Billing</Link>
-        </Button>
-        <Button asChild variant="outline">
-          <Link href="/dashboard">Back to Dashboard</Link>
-        </Button>
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+        <Link
+          href="/dashboard/billing"
+          className="inline-flex min-h-11 items-center justify-center rounded-lg bg-flame px-5 font-bold text-on-flame transition-colors hover:bg-flame-bright focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+        >
+          See it in Billing
+        </Link>
+        <Link
+          href="/dashboard"
+          className="inline-flex min-h-11 items-center justify-center rounded-lg bg-paper px-4 font-semibold text-ink ring-1 ring-line hover:bg-canvas focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+        >
+          Back to Home
+        </Link>
       </div>
     </div>
   );

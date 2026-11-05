@@ -236,7 +236,7 @@ export default function SelfServicePage() {
                         variant="outline"
                         className="w-full border-blue-900 text-blue-900 hover:bg-blue-50"
                         onClick={() =>
-                          router.push("/dashboard/selfservice/use")
+                          router.push("/dashboard/self-service-log")
                         }
                       >
                         Log a Visit

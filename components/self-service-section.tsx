@@ -59,7 +59,7 @@ export function SelfServiceSection({ user }: { user: AuthUser }) {
           <h3 className="mt-8 text-xl font-semibold">Today's Usage</h3>
           <p>{data?.usedToday ? "Used today" : "Not used yet today"}</p>
 
-          <Button onClick={() => router.push("/dashboard/selfservice/use")}>
+          <Button onClick={() => router.push("/dashboard/self-service-log")}>
             Log a Visit
           </Button>
         </>

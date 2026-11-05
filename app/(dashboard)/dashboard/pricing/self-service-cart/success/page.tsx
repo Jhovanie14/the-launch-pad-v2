@@ -1,7 +1,4 @@
-import { CheckCircle, Package, Calendar, CreditCard } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { CheckCircle2, Clock, Crown, Droplets, Mail } from "lucide-react";
 import Link from "next/link";
 import { stripe } from "@/lib/stripe/stripe";
 import { redirect } from "next/navigation";
@@ -9,6 +6,21 @@ import { createClient } from "@/utils/supabase/client";
 
 interface SubscriptionSuccessPageProps {
   searchParams: { session_id?: string };
+}
+
+const DATE_FORMAT: Intl.DateTimeFormatOptions = {
+  month: "long",
+  day: "numeric",
+  year: "numeric",
+  timeZone: "America/Chicago",
+};
+
+function formatDate(value: string | null | undefined) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? null
+    : date.toLocaleDateString("en-US", DATE_FORMAT);
 }
 
 export default async function SubscriptionSuccessPage({
@@ -22,7 +34,7 @@ export default async function SubscriptionSuccessPage({
   // Retrieve Stripe Checkout session
   const session = await stripe.checkout.sessions.retrieve(session_id);
 
-  if (session.status === "open") return redirect("/subscription/plans");
+  if (session.status === "open") return redirect("/dashboard/pricing");
   if (session.mode !== "subscription" || !session.subscription)
     return redirect("/dashboard");
 
@@ -39,13 +51,13 @@ export default async function SubscriptionSuccessPage({
         .select(
           `
           *,
-          self_service_plans:self_service_plan_id (
+          subscription_plans:self_service_plan_id (
             name,
             description,
             monthly_price,
             yearly_price
           ),
-          subscription_vehicles (
+          subscription_vehicles:self_service_subscription_vehicles (
             vehicles (
               make,
               model,
@@ -145,137 +157,155 @@ export default async function SubscriptionSuccessPage({
       : (plan?.yearly_price ?? 0);
 
   const orderData = {
-    date: new Date(subscription.created_at).toLocaleDateString(),
+    date: formatDate(subscription.created_at),
     orderNumber: subscription.stripe_subscription_id,
     paymentMethod: "Card",
     planName: plan?.name ?? "Plan",
-    planPrice,
+    planPrice: Number(planPrice),
     billingCycle: subscription.billing_cycle,
-    startDate: new Date(subscription.current_period_start).toLocaleDateString(),
-    nextBillingDate: subscription.current_period_end
-      ? new Date(subscription.current_period_end).toLocaleDateString()
-      : "N/A",
+    startDate: formatDate(subscription.current_period_start),
+    nextBillingDate: formatDate(subscription.current_period_end),
     vehicle: vehicle
       ? `${vehicle.year} ${vehicle.make} ${vehicle.model}`
       : null,
   };
 
+  const cycle =
+    orderData.billingCycle === "month"
+      ? "month"
+      : orderData.billingCycle === "year"
+        ? "year"
+        : null;
+  const status = String(subscription.status ?? "");
+  const isActive = status === "active" || status === "trialing";
+  const kind = isSelfService
+    ? { label: "Self-service plan", tone: "text-svc-self", Icon: Droplets }
+    : { label: "Express membership", tone: "text-svc-member", Icon: Crown };
+
   return (
-    <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl mx-auto">
-        <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
-            <CheckCircle className="h-16 w-16 text-green-600" />
-          </div>
-          <h1 className="text-3xl font-bold text-primary mb-2">
-            Subscription Activated!
-          </h1>
-          <p className="text-muted-foreground text-lg">
-            Thank you for subscribing. Your subscription is now active.
+    <div>
+      <h1 className="flex items-center gap-3 text-3xl font-black tracking-tight text-balance text-ink">
+        {isActive ? (
+          <CheckCircle2 aria-hidden className="size-8 shrink-0 text-brand-blue" />
+        ) : (
+          <Clock aria-hidden className="size-8 shrink-0 text-ink-subtle" />
+        )}
+        {isActive ? "You're all set" : "Thanks, we're finishing your sign-up"}
+      </h1>
+      <p className="mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
+        {isActive
+          ? `Your ${orderData.planName} is active. It's on your Home page, ready to show at the bay.`
+          : `Your payment went through and ${orderData.planName} is being set up. Check Billing in a few minutes.`}
+      </p>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+        {/* What you bought */}
+        <section
+          aria-labelledby="bought"
+          className="rounded-2xl bg-night p-5 text-on-night shadow-[0_18px_40px_-24px_rgb(8_20_52/0.9)] ring-1 ring-white/10 sm:p-7"
+        >
+          <h2 id="bought" className="text-3xl font-black tracking-tight text-balance sm:text-4xl">
+            {orderData.planName}
+          </h2>
+          <p className="mt-1 text-base font-semibold">
+            <span className={`inline-flex items-center gap-1.5 ${kind.tone}`}>
+              <kind.Icon aria-hidden className="size-4" />
+              {kind.label}
+            </span>
+            {status && (
+              <>
+                <span className="text-on-night-subtle"> · </span>
+                <span className="capitalize text-on-night-muted">
+                  {status.replace(/_/g, " ")}
+                </span>
+              </>
+            )}
           </p>
-        </div>
 
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5" />
-              Subscription Details
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex justify-between items-center text-sm">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Calendar className="h-4 w-4" />
-                Activation Date
-              </div>
-              <span className="font-medium">{orderData.date}</span>
-            </div>
-
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-muted-foreground">Subscription ID</span>
-              <span className="font-medium font-mono text-xs">
-                {orderData.orderNumber}
-              </span>
-            </div>
-
-            <div className="flex justify-between items-center text-sm">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <CreditCard className="h-4 w-4" />
-                Payment Method
-              </div>
-              <span className="font-medium">{orderData.paymentMethod}</span>
-            </div>
-
-            <Separator />
-
-            <div className="space-y-3">
-              <h4 className="font-medium">Plan Information</h4>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Plan</span>
-                <span className="font-medium">{orderData.planName}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Billing Cycle</span>
-                <span className="font-medium capitalize">
-                  {orderData.billingCycle}ly
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm">Price</span>
-                <span className="font-medium">
-                  ${orderData.planPrice.toFixed(2)}/{orderData.billingCycle}
-                </span>
-              </div>
-              {orderData.vehicle && (
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Vehicle</span>
-                  <span className="font-medium">{orderData.vehicle}</span>
-                </div>
-              )}
-            </div>
-
-            <Separator />
-
-            <div className="space-y-2">
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">Started</span>
-                <span>{orderData.startDate}</span>
-              </div>
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">Next Billing Date</span>
-                <span>{orderData.nextBillingDate}</span>
-              </div>
-              <div className="flex justify-between items-center font-semibold text-lg">
-                <span>Amount Due Today</span>
-                <span className="text-primary">
+          <dl className="mt-5 divide-y divide-white/10 border-y border-white/10">
+            <div className="flex items-baseline justify-between gap-4 py-3">
+              <dt className="text-on-night-muted">Price</dt>
+              <dd className="text-right">
+                <span className="text-2xl font-black tracking-tight tabular-nums">
                   ${orderData.planPrice.toFixed(2)}
                 </span>
-              </div>
+                {cycle && (
+                  <span className="text-sm font-semibold text-on-night-muted"> / {cycle}</span>
+                )}
+              </dd>
             </div>
-          </CardContent>
-        </Card>
+            {orderData.nextBillingDate && (
+              <div className="flex items-baseline justify-between gap-4 py-3">
+                <dt className="text-on-night-muted">Renews on</dt>
+                <dd className="text-right font-semibold">{orderData.nextBillingDate}</dd>
+              </div>
+            )}
+            {orderData.vehicle && (
+              <div className="flex items-baseline justify-between gap-4 py-3">
+                <dt className="text-on-night-muted">Vehicle</dt>
+                <dd className="text-right font-semibold">{orderData.vehicle}</dd>
+              </div>
+            )}
+          </dl>
 
-        <div className="space-y-4">
-          <Button asChild className="w-full bg-blue-900" size="lg">
-            <Link href="/dashboard/billing">Manage Subscription</Link>
-          </Button>
-          <div className="flex gap-4">
-            <Button asChild variant="outline" className="flex-1 bg-transparent">
-              <Link href="/dashboard">Go to Dashboard</Link>
-            </Button>
-            <Button asChild variant="outline" className="flex-1 bg-transparent">
-              <Link href="/support">Contact Support</Link>
-            </Button>
+          <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+            <Link
+              href="/dashboard"
+              className="inline-flex min-h-11 items-center justify-center rounded-lg bg-flame px-5 font-bold text-on-flame transition-colors hover:bg-flame-bright focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-flame-bright"
+            >
+              Go to Home
+            </Link>
+            <Link
+              href="/dashboard/billing"
+              className="inline-flex min-h-11 items-center justify-center rounded-lg border border-white/20 px-4 font-semibold text-on-night hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-flame"
+            >
+              Manage in Billing
+            </Link>
           </div>
-        </div>
+        </section>
 
-        <div className="text-center mt-8 p-4 bg-card rounded-lg border">
-          <p className="text-sm text-muted-foreground">
-            A confirmation email has been sent to your registered email address.
-            You can manage your subscription, update payment methods, or cancel
-            anytime from your dashboard.
+        {/* Receipt */}
+        <section
+          aria-labelledby="receipt"
+          className="rounded-2xl bg-paper p-5 text-sm ring-1 ring-line sm:p-7"
+        >
+          <h2 id="receipt" className="text-xl font-black tracking-tight text-ink">
+            Receipt details
+          </h2>
+          <dl className="mt-4 divide-y divide-line-soft border-y border-line-soft">
+            {orderData.startDate && (
+              <div className="flex items-start justify-between gap-4 py-3">
+                <dt className="text-ink-muted">Started</dt>
+                <dd className="text-right font-semibold text-ink">{orderData.startDate}</dd>
+              </div>
+            )}
+            <div className="flex items-start justify-between gap-4 py-3">
+              <dt className="text-ink-muted">Next payment</dt>
+              <dd className="text-right font-semibold text-ink">
+                {orderData.nextBillingDate ?? "Shown in Billing"}
+              </dd>
+            </div>
+            <div className="flex items-start justify-between gap-4 py-3">
+              <dt className="text-ink-muted">Paid with</dt>
+              <dd className="text-right font-semibold text-ink">{orderData.paymentMethod}</dd>
+            </div>
+            <div className="py-3">
+              <dt className="text-ink-muted">Reference</dt>
+              <dd className="mt-1 break-all text-xs text-ink-subtle">{orderData.orderNumber}</dd>
+            </div>
+          </dl>
+          <p className="mt-4 flex items-start gap-2 leading-relaxed text-ink-muted">
+            <Mail aria-hidden className="mt-0.5 size-4 shrink-0 text-ink-subtle" />
+            Your receipt goes to the email on your account. You can update your
+            card or cancel anytime from Billing.
           </p>
-        </div>
+          <Link
+            href="/dashboard/help"
+            className="-mx-2 mt-3 flex min-h-11 items-center rounded-lg px-2 font-semibold text-ink hover:bg-line-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+          >
+            Questions? Get help and support
+          </Link>
+        </section>
       </div>
     </div>
   );
