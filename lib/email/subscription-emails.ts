@@ -3,6 +3,24 @@ import {
   FLOCK_DISCOUNT_RATE,
   MAX_VEHICLES_PER_SUBSCRIPTION,
 } from "@/lib/pricing/flockPricing";
+import {
+  FROM,
+  SITE_URL,
+  button,
+  details,
+  emailLayout,
+  heading,
+  list,
+  money,
+  notice,
+  paragraph,
+  plate,
+  signoff,
+  subheading,
+  text,
+} from "./layout";
+
+export { FROM, SITE_URL };
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -13,11 +31,457 @@ const resend = new Resend(process.env.RESEND_API_KEY);
  */
 const FAMILY_DISCOUNT_PERCENT = Math.round(FLOCK_DISCOUNT_RATE * 100);
 
-export const FROM = "The Launch Pad Wash <noreply@thelaunchpadwash.com>";
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.thelaunchpadwash.com";
+const BILLING_URL = `${SITE_URL}/dashboard/billing`;
+const MEMBER_FOOTER = "You're getting this because you have a Launch Pad membership.";
 
-// Shared base styles reused across all three emails
-const BASE_STYLES = `
+export interface BuiltEmail {
+  subject: string;
+  html: string;
+}
+
+function greeting(name: string): string {
+  return paragraph(`Hi ${text(name)},`);
+}
+
+function recurringTotal(newTotal: number, billingCycle: string): string {
+  return `${money(newTotal)}/${text(billingCycle)}`;
+}
+
+async function sendBuilt(to: string, email: BuiltEmail, label: string) {
+  const { error } = await resend.emails.send({
+    from: FROM,
+    to,
+    subject: email.subject,
+    html: email.html,
+  });
+
+  if (error) console.error(`[email] ${label} send error:`, error);
+  else console.log(`[email] ${label} email sent to:`, to);
+}
+
+// ─────────────────────────────────────────────────────────────
+// 1. SUBSCRIPTION INVOICE / RECEIPT
+// ─────────────────────────────────────────────────────────────
+export interface SubscriptionInvoiceEmailParams {
+  name: string;
+  amountPaid: number; // in dollars
+  billingPeriodStart: string; // e.g. "June 1, 2025"
+  billingPeriodEnd: string; // e.g. "June 30, 2025"
+  invoiceUrl?: string | null;
+  isRenewal: boolean;
+}
+
+export function buildSubscriptionInvoiceEmail({
+  name,
+  amountPaid,
+  billingPeriodStart,
+  billingPeriodEnd,
+  invoiceUrl,
+  isRenewal,
+}: SubscriptionInvoiceEmailParams): BuiltEmail {
+  const title = isRenewal ? "Your membership renewed" : "Welcome to The Launch Pad";
+  const subject = isRenewal
+    ? `Your subscription has been renewed — ${money(amountPaid)} charged`
+    : "Payment confirmed — welcome to The Launch Pad!";
+
+  const body = [
+    heading(title),
+    greeting(name),
+    paragraph(
+      isRenewal
+        ? "Your membership renewed and your payment went through. Here's the summary."
+        : "Thanks for joining. Your first payment went through and your membership is active. Here's your receipt.",
+    ),
+    details(
+      [
+        ["Billing period", `${text(billingPeriodStart)} – ${text(billingPeriodEnd)}`],
+        ["Status", "Paid"],
+        ["Amount paid", money(amountPaid)],
+      ],
+      { emphasizeLast: true },
+    ),
+    invoiceUrl
+      ? button(invoiceUrl, "View full invoice") +
+        paragraph(
+          `Your billing history and plan are on your <a href="${text(BILLING_URL)}">billing page</a>.`,
+          { muted: true, small: true },
+        )
+      : button(BILLING_URL, "View billing"),
+    paragraph("Thanks for being a member."),
+    signoff(),
+  ].join("\n");
+
+  return {
+    subject,
+    html: emailLayout({
+      title,
+      preheader: `${money(amountPaid)} paid for ${billingPeriodStart} – ${billingPeriodEnd}`,
+      body,
+      footerNote: MEMBER_FOOTER,
+    }),
+  };
+}
+
+export async function sendSubscriptionInvoiceEmail({
+  to,
+  ...params
+}: SubscriptionInvoiceEmailParams & { to: string }) {
+  await sendBuilt(to, buildSubscriptionInvoiceEmail(params), "subscription invoice");
+}
+
+// ─────────────────────────────────────────────────────────────
+// 2. PAYMENT FAILED — update card
+// ─────────────────────────────────────────────────────────────
+export interface PaymentFailedEmailParams {
+  name: string;
+  attemptCount?: number;
+}
+
+export function buildPaymentFailedEmail({ name, attemptCount }: PaymentFailedEmailParams): BuiltEmail {
+  const isLastAttempt = (attemptCount ?? 1) >= 3;
+  const title = isLastAttempt ? "Final notice: your payment failed" : "Your payment didn't go through";
+  const subject = isLastAttempt
+    ? "Final notice: Your subscription will be cancelled — update your card now"
+    : "Action needed: Your payment failed — update your card";
+
+  const body = [
+    heading(title),
+    greeting(name),
+    paragraph(
+      "We tried to charge your card for your membership, but the payment didn't go through. Update your payment method to keep your membership active.",
+    ),
+    notice(
+      isLastAttempt
+        ? "<strong>This was our last try.</strong> Please update your card today, or your membership will be cancelled."
+        : "<strong>Nothing is lost yet.</strong> Update your card soon to keep your membership running.",
+      isLastAttempt ? "danger" : "warn",
+    ),
+    paragraph("If the payment can't go through:"),
+    list([
+      "Your membership will be suspended after the retries fail",
+      "You'll lose unlimited express washes",
+      "Family pricing on your other vehicles will end",
+    ]),
+    button(BILLING_URL, "Update payment method"),
+    paragraph(
+      "It takes less than a minute, and your membership picks up as soon as a charge succeeds.",
+      { muted: true, small: true },
+    ),
+    paragraph(
+      `Questions? Reply to this email or <a href="${text(`${SITE_URL}/contact`)}">contact us</a>. We're happy to help.`,
+    ),
+    signoff(),
+  ].join("\n");
+
+  return {
+    subject,
+    html: emailLayout({
+      title,
+      preheader: isLastAttempt
+        ? "Update your card today to keep your membership."
+        : "Update your card to keep your membership active.",
+      body,
+      footerNote: MEMBER_FOOTER,
+    }),
+  };
+}
+
+export async function sendPaymentFailedEmail({
+  to,
+  ...params
+}: PaymentFailedEmailParams & { to: string }) {
+  await sendBuilt(to, buildPaymentFailedEmail(params), "payment failed");
+}
+
+// ─────────────────────────────────────────────────────────────
+// 3. CANCELLATION SCHEDULED — retention email
+// ─────────────────────────────────────────────────────────────
+export interface CancellationScheduledEmailParams {
+  name: string;
+  periodEndDate: string; // human-readable e.g. "June 15, 2025"
+}
+
+export function buildCancellationScheduledEmail({
+  name,
+  periodEndDate,
+}: CancellationScheduledEmailParams): BuiltEmail {
+  const title = "We'll miss you";
+
+  const body = [
+    heading(title),
+    greeting(name),
+    paragraph(
+      `You asked to cancel your membership. That's completely fine, and you keep full access until <strong>${text(periodEndDate)}</strong>.`,
+    ),
+    details([["Membership active until", text(periodEndDate)]]),
+    subheading("What ends with your plan"),
+    list([
+      "Unlimited express washes every month",
+      `Family pricing on additional vehicles, up to ${FAMILY_DISCOUNT_PERCENT}% off`,
+      "Priority service, ahead of the regular line",
+      "Walk-in visits with no appointment needed",
+    ]),
+    paragraph(
+      "Changed your mind? You can keep your membership with one click. No re-enrolling, and your vehicles stay linked.",
+    ),
+    button(BILLING_URL, "Keep my membership"),
+    paragraph(
+      `You can reactivate from your billing page any time before ${text(periodEndDate)}.`,
+      { muted: true, small: true },
+    ),
+    paragraph(
+      "If there's something we could have done better, we'd really like to hear it. Just reply to this email.",
+    ),
+    signoff(),
+  ].join("\n");
+
+  return {
+    subject: `Your plan ends ${periodEndDate} — keep your subscription active`,
+    html: emailLayout({
+      title,
+      preheader: `Your membership stays active until ${periodEndDate}.`,
+      body,
+      footerNote: MEMBER_FOOTER,
+    }),
+  };
+}
+
+export async function sendCancellationScheduledEmail({
+  to,
+  ...params
+}: CancellationScheduledEmailParams & { to: string }) {
+  await sendBuilt(to, buildCancellationScheduledEmail(params), "cancellation scheduled");
+}
+
+// ─────────────────────────────────────────────────────────────
+// 4. SUBSCRIPTION CANCELLED — win-back email
+// ─────────────────────────────────────────────────────────────
+export interface SubscriptionCancelledEmailParams {
+  name: string;
+}
+
+export function buildSubscriptionCancelledEmail({ name }: SubscriptionCancelledEmailParams): BuiltEmail {
+  const plansUrl = `${SITE_URL}/dashboard/pricing`;
+  const title = "Your membership has ended";
+
+  const body = [
+    heading(title),
+    greeting(name),
+    paragraph(
+      "Your membership has officially ended. Thank you for the time you spent with us. It was great having you.",
+    ),
+    subheading("Waiting for you if you come back"),
+    list([
+      "<strong>Unlimited washes</strong>: keep your car clean every week",
+      "<strong>Save over pay-per-wash</strong>: members save an average of $40 a month",
+      `<strong>Family pricing</strong>: add up to ${MAX_VEHICLES_PER_SUBSCRIPTION - 1} more vehicles, up to ${FAMILY_DISCOUNT_PERCENT}% off`,
+      "<strong>Priority service</strong>: no waiting in the regular line",
+    ]),
+    paragraph(
+      "Rejoining takes under a minute. Your vehicles and history are still saved, so just pick a plan and you're back in.",
+    ),
+    button(plansUrl, "See plans and rejoin"),
+    paragraph("No contract. Cancel anytime, just like before.", { muted: true, small: true }),
+    paragraph(
+      "If something could have been better, we'd love to know. Reply to this email and a real person will read it.",
+    ),
+    signoff(),
+  ].join("\n");
+
+  return {
+    subject: "Your Launch Pad subscription has ended — come back anytime",
+    html: emailLayout({
+      title,
+      preheader: "Your vehicles are still saved if you want to come back.",
+      body,
+      footerNote: "You're getting this because your Launch Pad membership just ended.",
+    }),
+  };
+}
+
+export async function sendSubscriptionCancelledEmail({
+  to,
+  ...params
+}: SubscriptionCancelledEmailParams & { to: string }) {
+  await sendBuilt(to, buildSubscriptionCancelledEmail(params), "cancelled");
+}
+
+// ─────────────────────────────────────────────────────────────
+// 5. FAMILY VEHICLE ADDED
+// ─────────────────────────────────────────────────────────────
+export interface FamilyVehicleAddedEmailParams {
+  name: string;
+  licensePlate: string;
+  newTotal: number; // in dollars
+  billingCycle: string; // "month" | "year"
+  /** 0 on commercial plans, where additional vehicles bill at full price. */
+  discountPercent?: number;
+}
+
+export function buildFamilyVehicleAddedEmail({
+  name,
+  licensePlate,
+  newTotal,
+  billingCycle,
+  discountPercent = 35,
+}: FamilyVehicleAddedEmailParams): BuiltEmail {
+  const isDiscounted = discountPercent > 0;
+  const title = "Vehicle added";
+
+  const body = [
+    heading(title),
+    greeting(name),
+    paragraph(
+      `You've added ${plate(licensePlate)} to your membership${
+        isDiscounted ? ` at ${discountPercent}% off, every ${text(billingCycle)}, with no expiry.` : " at the full plan rate."
+      }`,
+    ),
+    details(
+      [
+        ["Vehicle", plate(licensePlate)],
+        ["New recurring total", recurringTotal(newTotal, billingCycle)],
+      ],
+      { emphasizeLast: true },
+    ),
+    button(BILLING_URL, "View billing"),
+    signoff(),
+  ].join("\n");
+
+  return {
+    subject: isDiscounted
+      ? `${licensePlate} added to your subscription — ${discountPercent}% off`
+      : `${licensePlate} added to your subscription`,
+    html: emailLayout({
+      title,
+      preheader: `${licensePlate} is now on your membership.`,
+      body,
+      footerNote: MEMBER_FOOTER,
+    }),
+  };
+}
+
+export async function sendFamilyVehicleAddedEmail({
+  to,
+  ...params
+}: FamilyVehicleAddedEmailParams & { to: string }) {
+  await sendBuilt(to, buildFamilyVehicleAddedEmail(params), "family vehicle added");
+}
+
+// ─────────────────────────────────────────────────────────────
+// 6. FAMILY VEHICLE REMOVED
+// ─────────────────────────────────────────────────────────────
+export interface FamilyVehicleRemovedEmailParams {
+  name: string;
+  licensePlate: string;
+  newTotal: number; // in dollars
+  billingCycle: string;
+}
+
+export function buildFamilyVehicleRemovedEmail({
+  name,
+  licensePlate,
+  newTotal,
+  billingCycle,
+}: FamilyVehicleRemovedEmailParams): BuiltEmail {
+  const title = "Vehicle unsubscribed";
+
+  const body = [
+    heading(title),
+    greeting(name),
+    paragraph(
+      `${plate(licensePlate)} has been unsubscribed from your membership. Your other vehicles keep their current pricing.`,
+    ),
+    details(
+      [
+        ["Unsubscribed", plate(licensePlate)],
+        ["New recurring total", recurringTotal(newTotal, billingCycle)],
+      ],
+      { emphasizeLast: true },
+    ),
+    notice("A prorated credit for the current period has been applied automatically.", "ok"),
+    button(BILLING_URL, "View billing"),
+    signoff(),
+  ].join("\n");
+
+  return {
+    subject: `${licensePlate} unsubscribed from your family plan`,
+    html: emailLayout({
+      title,
+      preheader: `${licensePlate} is off your membership. Your new total is ${money(newTotal)}/${billingCycle}.`,
+      body,
+      footerNote: MEMBER_FOOTER,
+    }),
+  };
+}
+
+export async function sendFamilyVehicleRemovedEmail({
+  to,
+  ...params
+}: FamilyVehicleRemovedEmailParams & { to: string }) {
+  await sendBuilt(to, buildFamilyVehicleRemovedEmail(params), "family vehicle removed");
+}
+
+// ─────────────────────────────────────────────────────────────
+// 7. PRIMARY VEHICLE SWAPPED
+// ─────────────────────────────────────────────────────────────
+export interface PrimaryVehicleSwappedEmailParams {
+  name: string;
+  oldPrimaryLabel: string;
+  newPrimaryLabel: string;
+  newTotal: number; // in dollars
+  billingCycle: string;
+}
+
+export function buildPrimaryVehicleSwappedEmail({
+  name,
+  oldPrimaryLabel,
+  newPrimaryLabel,
+  newTotal,
+  billingCycle,
+}: PrimaryVehicleSwappedEmailParams): BuiltEmail {
+  const title = "Your primary vehicle changed";
+
+  const body = [
+    heading(title),
+    greeting(name),
+    paragraph(
+      `You unsubscribed <strong>${text(oldPrimaryLabel)}</strong>, your primary vehicle. Since you still have other vehicles on your membership, <strong>${text(newPrimaryLabel)}</strong> is now your primary vehicle. It bills at the full plan rate and anchors the family discount for your other vehicles.`,
+    ),
+    details(
+      [
+        ["Unsubscribed", text(oldPrimaryLabel)],
+        ["New primary vehicle", text(newPrimaryLabel)],
+        ["New recurring total", recurringTotal(newTotal, billingCycle)],
+      ],
+      { emphasizeLast: true },
+    ),
+    button(BILLING_URL, "View billing"),
+    signoff(),
+  ].join("\n");
+
+  return {
+    subject: `Your primary vehicle is now ${newPrimaryLabel}`,
+    html: emailLayout({
+      title,
+      preheader: `${newPrimaryLabel} is now your primary vehicle.`,
+      body,
+      footerNote: MEMBER_FOOTER,
+    }),
+  };
+}
+
+export async function sendPrimaryVehicleSwappedEmail({
+  to,
+  ...params
+}: PrimaryVehicleSwappedEmailParams & { to: string }) {
+  await sendBuilt(to, buildPrimaryVehicleSwappedEmail(params), "primary vehicle swapped");
+}
+
+// ─────────────────────────────────────────────────────────────
+// LEGACY WRAPPER: no longer used by this file. Kept only because
+// product-order-emails.ts still imports it; delete once nothing does.
+// ─────────────────────────────────────────────────────────────
+const LEGACY_BASE_STYLES = `
   body { margin:0; padding:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',sans-serif; background:#f8f8f8; }
   .wrap { max-width:600px; margin:0 auto; background:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,0.08); }
   .header { padding:40px 24px; text-align:center; color:#ffffff; }
@@ -36,6 +500,7 @@ const BASE_STYLES = `
   @media(max-width:600px){ .body{padding:24px 20px;} .header{padding:32px 20px;} }
 `;
 
+/** @deprecated Use emailLayout() from ./layout. */
 export function emailWrapper(
   headerBg: string,
   headerContent: string,
@@ -47,7 +512,7 @@ export function emailWrapper(
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <style>${BASE_STYLES}</style>
+  <style>${LEGACY_BASE_STYLES}</style>
 </head>
 <body>
   <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#f8f8f8;">
@@ -66,549 +531,4 @@ export function emailWrapper(
   </table>
 </body>
 </html>`;
-}
-
-// ─────────────────────────────────────────────────────────────
-// 1. SUBSCRIPTION INVOICE / RECEIPT
-// ─────────────────────────────────────────────────────────────
-export async function sendSubscriptionInvoiceEmail({
-  to,
-  name,
-  amountPaid,
-  billingPeriodStart,
-  billingPeriodEnd,
-  invoiceUrl,
-  isRenewal,
-}: {
-  to: string;
-  name: string;
-  amountPaid: number; // in dollars
-  billingPeriodStart: string; // e.g. "June 1, 2025"
-  billingPeriodEnd: string;   // e.g. "June 30, 2025"
-  invoiceUrl?: string | null;
-  isRenewal: boolean;
-}) {
-  const billingUrl = `${SITE_URL}/dashboard/billing`;
-
-  const header = `
-    <div style="font-size:48px;margin-bottom:12px;">✅</div>
-    <h1>${isRenewal ? "Subscription Renewed" : "Welcome to The Launch Pad!"}</h1>
-    <p>${isRenewal ? "Your monthly plan has been renewed successfully" : "Your subscription is now active"}</p>
-  `;
-
-  const body = `
-    <p>Hi <strong>${name}</strong>,</p>
-    <p>
-      ${isRenewal
-        ? "Your subscription has been successfully renewed. Here's a summary of your payment:"
-        : "Thank you for subscribing! Your first payment has been processed. Here's your receipt:"}
-    </p>
-
-    <div class="card" style="border:1px solid #bbf7d0;background:#f0fdf4;">
-      <table cellpadding="0" cellspacing="0" border="0" width="100%">
-        <tr>
-          <td style="font-size:14px;color:#6b7280;padding:4px 0;">Amount Paid</td>
-          <td align="right" style="font-size:20px;font-weight:700;color:#0f172a;">$${amountPaid.toFixed(2)}</td>
-        </tr>
-        <tr>
-          <td style="font-size:14px;color:#6b7280;padding:4px 0;">Billing Period</td>
-          <td align="right" style="font-size:14px;color:#374151;">${billingPeriodStart} – ${billingPeriodEnd}</td>
-        </tr>
-        <tr>
-          <td style="font-size:14px;color:#6b7280;padding:4px 0;">Status</td>
-          <td align="right" style="font-size:14px;color:#16a34a;font-weight:600;">Paid ✓</td>
-        </tr>
-      </table>
-    </div>
-
-    ${invoiceUrl ? `
-    <div class="cta">
-      <a href="${invoiceUrl}" class="btn" style="background:linear-gradient(135deg,#1d4ed8,#1e40af);">
-        View Full Invoice →
-      </a>
-    </div>
-    ` : ""}
-
-    <p style="font-size:14px;color:#6b7280;text-align:center;">
-      You can also view your billing history and manage your plan from your
-      <a href="${billingUrl}" style="color:#1d4ed8;">billing page</a>.
-    </p>
-
-    <p>Thank you for being a member — we'll see you at the pad! 🚀</p>
-    <p>— The Launch Pad Wash Team</p>
-  `;
-
-  const { error } = await resend.emails.send({
-    from: FROM,
-    to,
-    subject: isRenewal
-      ? `✅ Your subscription has been renewed — $${amountPaid.toFixed(2)} charged`
-      : `✅ Payment confirmed — welcome to The Launch Pad Wash!`,
-    html: emailWrapper(
-      "linear-gradient(135deg,#16a34a 0%,#15803d 100%)",
-      header,
-      body
-    ),
-  });
-
-  if (error) console.error("[email] subscription invoice send error:", error);
-  else console.log("[email] subscription invoice email sent to:", to);
-}
-
-// ─────────────────────────────────────────────────────────────
-// 2. PAYMENT FAILED — update card urgency email
-// ─────────────────────────────────────────────────────────────
-export async function sendPaymentFailedEmail({
-  to,
-  name,
-  attemptCount,
-}: {
-  to: string;
-  name: string;
-  attemptCount?: number;
-}) {
-  const isLastAttempt = (attemptCount ?? 1) >= 3;
-  const updateUrl = `${SITE_URL}/dashboard/billing`;
-
-  const header = `
-    <div style="font-size:48px;margin-bottom:12px;">⚠️</div>
-    <h1>Payment Failed</h1>
-    <p>${isLastAttempt ? "Final notice — action required today" : "We couldn't charge your card"}</p>
-  `;
-
-  const body = `
-    <p>Hi <strong>${name}</strong>,</p>
-    <p>
-      We attempted to process your monthly subscription payment but were unable to
-      complete the charge. To keep your Express Detailing benefits active, please
-      update your payment method as soon as possible.
-    </p>
-
-    <div class="card" style="border:1px solid #fecaca;background:#fef2f2;">
-      <p><strong style="color:#ef4444;">What happens if you don't act:</strong></p>
-      <ul class="list" style="margin-top:10px;">
-        <li><span>❌</span> Your subscription will be suspended after failed retries</li>
-        <li><span>❌</span> You'll lose access to unlimited express washes</li>
-        <li><span>❌</span> Your family vehicle discounts will be removed</li>
-      </ul>
-    </div>
-
-    <div class="cta">
-      <a href="${updateUrl}" class="btn" style="background:linear-gradient(135deg,#ef4444,#dc2626);">
-        Update Payment Method
-      </a>
-    </div>
-
-    <p style="font-size:14px;color:#6b7280;text-align:center;">
-      Takes less than a minute. Your subscription resumes immediately after a
-      successful charge.
-    </p>
-
-    <p>If you have any questions, just reply to this email or visit our
-      <a href="${SITE_URL}/contact" style="color:#1d4ed8;">support page</a>.
-      We're happy to help.
-    </p>
-
-    <p>— The Launch Pad Wash Team 🚀</p>
-  `;
-
-  const { error } = await resend.emails.send({
-    from: FROM,
-    to,
-    subject: isLastAttempt
-      ? "🚨 Final notice: Your subscription will be cancelled — update your card now"
-      : "⚠️ Action needed: Your payment failed — update your card",
-    html: emailWrapper(
-      "linear-gradient(135deg,#ef4444 0%,#b91c1c 100%)",
-      header,
-      body
-    ),
-  });
-
-  if (error) console.error("[email] payment failed send error:", error);
-  else console.log("[email] payment failed email sent to:", to);
-}
-
-// ─────────────────────────────────────────────────────────────
-// 2. CANCELLATION SCHEDULED — retention email
-// ─────────────────────────────────────────────────────────────
-export async function sendCancellationScheduledEmail({
-  to,
-  name,
-  periodEndDate,
-}: {
-  to: string;
-  name: string;
-  periodEndDate: string; // human-readable e.g. "June 15, 2025"
-}) {
-  const billingUrl = `${SITE_URL}/dashboard/billing`;
-
-  const header = `
-    <div style="font-size:48px;margin-bottom:12px;">😢</div>
-    <h1>We'll Miss You</h1>
-    <p>Your plan is scheduled to cancel on ${periodEndDate}</p>
-  `;
-
-  const body = `
-    <p>Hi <strong>${name}</strong>,</p>
-    <p>
-      You've requested to cancel your Express Detailing subscription. We completely
-      understand — and we want to make sure you know you still have full access
-      until <strong>${periodEndDate}</strong>.
-    </p>
-
-    <div class="card">
-      <p><strong>What you'll lose when your plan ends:</strong></p>
-      <ul class="list" style="margin-top:10px;">
-        <li><span>🚗</span> Unlimited express car washes every month</li>
-        <li><span>💰</span> Family pricing on additional vehicles — up to ${FAMILY_DISCOUNT_PERCENT}% off</li>
-        <li><span>⚡</span> Priority service — skip the regular queue</li>
-        <li><span>📅</span> Flexible walk-in bookings — no appointment needed</li>
-      </ul>
-    </div>
-
-    <p>
-      Changed your mind? You can keep your subscription active with one click —
-      no re-enrollment needed, and your vehicles stay linked.
-    </p>
-
-    <div class="cta">
-      <a href="${billingUrl}" class="btn" style="background:linear-gradient(135deg,#1d4ed8,#1e40af);">
-        Keep My Subscription
-      </a>
-    </div>
-
-    <p style="font-size:14px;color:#6b7280;text-align:center;">
-      Your plan is still active until ${periodEndDate}. You can reactivate anytime
-      before then from your billing page.
-    </p>
-
-    <p>
-      If there's something we could have done better, we'd genuinely love to hear it.
-      Just reply to this email — your feedback helps us improve.
-    </p>
-
-    <p>— The Launch Pad Wash Team 🚀</p>
-  `;
-
-  const { error } = await resend.emails.send({
-    from: FROM,
-    to,
-    subject: `Your plan ends ${periodEndDate} — keep your subscription active`,
-    html: emailWrapper(
-      "linear-gradient(135deg,#1d4ed8 0%,#1e3a8a 100%)",
-      header,
-      body
-    ),
-  });
-
-  if (error) console.error("[email] cancellation scheduled send error:", error);
-  else console.log("[email] cancellation scheduled email sent to:", to);
-}
-
-// ─────────────────────────────────────────────────────────────
-// 3. SUBSCRIPTION CANCELLED — win-back email
-// ─────────────────────────────────────────────────────────────
-export async function sendSubscriptionCancelledEmail({
-  to,
-  name,
-}: {
-  to: string;
-  name: string;
-}) {
-  const plansUrl = `${SITE_URL}/dashboard/pricing`;
-
-  const header = `
-    <div style="font-size:48px;margin-bottom:12px;">👋</div>
-    <h1>Your Subscription Has Ended</h1>
-    <p>We hope to see you again soon</p>
-  `;
-
-  const body = `
-    <p>Hi <strong>${name}</strong>,</p>
-    <p>
-      Your Express Detailing subscription has officially ended. We're grateful for
-      the time you were a member — it was genuinely great having you.
-    </p>
-
-    <div class="card">
-      <p><strong>What's waiting for you when you come back:</strong></p>
-      <ul class="list" style="margin-top:10px;">
-        <li><span>✨</span> <span><strong>Unlimited washes</strong> — keep your car spotless every week</span></li>
-        <li><span>💸</span> <span><strong>Save vs. pay-per-wash</strong> — members save an average of $40/month</span></li>
-        <li><span>👨‍👩‍👧</span> <span><strong>Family plan</strong> — add up to ${MAX_VEHICLES_PER_SUBSCRIPTION - 1} extra vehicles, up to ${FAMILY_DISCOUNT_PERCENT}% off</span></li>
-        <li><span>⚡</span> <span><strong>Priority service</strong> — no waiting in the regular line</span></li>
-      </ul>
-    </div>
-
-    <p>
-      Re-subscribing takes under a minute. Your vehicles and history are still
-      saved — just pick a plan and you're back in.
-    </p>
-
-    <div class="cta">
-      <a href="${plansUrl}" class="btn" style="background:linear-gradient(135deg,#059669,#047857);">
-        View Plans &amp; Re-Subscribe
-      </a>
-    </div>
-
-    <p style="font-size:14px;color:#6b7280;text-align:center;">
-      No commitment required. Cancel anytime, just like before.
-    </p>
-
-    <p>
-      We're always improving — if something could have been better, we'd love to know.
-      Reply to this email and a real person will read it.
-    </p>
-
-    <p>Hope to see you back at the pad soon.</p>
-    <p>— The Launch Pad Wash Team 🚀</p>
-  `;
-
-  const { error } = await resend.emails.send({
-    from: FROM,
-    to,
-    subject: "Your Launch Pad subscription has ended — come back anytime 👋",
-    html: emailWrapper(
-      "linear-gradient(135deg,#374151 0%,#1f2937 100%)",
-      header,
-      body
-    ),
-  });
-
-  if (error) console.error("[email] cancelled send error:", error);
-  else console.log("[email] cancelled email sent to:", to);
-}
-
-// ─────────────────────────────────────────────────────────────
-// 4. FAMILY VEHICLE ADDED
-// ─────────────────────────────────────────────────────────────
-export async function sendFamilyVehicleAddedEmail({
-  to,
-  name,
-  licensePlate,
-  newTotal,
-  billingCycle,
-  discountPercent = 35,
-}: {
-  to: string;
-  name: string;
-  licensePlate: string;
-  newTotal: number; // in dollars
-  billingCycle: string; // "month" | "year"
-  /** 0 on commercial plans, where additional vehicles bill at full price. */
-  discountPercent?: number;
-}) {
-  const billingUrl = `${SITE_URL}/dashboard/billing`;
-  const isDiscounted = discountPercent > 0;
-
-  const header = `
-    <div style="font-size:48px;margin-bottom:12px;">🚗</div>
-    <h1>Vehicle Added</h1>
-    <p>${licensePlate} is now on your plan</p>
-  `;
-
-  const body = `
-    <p>Hi <strong>${name}</strong>,</p>
-    <p>
-      You've added <strong>${licensePlate}</strong> to your Express Detailing
-      subscription${
-        isDiscounted
-          ? ` at ${discountPercent}% off — every month, no expiry.`
-          : ` at the full plan rate.`
-      }
-    </p>
-
-    <div class="card" style="border:1px solid #bbf7d0;background:#f0fdf4;">
-      <table cellpadding="0" cellspacing="0" border="0" width="100%">
-        <tr>
-          <td style="font-size:14px;color:#6b7280;padding:4px 0;">Vehicle Added</td>
-          <td align="right" style="font-size:14px;color:#374151;">${licensePlate}</td>
-        </tr>
-        <tr>
-          <td style="font-size:14px;color:#6b7280;padding:4px 0;">New Recurring Total</td>
-          <td align="right" style="font-size:20px;font-weight:700;color:#0f172a;">
-            $${newTotal.toFixed(2)}/${billingCycle}
-          </td>
-        </tr>
-      </table>
-    </div>
-
-    <div class="cta">
-      <a href="${billingUrl}" class="btn" style="background:linear-gradient(135deg,#16a34a,#15803d);">
-        View Billing
-      </a>
-    </div>
-
-    <p>— The Launch Pad Wash Team 🚀</p>
-  `;
-
-  const { error } = await resend.emails.send({
-    from: FROM,
-    to,
-    subject: isDiscounted
-      ? `✅ ${licensePlate} added to your subscription — ${discountPercent}% off`
-      : `✅ ${licensePlate} added to your subscription`,
-    html: emailWrapper(
-      "linear-gradient(135deg,#16a34a 0%,#15803d 100%)",
-      header,
-      body
-    ),
-  });
-
-  if (error) console.error("[email] family vehicle added send error:", error);
-  else console.log("[email] family vehicle added email sent to:", to);
-}
-
-// ─────────────────────────────────────────────────────────────
-// 5. FAMILY VEHICLE REMOVED
-// ─────────────────────────────────────────────────────────────
-export async function sendFamilyVehicleRemovedEmail({
-  to,
-  name,
-  licensePlate,
-  newTotal,
-  billingCycle,
-}: {
-  to: string;
-  name: string;
-  licensePlate: string;
-  newTotal: number; // in dollars
-  billingCycle: string;
-}) {
-  const billingUrl = `${SITE_URL}/dashboard/billing`;
-
-  const header = `
-    <div style="font-size:48px;margin-bottom:12px;">👋</div>
-    <h1>Vehicle Unsubscribed</h1>
-    <p>${licensePlate} has been removed from your plan</p>
-  `;
-
-  const body = `
-    <p>Hi <strong>${name}</strong>,</p>
-    <p>
-      <strong>${licensePlate}</strong> has been unsubscribed from your Express
-      Detailing family plan. Your other vehicles keep their current pricing.
-    </p>
-
-    <div class="card">
-      <table cellpadding="0" cellspacing="0" border="0" width="100%">
-        <tr>
-          <td style="font-size:14px;color:#6b7280;padding:4px 0;">Vehicle Removed</td>
-          <td align="right" style="font-size:14px;color:#374151;">${licensePlate}</td>
-        </tr>
-        <tr>
-          <td style="font-size:14px;color:#6b7280;padding:4px 0;">New Recurring Total</td>
-          <td align="right" style="font-size:20px;font-weight:700;color:#0f172a;">
-            $${newTotal.toFixed(2)}/${billingCycle}
-          </td>
-        </tr>
-      </table>
-    </div>
-
-    <p style="font-size:14px;color:#6b7280;text-align:center;">
-      A prorated credit for the current period has been applied automatically.
-    </p>
-
-    <div class="cta">
-      <a href="${billingUrl}" class="btn" style="background:linear-gradient(135deg,#1d4ed8,#1e40af);">
-        View Billing
-      </a>
-    </div>
-
-    <p>— The Launch Pad Wash Team 🚀</p>
-  `;
-
-  const { error } = await resend.emails.send({
-    from: FROM,
-    to,
-    subject: `${licensePlate} unsubscribed from your family plan`,
-    html: emailWrapper(
-      "linear-gradient(135deg,#374151 0%,#1f2937 100%)",
-      header,
-      body
-    ),
-  });
-
-  if (error) console.error("[email] family vehicle removed send error:", error);
-  else console.log("[email] family vehicle removed email sent to:", to);
-}
-
-// ─────────────────────────────────────────────────────────────
-// 6. PRIMARY VEHICLE SWAPPED
-// ─────────────────────────────────────────────────────────────
-export async function sendPrimaryVehicleSwappedEmail({
-  to,
-  name,
-  oldPrimaryLabel,
-  newPrimaryLabel,
-  newTotal,
-  billingCycle,
-}: {
-  to: string;
-  name: string;
-  oldPrimaryLabel: string;
-  newPrimaryLabel: string;
-  newTotal: number; // in dollars
-  billingCycle: string;
-}) {
-  const billingUrl = `${SITE_URL}/dashboard/billing`;
-
-  const header = `
-    <div style="font-size:48px;margin-bottom:12px;">🔄</div>
-    <h1>Primary Vehicle Updated</h1>
-    <p>${newPrimaryLabel} is now your primary vehicle</p>
-  `;
-
-  const body = `
-    <p>Hi <strong>${name}</strong>,</p>
-    <p>
-      You unsubscribed <strong>${oldPrimaryLabel}</strong> as your primary
-      vehicle. Since you still have other vehicles on your plan, we've made
-      <strong>${newPrimaryLabel}</strong> your new primary vehicle — it now
-      bills at the full plan rate and anchors your family discount for any
-      remaining vehicles.
-    </p>
-
-    <div class="card" style="border:1px solid #bfdbfe;background:#eff6ff;">
-      <table cellpadding="0" cellspacing="0" border="0" width="100%">
-        <tr>
-          <td style="font-size:14px;color:#6b7280;padding:4px 0;">Unsubscribed</td>
-          <td align="right" style="font-size:14px;color:#374151;">${oldPrimaryLabel}</td>
-        </tr>
-        <tr>
-          <td style="font-size:14px;color:#6b7280;padding:4px 0;">New Primary Vehicle</td>
-          <td align="right" style="font-size:14px;color:#374151;">${newPrimaryLabel}</td>
-        </tr>
-        <tr>
-          <td style="font-size:14px;color:#6b7280;padding:4px 0;">New Recurring Total</td>
-          <td align="right" style="font-size:20px;font-weight:700;color:#0f172a;">
-            $${newTotal.toFixed(2)}/${billingCycle}
-          </td>
-        </tr>
-      </table>
-    </div>
-
-    <div class="cta">
-      <a href="${billingUrl}" class="btn" style="background:linear-gradient(135deg,#1d4ed8,#1e40af);">
-        View Billing
-      </a>
-    </div>
-
-    <p>— The Launch Pad Wash Team 🚀</p>
-  `;
-
-  const { error } = await resend.emails.send({
-    from: FROM,
-    to,
-    subject: `Your primary vehicle is now ${newPrimaryLabel}`,
-    html: emailWrapper(
-      "linear-gradient(135deg,#1d4ed8 0%,#1e3a8a 100%)",
-      header,
-      body
-    ),
-  });
-
-  if (error) console.error("[email] primary vehicle swapped send error:", error);
-  else console.log("[email] primary vehicle swapped email sent to:", to);
 }

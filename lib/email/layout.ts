@@ -13,7 +13,7 @@
 import { escapeHtml } from "./escapeHtml";
 
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.thelaunchpadwash.com";
-export const FROM = "The Launch Pad <noreply@thelaunchpadwash.com>";
+export const FROM = "The Launch Pad Wash <noreply@thelaunchpadwash.com>";
 
 /** Hex equivalents of the brand tokens in app/globals.css. */
 export const EMAIL_COLORS = {
