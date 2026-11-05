@@ -40,7 +40,17 @@ const BODY_TYPES = [
   "Other",
 ];
 
+/**
+ * Mounted in the root layout on every page, so it renders (and fetches)
+ * nothing until it is opened: the vehicle and membership queries run when a
+ * customer actually starts a booking, not on every page load.
+ */
 export default function BookingModal() {
+  const { isBookingModalOpen } = useBooking();
+  return isBookingModalOpen ? <BookingModalContent /> : null;
+}
+
+function BookingModalContent() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const { closeBookingModal } = useBooking();
