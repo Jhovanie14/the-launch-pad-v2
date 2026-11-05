@@ -1,312 +1,344 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-04T23:15:48.261Z",
+  "generatedAt": "2026-11-05T16:46:21.000Z",
   "title": "Design System: The Launch Pad",
   "extensions": {
     "colorMeta": {
-      "signal-amber": {
+      "flame": {
         "role": "primary",
-        "displayName": "Signal Amber",
-        "canonical": "oklch(82.8% 0.189 84.429)",
+        "displayName": "Flame",
+        "canonical": "oklch(0.86 0.165 88)",
         "tonalRamp": [
-          "oklch(27.9% 0.077 45.635)",
-          "oklch(41.4% 0.112 45.904)",
-          "oklch(47.3% 0.137 46.201)",
-          "oklch(55.5% 0.163 48.998)",
-          "oklch(66.6% 0.179 58.318)",
-          "oklch(82.8% 0.189 84.429)",
-          "oklch(92.4% 0.12 95.746)",
-          "oklch(98.7% 0.022 95.277)"
+          "oklch(0.15 0.099 88)",
+          "oklch(0.26 0.140 88)",
+          "oklch(0.36 0.165 88)",
+          "oklch(0.48 0.165 88)",
+          "oklch(0.60 0.165 88)",
+          "oklch(0.74 0.132 88)",
+          "oklch(0.88 0.066 88)",
+          "oklch(0.96 0.020 88)"
         ],
-        "utility": "amber-400"
+        "utility": "--lp-flame / bg-flame"
       },
-      "signal-amber-bright": {
+      "flame-bright": {
         "role": "primary",
-        "displayName": "Signal Amber Bright",
-        "canonical": "oklch(87.9% 0.169 91.605)",
+        "displayName": "Flame Bright",
+        "canonical": "oklch(0.91 0.14 94)",
         "tonalRamp": [
-          "oklch(27.9% 0.077 45.635)",
-          "oklch(41.4% 0.112 45.904)",
-          "oklch(47.3% 0.137 46.201)",
-          "oklch(55.5% 0.163 48.998)",
-          "oklch(66.6% 0.179 58.318)",
-          "oklch(82.8% 0.189 84.429)",
-          "oklch(92.4% 0.12 95.746)",
-          "oklch(98.7% 0.022 95.277)"
+          "oklch(0.15 0.099 88)",
+          "oklch(0.26 0.140 88)",
+          "oklch(0.36 0.165 88)",
+          "oklch(0.48 0.165 88)",
+          "oklch(0.60 0.165 88)",
+          "oklch(0.74 0.132 88)",
+          "oklch(0.88 0.066 88)",
+          "oklch(0.96 0.020 88)"
         ],
-        "utility": "amber-300"
+        "utility": "--lp-flame-bright / bg-flame-bright"
       },
-      "signal-ink": {
+      "on-flame": {
         "role": "primary",
-        "displayName": "Signal Ink",
-        "canonical": "oklch(27.9% 0.077 45.635)",
+        "displayName": "On Flame (navy)",
+        "canonical": "oklch(0.2 0.07 262)",
         "tonalRamp": [
-          "oklch(27.9% 0.077 45.635)",
-          "oklch(41.4% 0.112 45.904)",
-          "oklch(47.3% 0.137 46.201)",
-          "oklch(55.5% 0.163 48.998)",
-          "oklch(66.6% 0.179 58.318)",
-          "oklch(82.8% 0.189 84.429)",
-          "oklch(92.4% 0.12 95.746)",
-          "oklch(98.7% 0.022 95.277)"
+          "oklch(0.15 0.054 261)",
+          "oklch(0.26 0.076 261)",
+          "oklch(0.36 0.090 261)",
+          "oklch(0.48 0.090 261)",
+          "oklch(0.60 0.090 261)",
+          "oklch(0.74 0.072 261)",
+          "oklch(0.88 0.036 261)",
+          "oklch(0.96 0.011 261)"
         ],
-        "utility": "amber-950"
+        "utility": "--color-on-flame / text-on-flame"
       },
-      "self-service-sky": {
+      "brand-blue": {
+        "role": "secondary",
+        "displayName": "Brand Blue",
+        "canonical": "oklch(0.5 0.15 258)",
+        "tonalRamp": [
+          "oklch(0.15 0.090 258)",
+          "oklch(0.26 0.128 258)",
+          "oklch(0.36 0.150 258)",
+          "oklch(0.48 0.150 258)",
+          "oklch(0.60 0.150 258)",
+          "oklch(0.74 0.120 258)",
+          "oklch(0.88 0.060 258)",
+          "oklch(0.96 0.018 258)"
+        ],
+        "utility": "--lp-blue / focus, brand-blue, shadcn --ring"
+      },
+      "brand-red": {
+        "role": "tertiary",
+        "displayName": "Brand Red",
+        "canonical": "oklch(0.64 0.21 25)",
+        "tonalRamp": [
+          "oklch(0.15 0.120 25)",
+          "oklch(0.26 0.170 25)",
+          "oklch(0.36 0.200 25)",
+          "oklch(0.48 0.200 25)",
+          "oklch(0.60 0.200 25)",
+          "oklch(0.74 0.160 25)",
+          "oklch(0.88 0.080 25)",
+          "oklch(0.96 0.024 25)"
+        ],
+        "utility": "--lp-red / brand-red, svc-member-mark"
+      },
+      "svc-self": {
         "role": "secondary",
         "displayName": "Self-service Sky",
-        "canonical": "oklch(82.8% 0.111 230.318)",
+        "canonical": "oklch(0.8 0.11 232)",
         "tonalRamp": [
-          "oklch(29.3% 0.066 243.157)",
-          "oklch(39.1% 0.09 240.876)",
-          "oklch(44.3% 0.11 240.79)",
-          "oklch(50% 0.134 242.749)",
-          "oklch(58.8% 0.158 241.966)",
-          "oklch(74.6% 0.16 232.661)",
-          "oklch(90.1% 0.058 230.902)",
-          "oklch(97.7% 0.013 236.62)"
+          "oklch(0.15 0.078 232)",
+          "oklch(0.26 0.111 232)",
+          "oklch(0.36 0.130 232)",
+          "oklch(0.48 0.130 232)",
+          "oklch(0.60 0.130 232)",
+          "oklch(0.74 0.104 232)",
+          "oklch(0.88 0.052 232)",
+          "oklch(0.96 0.016 232)"
         ],
-        "utility": "sky-300"
+        "utility": "--lp-sky / text-svc-self"
       },
-      "self-service-sky-dot": {
+      "svc-self-mark": {
         "role": "secondary",
-        "displayName": "Self-service Sky Dot",
-        "canonical": "oklch(74.6% 0.16 232.661)",
+        "displayName": "Self-service Sky Mark",
+        "canonical": "oklch(0.58 0.14 240)",
         "tonalRamp": [
-          "oklch(29.3% 0.066 243.157)",
-          "oklch(39.1% 0.09 240.876)",
-          "oklch(44.3% 0.11 240.79)",
-          "oklch(50% 0.134 242.749)",
-          "oklch(58.8% 0.158 241.966)",
-          "oklch(74.6% 0.16 232.661)",
-          "oklch(90.1% 0.058 230.902)",
-          "oklch(97.7% 0.013 236.62)"
+          "oklch(0.15 0.078 232)",
+          "oklch(0.26 0.111 232)",
+          "oklch(0.36 0.130 232)",
+          "oklch(0.48 0.130 232)",
+          "oklch(0.60 0.130 232)",
+          "oklch(0.74 0.104 232)",
+          "oklch(0.88 0.052 232)",
+          "oklch(0.96 0.016 232)"
         ],
-        "utility": "sky-400"
+        "utility": "--lp-sky-deep / text-svc-self-mark"
       },
-      "membership-violet": {
+      "svc-detail-mark": {
         "role": "tertiary",
-        "displayName": "Membership Violet",
-        "canonical": "oklch(81.1% 0.111 293.571)",
+        "displayName": "Detailing Mark",
+        "canonical": "oklch(0.6 0.15 58)",
         "tonalRamp": [
-          "oklch(28.3% 0.141 291.089)",
-          "oklch(38% 0.189 293.745)",
-          "oklch(43.2% 0.232 292.759)",
-          "oklch(49.1% 0.27 292.581)",
-          "oklch(54.1% 0.281 293.009)",
-          "oklch(70.2% 0.183 293.541)",
-          "oklch(89.4% 0.057 293.283)",
-          "oklch(96.9% 0.016 293.756)"
+          "oklch(0.15 0.099 88)",
+          "oklch(0.26 0.140 88)",
+          "oklch(0.36 0.165 88)",
+          "oklch(0.48 0.165 88)",
+          "oklch(0.60 0.165 88)",
+          "oklch(0.74 0.132 88)",
+          "oklch(0.88 0.066 88)",
+          "oklch(0.96 0.020 88)"
         ],
-        "utility": "violet-300"
+        "utility": "--lp-flame-deep / text-svc-detail-mark"
       },
-      "membership-violet-dot": {
+      "svc-member": {
         "role": "tertiary",
-        "displayName": "Membership Violet Dot",
-        "canonical": "oklch(70.2% 0.183 293.541)",
+        "displayName": "Membership Red Soft",
+        "canonical": "oklch(0.74 0.16 22)",
         "tonalRamp": [
-          "oklch(28.3% 0.141 291.089)",
-          "oklch(38% 0.189 293.745)",
-          "oklch(43.2% 0.232 292.759)",
-          "oklch(49.1% 0.27 292.581)",
-          "oklch(54.1% 0.281 293.009)",
-          "oklch(70.2% 0.183 293.541)",
-          "oklch(89.4% 0.057 293.283)",
-          "oklch(96.9% 0.016 293.756)"
+          "oklch(0.15 0.120 25)",
+          "oklch(0.26 0.170 25)",
+          "oklch(0.36 0.200 25)",
+          "oklch(0.48 0.200 25)",
+          "oklch(0.60 0.200 25)",
+          "oklch(0.74 0.160 25)",
+          "oklch(0.88 0.080 25)",
+          "oklch(0.96 0.024 25)"
         ],
-        "utility": "violet-400"
+        "utility": "--lp-red-soft / text-svc-member"
       },
       "night": {
         "role": "neutral",
         "displayName": "Night",
-        "canonical": "oklch(12.9% 0.042 264.695)",
+        "canonical": "oklch(0.2 0.07 262)",
         "tonalRamp": [
-          "oklch(12.9% 0.042 264.695)",
-          "oklch(20.8% 0.042 265.755)",
-          "oklch(27.9% 0.041 260.031)",
-          "oklch(37.2% 0.044 257.287)",
-          "oklch(44.6% 0.043 257.281)",
-          "oklch(70.4% 0.04 256.788)",
-          "oklch(92.9% 0.013 255.508)",
-          "oklch(98.4% 0.003 247.858)"
+          "oklch(0.15 0.054 261)",
+          "oklch(0.26 0.076 261)",
+          "oklch(0.36 0.090 261)",
+          "oklch(0.48 0.090 261)",
+          "oklch(0.60 0.090 261)",
+          "oklch(0.74 0.072 261)",
+          "oklch(0.88 0.036 261)",
+          "oklch(0.96 0.011 261)"
         ],
-        "utility": "slate-950"
+        "utility": "--lp-navy-950 / bg-night, ink, shadcn --primary"
       },
       "dusk": {
         "role": "neutral",
         "displayName": "Dusk",
-        "canonical": "oklch(20.8% 0.042 265.755)",
+        "canonical": "oklch(0.265 0.085 261)",
         "tonalRamp": [
-          "oklch(12.9% 0.042 264.695)",
-          "oklch(20.8% 0.042 265.755)",
-          "oklch(27.9% 0.041 260.031)",
-          "oklch(37.2% 0.044 257.287)",
-          "oklch(44.6% 0.043 257.281)",
-          "oklch(70.4% 0.04 256.788)",
-          "oklch(92.9% 0.013 255.508)",
-          "oklch(98.4% 0.003 247.858)"
+          "oklch(0.15 0.054 261)",
+          "oklch(0.26 0.076 261)",
+          "oklch(0.36 0.090 261)",
+          "oklch(0.48 0.090 261)",
+          "oklch(0.60 0.090 261)",
+          "oklch(0.74 0.072 261)",
+          "oklch(0.88 0.036 261)",
+          "oklch(0.96 0.011 261)"
         ],
-        "utility": "slate-900"
+        "utility": "--lp-navy-900 / bg-dusk"
       },
-      "graphite": {
+      "night-raised": {
         "role": "neutral",
-        "displayName": "Graphite",
-        "canonical": "oklch(27.9% 0.041 260.031)",
+        "displayName": "Night Raised",
+        "canonical": "oklch(0.33 0.1 260)",
         "tonalRamp": [
-          "oklch(12.9% 0.042 264.695)",
-          "oklch(20.8% 0.042 265.755)",
-          "oklch(27.9% 0.041 260.031)",
-          "oklch(37.2% 0.044 257.287)",
-          "oklch(44.6% 0.043 257.281)",
-          "oklch(70.4% 0.04 256.788)",
-          "oklch(92.9% 0.013 255.508)",
-          "oklch(98.4% 0.003 247.858)"
+          "oklch(0.15 0.054 261)",
+          "oklch(0.26 0.076 261)",
+          "oklch(0.36 0.090 261)",
+          "oklch(0.48 0.090 261)",
+          "oklch(0.60 0.090 261)",
+          "oklch(0.74 0.072 261)",
+          "oklch(0.88 0.036 261)",
+          "oklch(0.96 0.011 261)"
         ],
-        "utility": "slate-800"
+        "utility": "--lp-navy-800 / bg-night-raised"
       },
-      "pale-steel": {
+      "on-night-muted": {
         "role": "neutral",
-        "displayName": "Pale Steel",
-        "canonical": "oklch(96.8% 0.007 247.896)",
+        "displayName": "On Night Muted",
+        "canonical": "oklch(0.85 0.035 255)",
         "tonalRamp": [
-          "oklch(12.9% 0.042 264.695)",
-          "oklch(20.8% 0.042 265.755)",
-          "oklch(27.9% 0.041 260.031)",
-          "oklch(37.2% 0.044 257.287)",
-          "oklch(44.6% 0.043 257.281)",
-          "oklch(70.4% 0.04 256.788)",
-          "oklch(92.9% 0.013 255.508)",
-          "oklch(98.4% 0.003 247.858)"
+          "oklch(0.2 0.07 262)",
+          "oklch(0.33 0.1 260)",
+          "oklch(0.46 0.04 258)",
+          "oklch(0.55 0.04 258)",
+          "oklch(0.73 0.045 255)",
+          "oklch(0.85 0.035 255)",
+          "oklch(0.91 0.016 255)",
+          "oklch(0.975 0.006 250)"
         ],
-        "utility": "slate-100"
+        "utility": "--lp-on-night-muted / text-on-night-muted"
       },
-      "mist": {
+      "on-night-subtle": {
         "role": "neutral",
-        "displayName": "Mist",
-        "canonical": "oklch(92.9% 0.013 255.508)",
+        "displayName": "On Night Subtle",
+        "canonical": "oklch(0.73 0.045 255)",
         "tonalRamp": [
-          "oklch(12.9% 0.042 264.695)",
-          "oklch(20.8% 0.042 265.755)",
-          "oklch(27.9% 0.041 260.031)",
-          "oklch(37.2% 0.044 257.287)",
-          "oklch(44.6% 0.043 257.281)",
-          "oklch(70.4% 0.04 256.788)",
-          "oklch(92.9% 0.013 255.508)",
-          "oklch(98.4% 0.003 247.858)"
+          "oklch(0.2 0.07 262)",
+          "oklch(0.33 0.1 260)",
+          "oklch(0.46 0.04 258)",
+          "oklch(0.55 0.04 258)",
+          "oklch(0.73 0.045 255)",
+          "oklch(0.85 0.035 255)",
+          "oklch(0.91 0.016 255)",
+          "oklch(0.975 0.006 250)"
         ],
-        "utility": "slate-200"
+        "utility": "--lp-on-night-subtle / text-on-night-subtle"
       },
-      "haze": {
+      "ink": {
         "role": "neutral",
-        "displayName": "Haze",
-        "canonical": "oklch(86.9% 0.022 252.894)",
+        "displayName": "Ink",
+        "canonical": "oklch(0.2 0.07 262)",
         "tonalRamp": [
-          "oklch(12.9% 0.042 264.695)",
-          "oklch(20.8% 0.042 265.755)",
-          "oklch(27.9% 0.041 260.031)",
-          "oklch(37.2% 0.044 257.287)",
-          "oklch(44.6% 0.043 257.281)",
-          "oklch(70.4% 0.04 256.788)",
-          "oklch(92.9% 0.013 255.508)",
-          "oklch(98.4% 0.003 247.858)"
+          "oklch(0.2 0.07 262)",
+          "oklch(0.33 0.1 260)",
+          "oklch(0.46 0.04 258)",
+          "oklch(0.55 0.04 258)",
+          "oklch(0.73 0.045 255)",
+          "oklch(0.85 0.035 255)",
+          "oklch(0.91 0.016 255)",
+          "oklch(0.975 0.006 250)"
         ],
-        "utility": "slate-300"
+        "utility": "--color-ink / text-ink"
       },
-      "fog": {
+      "ink-muted": {
         "role": "neutral",
-        "displayName": "Fog",
-        "canonical": "oklch(70.4% 0.04 256.788)",
+        "displayName": "Ink Muted",
+        "canonical": "oklch(0.46 0.04 258)",
         "tonalRamp": [
-          "oklch(12.9% 0.042 264.695)",
-          "oklch(20.8% 0.042 265.755)",
-          "oklch(27.9% 0.041 260.031)",
-          "oklch(37.2% 0.044 257.287)",
-          "oklch(44.6% 0.043 257.281)",
-          "oklch(70.4% 0.04 256.788)",
-          "oklch(92.9% 0.013 255.508)",
-          "oklch(98.4% 0.003 247.858)"
+          "oklch(0.2 0.07 262)",
+          "oklch(0.33 0.1 260)",
+          "oklch(0.46 0.04 258)",
+          "oklch(0.55 0.04 258)",
+          "oklch(0.73 0.045 255)",
+          "oklch(0.85 0.035 255)",
+          "oklch(0.91 0.016 255)",
+          "oklch(0.975 0.006 250)"
         ],
-        "utility": "slate-400"
+        "utility": "--lp-ink-muted / text-ink-muted"
       },
-      "pewter": {
+      "ink-subtle": {
         "role": "neutral",
-        "displayName": "Pewter",
-        "canonical": "oklch(55.4% 0.046 257.417)",
+        "displayName": "Ink Subtle",
+        "canonical": "oklch(0.55 0.04 258)",
         "tonalRamp": [
-          "oklch(12.9% 0.042 264.695)",
-          "oklch(20.8% 0.042 265.755)",
-          "oklch(27.9% 0.041 260.031)",
-          "oklch(37.2% 0.044 257.287)",
-          "oklch(44.6% 0.043 257.281)",
-          "oklch(70.4% 0.04 256.788)",
-          "oklch(92.9% 0.013 255.508)",
-          "oklch(98.4% 0.003 247.858)"
+          "oklch(0.2 0.07 262)",
+          "oklch(0.33 0.1 260)",
+          "oklch(0.46 0.04 258)",
+          "oklch(0.55 0.04 258)",
+          "oklch(0.73 0.045 255)",
+          "oklch(0.85 0.035 255)",
+          "oklch(0.91 0.016 255)",
+          "oklch(0.975 0.006 250)"
         ],
-        "utility": "slate-500"
+        "utility": "--lp-ink-subtle / text-ink-subtle"
       },
-      "slate-text": {
+      "line": {
         "role": "neutral",
-        "displayName": "Slate Text",
-        "canonical": "oklch(44.6% 0.043 257.281)",
+        "displayName": "Line",
+        "canonical": "oklch(0.91 0.016 255)",
         "tonalRamp": [
-          "oklch(12.9% 0.042 264.695)",
-          "oklch(20.8% 0.042 265.755)",
-          "oklch(27.9% 0.041 260.031)",
-          "oklch(37.2% 0.044 257.287)",
-          "oklch(44.6% 0.043 257.281)",
-          "oklch(70.4% 0.04 256.788)",
-          "oklch(92.9% 0.013 255.508)",
-          "oklch(98.4% 0.003 247.858)"
+          "oklch(0.2 0.07 262)",
+          "oklch(0.33 0.1 260)",
+          "oklch(0.46 0.04 258)",
+          "oklch(0.55 0.04 258)",
+          "oklch(0.73 0.045 255)",
+          "oklch(0.85 0.035 255)",
+          "oklch(0.91 0.016 255)",
+          "oklch(0.975 0.006 250)"
         ],
-        "utility": "slate-600"
+        "utility": "--lp-line / ring-line, shadcn --border"
       },
-      "slate-body": {
+      "line-soft": {
         "role": "neutral",
-        "displayName": "Slate Body",
-        "canonical": "oklch(37.2% 0.044 257.287)",
+        "displayName": "Line Soft",
+        "canonical": "oklch(0.955 0.01 255)",
         "tonalRamp": [
-          "oklch(12.9% 0.042 264.695)",
-          "oklch(20.8% 0.042 265.755)",
-          "oklch(27.9% 0.041 260.031)",
-          "oklch(37.2% 0.044 257.287)",
-          "oklch(44.6% 0.043 257.281)",
-          "oklch(70.4% 0.04 256.788)",
-          "oklch(92.9% 0.013 255.508)",
-          "oklch(98.4% 0.003 247.858)"
+          "oklch(0.2 0.07 262)",
+          "oklch(0.33 0.1 260)",
+          "oklch(0.46 0.04 258)",
+          "oklch(0.55 0.04 258)",
+          "oklch(0.73 0.045 255)",
+          "oklch(0.85 0.035 255)",
+          "oklch(0.91 0.016 255)",
+          "oklch(0.975 0.006 250)"
         ],
-        "utility": "slate-700"
-      },
-      "paper": {
-        "role": "neutral",
-        "displayName": "Paper",
-        "canonical": "#ffffff",
-        "tonalRamp": [
-          "oklch(12.9% 0.042 264.695)",
-          "oklch(20.8% 0.042 265.755)",
-          "oklch(27.9% 0.041 260.031)",
-          "oklch(37.2% 0.044 257.287)",
-          "oklch(44.6% 0.043 257.281)",
-          "oklch(70.4% 0.04 256.788)",
-          "oklch(92.9% 0.013 255.508)",
-          "oklch(98.4% 0.003 247.858)"
-        ],
-        "utility": "white"
+        "utility": "--lp-line-soft / bg-line-soft"
       },
       "canvas": {
         "role": "neutral",
         "displayName": "Canvas",
-        "canonical": "oklch(98.5% 0.002 247.839)",
+        "canonical": "oklch(0.975 0.006 250)",
         "tonalRamp": [
-          "oklch(13% 0.028 261.692)",
-          "oklch(21% 0.034 264.665)",
-          "oklch(27.8% 0.033 256.848)",
-          "oklch(37.3% 0.034 259.733)",
-          "oklch(44.6% 0.03 256.802)",
-          "oklch(70.7% 0.022 261.325)",
-          "oklch(92.8% 0.006 264.531)",
-          "oklch(98.5% 0.002 247.839)"
+          "oklch(0.2 0.07 262)",
+          "oklch(0.33 0.1 260)",
+          "oklch(0.46 0.04 258)",
+          "oklch(0.55 0.04 258)",
+          "oklch(0.73 0.045 255)",
+          "oklch(0.85 0.035 255)",
+          "oklch(0.91 0.016 255)",
+          "oklch(0.975 0.006 250)"
         ],
-        "utility": "gray-50"
+        "utility": "--lp-canvas / bg-canvas"
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "canonical": "oklch(1 0 0)",
+        "tonalRamp": [
+          "oklch(0.2 0.07 262)",
+          "oklch(0.33 0.1 260)",
+          "oklch(0.46 0.04 258)",
+          "oklch(0.55 0.04 258)",
+          "oklch(0.73 0.045 255)",
+          "oklch(0.85 0.035 255)",
+          "oklch(0.91 0.016 255)",
+          "oklch(0.975 0.006 250)"
+        ],
+        "utility": "--lp-white / bg-paper, text-on-night"
       },
       "legacy-navy": {
         "role": "legacy",
@@ -324,6 +356,22 @@
         ],
         "utility": "blue-900"
       },
+      "legacy-amber": {
+        "role": "legacy",
+        "displayName": "Legacy Amber (marketing hero only)",
+        "canonical": "oklch(82.8% 0.189 84.429)",
+        "tonalRamp": [
+          "oklch(27.9% 0.077 45.635)",
+          "oklch(41.4% 0.112 45.904)",
+          "oklch(47.3% 0.137 46.201)",
+          "oklch(55.5% 0.163 48.998)",
+          "oklch(66.6% 0.179 58.318)",
+          "oklch(82.8% 0.189 84.429)",
+          "oklch(92.4% 0.12 95.746)",
+          "oklch(98.7% 0.022 95.277)"
+        ],
+        "utility": "amber-400"
+      },
       "storefront-gold": {
         "role": "scoped",
         "displayName": "Storefront Gold",
@@ -339,22 +387,6 @@
           "oklch(0.96 0.04 90)"
         ],
         "utility": "--gold (only inside .storefront)"
-      },
-      "shadcn-primary": {
-        "role": "legacy",
-        "displayName": "shadcn Primary (neutral)",
-        "canonical": "oklch(0.205 0 0)",
-        "tonalRamp": [
-          "oklch(0.145 0 0)",
-          "oklch(0.205 0 0)",
-          "oklch(0.269 0 0)",
-          "oklch(0.371 0 0)",
-          "oklch(0.556 0 0)",
-          "oklch(0.708 0 0)",
-          "oklch(0.922 0 0)",
-          "oklch(0.985 0 0)"
-        ],
-        "utility": "--primary"
       }
     },
     "typographyMeta": {
@@ -376,7 +408,7 @@
       },
       "title": {
         "displayName": "Title",
-        "purpose": "Section headings on white surfaces (Your visits)."
+        "purpose": "Section headings on white surfaces (Your visits); the site-card address is 900 at 1rem."
       },
       "body": {
         "displayName": "Body",
@@ -388,11 +420,15 @@
       },
       "label-action": {
         "displayName": "Action Label",
-        "purpose": "Text on amber-filled primary controls."
+        "purpose": "Text on flame-filled primary controls and the navbar Book."
       },
       "label": {
         "displayName": "Label",
         "purpose": "Quiet controls and status lines."
+      },
+      "nav-link": {
+        "displayName": "Nav Link",
+        "purpose": "Navbar links and site-card links; 0.875rem semibold."
       },
       "dock-label": {
         "displayName": "Dock Label",
@@ -410,8 +446,8 @@
     "shadows": [
       {
         "name": "pass-lift",
-        "value": "0 18px 40px -24px rgb(2 6 23 / 0.9)",
-        "purpose": "Under the member pass only; reads as a held card."
+        "value": "0 18px 40px -24px rgb(8 20 52 / 0.9)",
+        "purpose": "Under the member pass only; navy-tinted, reads as a held card."
       },
       {
         "name": "plate-edge",
@@ -419,19 +455,19 @@
         "purpose": "Stamped bottom lip under license plates."
       },
       {
-        "name": "hero-cta-glow",
-        "value": "0 10px 15px -3px oklch(76.9% 0.188 70.08 / 0.2), 0 4px 6px -4px oklch(76.9% 0.188 70.08 / 0.2)",
-        "purpose": "Marketing hero Book online button only."
+        "name": "bar-shade",
+        "value": "0 8px 24px -16px oklch(0.2 0.07 262 / 0.8)",
+        "purpose": "Under the sticky navy navbar, over scrolling content."
       },
       {
         "name": "hairline-ring-dark",
         "value": "0 0 0 1px rgb(255 255 255 / 0.1)",
-        "purpose": "1px ring on every dark surface (Tailwind ring-1 ring-white/10); not elevation."
+        "purpose": "1px ring on every navy surface (ring-1 ring-white/10); not elevation."
       },
       {
         "name": "hairline-ring-light",
-        "value": "0 0 0 1px oklch(92.9% 0.013 255.508)",
-        "purpose": "1px Mist ring on white surfaces and row actions; not elevation."
+        "value": "0 0 0 1px var(--lp-line, oklch(0.91 0.016 255))",
+        "purpose": "1px Line ring on white surfaces, row actions and visit icons; not elevation."
       }
     ],
     "motion": [
@@ -443,7 +479,7 @@
       {
         "name": "hero-rise",
         "value": "0.85s cubic-bezier(0.16, 1, 0.3, 1); from opacity 0, translateY(18px), blur(6px); stagger 0.09s",
-        "purpose": "The one authored entrance, marketing hero only; collapses to visible under reduced motion."
+        "purpose": "The one authored entrance, marketing hero only (not yet on the tokens); collapses to visible under reduced motion."
       },
       {
         "name": "arrow-nudge",
@@ -482,12 +518,12 @@
   },
   "components": [
     {
-      "name": "Primary Button (amber)",
+      "name": "Primary Button (flame)",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "The single amber action per viewport, e.g. Show at the bay or Book a detail.",
+      "description": "The single flame action per viewport, e.g. Show at the bay or Book a detail.",
       "html": "<button type=\"button\" class=\"ds-btn-primary\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><polyline points=\"15 3 21 3 21 9\"/><polyline points=\"9 21 3 21 3 15\"/><line x1=\"21\" x2=\"14\" y1=\"3\" y2=\"10\"/><line x1=\"3\" x2=\"10\" y1=\"21\" y2=\"14\"/></svg>Show at the bay</button>",
-      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 20px; border: 0; border-radius: 10px; background: oklch(82.8% 0.189 84.429); color: oklch(27.9% 0.077 45.635); font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 1rem; font-weight: 700; cursor: pointer; transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-primary:hover { background: oklch(87.9% 0.169 91.605); } .ds-btn-primary:focus-visible { outline: 2px solid oklch(87.9% 0.169 91.605); outline-offset: 2px; }"
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 20px; border: 0; border-radius: 10px; background: var(--lp-flame, oklch(0.86 0.165 88)); color: var(--lp-navy-950, oklch(0.2 0.07 262)); font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 1rem; font-weight: 700; cursor: pointer; transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-primary:hover { background: var(--lp-flame-bright, oklch(0.91 0.14 94)); } .ds-btn-primary:focus-visible { outline: 2px solid var(--lp-flame-bright, oklch(0.91 0.14 94)); outline-offset: 2px; }"
     },
     {
       "name": "Quiet Button (on dark)",
@@ -495,7 +531,7 @@
       "refersTo": "button-quiet-dark",
       "description": "Every non-primary action on Night or Dusk surfaces, e.g. View or change, Try again.",
       "html": "<div class=\"ds-dark-stage\"><button type=\"button\" class=\"ds-btn-quiet\">View or change</button></div>",
-      "css": ".ds-dark-stage { background: oklch(20.8% 0.042 265.755); padding: 20px; border-radius: 16px; } .ds-btn-quiet { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border: 1px solid rgb(255 255 255 / 0.2); border-radius: 10px; background: transparent; color: #fff; font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-quiet:hover { background: rgb(255 255 255 / 0.1); } .ds-btn-quiet:focus-visible { outline: 2px solid oklch(82.8% 0.189 84.429); }"
+      "css": ".ds-dark-stage { background: var(--lp-navy-900, oklch(0.265 0.085 261)); padding: 20px; border-radius: 16px; } .ds-btn-quiet { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border: 1px solid rgb(255 255 255 / 0.2); border-radius: 10px; background: transparent; color: #fff; font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-quiet:hover { background: rgb(255 255 255 / 0.1); } .ds-btn-quiet:focus-visible { outline: 2px solid var(--lp-flame, oklch(0.86 0.165 88)); }"
     },
     {
       "name": "Solid and Ghost Buttons (on light)",
@@ -503,7 +539,7 @@
       "refersTo": "button-solid-light",
       "description": "Decision pair on white surfaces, as in the marketing opt-in row.",
       "html": "<div class=\"ds-btn-pair\"><button type=\"button\" class=\"ds-btn-solid\">Yes, email me</button><button type=\"button\" class=\"ds-btn-ghost\">No thanks</button></div>",
-      "css": ".ds-btn-pair { display: flex; gap: 8px; } .ds-btn-solid, .ds-btn-ghost { min-height: 44px; padding: 0 16px; border: 0; border-radius: 10px; font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-solid { background: oklch(12.9% 0.042 264.695); color: #fff; } .ds-btn-solid:hover { background: oklch(27.9% 0.041 260.031); } .ds-btn-solid:disabled { opacity: 0.6; } .ds-btn-ghost { background: transparent; color: oklch(37.2% 0.044 257.287); } .ds-btn-ghost:hover { background: oklch(96.8% 0.007 247.896); } .ds-btn-solid:focus-visible, .ds-btn-ghost:focus-visible { outline: 2px solid oklch(12.9% 0.042 264.695); outline-offset: 2px; }"
+      "css": ".ds-btn-pair { display: flex; gap: 8px; } .ds-btn-solid, .ds-btn-ghost { min-height: 44px; padding: 0 16px; border: 0; border-radius: 10px; font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-solid { background: var(--lp-navy-950, oklch(0.2 0.07 262)); color: #fff; } .ds-btn-solid:hover { background: var(--lp-navy-800, oklch(0.33 0.1 260)); } .ds-btn-solid:disabled { opacity: 0.6; } .ds-btn-ghost { background: transparent; color: var(--lp-ink-muted, oklch(0.46 0.04 258)); } .ds-btn-ghost:hover { background: var(--lp-line-soft, oklch(0.955 0.01 255)); } .ds-btn-solid:focus-visible, .ds-btn-ghost:focus-visible { outline: 2px solid var(--lp-blue, oklch(0.5 0.15 258)); outline-offset: 2px; }"
     },
     {
       "name": "Row Action",
@@ -511,7 +547,7 @@
       "refersTo": "row-action",
       "description": "Small ringed actions inside the white visits list: Book again, How was it?",
       "html": "<a href=\"#\" class=\"ds-row-action\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8\"/><path d=\"M3 3v5h5\"/></svg>Book again</a>",
-      "css": ".ds-row-action { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px; border-radius: 10px; box-shadow: 0 0 0 1px oklch(92.9% 0.013 255.508); background: #fff; color: oklch(27.9% 0.041 260.031); font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 0.875rem; font-weight: 600; text-decoration: none; } .ds-row-action:hover { background: oklch(98.4% 0.003 247.858); } .ds-row-action:focus-visible { outline: 2px solid oklch(12.9% 0.042 264.695); outline-offset: 2px; }"
+      "css": ".ds-row-action { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px; border-radius: 10px; box-shadow: 0 0 0 1px var(--lp-line, oklch(0.91 0.016 255)); background: #fff; color: var(--lp-navy-950, oklch(0.2 0.07 262)); font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 0.875rem; font-weight: 600; text-decoration: none; } .ds-row-action:hover { background: var(--lp-canvas, oklch(0.975 0.006 250)); } .ds-row-action:focus-visible { outline: 2px solid var(--lp-blue, oklch(0.5 0.15 258)); outline-offset: 2px; }"
     },
     {
       "name": "License Plate",
@@ -519,40 +555,56 @@
       "refersTo": "license-plate",
       "description": "A plate drawn as a plate; the only use of Geist Mono. Inline and XL sizes.",
       "html": "<div class=\"ds-plate-stage\"><span class=\"ds-plate\">KJX 4821</span><span class=\"ds-plate ds-plate--xl\">KJX 4821</span></div>",
-      "css": ".ds-plate-stage { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 20px; background: oklch(12.9% 0.042 264.695); border-radius: 16px; } .ds-plate { display: inline-flex; align-items: center; padding: 2px 8px; border: 1px solid oklch(86.9% 0.022 252.894); border-radius: 5px; background: #fff; color: oklch(12.9% 0.042 264.695); font-family: 'Geist Mono', ui-monospace, monospace; font-size: 0.875rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; box-shadow: 0 1px 0 rgb(0 0 0 / 0.25); } .ds-plate--xl { padding: 8px 16px; font-size: 2.25rem; letter-spacing: 0.14em; }"
+      "css": ".ds-plate-stage { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 20px; background: var(--lp-navy-950, oklch(0.2 0.07 262)); border-radius: 16px; } .ds-plate { display: inline-flex; align-items: center; padding: 2px 8px; border: 1px solid var(--lp-line, oklch(0.91 0.016 255)); border-radius: 5px; background: #fff; color: var(--lp-navy-950, oklch(0.2 0.07 262)); font-family: 'Geist Mono', ui-monospace, monospace; font-size: 0.875rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; box-shadow: 0 1px 0 rgb(0 0 0 / 0.25); } .ds-plate--xl { padding: 8px 16px; font-size: 2.25rem; letter-spacing: 0.14em; }"
     },
     {
       "name": "Member Pass",
       "kind": "card",
       "refersTo": "surface-pass",
-      "description": "Signature: the membership as something to show at the bay. Night surface, pass-lift shadow, plates, one amber action.",
-      "html": "<section class=\"ds-pass\"><div class=\"ds-pass__top\"><h2 class=\"ds-pass__plan\">Deluxe Unlimited</h2><a href=\"#\" class=\"ds-pass__manage\">Manage</a></div><p class=\"ds-pass__status\"><span class=\"ds-tint-violet\">Express membership</span><span class=\"ds-pass__sep\"> · </span><span>Active through Dec 4</span></p><ul class=\"ds-pass__cars\"><li><span class=\"ds-pass__car\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"currentColor\" stroke=\"currentColor\" class=\"ds-pass__star\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z\"/></svg>2021 Toyota Camry <small>Primary vehicle</small></span><span class=\"ds-plate\">KJX 4821</span></li></ul><button type=\"button\" class=\"ds-btn-primary\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><polyline points=\"15 3 21 3 21 9\"/><polyline points=\"9 21 3 21 3 15\"/><line x1=\"21\" x2=\"14\" y1=\"3\" y2=\"10\"/><line x1=\"3\" x2=\"10\" y1=\"21\" y2=\"14\"/></svg>Show at the bay</button></section>",
-      "css": ".ds-pass { max-width: 560px; padding: 28px; border-radius: 16px; background: oklch(12.9% 0.042 264.695); color: #fff; font-family: Geist, ui-sans-serif, system-ui, sans-serif; box-shadow: 0 18px 40px -24px rgb(2 6 23 / 0.9), 0 0 0 1px rgb(255 255 255 / 0.1); } .ds-pass__top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; } .ds-pass__plan { margin: 0; font-size: 2.25rem; font-weight: 900; letter-spacing: -0.025em; line-height: 1.1; text-wrap: balance; } .ds-pass__manage { padding: 4px 8px; border-radius: 8px; color: oklch(86.9% 0.022 252.894); font-size: 0.875rem; font-weight: 500; text-decoration: none; } .ds-pass__manage:hover { color: #fff; text-decoration: underline; text-underline-offset: 4px; } .ds-pass__manage:focus-visible { outline: 2px solid oklch(82.8% 0.189 84.429); } .ds-pass__status { margin: 4px 0 0; font-weight: 600; color: oklch(92.9% 0.013 255.508); } .ds-pass__sep { color: oklch(70.4% 0.04 256.788); } .ds-tint-violet { color: oklch(81.1% 0.111 293.571); } .ds-pass__cars { list-style: none; margin: 20px 0; padding: 0; border-top: 1px solid rgb(255 255 255 / 0.1); border-bottom: 1px solid rgb(255 255 255 / 0.1); } .ds-pass__cars li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 16px; padding: 12px 0; } .ds-pass__car { display: flex; align-items: center; gap: 8px; color: oklch(96.8% 0.007 247.896); font-weight: 500; } .ds-pass__car small { font-size: 0.75rem; font-weight: 400; color: oklch(86.9% 0.022 252.894); } .ds-pass__star { color: oklch(82.8% 0.189 84.429); } .ds-plate { display: inline-flex; padding: 2px 8px; border: 1px solid oklch(86.9% 0.022 252.894); border-radius: 5px; background: #fff; color: oklch(12.9% 0.042 264.695); font-family: 'Geist Mono', ui-monospace, monospace; font-size: 0.875rem; font-weight: 600; letter-spacing: 0.12em; box-shadow: 0 1px 0 rgb(0 0 0 / 0.25); } .ds-btn-primary { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 20px; border: 0; border-radius: 10px; background: oklch(82.8% 0.189 84.429); color: oklch(27.9% 0.077 45.635); font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 1rem; font-weight: 700; cursor: pointer; transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-primary:hover { background: oklch(87.9% 0.169 91.605); } .ds-btn-primary:focus-visible { outline: 2px solid oklch(87.9% 0.169 91.605); outline-offset: 2px; }"
+      "description": "Signature: the membership as something to show at the bay. Night surface, pass-lift shadow, plates, one flame action.",
+      "html": "<section class=\"ds-pass\"><div class=\"ds-pass__top\"><h2 class=\"ds-pass__plan\">Deluxe Unlimited</h2><a href=\"#\" class=\"ds-pass__manage\">Manage</a></div><p class=\"ds-pass__status\"><span class=\"ds-tint-member\">Express membership</span><span class=\"ds-pass__sep\"> · </span><span>Active through Dec 4</span></p><ul class=\"ds-pass__cars\"><li><span class=\"ds-pass__car\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"currentColor\" stroke=\"currentColor\" class=\"ds-pass__star\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z\"/></svg>2021 Toyota Camry <small>Primary vehicle</small></span><span class=\"ds-plate\">KJX 4821</span></li></ul><button type=\"button\" class=\"ds-btn-primary\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><polyline points=\"15 3 21 3 21 9\"/><polyline points=\"9 21 3 21 3 15\"/><line x1=\"21\" x2=\"14\" y1=\"3\" y2=\"10\"/><line x1=\"3\" x2=\"10\" y1=\"21\" y2=\"14\"/></svg>Show at the bay</button></section>",
+      "css": ".ds-pass { max-width: 560px; padding: 28px; border-radius: 16px; background: var(--lp-navy-950, oklch(0.2 0.07 262)); color: #fff; font-family: Geist, ui-sans-serif, system-ui, sans-serif; box-shadow: 0 18px 40px -24px rgb(8 20 52 / 0.9), 0 0 0 1px rgb(255 255 255 / 0.1); } .ds-pass__top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; } .ds-pass__plan { margin: 0; font-size: 2.25rem; font-weight: 900; letter-spacing: -0.025em; line-height: 1.1; text-wrap: balance; } .ds-pass__manage { padding: 4px 8px; border-radius: 8px; color: var(--lp-on-night-muted, oklch(0.85 0.035 255)); font-size: 0.875rem; font-weight: 500; text-decoration: none; } .ds-pass__manage:hover { color: #fff; text-decoration: underline; text-underline-offset: 4px; } .ds-pass__manage:focus-visible { outline: 2px solid var(--lp-flame, oklch(0.86 0.165 88)); } .ds-pass__status { margin: 4px 0 0; font-weight: 600; color: var(--lp-on-night-muted, oklch(0.85 0.035 255)); } .ds-pass__sep { color: var(--lp-on-night-subtle, oklch(0.73 0.045 255)); } .ds-tint-member { color: var(--lp-red-soft, oklch(0.74 0.16 22)); } .ds-pass__cars { list-style: none; margin: 20px 0; padding: 0; border-top: 1px solid rgb(255 255 255 / 0.1); border-bottom: 1px solid rgb(255 255 255 / 0.1); } .ds-pass__cars li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 16px; padding: 12px 0; } .ds-pass__car { display: flex; align-items: center; gap: 8px; color: #fff; font-weight: 500; } .ds-pass__car small { font-size: 0.75rem; font-weight: 400; color: var(--lp-on-night-muted, oklch(0.85 0.035 255)); } .ds-pass__star { color: var(--lp-flame, oklch(0.86 0.165 88)); } .ds-plate { display: inline-flex; align-items: center; padding: 2px 8px; border: 1px solid var(--lp-line, oklch(0.91 0.016 255)); border-radius: 5px; background: #fff; color: var(--lp-navy-950, oklch(0.2 0.07 262)); font-family: 'Geist Mono', ui-monospace, monospace; font-size: 0.875rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; box-shadow: 0 1px 0 rgb(0 0 0 / 0.25); } .ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 20px; border: 0; border-radius: 10px; background: var(--lp-flame, oklch(0.86 0.165 88)); color: var(--lp-navy-950, oklch(0.2 0.07 262)); font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 1rem; font-weight: 700; cursor: pointer; transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-primary:hover { background: var(--lp-flame-bright, oklch(0.91 0.14 94)); } .ds-btn-primary:focus-visible { outline: 2px solid var(--lp-flame-bright, oklch(0.91 0.14 94)); outline-offset: 2px; }"
     },
     {
       "name": "Visits List",
       "kind": "card",
       "refersTo": "surface-light",
-      "description": "White surface for history: service dots, tabular dates, ringed row actions.",
-      "html": "<section class=\"ds-visits\"><div class=\"ds-visits__head\"><h2>Your visits</h2><a href=\"#\">All bookings</a></div><ol><li><span class=\"ds-dot ds-dot--amber\"></span><time>Oct 30</time><span class=\"ds-visits__body\"><b>Express detail</b><small>2021 Toyota Camry</small></span></li><li><span class=\"ds-dot ds-dot--sky\"></span><time>Oct 22</time><span class=\"ds-visits__body\"><b>Self-service bay</b><small>42 min</small></span></li><li><span class=\"ds-dot ds-dot--violet\"></span><time>Oct 15</time><span class=\"ds-visits__body\"><b>Product order</b><small>Picked up</small></span></li></ol></section>",
-      "css": ".ds-visits { max-width: 560px; padding: 28px; border-radius: 16px; background: #fff; box-shadow: 0 0 0 1px oklch(92.9% 0.013 255.508); font-family: Geist, ui-sans-serif, system-ui, sans-serif; color: oklch(12.9% 0.042 264.695); } .ds-visits__head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; } .ds-visits__head h2 { margin: 0; font-size: 1.25rem; font-weight: 900; letter-spacing: -0.025em; } .ds-visits__head a { border-radius: 4px; color: oklch(37.2% 0.044 257.287); font-size: 0.875rem; font-weight: 500; text-decoration: none; } .ds-visits__head a:hover { text-decoration: underline; text-underline-offset: 4px; } .ds-visits__head a:focus-visible { outline: 2px solid oklch(12.9% 0.042 264.695); outline-offset: 2px; } .ds-visits ol { list-style: none; margin: 16px 0 0; padding: 0; } .ds-visits li { display: flex; align-items: center; gap: 16px; padding: 12px 0; } .ds-visits li + li { border-top: 1px solid oklch(96.8% 0.007 247.896); } .ds-dot { width: 10px; height: 10px; flex-shrink: 0; border-radius: 9999px; } .ds-dot--amber { background: oklch(82.8% 0.189 84.429); } .ds-dot--sky { background: oklch(74.6% 0.16 232.661); } .ds-dot--violet { background: oklch(70.2% 0.183 293.541); } .ds-visits time { width: 56px; flex-shrink: 0; font-size: 0.875rem; font-weight: 600; font-variant-numeric: tabular-nums; color: oklch(55.4% 0.046 257.417); } .ds-visits__body b { display: block; font-weight: 600; } .ds-visits__body small { display: block; font-size: 0.875rem; color: oklch(44.6% 0.043 257.281); }"
+      "description": "White surface for history: service icons in small circles, tabular dates, ringed row actions.",
+      "html": "<section class=\"ds-visits\"><div class=\"ds-visits__head\"><h2>Your visits</h2><a href=\"#\">All bookings</a></div><ol><li><span class=\"ds-kind ds-kind--detail\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z\"/></svg><span class=\"ds-sr\">Express detailing</span></span><time>Oct 30</time><span class=\"ds-visits__body\"><b>Express detail</b><small>2021 Toyota Camry</small></span></li><li><span class=\"ds-kind ds-kind--self\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z\"/><path d=\"M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97\"/></svg><span class=\"ds-sr\">Self-service bay</span></span><time>Oct 22</time><span class=\"ds-visits__body\"><b>Self-service bay</b><small>42 min</small></span></li><li><span class=\"ds-kind ds-kind--order\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M16 10a4 4 0 0 1-8 0\"/><path d=\"M3.103 6.034h17.794\"/><path d=\"M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z\"/></svg><span class=\"ds-sr\">Product order</span></span><time>Oct 15</time><span class=\"ds-visits__body\"><b>Product order</b><small>Picked up</small></span></li></ol></section>",
+      "css": ".ds-visits { max-width: 560px; padding: 28px; border-radius: 16px; background: #fff; box-shadow: 0 0 0 1px var(--lp-line, oklch(0.91 0.016 255)); font-family: Geist, ui-sans-serif, system-ui, sans-serif; color: var(--lp-navy-950, oklch(0.2 0.07 262)); } .ds-visits__head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; } .ds-visits__head h2 { margin: 0; font-size: 1.25rem; font-weight: 900; letter-spacing: -0.025em; } .ds-visits__head a { border-radius: 4px; color: var(--lp-ink-muted, oklch(0.46 0.04 258)); font-size: 0.875rem; font-weight: 500; text-decoration: none; } .ds-visits__head a:hover { text-decoration: underline; text-underline-offset: 4px; } .ds-visits__head a:focus-visible { outline: 2px solid var(--lp-blue, oklch(0.5 0.15 258)); outline-offset: 2px; } .ds-visits ol { list-style: none; margin: 16px 0 0; padding: 0; } .ds-visits li { display: flex; align-items: center; gap: 16px; padding: 12px 0; } .ds-visits li + li { border-top: 1px solid var(--lp-line-soft, oklch(0.955 0.01 255)); } .ds-kind { display: flex; width: 32px; height: 32px; flex-shrink: 0; align-items: center; justify-content: center; border-radius: 9999px; background: var(--lp-canvas, oklch(0.975 0.006 250)); box-shadow: 0 0 0 1px var(--lp-line, oklch(0.91 0.016 255)); } .ds-kind--detail { color: var(--lp-flame-deep, oklch(0.6 0.15 58)); } .ds-kind--self { color: var(--lp-sky-deep, oklch(0.58 0.14 240)); } .ds-kind--order { color: var(--lp-ink-subtle, oklch(0.55 0.04 258)); } .ds-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); } .ds-visits time { width: 56px; flex-shrink: 0; font-size: 0.875rem; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--lp-ink-subtle, oklch(0.55 0.04 258)); } .ds-visits__body b { display: block; font-weight: 600; } .ds-visits__body small { display: block; font-size: 0.875rem; color: var(--lp-ink-muted, oklch(0.46 0.04 258)); }"
     },
     {
       "name": "Action Dock",
       "kind": "nav",
       "refersTo": "dock-item",
-      "description": "Phone-only thumb dock: three 56px actions, one amber by the One Amber Rule.",
+      "description": "Phone-only thumb dock: three 56px actions, one flame by the One Flame Rule.",
       "html": "<nav aria-label=\"Quick actions\" class=\"ds-dock\"><button type=\"button\" class=\"ds-dock__item\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M8 2v4\"/><path d=\"M16 2v4\"/><path d=\"M21 13V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8\"/><path d=\"M3 10h18\"/><path d=\"M16 19h6\"/><path d=\"M19 16v6\"/></svg>Book</button><button type=\"button\" class=\"ds-dock__item ds-dock__item--primary\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M16 10h2\"/><path d=\"M16 14h2\"/><path d=\"M6.17 15a3 3 0 0 1 5.66 0\"/><circle cx=\"9\" cy=\"11\" r=\"2\"/><rect x=\"2\" y=\"5\" width=\"20\" height=\"14\" rx=\"2\"/></svg>Show at bay</button><a href=\"#\" class=\"ds-dock__item\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z\"/><path d=\"M3 6h18\"/><path d=\"M16 10a4 4 0 0 1-8 0\"/></svg>Shop</a></nav>",
-      "css": ".ds-dock { display: flex; gap: 8px; max-width: 28rem; padding: 8px 12px; border-top: 1px solid rgb(255 255 255 / 0.1); background: oklch(12.9% 0.042 264.695 / 0.95); backdrop-filter: blur(8px); } .ds-dock__item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 56px; border: 0; border-radius: 14px; background: transparent; color: #fff; font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 0.75rem; font-weight: 600; text-decoration: none; cursor: pointer; transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-dock__item:hover { background: rgb(255 255 255 / 0.1); } .ds-dock__item--primary { background: oklch(82.8% 0.189 84.429); color: oklch(27.9% 0.077 45.635); } .ds-dock__item--primary:hover { background: oklch(87.9% 0.169 91.605); } .ds-dock__item:focus-visible { outline: 2px solid oklch(82.8% 0.189 84.429); }"
+      "css": ".ds-dock { display: flex; gap: 8px; max-width: 28rem; padding: 8px 12px; border-top: 1px solid rgb(255 255 255 / 0.1); background: oklch(0.2 0.07 262 / 0.95); backdrop-filter: blur(8px); } .ds-dock__item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 56px; border: 0; border-radius: 14px; background: transparent; color: #fff; font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 0.75rem; font-weight: 600; text-decoration: none; cursor: pointer; transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-dock__item:hover { background: rgb(255 255 255 / 0.1); } .ds-dock__item--primary { background: var(--lp-flame, oklch(0.86 0.165 88)); color: var(--lp-navy-950, oklch(0.2 0.07 262)); } .ds-dock__item--primary:hover { background: var(--lp-flame-bright, oklch(0.91 0.14 94)); } .ds-dock__item:focus-visible { outline: 2px solid var(--lp-flame, oklch(0.86 0.165 88)); }"
+    },
+    {
+      "name": "Customer Navbar",
+      "kind": "nav",
+      "refersTo": "nav-bar",
+      "description": "Sticky navy bar: logo, five page links with an aria-current pill, quiet outlined Book, avatar account menu.",
+      "html": "<header class=\"ds-bar\"><span class=\"ds-bar__logo\">THE LAUNCH PAD</span><nav aria-label=\"Main\"><ul class=\"ds-bar__links\"><li><a href=\"#\" aria-current=\"page\">Home</a></li><li><a href=\"#\">Bookings</a></li><li><a href=\"#\">Self-service</a></li><li><a href=\"#\">Orders</a></li><li><a href=\"#\">Membership</a></li></ul></nav><div class=\"ds-bar__end\"><button type=\"button\" class=\"ds-bar__book\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M8 2v4\"/><path d=\"M16 2v4\"/><path d=\"M21 13V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8\"/><path d=\"M3 10h18\"/><path d=\"M16 19h6\"/><path d=\"M19 16v6\"/></svg>Book</button><button type=\"button\" class=\"ds-bar__avatar\" aria-label=\"Account menu\">J</button></div></header>",
+      "css": ".ds-bar { display: flex; align-items: center; gap: 24px; height: 64px; padding: 0 24px; background: var(--lp-navy-950, oklch(0.2 0.07 262)); color: #fff; font-family: Geist, ui-sans-serif, system-ui, sans-serif; box-shadow: 0 8px 24px -16px oklch(0.2 0.07 262 / 0.8); } .ds-bar__logo { font-size: 0.875rem; font-weight: 900; letter-spacing: -0.025em; } .ds-bar__links { display: flex; gap: 4px; list-style: none; margin: 0; padding: 0; } .ds-bar__links a { display: inline-flex; align-items: center; min-height: 40px; padding: 0 12px; border-radius: 10px; color: var(--lp-on-night-muted, oklch(0.85 0.035 255)); font-size: 0.875rem; font-weight: 600; text-decoration: none; transition: background-color 150ms, color 150ms; } .ds-bar__links a:hover { background: rgb(255 255 255 / 0.08); color: #fff; } .ds-bar__links a[aria-current=page] { background: rgb(255 255 255 / 0.12); color: #fff; } .ds-bar__end { margin-left: auto; display: flex; align-items: center; gap: 8px; } .ds-bar__book { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 16px; border: 1px solid rgb(255 255 255 / 0.25); border-radius: 10px; background: transparent; color: #fff; font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 0.875rem; font-weight: 700; cursor: pointer; } .ds-bar__book:hover { background: rgb(255 255 255 / 0.1); } .ds-bar__avatar { width: 36px; height: 36px; border: 0; border-radius: 9999px; background: var(--lp-navy-900, oklch(0.265 0.085 261)); color: #fff; font-weight: 700; box-shadow: 0 0 0 2px rgb(255 255 255 / 0.25); cursor: pointer; } .ds-bar a:focus-visible, .ds-bar button:focus-visible { outline: 2px solid var(--lp-flame, oklch(0.86 0.165 88)); outline-offset: 2px; }"
+    },
+    {
+      "name": "Site Card",
+      "kind": "card",
+      "refersTo": "surface-light",
+      "description": "Home side column: address, hours with service icons, directions, shop and closure policy.",
+      "html": "<section class=\"ds-site\"><h2>10410 S Main St, Houston</h2><dl><div><dt><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\" class=\"ds-site__self\"><path d=\"M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z\"/><path d=\"M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97\"/></svg>Self-service bays</dt><dd>Open 24/7</dd></div><div><dt><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\" class=\"ds-site__detail\"><path d=\"M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z\"/></svg>Express detailing</dt><dd>Thu–Sun<small>9:30 AM–6:30 PM</small></dd></div></dl><div class=\"ds-site__links\"><a href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0\"/><circle cx=\"12\" cy=\"10\" r=\"3\"/></svg>Get directions</a><a href=\"#\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M16 10a4 4 0 0 1-8 0\"/><path d=\"M3.103 6.034h17.794\"/><path d=\"M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z\"/></svg>Shop car care</a><a href=\"#\" class=\"ds-site__muted\">Weather and closure policy</a></div></section>",
+      "css": ".ds-site { max-width: 320px; padding: 20px; border-radius: 16px; background: #fff; box-shadow: 0 0 0 1px var(--lp-line, oklch(0.91 0.016 255)); font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 0.875rem; color: var(--lp-navy-950, oklch(0.2 0.07 262)); } .ds-site h2 { margin: 0; font-size: 1rem; font-weight: 900; letter-spacing: -0.025em; } .ds-site dl { margin: 12px 0 0; } .ds-site dl > div { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 5px 0; } .ds-site dt { display: flex; align-items: center; gap: 8px; white-space: nowrap; color: var(--lp-ink-muted, oklch(0.46 0.04 258)); } .ds-site dd { margin: 0; text-align: right; font-weight: 600; } .ds-site dd small { display: block; font-size: 0.875rem; font-weight: 500; color: var(--lp-ink-muted, oklch(0.46 0.04 258)); } .ds-site__self { color: var(--lp-sky-deep, oklch(0.58 0.14 240)); } .ds-site__detail { color: var(--lp-flame-deep, oklch(0.6 0.15 58)); } .ds-site__links { margin: 16px -8px 0; padding-top: 8px; border-top: 1px solid var(--lp-line-soft, oklch(0.955 0.01 255)); } .ds-site__links a { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 8px; border-radius: 10px; color: var(--lp-navy-950, oklch(0.2 0.07 262)); font-weight: 600; text-decoration: none; } .ds-site__links a svg { color: var(--lp-blue, oklch(0.5 0.15 258)); } .ds-site__links a:hover { background: var(--lp-line-soft, oklch(0.955 0.01 255)); } .ds-site__links a:focus-visible { outline: 2px solid var(--lp-blue, oklch(0.5 0.15 258)); outline-offset: 2px; } .ds-site__links .ds-site__muted { font-weight: 500; color: var(--lp-ink-muted, oklch(0.46 0.04 258)); }"
     }
   ],
   "narrative": {
     "northStar": "The 24/7 Bay",
-    "overview": "The customer world looks like the site after dark: deep slate surfaces, white type, and one amber light that marks where to go next. It was built for a person standing at 10410 S Main St with a phone in one hand (see PRODUCT.md for who uses the product and why). The membership pass, the next appointment and the thumb dock are the bay at night. History, site facts and requests sit on plain white cards next to the dark blocks. That is the whole tonal story: dark for what matters now and who you are, white for everything you might read later.\n\nThe world is shared by the marketing hero (`components/user/hero.tsx`) and the new customer dashboard home (`app/(dashboard)/dashboard/page.tsx`, on branch `feat/dashboard-home`). The page's opening comment is the direction contract. It rejects the stock stat-card grid and the \"Welcome back\" scaffold, and it makes the home \"the customer's pass and their next move.\" Display type is Geist at its heaviest weight (900) with tight tracking. Monospace appears only on license plates, which are drawn as real white plates so an attendant can match them by eye. Three service hues act as a legend, not decoration: sky for self-service, amber for express detailing, violet for membership.\n\nThis document records what is built, and the product is not yet one world. The brand colors are **Tailwind palette utilities, not design tokens**. `app/globals.css` still carries the neutral shadcn `--primary` (near-black, see `shadcn-primary`), so any shadcn `Button` left at its default renders gray-black, not amber. The frontmatter colors are Tailwind v4's own OKLCH values for the utilities the code uses, and each one below gives its utility name in parentheses because that is how the code expresses it. Several surfaces still use older looks and are listed under Divergences in Do's and Don'ts.",
+    "overview": "The customer world looks like the site after dark, in the logo's own colours: deep navy surfaces, white type, and one flame-yellow light that marks where to go next. It was built for a person standing at 10410 S Main St with a phone in one hand (see PRODUCT.md for who uses the product and why). The navbar, the membership pass, the next appointment and the thumb dock are the bay at night. History, site facts and requests sit on plain white cards next to the navy blocks. That is the whole tonal story: dark for what matters now and who you are, white for everything you might read later.\n\nEvery colour comes from the logo: the royal-blue outline, the red lettering, the yellow-orange rocket flame, and white. Navy (a deep cut of the logo blue) is the night, not black or slate. The flame is the one action. Each service wears one logo colour, so \"three services, one location\" reads in the palette itself: sky for self-service, flame for express detailing, red for membership. Display type is Geist at its heaviest weight (900) with tight tracking. Monospace appears only on license plates, drawn as real white plates so an attendant can match them by eye. The home's opening comment (`app/(dashboard)/dashboard/page.tsx`) is the direction contract: the home is \"the customer's pass and their next move\", never a stat board.\n\nThe colours are **design tokens**. `app/globals.css` (\"Launch Pad brand tokens\") defines `--lp-*` primitives measured from the logo, then exposes semantic Tailwind utilities through `@theme inline` (`bg-night`, `text-on-night-muted`, `bg-flame`, `text-svc-member` …). Components use those names, never raw palette classes such as slate-950 or blue-900; change a colour there and the whole customer area follows. The `.lp-theme` class on the dashboard shell (`app/(dashboard)/layout.tsx`) remaps shadcn's `--primary`, `--ring`, `--border` and neutrals to navy, brand blue and the cool neutrals, so shadcn controls inside the customer area follow too. The marketing site and admin have not moved to the tokens yet (see Divergences).",
     "keyCharacteristics": [
-      "Slate-night and slate-dusk surfaces for identity and time-sensitive content. White cards with a hairline ring for history, site info and requests.",
-      "One amber-filled action per viewport. Every other control is quiet.",
-      "Service hues sky / amber / violet used as text tints and small dots, never as fills.",
+      "Navy night and dusk surfaces for identity and time-sensitive content. White cards with a hairline ring for history, site info and requests.",
+      "One flame-filled action per viewport. Every other control is quiet.",
+      "Service colours from the logo (sky / flame / red) used as text tints and icons, never as fills.",
       "Geist Sans at 900 weight with tight tracking for dates, plan names and greetings.",
       "Geist Mono only on license plates, which are drawn as physical white plates.",
       "44px minimum touch targets, 56px dock targets, visible focus outlines tuned to the surface.",
@@ -560,13 +612,18 @@
     ],
     "rules": [
       {
-        "name": "The One Amber Rule",
-        "body": "Exactly one amber-filled control per viewport. When a member pass is on screen, it owns the amber (\"Show at the bay\"). The Now card's actions then turn quiet (`hasPass`), the desktop rail's \"Book a detail\" goes quiet, and the phone dock gives its amber slot to \"Show at bay\". Without a pass, \"Book\" takes the amber.",
+        "name": "The One Flame Rule",
+        "body": "Exactly one flame-filled control per viewport. When a member pass is on screen, it owns the flame (\"Show at the bay\"): the Now card's actions turn quiet (`hasPass`) and the phone dock gives its flame slot to \"Show at bay\". Without a pass, the Now card's lead action and the dock's \"Book\" take the flame. The navbar's \"Book\" is always quiet.",
         "section": "colors"
       },
       {
         "name": "The Hue Is a Legend Rule",
-        "body": "Sky, amber and violet tell you which service you are looking at. They appear as text tints (the -300 shades) and 10px dots (the -400 shades) and never as surface fills. Amber fill is reserved for the action.",
+        "body": "Sky, flame and red tell you which service you are looking at. They appear as text tints on navy and as icons (the `-mark` shades on white) and never as surface fills. Colour is never the only cue: each service also has its icon (Droplets, Sparkles) or its name.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tokens Not Palette Rule",
+        "body": "Customer-world code uses the semantic utilities from `app/globals.css`. A raw `slate-*`, `amber-*`, `violet-*` or `blue-900` class in the customer area is a bug.",
         "section": "colors"
       },
       {
@@ -581,17 +638,18 @@
       },
       {
         "name": "The Tone-Not-Shadow Rule",
-        "body": "Separate blocks by surface tone (Canvas / white / Dusk / Night) and hairline rings. Add a shadow only when the object is physical (the pass, a plate).",
+        "body": "Separate blocks by surface tone (Canvas / white / Dusk / Night) and hairline rings. Add a shadow only when the object is physical (the pass, a plate) or sits over scrolling content (the bar).",
         "section": "elevation"
       }
     ],
     "dos": [
-      "**Do** give each viewport exactly one Signal Amber filled control with Signal Ink text. Turn every other action quiet (transparent with a white/20 outline on dark, ghost or ringed on white).",
-      "**Do** put identity and time-sensitive content (pass, next appointment, check-in, actions) on Night or Dusk. Put history, site facts and requests on white 16px-corner surfaces with a 1px Mist ring.",
-      "**Do** tint by service and nothing else: sky = self-service, amber = express detailing, violet = membership (and, in the visits list, product orders). Use -300 for text and -400 for dots.",
+      "**Do** give each viewport exactly one Flame filled control with On Flame (navy) text. Turn every other action quiet (transparent with a white/20 outline on navy, ghost or ringed on white).",
+      "**Do** use the semantic token utilities from `app/globals.css` (`bg-night`, `text-on-night-muted`, `bg-flame`, `text-svc-member` …) and put new customer pages inside `.lp-theme`.",
+      "**Do** put identity and time-sensitive content (pass, next appointment, check-in) on Night or Dusk. Put history, site facts and requests on white 16px-corner surfaces with a 1px Line ring.",
+      "**Do** tint by service and nothing else: sky = self-service, flame = express detailing, red = membership. Use the plain token for text on navy and the `-mark` token for icons on white, and pair the colour with an icon or a name.",
       "**Do** set dates, plan names and greetings in Geist 900 with -0.025em tracking (-0.035em on the hero), with balanced wrapping and dates kept on one line.",
       "**Do** draw license plates with the License Plate component. That is the only use of Geist Mono.",
-      "**Do** keep every target at least 44px tall (dock 56px, bay \"Done\" 48px), and give focus a 2px outline: Signal Amber on dark, Night with a 2px offset on white.",
+      "**Do** keep every target at least 44px tall (nav links 40px, dock 56px, sheet rows and bay \"Done\" 48px), and give focus a 2px outline: Flame on navy, Brand Blue with a 2px offset on white.",
       "**Do** respect reduced motion. `MotionConfig reducedMotion=\"user\"` is global, and add `motion-reduce:animate-none` / `transition-none` to any pulse, dialog entrance or arrow nudge. Content must start visible.",
       "**Do** show placeholders while data loads and an inline error card with \"Try again\" on failure, so \"nothing booked\" is never shown as a guess.",
       "**Do** keep the seasonal brand treatment. The Christmas logo (`/public/xmas-launchpad-logo.png`) and the snow effect (`components/snow-effect.tsx`, currently commented out in `app/layout.tsx`) are deliberate brand commitments (PRODUCT.md), not dead code."
@@ -600,10 +658,10 @@
       "**Don't** put an eyebrow or kicker label above a heading. The heading carries itself.",
       "**Don't** build stat-card or hero-metric grids (\"Total Bookings\", big number + small label). The home is a pass and a next move.",
       "**Don't** invent numbers, counts, ratings or \"+N from last week\" notes. Show only real data (PRODUCT.md, \"Only claim what is true\").",
-      "**Don't** use colored side borders (a `border-left` / `border-right` stripe over 1px) on cards, rows, callouts or alerts. Use a 10px dot or a text tint.",
-      "**Don't** fill a surface with a service hue, and don't add a second amber-filled button to a screen that already has one.",
-      "**Don't** leave a shadcn `Button` on its default variant in this world. `--primary` is still neutral near-black. Style it to the amber, quiet or light variants above.",
-      "**Don't** use blue-900 in new customer-world work. It is the legacy accent."
+      "**Don't** use coloured side borders (a `border-left` / `border-right` stripe over 1px) on cards, rows, callouts or alerts. Use an icon or a text tint.",
+      "**Don't** fill a surface with a service colour, and don't add a second flame-filled button to a screen that already has one.",
+      "**Don't** write raw palette classes (slate, amber, violet, blue-900) in customer-world code, and don't use black or slate for the night. The night is logo navy.",
+      "**Don't** offer the same action twice on one screen (the desktop home has no action rail because the navbar has \"Book\")."
     ]
   }
 }
