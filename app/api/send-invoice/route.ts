@@ -5,7 +5,8 @@ import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { Resend } from "resend";
 import { requireAdmin } from "@/lib/auth/guards";
 import { apiError, ApiError } from "@/lib/http/apiError";
-import { escapeHtml } from "@/lib/email/escapeHtml";
+import { buildReceiptEmail } from "@/lib/email/booking-emails";
+import { FROM } from "@/lib/email/layout";
 import { parseBookingId, recipientFromBooking } from "@/lib/email/bookingRecipient";
 
 // Staff-only: sent when an admin marks a booking completed. The receipt always
@@ -210,15 +211,22 @@ export async function POST(req: Request) {
     const pdfBase64 = Buffer.from(pdfBytes).toString("base64");
 
     // 3️⃣ Send Email via Resend
+    const { subject, html } = buildReceiptEmail({
+      customerName: name,
+      bookingId: booking.id,
+      servicePackageName: booking.service_package_name,
+      servicePackagePrice: booking.service_package_price,
+      addOns: addOns.map((a: any) => ({ name: a?.name ?? null, price: a?.price ?? null })),
+      totalPrice: booking.total_price,
+      paymentMethod: booking.payment_method,
+      completedAt: booking.completed_at,
+    });
+
     const { error: sendError } = await resend.emails.send({
-      from: "The Launch Pad Wash <noreply@thelaunchpadwash.com>",
+      from: FROM,
       to: email,
-      subject: "Your Car Wash Receipt",
-      html: `
-        <p>Hi ${escapeHtml(name) || "there"},</p>
-        <p>Thank you for your booking! Please find your receipt attached below.</p>
-        <p>– The The Launch Pad Team</p>
-      `,
+      subject,
+      html,
       attachments: [
         {
           filename: `receipt-${booking.id}.pdf`,

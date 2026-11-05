@@ -26,6 +26,19 @@ colors:
   legacy-navy: "oklch(37.9% 0.146 265.522)"
   legacy-amber: "oklch(82.8% 0.189 84.429)"
   storefront-gold: "oklch(0.8 0.132 86)"
+  email-night: "#041335"
+  email-flame: "#fec92f"
+  email-ink-muted: "#4a596f"
+  email-ink-subtle: "#637389"
+  email-line: "#dae2ec"
+  email-line-soft: "#ecf1f7"
+  email-canvas: "#f4f7fb"
+  email-brand-blue: "#2460b7"
+  email-warn-bg: "#fff6db"
+  email-danger-bg: "#fdecec"
+  email-danger-ink: "#a3171c"
+  email-ok-bg: "#e8f5ee"
+  email-ok-ink: "#14653a"
 typography:
   display-hero:
     fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif"
@@ -99,10 +112,46 @@ typography:
     fontWeight: 600
     lineHeight: 1.2
     letterSpacing: "0.14em"
+  email-heading:
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
+    fontSize: "28px"
+    fontWeight: 900
+    lineHeight: 1.15
+  email-subheading:
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
+    fontSize: "18px"
+    fontWeight: 800
+    lineHeight: 1.3
+  email-body:
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
+    fontSize: "16px"
+    fontWeight: 400
+    lineHeight: 1.6
+  email-detail:
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
+    fontSize: "15px"
+    fontWeight: 600
+    lineHeight: 1.55
+  email-small:
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
+    fontSize: "14px"
+    fontWeight: 400
+    lineHeight: 1.6
+  email-footer:
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
+    fontSize: "13px"
+    fontWeight: 400
+    lineHeight: 1.6
+  email-plate:
+    fontFamily: "SFMono-Regular, Menlo, Consolas, monospace"
+    fontSize: "14px"
+    fontWeight: 700
+    lineHeight: 1.4
 rounded:
   plate: "5px"
   chip: "8px"
   control: "10px"
+  email-panel: "12px"
   tile: "14px"
   surface: "16px"
 spacing:
@@ -386,6 +435,17 @@ A white surface titled "Your visits". Rows are separated by Line Soft dividers. 
 
 ### Inputs / Fields
 The home has no fields of its own. Inside `.lp-theme`, shadcn inputs and the review dialog pick up Line borders, navy text and a Brand Blue ring. New fields in this world should keep that (44px height, Line ring, Brand Blue focus) rather than invent a style.
+
+## Email
+
+Every email (transactional, membership, orders, admin broadcasts and the Supabase account emails) is built from one layout, `lib/email/layout.ts`, so the inbox looks like the site. Email clients can't read CSS variables, OKLCH or web fonts, so email uses the **hex equivalents** of the brand tokens (the `email-*` colours above) and the system sans stack instead of Geist. These are deliberate, not drift.
+
+- **Shape:** navy (email-night) band with the logo and wordmark, then a white card with exactly one h1 (email-heading, 900 weight), then a footer with the site's address, phone and email on email-canvas.
+- **One flame action** per email: email-flame fill, navy text, 10px corners. Any second link is a quiet outlined button or a text link.
+- **Facts** (date, plate, totals) sit in a real data table (`details()`, `th scope="row"`) on email-canvas with email-panel corners; line items use `th scope="col"`. Plates are drawn as plates.
+- **Notices** are tinted panels (warn, danger, ok, info). Never a coloured side stripe, never an emoji.
+- **Accessibility:** `lang`/`dir` on `<html>` and the body wrapper, `role="presentation"` on layout tables, a `<title>`, a hidden preheader. Every dynamic value goes through `text()` (HTML-escaped).
+- **Account emails** (confirm sign-up, reset password, magic link, change email, invite) are generated into `supabase/templates/` by `node scripts/build-auth-emails.mjs` and pasted into Supabase; they keep `{{ .ConfirmationURL }}`.
 
 ## Do's and Don'ts
 

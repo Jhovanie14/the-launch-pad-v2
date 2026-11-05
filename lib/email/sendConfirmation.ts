@@ -1,5 +1,6 @@
 import { Resend } from "resend";
-import { BookingConfirmationEmail } from "@/components/emails/bookingConfirmationEmail";
+import { buildBookingConfirmationEmail } from "./booking-emails";
+import { FROM } from "./layout";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -20,20 +21,16 @@ export async function sendBookingConfirmationEmail({
   appointmentTime: string;
   addOns?: string[];
 }) {
-  const { data, error } = await resend.emails.send({
-    from: "The Launch Pad Wash <noreply@thelaunchpadwash.com>",
-    to,
-    subject: "Your Booking Confirmation",
-    // ✅ function-call style (works in .ts without JSX)
-    react: BookingConfirmationEmail({
-      customerName,
-      bookingId,
-      servicePackage,
-      appointmentDate,
-      appointmentTime,
-      addOns,
-    }),
+  const { subject, html } = buildBookingConfirmationEmail({
+    customerName,
+    bookingId,
+    servicePackage,
+    appointmentDate,
+    appointmentTime,
+    addOns,
   });
+
+  const { data, error } = await resend.emails.send({ from: FROM, to, subject, html });
 
   if (error) {
     console.error("Email send error:", error);
