@@ -1,28 +1,48 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { AuthUser } from "@/types";
 import { createClient } from "@/utils/supabase/client";
 import { toast } from "sonner";
-import { Car, Pencil, Plus, Trash2 } from "lucide-react";
+import { BadgeCheck, Car, Pencil, Plus } from "lucide-react";
 import { useUserVehicles } from "@/hooks/useUserVehicles";
 import UpdateVehicleModal from "@/components/update-vehicle-modal";
 import { MarketingConsentSwitch } from "@/components/settings/marketing-consent-switch";
+import { LicensePlate } from "@/components/dashboard-home/license-plate";
+import { cn } from "@/lib/utils";
 
 interface UserProfileProps {
   user: AuthUser;
 }
+
+const CARD = "rounded-2xl bg-paper p-5 ring-1 ring-line sm:p-7";
+const SECTION_TITLE = "text-xl font-black tracking-tight text-ink";
+const FOCUS = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
+const QUIET_BUTTON = cn(
+  "inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold text-ink ring-1 ring-line hover:bg-canvas disabled:opacity-60",
+  FOCUS,
+);
+const SOLID_BUTTON = cn(
+  "inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-night px-4 text-sm font-semibold text-on-night hover:bg-night-raised disabled:opacity-60",
+  FOCUS,
+);
+const FIELD = "h-11";
+
+const EMPTY_VEHICLE = { plate: "", make: "", model: "", year: "", body_type: "", color: "" };
 
 export function UserProfile({ user }: UserProfileProps) {
   const supabase = createClient();
@@ -39,7 +59,7 @@ export function UserProfile({ user }: UserProfileProps) {
     avatar_url: user.avatar_url || null,
   });
 
-  // 👇 Update preview when a new file is selected
+  // Update the preview when a new file is selected
   useEffect(() => {
     if (!file) {
       setPreviewUrl(null);
@@ -53,14 +73,6 @@ export function UserProfile({ user }: UserProfileProps) {
     return () => URL.revokeObjectURL(objectUrl);
   }, [file]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-      setPreviewUrl(URL.createObjectURL(selectedFile)); // 👈 instant preview
-    }
-  };
-
   const handleAvatarUpload = async (): Promise<string | null> => {
     if (!file) return formData.avatar_url; // return current avatar if no new file
     setIsUploading(true);
@@ -73,7 +85,7 @@ export function UserProfile({ user }: UserProfileProps) {
 
     if (uploadError) {
       console.error("Error uploading avatar:", uploadError);
-      alert(uploadError.message);
+      toast.error(`Couldn't upload your photo: ${uploadError.message}`);
       setIsUploading(false);
       return null;
     }
@@ -82,7 +94,7 @@ export function UserProfile({ user }: UserProfileProps) {
     const publicUrl = data.publicUrl;
 
     setIsUploading(false);
-    return publicUrl; // ✅ return the URL
+    return publicUrl;
   };
 
   const handleSave = async () => {
@@ -107,10 +119,10 @@ export function UserProfile({ user }: UserProfileProps) {
 
       // Update local state
       setFormData((prev) => ({ ...prev, avatar_url: avatarUrl }));
-      toast.success("Profile updated successfully! 🎉");
+      toast.success("Profile saved.");
     } catch (error) {
       console.error("Error saving profile:", error);
-      toast.error("Failed to update profile. Please try again.");
+      toast.error("Couldn't save your profile. Please try again.");
     } finally {
       setIsLoading(false);
       setIsEditing(false);
@@ -131,7 +143,8 @@ export function UserProfile({ user }: UserProfileProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [addingVehicle, setAddingVehicle] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<typeof userVehicles[0] | null>(null);
-  const [newVehicle, setNewVehicle] = useState({ plate: "", make: "", model: "", year: "", body_type: "", color: "" });
+  const [vehicleToDelete, setVehicleToDelete] = useState<typeof userVehicles[0] | null>(null);
+  const [newVehicle, setNewVehicle] = useState(EMPTY_VEHICLE);
 
   const handleAddVehicle = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -145,300 +158,355 @@ export function UserProfile({ user }: UserProfileProps) {
       color: newVehicle.color,
     });
     if (ok) {
-      toast.success("Vehicle added successfully!");
-      setNewVehicle({ plate: "", make: "", model: "", year: "", body_type: "", color: "" });
+      toast.success("Vehicle saved.");
+      setNewVehicle(EMPTY_VEHICLE);
       setShowAddForm(false);
     } else {
-      toast.error("Failed to add vehicle. Please try again.");
+      toast.error("Couldn't save that vehicle. Check the plate and try again.");
     }
     setAddingVehicle(false);
   };
 
   const handleRemoveVehicle = async (id: string) => {
     const ok = await removeVehicle(id);
-    if (ok) toast.success("Vehicle removed.");
-    else toast.error("Failed to remove vehicle.");
+    if (ok) toast.success("Vehicle deleted.");
+    else toast.error("Couldn't delete that vehicle. Please try again.");
   };
 
+  const busy = isLoading || isUploading;
+  const displayName = formData.fullName;
+  const memberSince = new Date(user.created_at).toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
-      <Card className="h-fit">
-        <CardHeader>
-          <CardTitle>Profile Settings</CardTitle>
-          <CardDescription>
-            Manage your account settings and preferences
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Avatar Section */}
-          <div className="flex items-center space-x-4">
-            <Avatar className="h-20 w-20">
+    <div className="grid w-full gap-6 lg:grid-cols-2 lg:items-start">
+      <div className="space-y-6">
+        {/* Profile */}
+        <section aria-labelledby="profile-heading" className={CARD}>
+          <div className="flex items-start justify-between gap-4">
+            <h2 id="profile-heading" className={SECTION_TITLE}>
+              Profile
+            </h2>
+            {!isEditing && (
+              <button type="button" onClick={() => setIsEditing(true)} className={cn(QUIET_BUTTON, "-mt-2")}>
+                <Pencil aria-hidden className="size-4" />
+                Edit profile
+              </button>
+            )}
+          </div>
+
+          <div className="mt-5 flex items-center gap-4">
+            <Avatar className="size-16 ring-1 ring-line">
               <AvatarImage
                 src={previewUrl || formData.avatar_url || undefined}
-                alt={formData.fullName || "User"}
+                alt=""
               />
-              <AvatarFallback>
-                {formData.fullName?.charAt(0) ||
+              <AvatarFallback className="bg-dusk text-xl font-bold text-on-night">
+                {formData.fullName?.charAt(0).toUpperCase() ||
                   formData.email.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            {isEditing && (
-              <div>
-                <Label htmlFor="avatar">Change Avatar</Label>
+            <div className="min-w-0">
+              <p className="truncate font-bold text-ink">{displayName || "No name yet"}</p>
+              <p className="truncate text-sm text-ink-muted">{user.email}</p>
+            </div>
+          </div>
+
+          {isEditing ? (
+            <form
+              className="mt-6 space-y-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSave();
+              }}
+            >
+              <div className="space-y-2">
+                <Label htmlFor="avatar">Profile photo</Label>
                 <Input
                   id="avatar"
                   type="file"
                   accept="image/*"
+                  className={cn(FIELD, "py-2 file:h-7")}
                   onChange={(e) => setFile(e.target.files?.[0] || null)}
                 />
               </div>
-            )}
-          </div>
-
-          {/* Profile Form */}
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
-                {isEditing ? (
-                  <Input
-                    id="fullName"
-                    value={formData.fullName}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        fullName: e.target.value,
-                      }))
-                    }
-                    placeholder="Enter your full name"
-                  />
-                ) : (
-                  <p className="text-sm">{user.full_name || "No name set"}</p>
-                )}
+                <Label htmlFor="fullName">Full name</Label>
+                <Input
+                  id="fullName"
+                  autoComplete="name"
+                  className={FIELD}
+                  value={formData.fullName}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      fullName: e.target.value,
+                    }))
+                  }
+                />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <p className="text-sm text-muted-foreground">{user.email}</p>
-              </div>
-            </div>
-            {/* Phone Number */}
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
-              {isEditing ? (
+                <Label htmlFor="phone">Phone number</Label>
                 <Input
                   id="phone"
                   type="tel"
+                  autoComplete="tel"
+                  className={FIELD}
                   value={formData.phone}
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, phone: e.target.value }))
                   }
-                  placeholder="Enter your phone number"
+                  placeholder="(832) 555-0123"
                 />
-              ) : (
-                <p className="text-sm">{user.phone || "No phone number set"}</p>
-              )}
-            </div>
-
-            {/* <div className="space-y-2">
-            <Label>Role</Label>
-            <Badge variant="outline">{user.role}</Badge>
-          </div> */}
-
-            <div className="space-y-2">
-              <Label>Member Since</Label>
-              <p className="text-sm text-muted-foreground">
-                {new Date(user.created_at).toLocaleDateString()}
-              </p>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex justify-end space-x-2">
-            {isEditing ? (
-              <>
-                <Button variant="outline" onClick={handleCancel}>
+              </div>
+              <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+                <button type="button" onClick={handleCancel} disabled={busy} className={QUIET_BUTTON}>
                   Cancel
-                </Button>
-                <Button onClick={handleSave} disabled={isLoading}>
-                  {isLoading && <p>loading</p>}
-                  Save Changes
-                </Button>
-              </>
-            ) : (
-              <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>
-            )}
-          </div>
+                </button>
+                <button type="submit" disabled={busy} className={SOLID_BUTTON}>
+                  {isUploading ? "Uploading photo…" : isLoading ? "Saving…" : "Save changes"}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <dl className="mt-6 divide-y divide-line-soft border-y border-line-soft text-sm">
+              <div className="flex justify-between gap-4 py-3">
+                <dt className="text-ink-muted">Full name</dt>
+                <dd className="text-right font-semibold text-ink">{formData.fullName || "Not set"}</dd>
+              </div>
+              <div className="flex justify-between gap-4 py-3">
+                <dt className="text-ink-muted">Email</dt>
+                <dd className="min-w-0 truncate text-right font-semibold text-ink">{user.email}</dd>
+              </div>
+              <div className="flex justify-between gap-4 py-3">
+                <dt className="text-ink-muted">Phone</dt>
+                <dd className="text-right font-semibold text-ink">{formData.phone || "Not set"}</dd>
+              </div>
+              <div className="flex justify-between gap-4 py-3">
+                <dt className="text-ink-muted">Customer since</dt>
+                <dd className="text-right font-semibold text-ink">{memberSince}</dd>
+              </div>
+            </dl>
+          )}
+        </section>
 
-          <MarketingConsentSwitch />
-        </CardContent>
-      </Card>
-
-      {/* My Vehicles */}
-      <Card className="h-fit">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>My Vehicles</CardTitle>
-              <CardDescription className="space-y-1">
-                <span className="block">Save your vehicles for faster booking.</span>
-                <span className="block text-xs text-amber-600 font-medium">⚠ Added vehicles are not part of your subscription.</span>
-              </CardDescription>
-            </div>
-            {!showAddForm && (
-              <Button size="sm" onClick={() => setShowAddForm(true)} className="bg-blue-900 hover:bg-blue-800">
-                <Plus className="w-4 h-4 mr-1" /> Add Vehicle
-              </Button>
-            )}
+        {/* Email preferences */}
+        <section aria-labelledby="email-heading" className={CARD}>
+          <h2 id="email-heading" className={SECTION_TITLE}>
+            Email preferences
+          </h2>
+          <div className="mt-4">
+            <MarketingConsentSwitch />
           </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Add Vehicle Form */}
-          {showAddForm && (
-            <form onSubmit={handleAddVehicle} className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1 sm:col-span-2">
-                  <Label htmlFor="new-plate">License Plate <span className="text-red-500">*</span></Label>
+        </section>
+      </div>
+
+      {/* Vehicles */}
+      <section aria-labelledby="vehicles-heading" className={CARD}>
+        <div className="flex items-start justify-between gap-4">
+          <h2 id="vehicles-heading" className={SECTION_TITLE}>
+            Your vehicles
+          </h2>
+          {!showAddForm && (
+            <button type="button" onClick={() => setShowAddForm(true)} className={cn(SOLID_BUTTON, "-mt-2")}>
+              <Plus aria-hidden className="size-4" />
+              Add vehicle
+            </button>
+          )}
+        </div>
+        <p className="mt-1 max-w-prose text-sm text-ink-muted">
+          Saved vehicles make booking faster. Saving one here doesn&apos;t add it to your
+          membership; do that from{" "}
+          <Link
+            href="/dashboard/billing"
+            className="rounded font-semibold text-ink underline underline-offset-4 hover:text-brand-blue focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+          >
+            Billing
+          </Link>
+          .
+        </p>
+
+        {/* Add vehicle form */}
+        {showAddForm && (
+          <form onSubmit={handleAddVehicle} className="mt-5 border-t border-line-soft pt-5">
+            <fieldset className="space-y-4">
+              <legend className="text-base font-bold text-ink">Add a vehicle</legend>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="new-plate">License plate</Label>
                   <Input
                     id="new-plate"
-                    placeholder="e.g. ABC 1234"
+                    placeholder="ABC 1234"
                     value={newVehicle.plate}
                     onChange={(e) => setNewVehicle((p) => ({ ...p, plate: e.target.value.toUpperCase() }))}
-                    className="font-mono uppercase tracking-widest"
+                    className={cn(FIELD, "font-mono uppercase tracking-[0.12em]")}
+                    autoComplete="off"
                     autoFocus
                     required
                   />
                 </div>
-                <div className="space-y-1">
-                  <Label htmlFor="new-make">Make <span className="text-xs text-gray-400">(optional)</span></Label>
+                <div className="space-y-2">
+                  <Label htmlFor="new-make">Make <span className="font-normal text-ink-muted">(optional)</span></Label>
                   <Input
                     id="new-make"
-                    placeholder="e.g. Toyota"
+                    placeholder="Toyota"
+                    className={FIELD}
                     value={newVehicle.make}
                     onChange={(e) => setNewVehicle((p) => ({ ...p, make: e.target.value }))}
                   />
                 </div>
-                <div className="space-y-1">
-                  <Label htmlFor="new-model">Model <span className="text-xs text-gray-400">(optional)</span></Label>
+                <div className="space-y-2">
+                  <Label htmlFor="new-model">Model <span className="font-normal text-ink-muted">(optional)</span></Label>
                   <Input
                     id="new-model"
-                    placeholder="e.g. Camry"
+                    placeholder="Camry"
+                    className={FIELD}
                     value={newVehicle.model}
                     onChange={(e) => setNewVehicle((p) => ({ ...p, model: e.target.value }))}
                   />
                 </div>
-                <div className="space-y-1">
-                  <Label htmlFor="new-year">Year <span className="text-xs text-gray-400">(optional)</span></Label>
+                <div className="space-y-2">
+                  <Label htmlFor="new-year">Year <span className="font-normal text-ink-muted">(optional)</span></Label>
                   <Input
                     id="new-year"
-                    placeholder="e.g. 2022"
+                    inputMode="numeric"
+                    placeholder="2022"
+                    className={FIELD}
                     value={newVehicle.year}
                     onChange={(e) => setNewVehicle((p) => ({ ...p, year: e.target.value }))}
                   />
                 </div>
-                <div className="space-y-1">
-                  <Label htmlFor="new-body">Body Type <span className="text-xs text-gray-400">(optional)</span></Label>
+                <div className="space-y-2">
+                  <Label htmlFor="new-body">Body type <span className="font-normal text-ink-muted">(optional)</span></Label>
                   <Input
                     id="new-body"
-                    placeholder="e.g. SUV, Sedan"
+                    placeholder="SUV, sedan…"
+                    className={FIELD}
                     value={newVehicle.body_type}
                     onChange={(e) => setNewVehicle((p) => ({ ...p, body_type: e.target.value }))}
                   />
                 </div>
-                <div className="space-y-1 sm:col-span-2">
-                  <Label htmlFor="new-color">Color <span className="text-xs text-gray-400">(optional)</span></Label>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="new-color">Color <span className="font-normal text-ink-muted">(optional)</span></Label>
                   <Input
                     id="new-color"
-                    placeholder="e.g. Black"
+                    placeholder="Black"
+                    className={FIELD}
                     value={newVehicle.color}
                     onChange={(e) => setNewVehicle((p) => ({ ...p, color: e.target.value }))}
                   />
                 </div>
               </div>
-              <div className="flex gap-2 justify-end">
-                <Button type="button" variant="outline" onClick={() => { setShowAddForm(false); setNewVehicle({ plate: "", make: "", model: "", year: "", body_type: "", color: "" }); }}>
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  className={QUIET_BUTTON}
+                  onClick={() => {
+                    setShowAddForm(false);
+                    setNewVehicle(EMPTY_VEHICLE);
+                  }}
+                >
                   Cancel
-                </Button>
-                <Button type="submit" disabled={addingVehicle} className="bg-blue-900 hover:bg-blue-800">
-                  {addingVehicle ? "Saving..." : "Save Vehicle"}
-                </Button>
+                </button>
+                <button type="submit" disabled={addingVehicle} className={SOLID_BUTTON}>
+                  {addingVehicle ? "Saving…" : "Save vehicle"}
+                </button>
               </div>
-            </form>
-          )}
+            </fieldset>
+          </form>
+        )}
 
-          {/* Vehicle List */}
-          {vehiclesLoading ? (
-            <div className="space-y-2">
-              {[1, 2].map((i) => (
-                <div key={i} className="h-16 bg-gray-100 animate-pulse rounded-lg" />
-              ))}
+        {/* Vehicle list */}
+        {vehiclesLoading ? (
+          <div aria-busy="true" aria-label="Loading your vehicles" className="mt-5 space-y-3">
+            {[1, 2].map((i) => (
+              <div key={i} className="h-16 animate-pulse rounded-xl bg-line-soft motion-reduce:animate-none" />
+            ))}
+          </div>
+        ) : userVehicles.length === 0 ? (
+          !showAddForm && (
+            <div className="mt-5 flex items-center gap-3 border-t border-line-soft pt-5 text-sm text-ink-muted">
+              <Car aria-hidden className="size-5 shrink-0 text-ink-subtle" />
+              No saved vehicles yet. Add one and it&apos;s ready to pick next time you book.
             </div>
-          ) : userVehicles.length === 0 ? (
-            <div className="text-center py-8 text-sm text-gray-500">
-              <Car className="w-10 h-10 mx-auto text-gray-300 mb-2" />
-              No vehicles saved yet. Add one to speed up your bookings.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {userVehicles.map((vehicle) => (
-                <div key={vehicle.id} className="flex flex-col justify-between p-4 border rounded-lg bg-white gap-3">
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
-                      <Car className="w-5 h-5 text-blue-700" />
+          )
+        ) : (
+          <ul className="mt-5 divide-y divide-line-soft border-y border-line-soft">
+            {userVehicles.map((vehicle) => {
+              const onPlan = subscribedIds.has(vehicle.id);
+              const name =
+                [vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(" ") || "Vehicle";
+              const details = [vehicle.body_type, vehicle.colors?.join(", ")].filter(Boolean).join(" · ");
+              return (
+                <li key={vehicle.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 py-4">
+                  <div className="min-w-0 space-y-1.5">
+                    <p className="font-semibold text-ink">{name}</p>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <LicensePlate plate={vehicle.license_plate} />
+                      {details && <span className="text-sm text-ink-muted">{details}</span>}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
-                        <p className="font-bold font-mono tracking-wider text-gray-900">
-                          {vehicle.license_plate}
-                        </p>
-                        {subscribedIds.has(vehicle.id) ? (
-                          <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full font-medium">Subscription</span>
-                        ) : (
-                          <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full font-medium">Saved</span>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 mt-1">
-                        {vehicle.make && (
-                          <p className="text-xs text-gray-500"><span className="font-medium text-gray-700">Make:</span> {vehicle.make}</p>
-                        )}
-                        {vehicle.model && (
-                          <p className="text-xs text-gray-500"><span className="font-medium text-gray-700">Model:</span> {vehicle.model}</p>
-                        )}
-                        {vehicle.year && (
-                          <p className="text-xs text-gray-500"><span className="font-medium text-gray-700">Year:</span> {vehicle.year}</p>
-                        )}
-                        {vehicle.body_type && (
-                          <p className="text-xs text-gray-500"><span className="font-medium text-gray-700">Type:</span> {vehicle.body_type}</p>
-                        )}
-                        {vehicle.colors && vehicle.colors.length > 0 && (
-                          <p className="text-xs text-gray-500 col-span-2"><span className="font-medium text-gray-700">Color:</span> {vehicle.colors.join(", ")}</p>
-                        )}
-                        {vehicle.license_plate && (
-                          <p className="text-xs text-gray-500 col-span-2"><span className="font-medium text-gray-700">License Plate:</span> {vehicle.license_plate}</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" className="flex-1" onClick={() => setEditingVehicle(vehicle)}>
-                      <Pencil className="w-3.5 h-3.5 mr-1" /> Edit
-                    </Button>
-                    {!subscribedIds.has(vehicle.id) && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-red-600 border-red-200 hover:bg-red-50"
-                        onClick={() => handleRemoveVehicle(vehicle.id)}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
+                    {onPlan && (
+                      <p className="flex items-center gap-1.5 text-sm font-medium text-ink">
+                        <BadgeCheck aria-hidden className="size-4 text-brand-blue" />
+                        On your plan
+                      </p>
                     )}
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className={QUIET_BUTTON}
+                      onClick={() => setEditingVehicle(vehicle)}
+                    >
+                      Edit<span className="sr-only"> {vehicle.license_plate}</span>
+                    </button>
+                    {!onPlan && (
+                      <button
+                        type="button"
+                        onClick={() => setVehicleToDelete(vehicle)}
+                        className={cn(
+                          "inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-destructive hover:bg-destructive/10",
+                          FOCUS,
+                        )}
+                      >
+                        Delete<span className="sr-only"> {vehicle.license_plate}</span>
+                      </button>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      {/* Delete saved vehicle confirmation */}
+      <AlertDialog open={!!vehicleToDelete} onOpenChange={(open) => !open && setVehicleToDelete(null)}>
+        <AlertDialogContent className="lp-theme rounded-2xl border-line bg-paper text-ink">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-black tracking-tight">
+              Delete {vehicleToDelete?.license_plate} from your saved vehicles?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-ink-muted">
+              You won&apos;t be able to pick it when you book. You can add it again anytime.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="h-11 font-semibold">Keep it</AlertDialogCancel>
+            <AlertDialogAction
+              className="h-11 bg-destructive font-semibold text-white hover:bg-destructive/90 focus-visible:ring-destructive/30"
+              onClick={() => {
+                if (vehicleToDelete) handleRemoveVehicle(vehicleToDelete.id);
+                setVehicleToDelete(null);
+              }}
+            >
+              Delete vehicle
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Edit Vehicle Modal */}
       {editingVehicle && (

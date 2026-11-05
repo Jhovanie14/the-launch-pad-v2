@@ -1,7 +1,13 @@
 "use client";
 
+import Link from "next/link";
+import { CalendarX, XCircle } from "lucide-react";
 import { Subscription } from "@/types";
 
+/**
+ * A plain note above the membership card when it is ending or has ended.
+ * Text and icon carry the meaning; no warning colours.
+ */
 export default function SubscriptionCancelInfo({
   subscription,
 }: {
@@ -17,30 +23,46 @@ export default function SubscriptionCancelInfo({
 
   if (subscription.status === "active" && subscription.cancel_at_period_end) {
     return (
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-6">
-        <h3 className="text-base font-semibold text-yellow-800">
-          Subscription Scheduled for Cancellation
-        </h3>
-        <p className="text-sm text-yellow-700 mt-1">
-          Your subscription will remain active until{" "}
-          <span className="font-medium">{endDate}</span>. After this date, your
-          plan will automatically end and billing will stop.
-        </p>
+      <div role="status" className="flex items-start gap-3 rounded-2xl bg-paper p-5 ring-1 ring-line">
+        <CalendarX aria-hidden className="mt-0.5 size-5 shrink-0 text-ink" />
+        <div>
+          <p className="font-bold text-ink">
+            Your membership ends{endDate ? ` on ${endDate}` : " at the end of this billing period"}
+          </p>
+          <p className="mt-1 max-w-prose text-sm text-ink-muted">
+            You keep your washes until then, and you won&apos;t be charged again. Changed your mind?{" "}
+            <Link
+              href="/dashboard/help"
+              className="rounded font-semibold text-ink underline underline-offset-4 hover:text-brand-blue focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+            >
+              Contact us
+            </Link>{" "}
+            before that date.
+          </p>
+        </div>
       </div>
     );
   }
 
   if (subscription.status === "canceled") {
     return (
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-6">
-        <h3 className="text-base font-semibold text-gray-800">
-          Subscription Ended
-        </h3>
-        <p className="text-sm text-gray-600 mt-1">
-          Your subscription ended on{" "}
-          <span className="font-medium">{endDate}</span>. You can re-subscribe
-          anytime to regain premium access.
-        </p>
+      <div role="status" className="flex items-start gap-3 rounded-2xl bg-paper p-5 ring-1 ring-line">
+        <XCircle aria-hidden className="mt-0.5 size-5 shrink-0 text-ink-muted" />
+        <div>
+          <p className="font-bold text-ink">
+            Your membership ended{endDate ? ` on ${endDate}` : ""}
+          </p>
+          <p className="mt-1 max-w-prose text-sm text-ink-muted">
+            You can join again anytime from{" "}
+            <Link
+              href="/dashboard/pricing"
+              className="rounded font-semibold text-ink underline underline-offset-4 hover:text-brand-blue focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+            >
+              membership plans
+            </Link>
+            .
+          </p>
+        </div>
       </div>
     );
   }

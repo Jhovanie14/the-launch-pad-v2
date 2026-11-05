@@ -1,5 +1,7 @@
 import { useState } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
+import { AlertCircle, ArrowRight, CalendarX, CheckCircle2, CreditCard, Info, XCircle } from "lucide-react";
 import { Button } from "./ui/button";
 import {
   AlertDialog,
@@ -11,12 +13,25 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "./ui/alert-dialog";
+import { LicensePlate } from "./dashboard-home/license-plate";
 import { SelfServiceSubscription } from "@/types";
+import { BUSINESS_TIME_ZONE, membershipStatusLine } from "@/lib/dashboard/home";
+import { cn } from "@/lib/utils";
 
 interface SelfServiceSubscriptionStatusProps {
   subscription: SelfServiceSubscription | null;
   onSubscriptionChange?: () => void;
 }
+
+const formatDate = (date?: string | null) =>
+  date
+    ? new Date(date).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        timeZone: BUSINESS_TIME_ZONE,
+      })
+    : "—";
 
 export default function SelfServiceSubscriptionStatus({
   subscription,
@@ -37,11 +52,11 @@ export default function SelfServiceSubscriptionStatus({
       if (data.url) {
         window.location.href = data.url; // redirect to Stripe Billing Portal
       } else {
-        alert("Unable to open payment update page.");
+        toast.error("We couldn't open the secure payment page. Please try again in a moment.");
       }
     } catch (err) {
       console.error("Error updating payment method:", err);
-      alert("Something went wrong. Please try again.");
+      toast.error("We couldn't reach the payment page. Check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -58,7 +73,7 @@ export default function SelfServiceSubscriptionStatus({
         throw new Error(data.error ?? "Failed to cancel subscription");
       }
       toast.success(
-        "Your subscription will be canceled at the end of the billing period.",
+        "Your self-service plan will end at the close of this billing period.",
       );
       setCancelOpen(false);
       onSubscriptionChange?.();
@@ -73,211 +88,180 @@ export default function SelfServiceSubscriptionStatus({
 
   if (!subscription) {
     return (
-      <div className="bg-white overflow-hidden shadow rounded-lg mb-8">
-        <div className="p-6">
-          <h3 className="text-lg font-medium text-gray-900">
-            Self-Service Subscription
-          </h3>
-          <p className="mt-2 text-sm text-gray-600">
-            You don't have an active self-service subscription. Choose a plan to
-            unlock features.
-          </p>
-          <div className="mt-4">
-            <a
-              href="/dashboard/pricing"
-              className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-blue-900 hover:bg-blue-800"
-            >
-              View Plans
-            </a>
-          </div>
-        </div>
-      </div>
+      <section aria-labelledby="self-empty" className="rounded-2xl bg-paper p-5 ring-1 ring-line sm:p-7">
+        <h3 id="self-empty" className="text-xl font-black tracking-tight text-ink">
+          No self-service plan
+        </h3>
+        <p className="mt-1 max-w-prose text-ink-muted">
+          The bays are open 24/7 with tap-to-pay. A plan is there if you wash often.
+        </p>
+        <Link
+          href="/dashboard/pricing"
+          className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-lg px-4 text-sm font-semibold text-ink ring-1 ring-line hover:bg-canvas focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+        >
+          See self-service plans
+          <ArrowRight aria-hidden className="size-4" />
+        </Link>
+      </section>
     );
   }
 
-  // Status helper
-  const getStatusColor = (status: string) => {
-    switch (status) {
+  const isActive = subscription.status === "active";
+  const ending = subscription.cancel_at_period_end;
+  const price = subscription.subscription_plans?.monthly_price;
+
+  const status = (() => {
+    if (ending) return { icon: CalendarX, tone: "text-ink", label: membershipStatusLine(subscription) };
+    switch (subscription.status) {
       case "active":
-        return "bg-green-100 text-green-800";
+        return { icon: CheckCircle2, tone: "text-ink", label: membershipStatusLine(subscription) };
       case "past_due":
-        return "bg-yellow-100 text-yellow-800";
+        return { icon: AlertCircle, tone: "text-destructive", label: "Payment past due. Update your card to keep using the plan." };
       case "canceled":
-        return "bg-red-100 text-red-800";
+        return { icon: XCircle, tone: "text-ink-muted", label: `Ended ${formatDate(subscription.current_period_end)}` };
       default:
-        return "bg-gray-100 text-gray-800";
+        return {
+          icon: Info,
+          tone: "text-ink-muted",
+          label: subscription.status.charAt(0).toUpperCase() + subscription.status.slice(1),
+        };
     }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "active":
-        return (
-          <svg
-            className="w-4 h-4 mr-1.5 text-green-500"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <path
-              fillRule="evenodd"
-              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-              clipRule="evenodd"
-            />
-          </svg>
-        );
-      case "past_due":
-        return (
-          <svg
-            className="w-4 h-4 mr-1.5 text-yellow-500"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <path
-              fillRule="evenodd"
-              d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-              clipRule="evenodd"
-            />
-          </svg>
-        );
-      default:
-        return (
-          <svg
-            className="w-4 h-4 mr-1.5 text-gray-400"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <path
-              fillRule="evenodd"
-              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-              clipRule="evenodd"
-            />
-          </svg>
-        );
-    }
-  };
-
-  const formatDate = (date?: string | null) =>
-    date ? new Date(date).toLocaleDateString() : "N/A";
+  })();
+  const StatusIcon = status.icon;
 
   return (
-    <div className="bg-white overflow-hidden shadow rounded-lg mb-8">
-      <div className="p-6">
-        <h3 className="text-lg font-medium text-gray-900">
-          Self-Service Subscription
-        </h3>
-        <div className="mt-2">
-          <span
-            className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-              subscription.status
-            )}`}
-          >
-            {getStatusIcon(subscription.status)}{" "}
-            {subscription.status.charAt(0).toUpperCase() +
-              subscription.status.slice(1)}{" "}
-            Subscription
-          </span>
-        </div>
-        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <p className="text-sm font-medium text-gray-500">Plan</p>
-            <p className="text-sm text-gray-900">
-              {subscription.subscription_plans?.name || subscription.plan_id}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-gray-500">Price</p>
-            <p className="text-sm text-gray-900">
-              {subscription.billing_cycle
-                ? `${
-                    subscription.billing_cycle === "month"
-                      ? subscription.subscription_plans?.monthly_price
-                      : ""
-                  } / ${subscription.billing_cycle}`
-                : "N/A"}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-gray-500">Current Period</p>
-            <p className="text-sm text-gray-900">
-              {formatDate(subscription.current_period_start)} -{" "}
-              {formatDate(subscription.current_period_end)}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-gray-500">Next Billing</p>
-            <p className="text-sm text-gray-900">
-              {formatDate(subscription.current_period_end)}
-            </p>
-          </div>
-          <div>
-            <h4 className="text-md font-semibold text-gray-900">
-              Linked Vehicles Plate Numbers
-            </h4>
+    <section aria-labelledby="self-plan" className="rounded-2xl bg-paper p-5 ring-1 ring-line sm:p-7">
+      <h3 id="self-plan" className="text-2xl font-black tracking-tight text-balance text-ink sm:text-3xl">
+        {subscription.subscription_plans?.name || "Self-service plan"}
+      </h3>
+      <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-base font-semibold">
+        <span className={cn("inline-flex items-center gap-1.5", status.tone)}>
+          <StatusIcon aria-hidden className="size-4 shrink-0" />
+          {status.label}
+        </span>
+      </p>
 
-            {subscription.vehicles.length > 0 ? (
-              subscription.vehicles.map((v) => (
-                <p key={v.id}>
-                  {v.license_plate}
-                </p>
-              ))
-            ) : (
-              <p className="text-sm text-gray-600 mt-1">No vehicles linked.</p>
-            )}
+      {ending && (
+        <p className="mt-4 flex items-start gap-2 text-sm text-ink">
+          <CalendarX aria-hidden className="mt-0.5 size-4 shrink-0 text-ink-muted" />
+          <span>
+            Cancellation is scheduled. You can use the plan until{" "}
+            <strong>{formatDate(subscription.current_period_end)}</strong>, and you won&apos;t be
+            charged again.
+          </span>
+        </p>
+      )}
+
+      <div className="mt-6 border-t border-line-soft pt-6">
+        <h4 className="text-base font-bold text-ink">What you pay</h4>
+        <dl className="mt-3 divide-y divide-line-soft text-sm">
+          <div className="flex justify-between gap-4 py-2.5">
+            <dt className="text-ink-muted">Price</dt>
+            <dd className="font-semibold text-ink tabular-nums">
+              {subscription.billing_cycle === "month" && price != null
+                ? `$${Number(price).toFixed(2)}/month`
+                : subscription.billing_cycle
+                  ? `Billed ${subscription.billing_cycle}ly`
+                  : "—"}
+            </dd>
           </div>
-        </div>
-        <div className="mt-4">
+          {!ending && (
+            <div className="flex justify-between gap-4 py-2.5">
+              <dt className="text-ink-muted">Next charge</dt>
+              <dd className="font-semibold text-ink">{formatDate(subscription.current_period_end)}</dd>
+            </div>
+          )}
+          <div className="flex justify-between gap-4 py-2.5">
+            <dt className="text-ink-muted">This billing period</dt>
+            <dd className="text-right font-semibold text-ink">
+              {formatDate(subscription.current_period_start)} – {formatDate(subscription.current_period_end)}
+            </dd>
+          </div>
+        </dl>
+
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="flex items-center gap-2 text-sm text-ink-muted">
+            <CreditCard aria-hidden className="size-4 shrink-0" />
+            {isActive
+              ? "Your card is kept by Stripe, our secure payment provider."
+              : "You can update your card while the plan is active."}
+          </p>
           <Button
             variant="outline"
             onClick={handleUpdatePayment}
-            disabled={loading || subscription.status !== "active"}
+            disabled={loading || !isActive}
+            className="h-11 shrink-0 px-5 font-semibold"
           >
-            {loading ? "Redirecting..." : "Update Payment Method"}
+            {loading ? "Opening Stripe…" : "Update payment method"}
           </Button>
         </div>
-
-        {subscription.cancel_at_period_end ? (
-          <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            Cancellation scheduled — your access ends{" "}
-            {formatDate(subscription.current_period_end)}.
-          </div>
-        ) : (
-          subscription.status === "active" && (
-            <div className="mt-4">
-              <Button variant="destructive" onClick={() => setCancelOpen(true)}>
-                Cancel Subscription
-              </Button>
-            </div>
-          )
-        )}
-
-        <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>
-                Cancel your self-service subscription?
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                You&apos;ll keep access until{" "}
-                {formatDate(subscription.current_period_end)}, then your
-                subscription ends. No further charges.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
-              <AlertDialogAction
-                className="bg-red-600 hover:bg-red-700"
-                disabled={cancelling}
-                onClick={(e) => {
-                  e.preventDefault(); // keep the dialog open while in flight
-                  handleCancelSubscription();
-                }}
-              >
-                {cancelling ? "Cancelling…" : "Yes, Cancel Subscription"}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </div>
-    </div>
+
+      <div className="mt-6 border-t border-line-soft pt-6">
+        <h4 className="text-base font-bold text-ink">Vehicles on this plan</h4>
+        {subscription.vehicles.some(Boolean) ? (
+          <ul className="mt-3 divide-y divide-line-soft border-y border-line-soft">
+            {subscription.vehicles.filter(Boolean).map((v) => {
+              const label = [v.year, v.make, v.model].filter(Boolean).join(" ") || "Vehicle";
+              return (
+                <li key={v.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-3">
+                  <span className="font-semibold text-ink">{label}</span>
+                  {v.license_plate && <LicensePlate plate={v.license_plate} />}
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="mt-3 text-sm text-ink-muted">No vehicles are on this plan yet.</p>
+        )}
+      </div>
+
+      {/* Danger zone, last */}
+      {!ending && isActive && (
+        <div className="mt-6 flex flex-col gap-3 border-t border-line-soft pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h4 className="text-base font-bold text-ink">Cancel self-service plan</h4>
+            <p className="mt-0.5 max-w-prose text-sm text-ink-muted">
+              You keep the plan until {formatDate(subscription.current_period_end)}. The bays stay
+              open to you with tap-to-pay after that.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => setCancelOpen(true)}
+            className="h-11 shrink-0 border-destructive/40 px-4 font-semibold text-destructive hover:bg-destructive/10 hover:text-destructive"
+          >
+            Cancel plan
+          </Button>
+        </div>
+      )}
+
+      <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
+        <AlertDialogContent className="lp-theme rounded-2xl border-line bg-paper text-ink">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-black tracking-tight">
+              Cancel your self-service plan?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-ink-muted">
+              You&apos;ll keep the plan until {formatDate(subscription.current_period_end)}, then it
+              ends. No further charges.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="h-11 font-semibold">Keep my plan</AlertDialogCancel>
+            <AlertDialogAction
+              className="h-11 bg-destructive font-semibold text-white hover:bg-destructive/90 focus-visible:ring-destructive/30"
+              disabled={cancelling}
+              onClick={(e) => {
+                e.preventDefault(); // keep the dialog open while in flight
+                handleCancelSubscription();
+              }}
+            >
+              {cancelling ? "Cancelling…" : "Yes, cancel plan"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </section>
   );
 }

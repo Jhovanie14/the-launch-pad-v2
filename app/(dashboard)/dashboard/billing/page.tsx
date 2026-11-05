@@ -1,157 +1,164 @@
 "use client";
 
-import { useSubscription } from "@/hooks/useSubscription";
-import SubscriptionStatus from "@/components/subscription-status";
 import Link from "next/link";
-import SubscriptionCancelInfo from "@/components/user/subscription-cancel-info";
+import { ArrowRight, MessageSquare, Phone } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useSubscription } from "@/hooks/useSubscription";
 import { useSelfServiceSubscription } from "@/hooks/useSelfServiceSubscription";
+import SubscriptionStatus from "@/components/subscription-status";
+import SubscriptionCancelInfo from "@/components/user/subscription-cancel-info";
 import SelfServiceSubscriptionStatus from "@/components/self-service-subscription-status";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { CreditCard, Settings, AlertCircle } from "lucide-react";
 
+const QUIET_LINK =
+  "inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-semibold text-ink hover:bg-line-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
+
+/*
+  Billing: one place for what you pay and what it covers. Each plan is one
+  white card holding status, the next charge, the payment method and the
+  vehicles on it, with cancelling last. The navbar's Membership tab is where
+  plans are compared; this page links there instead of repeating it.
+*/
 export default function BillingPage() {
   const { subscription, loading, error, refetch } = useSubscription();
-  const { subscription: selfSubs, reload: reloadSelfSubs } =
-    useSelfServiceSubscription();
-
-  if (loading) {
-    return (
-      <div className="p-6 space-y-6 animate-pulse">
-        {/* Header */}
-        <div className="h-8 w-56 bg-gray-200 rounded"></div>
-
-        {/* Subscription status */}
-        <div className="h-20 bg-gray-200 rounded-lg"></div>
-
-        {/* Manage subscription skeleton */}
-        <div className="bg-white overflow-hidden shadow rounded-lg p-6 space-y-4">
-          <div className="h-6 w-48 bg-gray-200 rounded"></div>
-          <div className="flex space-x-3">
-            <div className="h-10 w-40 bg-gray-200 rounded-md"></div>
-            <div className="h-10 w-32 bg-gray-200 rounded-md"></div>
-            <div className="h-10 w-36 bg-gray-200 rounded-md"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-full p-6">
-        <p className="text-red-500">Error loading billing info: {error}</p>
-      </div>
-    );
-  }
+  const {
+    subscription: selfSubs,
+    loading: selfLoading,
+    error: selfError,
+    reload: reloadSelfSubs,
+  } = useSelfServiceSubscription();
 
   return (
-    <div className="p-6 space-y-6 max-w-5xl mx-auto">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">
-          Billing & Subscription
-        </h1>
-        <p className="text-gray-600 mt-2">
-          Manage your subscription, payment methods, and billing information
-        </p>
-      </div>
+    <div>
+      <h1 className="text-3xl font-black tracking-tight text-ink">Billing</h1>
+      <p className="mt-1 text-ink-muted">
+        What you pay, when, and which vehicles it covers.
+      </p>
 
-      {/* Express Detailing Subscription */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-gray-900">
-          Express Detailing Subscription
-        </h2>
-        <SubscriptionStatus subscription={subscription} onVehicleChange={refetch} />
-        {subscription && <SubscriptionCancelInfo subscription={subscription} />}
-      </div>
-
-      {/* Self-Service Subscription */}
-      {selfSubs && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-gray-900">
-            Self-Service Subscription
-          </h2>
-          <SelfServiceSubscriptionStatus
-            subscription={selfSubs}
-            onSubscriptionChange={reloadSelfSubs}
+      {loading || selfLoading ? (
+        <BillingSkeleton />
+      ) : error ? (
+        <div className="mt-8">
+          <InlineError
+            message="We couldn't load your membership."
+            detail="Your plan hasn't changed. This is a problem loading the page."
+            onRetry={() => {
+              refetch();
+              reloadSelfSubs();
+            }}
           />
         </div>
-      )}
-
-      {/* Management Actions */}
-      {subscription && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Settings className="w-5 h-5" />
-              Manage Subscription
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-gray-600">
-              Update your subscription plan or payment method. To cancel,
-              use "Unsubscribe Everything" in the subscription details above.
-            </p>
-            <Separator />
-            <div className="flex flex-wrap gap-3">
-              <Button asChild variant="outline">
-                <Link href="/dashboard/pricing">
-                  <Settings className="w-4 h-4 mr-2" />
-                  Change Plan
+      ) : (
+        <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-8">
+          <div className="space-y-10">
+          <section aria-labelledby="express-heading" className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+              <h2 id="express-heading" className="text-xl font-black tracking-tight text-ink">
+                Express detailing membership
+              </h2>
+              {subscription && (
+                <Link href="/dashboard/pricing" className={cn(QUIET_LINK, "-mr-3")}>
+                  Change plan
+                  <ArrowRight aria-hidden className="size-4" />
                 </Link>
-              </Button>
+              )}
             </div>
-            <p className="text-xs text-gray-500">
-              To cancel your subscription, use "Unsubscribe Everything" above.
-            </p>
-            {subscription.cancel_at_period_end && (
-              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <div className="flex items-start gap-2">
-                  <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-yellow-800">
-                      Subscription Scheduled for Cancellation
-                    </p>
-                    <p className="text-xs text-yellow-700 mt-1">
-                      Your subscription will end on{" "}
-                      {new Date(
-                        subscription.current_period_end
-                      ).toLocaleDateString()}
-                      . You'll continue to have access until then.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+            {subscription && <SubscriptionCancelInfo subscription={subscription} />}
+            <SubscriptionStatus subscription={subscription} onVehicleChange={refetch} />
+          </section>
 
-      {/* Help Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CreditCard className="w-5 h-5" />
-            Need Help?
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-gray-600 mb-4">
-            If you have questions about your subscription or billing, we're here
-            to help.
-          </p>
-          <div className="flex gap-3">
-            <Button asChild variant="outline">
-              <Link href="/dashboard/help">Contact Support</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href="/dashboard/pricing">View All Plans</Link>
-            </Button>
+          {selfError ? (
+            <section aria-labelledby="self-heading" className="space-y-4">
+              <h2 id="self-heading" className="text-xl font-black tracking-tight text-ink">
+                Self-service plan
+              </h2>
+              <InlineError
+                message="We couldn't load your self-service plan."
+                onRetry={reloadSelfSubs}
+              />
+            </section>
+          ) : (
+            selfSubs && (
+              <section aria-labelledby="self-heading" className="space-y-4">
+                <h2 id="self-heading" className="text-xl font-black tracking-tight text-ink">
+                  Self-service plan
+                </h2>
+                <SelfServiceSubscriptionStatus
+                  subscription={selfSubs}
+                  onSubscriptionChange={reloadSelfSubs}
+                />
+              </section>
+            )
+          )}
+
           </div>
-        </CardContent>
-      </Card>
+
+          <aside
+            aria-labelledby="billing-help"
+            className="rounded-2xl bg-paper p-5 ring-1 ring-line lg:sticky lg:top-24"
+          >
+            <h2 id="billing-help" className="text-base font-black tracking-tight text-ink">
+              Questions about a charge?
+            </h2>
+            <p className="mt-1 text-sm text-ink-muted">
+              Send us a message and we&apos;ll reply by email, or give us a call.
+            </p>
+            <div className="mt-3 -mx-2 border-t border-line-soft pt-2">
+              <Link href="/dashboard/help" className={cn(QUIET_LINK, "flex px-2")}>
+                <MessageSquare aria-hidden className="size-4 text-brand-blue" />
+                Contact support
+              </Link>
+              <a href="tel:+18322198320" className={cn(QUIET_LINK, "flex px-2")}>
+                <Phone aria-hidden className="size-4 text-brand-blue" />
+                (832) 219-8320
+              </a>
+            </div>
+          </aside>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function InlineError({
+  message,
+  detail,
+  onRetry,
+}: {
+  message: string;
+  detail?: string;
+  onRetry: () => void;
+}) {
+  return (
+    <div role="alert" className="rounded-2xl bg-night p-5 text-on-night ring-1 ring-white/10 sm:p-7">
+      <p className="font-semibold">{message}</p>
+      {detail && <p className="mt-1 text-sm text-on-night-muted">{detail}</p>}
+      <button
+        type="button"
+        onClick={onRetry}
+        className="mt-4 min-h-11 rounded-lg border border-white/25 px-4 font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-flame"
+      >
+        Try again
+      </button>
+    </div>
+  );
+}
+
+function BillingSkeleton() {
+  return (
+    <div aria-busy="true" aria-label="Loading your billing" className="mt-8 space-y-4">
+      <div className="h-7 w-64 animate-pulse rounded bg-line motion-reduce:animate-none" />
+      <div className="space-y-5 rounded-2xl bg-paper p-5 ring-1 ring-line sm:p-7">
+        <div className="h-8 w-56 animate-pulse rounded bg-line motion-reduce:animate-none" />
+        <div className="h-5 w-48 animate-pulse rounded bg-line-soft motion-reduce:animate-none" />
+        <div className="h-px bg-line-soft" />
+        <div className="h-10 w-36 animate-pulse rounded bg-line motion-reduce:animate-none" />
+        <div className="space-y-2">
+          <div className="h-5 animate-pulse rounded bg-line-soft motion-reduce:animate-none" />
+          <div className="h-5 animate-pulse rounded bg-line-soft motion-reduce:animate-none" />
+        </div>
+        <div className="h-px bg-line-soft" />
+        <div className="h-14 animate-pulse rounded bg-line-soft motion-reduce:animate-none" />
+      </div>
     </div>
   );
 }
