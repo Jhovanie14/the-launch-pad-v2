@@ -14,7 +14,6 @@ import { Input } from "@/components/ui/input";
 import { BookingsTable } from "@/components/user/bookings-table";
 import { createClient } from "@/utils/supabase/client";
 import type { Booking } from "@/types";
-import { format } from "date-fns";
 import {
   Calendar,
   Car,
@@ -32,7 +31,8 @@ import {
   Loader2,
   Edit,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { bookingDateRange, bookingSearchOr, houstonToday, vehicleSearchOr } from "@/lib/admin/bookingQuery";
 import {
   Select,
   SelectContent,
@@ -68,6 +68,19 @@ type DateFilterType =
   | "lastMonth";
 type StatusFilterType = "all" | Booking["status"];
 
+const BOOKING_SELECT = `*,
+  vehicle:vehicles ( year, make, model, body_type, colors, license_plate ),
+  booking_add_ons ( add_ons ( id, name, price, duration, is_active ) )`;
+
+function withAddOns(rows: any[] | null): Booking[] {
+  return (rows ?? []).map((b) => ({
+    ...b,
+    add_ons: b.booking_add_ons?.map((ba: any) => ba.add_ons).filter(Boolean) || [],
+  }));
+}
+
+type BookingStats = { total: number; today: number; revenue: number };
+
 export default function BookingsView() {
   const supabase = createClient();
   const { userProfile } = useAuth();
@@ -78,15 +91,17 @@ export default function BookingsView() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
-  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [stats, setStats] = useState<BookingStats | null>(null);
+  const [dayBookings, setDayBookings] = useState<Booking[]>([]);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [firstLoadDone, setFirstLoadDone] = useState(false);
   const [userSubscribe, setUserSubscribe] = useState<UserSubscription[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilterType>("all");
   const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
   const [exportModalOpen, setExportModalOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(
-    format(new Date(), "yyyy-MM-dd")
-  );
+  const [selectedDate, setSelectedDate] = useState(() => houstonToday());
 
   // const [averageTime, setAverageTime] = useState("");
 
@@ -102,118 +117,120 @@ export default function BookingsView() {
     setShowEditBooking(true);
   };
 
-  const handleEditSuccess = () => {
-    // Refresh bookings after successful edit
-    const fetchBookings = async () => {
-      setLoading(true);
+  // Typing pauses for 300ms before a search query runs.
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchTerm), 300);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
 
-      const { data, error } = await supabase
-        .from("bookings")
-        .select(
-          `*,
-          vehicle:vehicles ( year, make, model, body_type, colors, license_plate ),
-           booking_add_ons (
-          add_ons (
-            id, name, price, duration, is_active
-          )
-        )`
-        )
-        .order("appointment_time", { ascending: false });
+  // One page of bookings, searched, filtered and paged in the database.
+  const loadPage = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Plate / make / model live on vehicles: find those first.
+      let vehicleIds: string[] = [];
+      const vehicleOr = vehicleSearchOr(debouncedSearch);
+      if (vehicleOr) {
+        const { data } = await supabase.from("vehicles").select("id").or(vehicleOr).limit(100);
+        vehicleIds = (data ?? []).map((v: { id: string }) => v.id);
+      }
 
-      setLoading(false);
+      let query = supabase.from("bookings").select(BOOKING_SELECT, { count: "exact" });
+      const searchOr = bookingSearchOr(debouncedSearch, vehicleIds);
+      if (searchOr) query = query.or(searchOr);
+      if (statusFilter !== "all") query = query.eq("status", statusFilter);
+      const range = bookingDateRange(dateFilter, houstonToday());
+      if (range.gte) query = query.gte("appointment_date", range.gte);
+      if (range.lte) query = query.lte("appointment_date", range.lte);
+      if (range.lt) query = query.lt("appointment_date", range.lt);
+
+      const from = (page - 1) * pageSize;
+      const { data, count, error } = await query
+        .order("appointment_date", { ascending: false })
+        .order("appointment_time", { ascending: false })
+        .range(from, from + pageSize - 1);
 
       if (error) {
         console.error("Error fetching bookings:", error);
+        toast.error("Couldn't load bookings");
         return;
       }
-      const formatted = (data || []).map((b) => ({
-        ...b,
-        add_ons:
-          b.booking_add_ons?.map((ba: any) => ba.add_ons).filter(Boolean) || [],
-      }));
 
-      setBookings(formatted);
-    };
+      const rows = withAddOns(data);
+      setBookings(rows);
+      setTotal(count ?? 0);
 
-    fetchBookings();
+      // Membership badges, only for the customers on this page.
+      const userIds = [...new Set(rows.map((b) => b.user_id).filter((id): id is string => !!id))];
+      if (userIds.length) {
+        const { data: subs } = await supabase
+          .from("user_subscription")
+          .select("user_id, status")
+          .in("user_id", userIds);
+        setUserSubscribe(subs ?? []);
+      } else {
+        setUserSubscribe([]);
+      }
+    } finally {
+      setLoading(false);
+      setFirstLoadDone(true);
+    }
+  }, [supabase, debouncedSearch, statusFilter, dateFilter, page, pageSize]);
+
+  // Totals for the cards, counted and summed in the database.
+  const loadStats = useCallback(async () => {
+    const { data, error } = await supabase.rpc("admin_booking_stats", { p_today: houstonToday() });
+    if (error || !data) {
+      console.error("Error fetching booking stats:", error);
+      setStats(null);
+      return;
+    }
+    const raw = data as { total: number | string; today: number | string; revenue: number | string };
+    setStats({ total: Number(raw.total), today: Number(raw.today), revenue: Number(raw.revenue) });
+  }, [supabase]);
+
+  // The day panel: only the chosen date's bookings.
+  const loadDay = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("bookings")
+      .select(BOOKING_SELECT)
+      .eq("appointment_date", selectedDate)
+      .order("appointment_time", { ascending: false });
+    if (error) {
+      console.error("Error fetching bookings for date:", error);
+      return;
+    }
+    setDayBookings(withAddOns(data));
+  }, [supabase, selectedDate]);
+
+  useEffect(() => {
+    loadPage();
+  }, [loadPage]);
+  useEffect(() => {
+    loadStats();
+  }, [loadStats]);
+  useEffect(() => {
+    loadDay();
+  }, [loadDay]);
+
+  const handleEditSuccess = () => {
+    loadPage();
+    loadStats();
+    loadDay();
   };
 
-  // Fetch all bookings
+  // Realtime and local edits update both the page and the day panel.
+  const selectedDateRef = useRef(selectedDate);
   useEffect(() => {
-    const fetchBookings = async () => {
-      setLoading(true);
-
-      const { data, error } = await supabase
-        .from("bookings")
-        .select(
-          `*,
-          vehicle:vehicles ( year, make, model, body_type, colors, license_plate ),
-           booking_add_ons (
-          add_ons (
-            id, name, price, duration, is_active
-          )
-        )`
-        )
-        .order("appointment_date", { ascending: false })
-        .order("appointment_time", { ascending: false });
-
-      setLoading(false);
-
-      if (error) {
-        console.error("Error fetching bookings:", error);
-        return;
-      }
-      const formatted = (data || []).map((b) => ({
-        ...b,
-        add_ons:
-          b.booking_add_ons?.map((ba: any) => ba.add_ons).filter(Boolean) || [],
-      }));
-
-      setBookings(formatted);
-    };
-
-    fetchBookings();
-  }, []);
-
-  // Fetch user subscriptions
-  useEffect(() => {
-    const fetchUserSubscribe = async () => {
-      const { data, error } = await supabase
-        .from("user_subscription")
-        .select("user_id, status");
-
-      if (error) {
-        console.error("Error fetching subscriptions:", error);
-        return;
-      }
-      setUserSubscribe(data || []);
-    };
-
-    fetchUserSubscribe();
-  }, []);
-
-  // Fetch total revenue
-  useEffect(() => {
-    const fetchTotalRevenue = async () => {
-      const { data, error } = await supabase
-        .from("bookings")
-        .select("total_price")
-        .in("status", ["completed", "confirmed"]);
-
-      if (error) {
-        console.error("Error fetching total revenue:", error);
-        return;
-      }
-
-      const revenue = data?.reduce(
-        (sum, b) => sum + Number(b.total_price ?? 0),
-        0
-      );
-
-      setTotalRevenue(revenue ?? 0);
-    };
-
-    fetchTotalRevenue();
+    selectedDateRef.current = selectedDate;
+  }, [selectedDate]);
+  const setBothLists = useCallback((action: React.SetStateAction<Booking[]>) => {
+    setBookings(action);
+    setDayBookings((prev) =>
+      (typeof action === "function" ? action(prev) : action).filter(
+        (b) => b.appointment_date === selectedDateRef.current,
+      ),
+    );
   }, []);
 
   const { isSupported, requestPermission, showNotification, isGranted } =
@@ -234,6 +251,7 @@ export default function BookingsView() {
 
     // Show custom notification instead of browser notification
     setNewBookingNotification(booking);
+    loadStats();
 
     // Also show toast notification
     // toast.success(`New booking from ${customerName}`, {
@@ -245,8 +263,8 @@ export default function BookingsView() {
     setTimeout(() => {
       setNewBookingNotification(null);
     }, 120000);
-  }, []);
-  useBookingRealtime(setBookings, handleNewBooking);
+  }, [loadStats]);
+  useBookingRealtime(setBothLists, handleNewBooking);
   // const handleNewBooking = useCallback(
   //   (booking: Booking) => {
   //     const customerName = booking.customer_name || "Guest";
@@ -301,7 +319,9 @@ export default function BookingsView() {
         return;
       }
 
-      setBookings((prev) => prev.filter((b) => b.id !== bookingId));
+      setBothLists((prev) => prev.filter((b) => b.id !== bookingId));
+      setTotal((t) => Math.max(0, t - 1));
+      loadStats();
       toast.success("Booking deleted");
     } catch (err) {
       console.error(err);
@@ -369,9 +389,10 @@ export default function BookingsView() {
         console.error("Error updating booking:", error);
       }
 
-      setBookings((prev) =>
+      setBothLists((prev) =>
         prev.map((b) => (b.id === bookingId ? { ...b, ...updates } : b))
       );
+      loadStats();
     } catch (error) {
       console.error("Error updating booking status:", error);
     } finally {
@@ -444,115 +465,6 @@ export default function BookingsView() {
     return `${formattedHours}:${minutes.toString().padStart(2, "0")} ${period}`;
   };
 
-  // Date filter logic
-  const matchesDateFilter = (appointmentDate: string): boolean => {
-    if (dateFilter === "all") return true;
-
-    // Parse the appointment date - handle both ISO and YYYY-MM-DD formats
-    const bookingDate = new Date(appointmentDate + "T00:00:00");
-    const today = new Date();
-
-    // Normalize to start of day for comparison
-    const todayStart = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate()
-    );
-    const bookingDateStart = new Date(
-      bookingDate.getFullYear(),
-      bookingDate.getMonth(),
-      bookingDate.getDate()
-    );
-
-    switch (dateFilter) {
-      case "today":
-        return bookingDateStart.getTime() === todayStart.getTime();
-
-      case "week": {
-        // Show bookings within next 7 days (including today)
-        const weekAhead = new Date(todayStart);
-        weekAhead.setDate(todayStart.getDate() + 7);
-        return bookingDateStart >= todayStart && bookingDateStart <= weekAhead;
-      }
-
-      case "month": {
-        // Show bookings within next 30 days (including today)
-        const monthAhead = new Date(todayStart);
-        monthAhead.setDate(todayStart.getDate() + 30);
-        return bookingDateStart >= todayStart && bookingDateStart <= monthAhead;
-      }
-
-      case "lastWeek": {
-        const weekAgo = new Date(todayStart);
-        weekAgo.setDate(todayStart.getDate() - 7);
-        return bookingDateStart >= weekAgo && bookingDateStart < todayStart;
-      }
-
-      case "lastMonth": {
-        const monthAgo = new Date(todayStart);
-        monthAgo.setDate(todayStart.getDate() - 30);
-        return bookingDateStart >= monthAgo && bookingDateStart < todayStart;
-      }
-
-      default:
-        return true;
-    }
-  };
-
-  // Filter bookings
-  const filteredBookings = bookings.filter((booking) => {
-    // Search filter
-    const searchFields = [
-      booking.service_package_name?.toLowerCase() ?? "",
-      (booking as any).vehicles?.make?.toLowerCase() ?? "",
-      (booking as any).vehicles?.model?.toLowerCase() ?? "",
-      booking.customer_name?.toLowerCase() ?? "",
-      booking.customer_email?.toLowerCase() ?? "",
-      booking.id.toLowerCase() ?? "",
-      booking.vehicle?.make?.toLowerCase() ?? "",
-      booking.vehicle?.model?.toLowerCase() ?? "",
-      booking.vehicle?.license_plate?.toLowerCase() ?? "",
-    ];
-
-    const matchesSearch =
-      searchTerm === "" ||
-      searchFields.some((field) => field.includes(searchTerm.toLowerCase()));
-
-    // Status filter
-    const matchesStatus =
-      statusFilter === "all" || booking.status === statusFilter;
-
-    // Date filter
-    const matchesDate = matchesDateFilter(booking.appointment_date);
-
-    return matchesSearch && matchesStatus && matchesDate;
-  });
-
-  // Paginate filtered results
-  const paginatedBookings = filteredBookings.slice(
-    (page - 1) * pageSize,
-    page * pageSize
-  );
-
-  // Today's bookings
-  const todayBookings = bookings.filter(
-    (b) =>
-      format(new Date(b.appointment_date), "yyyy-MM-dd") ===
-      format(new Date(), "yyyy-MM-dd")
-  );
-
-  const getBookingsForDate = (date: string) => {
-    const target = new Date(date);
-    return bookings.filter((b) => {
-      const bookingDate = new Date(b.appointment_date);
-      return (
-        bookingDate.getFullYear() === target.getFullYear() &&
-        bookingDate.getMonth() === target.getMonth() &&
-        bookingDate.getDate() === target.getDate()
-      );
-    });
-  };
-
   const isNewBooking = (appointmentDate: string, appointmentTime: string) => {
     if (!appointmentDate || !appointmentTime) return false;
 
@@ -623,7 +535,7 @@ export default function BookingsView() {
   };
 
   // Loading state
-  if (loading && bookings.length === 0) {
+  if (!firstLoadDone) {
     return (
       <div className="w-full flex items-center justify-center h-screen">
         <Loader2 className="w-8 h-8 animate-spin text-blue-900" />
@@ -646,7 +558,7 @@ export default function BookingsView() {
                 <p className="text-sm font-medium text-muted-foreground">
                   Total Bookings
                 </p>
-                <p className="text-2xl font-bold">{bookings.length}</p>
+                <p className="text-2xl font-bold">{stats ? stats.total.toLocaleString() : "—"}</p>
               </div>
               <Car className="h-8 w-8 text-accent-foreground" />
             </div>
@@ -660,7 +572,7 @@ export default function BookingsView() {
                 <p className="text-sm font-medium text-muted-foreground">
                   Today's Bookings
                 </p>
-                <p className="text-2xl font-bold">{todayBookings.length}</p>
+                <p className="text-2xl font-bold">{stats ? stats.today.toLocaleString() : "—"}</p>
               </div>
               <Calendar className="h-8 w-8 text-accent-foreground" />
             </div>
@@ -675,7 +587,7 @@ export default function BookingsView() {
                   Total Revenue
                 </p>
                 <p className="text-2xl font-bold">
-                  ${totalRevenue.toLocaleString()}
+                  {stats ? `${stats.revenue.toLocaleString("en-US", { maximumFractionDigits: 2 })}` : "—"}
                 </p>
               </div>
               <DollarSign className="h-8 w-8 text-accent-foreground" />
@@ -718,21 +630,21 @@ export default function BookingsView() {
       <Card className="bg-card border-border mb-10">
         <CardHeader>
           <CardTitle className="text-card-foreground">
-            Bookings for {new Date(selectedDate).toLocaleDateString("en-US")}
+            Bookings for {new Date(`${selectedDate}T00:00:00`).toLocaleDateString("en-US")}
           </CardTitle>
           <CardDescription>
-            {getBookingsForDate(selectedDate).length} appointments scheduled
+            {dayBookings.length} appointments scheduled
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {getBookingsForDate(selectedDate).length === 0 ? (
+          {dayBookings.length === 0 ? (
             <div className="text-center py-8">
               <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground">No bookings for this date</p>
             </div>
           ) : (
             <div className="space-y-4">
-              {getBookingsForDate(selectedDate).map((booking) => (
+              {dayBookings.map((booking) => (
                 <Card
                   key={booking.id}
                   className={`border-border transition-all duration-300 ${
@@ -1053,7 +965,7 @@ export default function BookingsView() {
 
           {/* Table */}
           <BookingsTable
-            bookings={paginatedBookings}
+            bookings={bookings}
             onUpdateStatus={updateBookingStatus}
             onDeleteBooking={deleteBooking}
             user_subscription={userSubscribe}
@@ -1063,7 +975,7 @@ export default function BookingsView() {
           {/* Pagination */}
           <Pagination
             page={page}
-            total={filteredBookings.length}
+            total={total}
             pageSize={pageSize}
             onPageChange={setPage}
           />
