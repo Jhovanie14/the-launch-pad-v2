@@ -1,4 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
+import { AuthError, requireAdmin } from "@/lib/auth/guards";
 import { NextResponse } from "next/server";
 import { createStripeFleetInvoice } from "@/lib/stripe/fleet-invoice";
 import { sendFleetInvoiceEmail } from "@/lib/email/fleet-invoice-email";
@@ -7,12 +9,12 @@ export async function POST(request: Request) {
   try {
     const supabase = await createClient();
 
-    // Check if user is admin
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // Staff only: this creates a Stripe invoice and emails the client.
+    try {
+      await requireAdmin(supabase, createAdminClient());
+    } catch (err) {
+      const status = err instanceof AuthError ? err.status : 401;
+      return NextResponse.json({ error: status === 403 ? "Forbidden" : "Unauthorized" }, { status });
     }
 
     const body = await request.json();
