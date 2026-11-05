@@ -33,6 +33,8 @@ type OrderWithItems = ProductOrderRow & {
 type CustomerInfo = { email: string | null; full_name: string | null };
 
 const NEEDS_ACTION = ["paid", "ready_for_pickup", "out_for_delivery"];
+/** Orders load a page at a time, filtered in the database, not all at once. */
+const PAGE_SIZE = 25;
 
 const STATUS_STYLES: Record<string, string> = {
   paid: "bg-blue-100 text-blue-800",
@@ -72,23 +74,33 @@ export default function OrdersView() {
   const [customers, setCustomers] = useState<Record<string, CustomerInfo>>({});
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("needs_action");
+  const [limit, setLimit] = useState(PAGE_SIZE);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [busyOrderId, setBusyOrderId] = useState<string | null>(null);
   const [refundTarget, setRefundTarget] = useState<OrderWithItems | null>(null);
 
   const fetchOrders = useCallback(async () => {
-    const { data, error } = await supabase
+    let query = supabase
       .from("product_orders")
       .select("*, product_order_items (*)")
-      .neq("status", "pending")
-      .neq("status", "cancelled")
       .order("created_at", { ascending: false });
+    if (statusFilter === "needs_action") query = query.in("status", NEEDS_ACTION);
+    else if (statusFilter === "all") query = query.not("status", "in", "(pending,cancelled)");
+    else query = query.eq("status", statusFilter);
+
+    // One extra row tells us whether there is another page.
+    const { data, error } = await query.range(0, limit);
+    setLoadingMore(false);
     if (error) {
       console.error(error);
       toast.error("Failed to load orders");
       setLoading(false);
       return;
     }
-    const rows = (data as OrderWithItems[]) ?? [];
+    const all = (data as OrderWithItems[]) ?? [];
+    setHasMore(all.length > limit);
+    const rows = all.slice(0, limit);
     setOrders(rows);
 
     const userIds = [...new Set(rows.map((o) => o.user_id))];
@@ -104,7 +116,7 @@ export default function OrdersView() {
       setCustomers(map);
     }
     setLoading(false);
-  }, [supabase]);
+  }, [supabase, statusFilter, limit]);
 
   useEffect(() => {
     fetchOrders();
@@ -133,13 +145,7 @@ export default function OrdersView() {
     }
   };
 
-  const filtered = orders.filter((o) =>
-    statusFilter === "needs_action"
-      ? NEEDS_ACTION.includes(o.status)
-      : statusFilter === "all"
-        ? true
-        : o.status === statusFilter,
-  );
+  const filtered = orders;
 
   if (loading) {
     return (
@@ -153,7 +159,14 @@ export default function OrdersView() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Product orders</h1>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select
+          value={statusFilter}
+          onValueChange={(value) => {
+            setStatusFilter(value);
+            setLimit(PAGE_SIZE);
+            setLoading(true);
+          }}
+        >
           <SelectTrigger className="w-48">
             <SelectValue />
           </SelectTrigger>
@@ -279,6 +292,22 @@ export default function OrdersView() {
             </Card>
           );
         })
+      )}
+
+      {hasMore && (
+        <div className="flex justify-center">
+          <Button
+            variant="outline"
+            disabled={loadingMore}
+            onClick={() => {
+              setLoadingMore(true);
+              setLimit((n) => n + PAGE_SIZE);
+            }}
+          >
+            {loadingMore && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Load more orders
+          </Button>
+        </div>
       )}
 
       <AlertDialog
