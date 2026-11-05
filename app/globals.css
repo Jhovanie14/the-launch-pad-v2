@@ -309,3 +309,103 @@
   pointer-events: none;
   color: var(--muted-foreground);
 }
+
+/* ============================================================
+   Launch Pad brand tokens: the customer world
+   ============================================================
+   Every colour comes from the logo: the royal-blue outline, the red
+   lettering, the yellow-orange rocket flame, and white. Navy (a deep cut of
+   the logo blue) is the night; the flame is the one action; each service
+   wears one logo colour, so "three services, one location" reads in the
+   palette itself.
+
+   Use the semantic utilities (bg-night, text-on-night-muted, bg-flame,
+   text-svc-member ...) in components, never raw palette classes such as
+   slate-950 or blue-900. Change a colour here and the whole customer area
+   follows. */
+
+:root {
+  /* Primitives: the logo, measured */
+  --lp-navy-950: oklch(0.2 0.07 262);
+  --lp-navy-900: oklch(0.265 0.085 261);
+  --lp-navy-800: oklch(0.33 0.1 260);
+  --lp-blue: oklch(0.5 0.15 258);
+  --lp-sky: oklch(0.8 0.11 232);
+  --lp-sky-deep: oklch(0.58 0.14 240);
+  --lp-red: oklch(0.64 0.21 25);
+  --lp-red-soft: oklch(0.74 0.16 22);
+  --lp-flame: oklch(0.86 0.165 88);
+  --lp-flame-bright: oklch(0.91 0.14 94);
+  --lp-flame-deep: oklch(0.6 0.15 58);
+  --lp-white: oklch(1 0 0);
+
+  /* Cool neutrals, tinted toward the logo blue */
+  --lp-canvas: oklch(0.975 0.006 250);
+  --lp-line: oklch(0.91 0.016 255);
+  --lp-line-soft: oklch(0.955 0.01 255);
+  --lp-ink-muted: oklch(0.46 0.04 258);
+  --lp-ink-subtle: oklch(0.55 0.04 258);
+  --lp-on-night-muted: oklch(0.85 0.035 255);
+  --lp-on-night-subtle: oklch(0.73 0.045 255);
+}
+
+@theme inline {
+  /* Surfaces */
+  --color-night: var(--lp-navy-950);
+  --color-dusk: var(--lp-navy-900);
+  --color-night-raised: var(--lp-navy-800);
+  --color-canvas: var(--lp-canvas);
+  --color-paper: var(--lp-white);
+
+  /* Text */
+  --color-ink: var(--lp-navy-950);
+  --color-ink-muted: var(--lp-ink-muted);
+  --color-ink-subtle: var(--lp-ink-subtle);
+  --color-on-night: var(--lp-white);
+  --color-on-night-muted: var(--lp-on-night-muted);
+  --color-on-night-subtle: var(--lp-on-night-subtle);
+
+  /* The one action, and what sits on it */
+  --color-flame: var(--lp-flame);
+  --color-flame-bright: var(--lp-flame-bright);
+  --color-on-flame: var(--lp-navy-950);
+
+  /* Lines and focus */
+  --color-line: var(--lp-line);
+  --color-line-soft: var(--lp-line-soft);
+  --color-focus: var(--lp-blue);
+  --color-brand-blue: var(--lp-blue);
+  --color-brand-red: var(--lp-red);
+
+  /* Service legend. -tint is text on night; -mark is an icon or dot that
+     must hold 3:1 on white as well as on night. */
+  --color-svc-self: var(--lp-sky);
+  --color-svc-self-mark: var(--lp-sky-deep);
+  --color-svc-detail: var(--lp-flame);
+  --color-svc-detail-mark: var(--lp-flame-deep);
+  --color-svc-member: var(--lp-red-soft);
+  --color-svc-member-mark: var(--lp-red);
+}
+
+/* The signed-in customer area opts in, the way /products opts into
+   .storefront. shadcn controls inside it (Button, Input, Card ...) pick up
+   navy, brand-blue focus and the cool neutrals with no per-page classes. */
+.lp-theme {
+  --background: var(--lp-canvas);
+  --foreground: var(--lp-navy-950);
+  --card: var(--lp-white);
+  --card-foreground: var(--lp-navy-950);
+  --popover: var(--lp-white);
+  --popover-foreground: var(--lp-navy-950);
+  --primary: var(--lp-navy-950);
+  --primary-foreground: var(--lp-white);
+  --secondary: var(--lp-line-soft);
+  --secondary-foreground: var(--lp-navy-950);
+  --muted: var(--lp-line-soft);
+  --muted-foreground: var(--lp-ink-muted);
+  --accent: var(--lp-line-soft);
+  --accent-foreground: var(--lp-navy-950);
+  --border: var(--lp-line);
+  --input: var(--lp-line);
+  --ring: var(--lp-blue);
+}

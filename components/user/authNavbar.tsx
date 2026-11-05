@@ -1,354 +1,270 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Button } from "@/components/ui/button";
+import { usePathname } from "next/navigation";
+import { CalendarPlus, LogOut, Menu } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { AuthUser } from "@/types";
 import { useAuth } from "@/context/auth-context";
 import { useBooking } from "@/context/bookingContext";
 import {
   DropdownMenu,
-  DropdownMenuShortcut,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
-// import { ThemeToggle } from "../theme-toggle";
-import { usePathname } from "next/navigation";
+} from "@/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import LoadingDots from "../loading";
+import { cn } from "@/lib/utils";
 
-export interface UserNavbarProps {
-  user: AuthUser;
+/** Where a customer goes: their day-to-day pages. */
+const PRIMARY_LINKS = [
+  { name: "Home", href: "/dashboard" },
+  { name: "Bookings", href: "/dashboard/bookings" },
+  { name: "Self-service", href: "/dashboard/self-service-log" },
+  { name: "Orders", href: "/dashboard/orders" },
+  { name: "Membership", href: "/dashboard/pricing" },
+] as const;
+
+/** Their account: occasional pages, kept behind the avatar. */
+const ACCOUNT_LINKS = [
+  { name: "Profile and settings", href: "/dashboard/settings" },
+  { name: "Billing", href: "/dashboard/billing" },
+  { name: "Help and support", href: "/dashboard/help" },
+] as const;
+
+const FOCUS_ON_NIGHT = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-flame";
+
+function isActive(pathname: string, href: string) {
+  return href === "/dashboard" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
 }
 
-const navLinks = [
-  { name: "Dashboard", href: "/dashboard" },
-  { name: "Bookings", href: "/dashboard/bookings" },
-  { name: "Orders", href: "/dashboard/orders" },
-  { name: "Self Service Logs", href: "/dashboard/self-service-log" },
-  { name: "Subscription", href: "/dashboard/pricing" },
-];
-
+/**
+ * The customer area's bar: navy from the logo, the logo itself, the five
+ * pages people use, and "Book" always in reach. The account pages sit behind
+ * the avatar. On phones the links move into a side sheet; the home page has
+ * its own thumb dock, so the bar drops its Book button there.
+ */
 export function AuthNavbar() {
-  const { signOut, user, userProfile } = useAuth();
+  const { signOut, userProfile } = useAuth();
   const { openBookingModal } = useBooking();
-  const [isOpen, setIsOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const pathName = usePathname();
+  const pathname = usePathname() ?? "";
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
-  const handleSignOut = async () => {
-    setIsLoggingOut(true); // show full-screen loader
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    await signOut(); // your logout logic
-    // router.push('/login') happens inside signOut or after it
-    // no need to set isLoggingOut(false) because the page will redirect
-  };
+  const name = userProfile?.full_name || userProfile?.email || "Your account";
+  const initial = (userProfile?.full_name || userProfile?.email || "?").charAt(0).toUpperCase();
+  const onHome = pathname === "/dashboard";
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  async function handleSignOut() {
+    setSigningOut(true);
+    await signOut();
+  }
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 0);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  function book() {
+    setMenuOpen(false);
+    openBookingModal();
+  }
 
   return (
-    <nav
-      className={`sticky top-0 w-full z-50 transition-all duration-300 ${
-        isMounted && isScrolled
-          ? "bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm dark:bg-gray-900/95"
-          : "bg-transparent"
-      }`}
-    >
-      {isLoggingOut && <LoadingDots />}
-      <>
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 justify-between items-center">
-            <div className="flex items-center">
-              <Link
-                href="/dashboard"
-                className="flex shrink-0 items-center gap-2 rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-950"
-              >
-                <Image
-                  src="/thelaunchpad.png"
-                  alt="The Launch Pad"
-                  width={40}
-                  height={40}
-                  className="h-10 w-10 object-contain"
-                />
-                <span className="hidden text-sm font-black tracking-tight text-slate-950 lg:inline">
-                  THE LAUNCH PAD
-                </span>
-              </Link>
-              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                {navLinks.map((link) => {
-                  const isActive = pathName === link.href;
+    <>
+      {signingOut && <LoadingDots />}
+      <a
+        href="#main"
+        className="sr-only rounded-lg bg-flame px-4 py-2 font-bold text-on-flame focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60]"
+      >
+        Skip to content
+      </a>
+      <header className="sticky top-0 z-50 bg-night text-on-night shadow-[0_8px_24px_-16px_oklch(0.2_0.07_262/0.8)]">
+        <div className="mx-auto flex h-16 max-w-7xl items-center gap-6 px-4 sm:px-6 lg:px-8">
+          <Link href="/dashboard" className={cn("flex shrink-0 items-center gap-2 rounded-lg", FOCUS_ON_NIGHT)}>
+            <Image src="/thelaunchpad.png" alt="The Launch Pad" width={40} height={40} className="size-10 object-contain" priority />
+            <span aria-hidden className="hidden text-sm font-black tracking-tight xl:inline">
+              THE LAUNCH PAD
+            </span>
+          </Link>
 
-                  return (
+          <nav aria-label="Main" className="hidden md:block">
+            <ul className="flex items-center gap-1">
+              {PRIMARY_LINKS.map((link) => {
+                const active = isActive(pathname, link.href);
+                return (
+                  <li key={link.href}>
                     <Link
-                      key={link.href}
                       href={link.href}
-                      className={`inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium ${
-                        isActive
-                          ? "border-gray-600 text-gray-900 dark:text-gray-100"
-                          : "text-gray-500 border-transparent hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
-                      }`}
+                      aria-current={active ? "page" : undefined}
+                      className={cn(
+                        "inline-flex min-h-10 items-center rounded-lg px-3 text-sm font-semibold transition-colors",
+                        active ? "bg-white/12 text-on-night" : "text-on-night-muted hover:bg-white/8 hover:text-on-night",
+                        FOCUS_ON_NIGHT,
+                      )}
                     >
                       {link.name}
                     </Link>
-                  );
-                })}
-                {/* <Link
-                  href="/dashboard"
-                  className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  href="/dashboard/bookings"
-                  className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
-                >
-                  Bookings
-                </Link>
-                <Link
-                  href="/dashboard/pricing"
-                  className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
-                >
-                  Subscription
-                </Link> */}
-              </div>
-            </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
 
-            <div className="hidden sm:ml-6 sm:flex sm:items-center space-x-3">
-              <div>
-                <Button
-                  onClick={openBookingModal}
-                  className="bg-blue-900 self-start hover:bg-blue-800 text-white font-semibold px-6 rounded-md transition-all duration-200 shadow-md hover:shadow-lg uppercase tracking-wide"
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              type="button"
+              onClick={openBookingModal}
+              className={cn(
+                "min-h-10 items-center gap-2 rounded-lg border border-white/25 px-4 text-sm font-bold text-on-night transition-colors hover:bg-white/10",
+                onHome ? "hidden md:inline-flex" : "inline-flex",
+                FOCUS_ON_NIGHT,
+              )}
+            >
+              <CalendarPlus aria-hidden className="size-4" /> Book
+            </button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={`Account menu for ${name}`}
+                  className={cn("hidden rounded-full md:inline-flex", FOCUS_ON_NIGHT)}
                 >
-                  Book Online
-                </Button>
-              </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Avatar className="border border-blue-800 h-8 w-8">
-                    {userProfile?.avatar_url ? (
-                      <AvatarImage
-                        src={userProfile.avatar_url || undefined}
-                        alt={userProfile.full_name || "User"}
-                      />
-                    ) : (
-                      <AvatarFallback>
-                        {userProfile?.full_name?.charAt(0) ||
-                          userProfile?.email?.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    )}
-                  </Avatar>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="start">
-                  <DropdownMenuLabel className="cursor-pointer">
-                    <div className="relative ">
-                      <div className="flex items-center space-x-4">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage
-                            src={userProfile?.avatar_url || undefined}
-                            alt={userProfile?.full_name || "User"}
-                          />
-                          <AvatarFallback>
-                            {userProfile?.full_name?.charAt(0) ||
-                              userProfile?.email.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-sm text-gray-700 dark:text-gray-300">
-                          {userProfile?.full_name || userProfile?.email}
-                        </span>
-                        {/* <ThemeToggle /> */}
-                      </div>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuGroup>
-                    <DropdownMenuItem asChild>
-                      <Link className="w-full" href="/dashboard/settings">
-                        Profile
-                      </Link>
+                  <AccountAvatar src={userProfile?.avatar_url} initial={initial} />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuLabel className="font-normal">
+                  <span className="block truncate font-semibold text-ink">{userProfile?.full_name || "Your account"}</span>
+                  {userProfile?.email && <span className="block truncate text-xs text-ink-muted">{userProfile.email}</span>}
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  {ACCOUNT_LINKS.map((link) => (
+                    <DropdownMenuItem key={link.href} asChild>
+                      <Link href={link.href}>{link.name}</Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link className="w-full" href="/dashboard/billing">
-                        Billing
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link className="w-full" href="/dashboard/help">
-                        Help & support
-                      </Link>
-                    </DropdownMenuItem>
-                  </DropdownMenuGroup>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut}>
-                    Sign Out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <div className="-mr-2 flex items-center sm:hidden gap-1">
-              <div>
-                <Button
-                  onClick={openBookingModal}
-                  className="bg-blue-900 self-start hover:bg-blue-800 text-white font-semibold px-6 rounded-md transition-all duration-200 shadow-md hover:shadow-lg uppercase tracking-wide"
+                  ))}
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={handleSignOut}>
+                  <LogOut aria-hidden className="size-4" /> Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+              <SheetTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="Open menu"
+                  className={cn("inline-flex size-11 items-center justify-center rounded-lg hover:bg-white/10 md:hidden", FOCUS_ON_NIGHT)}
                 >
-                  Book Online
-                </Button>
-              </div>
-              <button
-                type="button"
-                className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 dark:hover:bg-gray-700"
-                onClick={() => setIsOpen(!isOpen)}
+                  <Menu aria-hidden className="size-6" />
+                </button>
+              </SheetTrigger>
+              <SheetContent
+                side="right"
+                className="w-[85vw] max-w-sm gap-0 border-l-0 bg-night p-0 text-on-night [&>button]:text-on-night [&>button]:opacity-100"
               >
-                <span className="sr-only">Open main menu</span>
-                <svg
-                  className={`${isOpen ? "hidden" : "block"} h-6 w-6`}
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                </svg>
-                <svg
-                  className={`${isOpen ? "block" : "hidden"} h-6 w-6`}
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
+                <div className="flex items-center gap-3 border-b border-white/10 p-5 pr-12">
+                  <AccountAvatar src={userProfile?.avatar_url} initial={initial} />
+                  <div className="min-w-0">
+                    <SheetTitle className="truncate text-base font-bold text-on-night">
+                      {userProfile?.full_name || "Your account"}
+                    </SheetTitle>
+                    <SheetDescription className="truncate text-sm text-on-night-subtle">
+                      {userProfile?.email ?? "Signed in"}
+                    </SheetDescription>
+                  </div>
+                </div>
+
+                <nav aria-label="Main" className="flex-1 overflow-y-auto p-3">
+                  <button
+                    type="button"
+                    onClick={book}
+                    className={cn(
+                      "mb-3 flex min-h-12 w-full items-center gap-2 rounded-lg bg-flame px-4 font-bold text-on-flame hover:bg-flame-bright",
+                      FOCUS_ON_NIGHT,
+                    )}
+                  >
+                    <CalendarPlus aria-hidden className="size-5" /> Book a detail
+                  </button>
+                  <ul className="space-y-1">
+                    {PRIMARY_LINKS.map((link) => (
+                      <SheetLink key={link.href} {...link} active={isActive(pathname, link.href)} onNavigate={() => setMenuOpen(false)} />
+                    ))}
+                  </ul>
+                  <h2 className="mt-5 mb-1 px-4 text-xs font-semibold text-on-night-subtle">Account</h2>
+                  <ul className="space-y-1">
+                    {ACCOUNT_LINKS.map((link) => (
+                      <SheetLink key={link.href} {...link} active={isActive(pathname, link.href)} onNavigate={() => setMenuOpen(false)} />
+                    ))}
+                  </ul>
+                </nav>
+
+                <div className="border-t border-white/10 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+                  <button
+                    type="button"
+                    onClick={handleSignOut}
+                    className={cn(
+                      "flex min-h-12 w-full items-center gap-2 rounded-lg px-4 font-semibold text-on-night-muted hover:bg-white/10 hover:text-on-night",
+                      FOCUS_ON_NIGHT,
+                    )}
+                  >
+                    <LogOut aria-hidden className="size-5" /> Sign out
+                  </button>
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
+      </header>
+    </>
+  );
+}
 
-        {/* Mobile menu */}
-        {isMounted && (
-          <div
-            className={`sm:hidden transition-all duration-300 ease-in-out overflow-hidden ${
-              isOpen ? "max-h-screen opacity-100" : "max-h-0 opacity-0"
-            }`}
-          >
-            <div className="space-y-1 pb-3 pt-2">
-              <Link
-                href="/dashboard"
-                className="block border-l-4 border-transparent py-2 pl-3 pr-4 text-base font-medium text-gray-500 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-gray-100"
-                onClick={() => setIsOpen(false)}
-              >
-                Dashboard
-              </Link>
-              <Link
-                href="/dashboard/bookings"
-                className="block border-l-4 border-transparent py-2 pl-3 pr-4 text-base font-medium text-gray-500 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-gray-100"
-                onClick={() => setIsOpen(false)}
-              >
-                Bookings
-              </Link>
-              <Link
-                href="/dashboard/orders"
-                className="block border-l-4 border-transparent py-2 pl-3 pr-4 text-base font-medium text-gray-500 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-gray-100"
-                onClick={() => setIsOpen(false)}
-              >
-                Orders
-              </Link>
-              <Link
-                href="/dashboard/self-service-log"
-                className="block border-l-4 border-transparent py-2 pl-3 pr-4 text-base font-medium text-gray-500 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-gray-100"
-                onClick={() => setIsOpen(false)}
-              >
-                Self Service Logs
-              </Link>
-              <Link
-                href="/dashboard/pricing"
-                className="block border-l-4 border-transparent py-2 pl-3 pr-4 text-base font-medium text-gray-500 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-gray-100"
-                onClick={() => setIsOpen(false)}
-              >
-                Subscription
-              </Link>
-              <Link
-                href="/dashboard/billing"
-                className="block border-l-4 border-transparent py-2 pl-3 pr-4 text-base font-medium text-gray-500 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-gray-100"
-                onClick={() => setIsOpen(false)}
-              >
-                Billing
-              </Link>
-            </div>
-            <div className="border-t border-gray-200 pb-3 pt-4 dark:border-gray-700">
-              <Link
-                href="/dashboard/settings"
-                onClick={() => setIsOpen(false)}
-                className="flex items-center px-4 py-2 rounded-lg mx-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group"
-              >
-                <div className="flex-shrink-0">
-                  <Avatar className="h-10 w-10 ring-2 ring-blue-500 group-hover:ring-blue-600">
-                    <AvatarImage
-                      src={userProfile?.avatar_url || undefined}
-                      alt={userProfile?.full_name || "User"}
-                    />
-                    <AvatarFallback>
-                      {userProfile?.full_name?.charAt(0) ||
-                        userProfile?.email.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                </div>
-                <div className="ml-3 flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-base font-medium text-gray-800 dark:text-gray-200 truncate">
-                      {userProfile?.full_name}
-                    </span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                      {userProfile?.email}
-                    </span>
-                  </div>
-                  <div className="text-xs font-medium text-blue-500 mt-0.5">
-                    View Profile →
-                  </div>
-                </div>
-              </Link>
-              <div className="mt-3 space-y-1 px-2">
-                <Button
-                  onClick={handleSignOut}
-                  variant="outline"
-                  size="sm"
-                  type="submit"
-                  className="w-full"
-                  disabled={!user}
-                >
-                  Sign Out
-                </Button>
-              </div>
-            </div>
-          </div>
+function SheetLink({
+  name,
+  href,
+  active,
+  onNavigate,
+}: {
+  name: string;
+  href: string;
+  active: boolean;
+  onNavigate: () => void;
+}) {
+  return (
+    <li>
+      <Link
+        href={href}
+        onClick={onNavigate}
+        aria-current={active ? "page" : undefined}
+        className={cn(
+          "flex min-h-12 items-center rounded-lg px-4 font-semibold transition-colors",
+          active ? "bg-white/12 text-on-night" : "text-on-night-muted hover:bg-white/8 hover:text-on-night",
+          FOCUS_ON_NIGHT,
         )}
-      </>
-    </nav>
+      >
+        {name}
+      </Link>
+    </li>
+  );
+}
+
+function AccountAvatar({ src, initial }: { src?: string | null; initial: string }) {
+  return (
+    <Avatar className="size-9 ring-2 ring-white/25">
+      {src && <AvatarImage src={src} alt="" />}
+      <AvatarFallback className="bg-dusk font-bold text-on-night">{initial}</AvatarFallback>
+    </Avatar>
   );
 }

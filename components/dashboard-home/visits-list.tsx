@@ -2,23 +2,24 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { RotateCcw, Star } from "lucide-react";
+import { Droplets, RotateCcw, ShoppingBag, Sparkles, Star, type LucideIcon } from "lucide-react";
 import { ReviewForm } from "@/components/user/review-form";
 import { formatShortDate, rebookHref, type VisitItem } from "@/lib/dashboard/home";
 import { cn } from "@/lib/utils";
 
-const KIND_DOT: Record<VisitItem["kind"], string> = {
-  detail: "bg-amber-400",
-  self_service: "bg-sky-400",
-  order: "bg-violet-400",
+/** Each kind wears its service colour and its own icon, so colour is never the only cue. */
+const KIND_MARK: Record<VisitItem["kind"], { icon: LucideIcon; tone: string; label: string }> = {
+  detail: { icon: Sparkles, tone: "text-svc-detail-mark", label: "Express detailing" },
+  self_service: { icon: Droplets, tone: "text-svc-self-mark", label: "Self-service bay" },
+  order: { icon: ShoppingBag, tone: "text-ink-subtle", label: "Product order" },
 };
 
 const REVIEW_WINDOW_DAYS = 14;
 
 // Focus outline that stays visible (3:1+) on a white surface.
-const LIGHT_FOCUS = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-950";
+const LIGHT_FOCUS = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
 const ROW_ACTION = cn(
-  "inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-slate-800 ring-1 ring-slate-200 hover:bg-slate-50",
+  "inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-ink ring-1 ring-line hover:bg-canvas",
   LIGHT_FOCUS,
 );
 
@@ -52,46 +53,46 @@ export function VisitsList({
     now.getTime() - new Date(latestDetail.at).getTime() < REVIEW_WINDOW_DAYS * 86_400_000;
 
   return (
-    <section aria-labelledby="visits-heading" className="rounded-2xl bg-white p-5 ring-1 ring-slate-200 sm:p-7">
+    <section aria-labelledby="visits-heading" className="rounded-2xl bg-white p-5 ring-1 ring-line sm:p-7">
       <div className="flex items-baseline justify-between gap-3">
-        <h2 id="visits-heading" className="text-xl font-black tracking-tight text-slate-950">
+        <h2 id="visits-heading" className="text-xl font-black tracking-tight text-ink">
           Your visits
         </h2>
         <Link
           href="/dashboard/bookings"
-          className={cn("rounded text-sm font-medium text-slate-700 underline-offset-4 hover:underline", LIGHT_FOCUS)}
+          className={cn("rounded text-sm font-medium text-ink-muted underline-offset-4 hover:underline", LIGHT_FOCUS)}
         >
           All bookings
         </Link>
       </div>
 
       {error ? (
-        <p className="mt-4 text-sm text-slate-700">
+        <p className="mt-4 text-sm text-ink-muted">
           {error}{" "}
           <button
             type="button"
             onClick={onRetry}
-            className={cn("rounded font-semibold text-slate-950 underline underline-offset-4", LIGHT_FOCUS)}
+            className={cn("rounded font-semibold text-ink underline underline-offset-4", LIGHT_FOCUS)}
           >
             Try again
           </button>
         </p>
       ) : visits.length === 0 ? (
-        <p className="mt-4 text-sm text-slate-600">
+        <p className="mt-4 text-sm text-ink-muted">
           Your details, bay visits and orders will show up here after your first visit.
         </p>
       ) : (
-        <ol className="mt-4 divide-y divide-slate-100">
+        <ol className="mt-4 divide-y divide-line-soft">
           {visits.map((v) => (
             <li key={`${v.kind}-${v.id}`} className="py-3">
               <div className="flex items-center gap-4">
-                <span aria-hidden className={cn("size-2.5 shrink-0 rounded-full", KIND_DOT[v.kind])} />
-                <time dateTime={v.at} className="w-14 shrink-0 text-sm font-semibold tabular-nums text-slate-500">
+                <KindMark kind={v.kind} />
+                <time dateTime={v.at} className="w-14 shrink-0 text-sm font-semibold tabular-nums text-ink-subtle">
                   {formatShortDate(v.at)}
                 </time>
                 <span className="min-w-0 flex-1">
-                  <span className="block font-semibold text-slate-950">{v.title}</span>
-                  {v.detail && <span className="block text-sm text-slate-600">{v.detail}</span>}
+                  <span className="block font-semibold text-ink">{v.title}</span>
+                  {v.detail && <span className="block text-sm text-ink-muted">{v.detail}</span>}
                 </span>
               </div>
               {v.kind === "detail" && v.booking && (
@@ -124,5 +125,15 @@ export function VisitsList({
         />
       )}
     </section>
+  );
+}
+
+function KindMark({ kind }: { kind: VisitItem["kind"] }) {
+  const { icon: Icon, tone, label } = KIND_MARK[kind];
+  return (
+    <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-canvas ring-1 ring-line">
+      <Icon aria-hidden className={cn("size-4", tone)} />
+      <span className="sr-only">{label}</span>
+    </span>
   );
 }

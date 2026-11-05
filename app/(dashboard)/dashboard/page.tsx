@@ -3,22 +3,22 @@
 /*
   THESIS: The home is the customer's pass and their next move, not a stat board. It refuses the
   stock stat-card grid + "Welcome back" scaffold.
-  OWN-WORLD: The marketing site's world: slate-950 surfaces, amber-400 for the one primary action,
-  service hues sky (self-service) / amber (express detailing) / violet (membership), Geist black
-  weight for dates and plan names, plates drawn as real white plates in Geist Mono.
+  OWN-WORLD: The logo's world (DESIGN.md, tokens in app/globals.css): navy night surfaces, the
+  flame for the one primary action, one logo colour per service: sky (self-service), flame (express
+  detailing), red (membership). Geist black weight for dates and plan names, plates drawn as real
+  white plates in Geist Mono.
   STORY: A member sees they're covered and which cars, and can flash it at the bay; a booker sees
   their next detail or books again in one tap; a new customer meets the three services.
   FIRST VIEWPORT: Members: the membership pass fills the top (plan, Active-through, cars + plates,
   "Show at the bay"), the Now card under it. Others: the Now card leads. Phone: a bottom dock
-  Book / Show at bay / Shop; desktop: a side rail with the same actions and the site strip.
+  Book / Show at bay / Shop; desktop: "Book" lives in the navbar, the side column is the site card
+  (hours, directions, shop), so no action is offered twice.
   FORM: Membership card + thumb dock, candidate 6 of 7, seed key 03bd3211.
   FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the
   verdict, and DESIGN.md
 */
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowRight, CalendarPlus, IdCard, ShoppingBag } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { useBooking } from "@/context/bookingContext";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -26,6 +26,7 @@ import { useSelfServiceSubscription } from "@/hooks/useSelfServiceSubscription";
 import { useDashboardHome } from "@/hooks/useDashboardHome";
 import HoursChangeDialog from "@/components/hours-change-dialog";
 import { MemberPass, type MemberPassProps, type PassVehicle } from "@/components/dashboard-home/member-pass";
+import { SiteStrip } from "@/components/dashboard-home/site-strip";
 import { NowCard } from "@/components/dashboard-home/now-card";
 import { VisitsList } from "@/components/dashboard-home/visits-list";
 import { ActionDock } from "@/components/dashboard-home/action-dock";
@@ -112,12 +113,12 @@ export default function DashboardPage() {
         <HoursChangeDialog surface="dashboard" showPlanAction={!!express.subscription} />
       )}
 
-      <h1 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">Hi, {firstName}</h1>
+      <h1 className="text-2xl font-black tracking-tight text-ink sm:text-3xl">Hi, {firstName}</h1>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start">
+      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         <div className="space-y-6">
           {membershipLoading ? (
-            <div aria-hidden className="h-64 animate-pulse rounded-2xl bg-slate-900/90 motion-reduce:animate-none" />
+            <div aria-hidden className="h-64 animate-pulse rounded-2xl bg-dusk/90 motion-reduce:animate-none" />
           ) : membershipError ? (
             <InlineError
               message="Couldn't load your membership."
@@ -139,7 +140,7 @@ export default function DashboardPage() {
           {/* Never guess: until we know their bookings and membership, show a placeholder;
               if bookings failed, say so instead of "nothing booked". */}
           {home.loading || membershipLoading ? (
-            <div aria-hidden className="h-40 animate-pulse rounded-2xl bg-slate-900/90 motion-reduce:animate-none" />
+            <div aria-hidden className="h-40 animate-pulse rounded-2xl bg-dusk/90 motion-reduce:animate-none" />
           ) : home.error ? (
             <InlineError message="Couldn't load your bookings." onRetry={home.reload} />
           ) : (
@@ -166,45 +167,13 @@ export default function DashboardPage() {
 
         </div>
 
-        <aside aria-label="Visit the site" className="space-y-4 lg:sticky lg:top-24">
-          <div className="hidden space-y-2 rounded-2xl bg-slate-950 p-4 ring-1 ring-white/10 lg:block">
-            <button
-              type="button"
-              onClick={openBookingModal}
-              className={
-                isMember
-                  ? "flex min-h-11 w-full items-center justify-between rounded-lg px-4 font-semibold text-white hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-amber-400"
-                  : "flex min-h-11 w-full items-center justify-between rounded-lg bg-amber-400 px-4 font-bold text-amber-950 hover:bg-amber-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300"
-              }
-            >
-              <span className="flex items-center gap-2">
-                <CalendarPlus aria-hidden className="size-4" /> Book a detail
-              </span>
-              <ArrowRight aria-hidden className="size-4" />
-            </button>
-            {isMember && (
-              <button
-                type="button"
-                onClick={() => setBayOpen(true)}
-                className="flex min-h-11 w-full items-center gap-2 rounded-lg bg-amber-400 px-4 font-bold text-amber-950 hover:bg-amber-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300"
-              >
-                <IdCard aria-hidden className="size-4" /> Show at the bay
-              </button>
-            )}
-            <Link
-              href="/products"
-              className="flex min-h-11 w-full items-center gap-2 rounded-lg px-4 font-semibold text-white hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-amber-400"
-            >
-              <ShoppingBag aria-hidden className="size-4" /> Shop car care
-            </Link>
-          </div>
-
+        <aside aria-label="Visit the site" className="lg:sticky lg:top-24">
           <SiteStrip />
         </aside>
       </div>
 
       {/* Last on every screen size: an ask, never in the way. */}
-      <div className="mt-6 lg:max-w-[calc(100%-19.5rem)]">
+      <div className="mt-6 lg:max-w-[calc(100%-21.5rem)]">
         <MarketingOptInRow />
       </div>
 
@@ -213,38 +182,15 @@ export default function DashboardPage() {
   );
 }
 
-function SiteStrip() {
-  return (
-    <div className="rounded-2xl bg-white p-4 text-sm ring-1 ring-slate-200">
-      <p className="font-semibold text-slate-950">10410 S Main St, Houston</p>
-      <dl className="mt-2 space-y-1 text-slate-700">
-        <div className="flex justify-between gap-3">
-          <dt>Self-service bays</dt>
-          <dd className="font-medium text-slate-950">Open 24/7</dd>
-        </div>
-        <div className="flex justify-between gap-3">
-          <dt>Express detailing</dt>
-          <dd className="font-medium text-slate-950">Thu–Sun, 9:30 AM–6:30 PM</dd>
-        </div>
-      </dl>
-      <Link
-        href="/terms"
-        className="mt-3 inline-block rounded text-slate-700 underline underline-offset-4 hover:text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-950"
-      >
-        Weather and closure policy
-      </Link>
-    </div>
-  );
-}
 
 function InlineError({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <div role="alert" className="rounded-2xl bg-slate-950 p-5 text-white ring-1 ring-white/10">
+    <div role="alert" className="rounded-2xl bg-night p-5 text-on-night ring-1 ring-white/10">
       <p className="font-semibold">{message}</p>
       <button
         type="button"
         onClick={onRetry}
-        className="mt-3 min-h-11 rounded-lg border border-white/25 px-4 font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-amber-400"
+        className="mt-3 min-h-11 rounded-lg border border-white/25 px-4 font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-flame"
       >
         Try again
       </button>
@@ -255,13 +201,13 @@ function InlineError({ message, onRetry }: { message: string; onRetry: () => voi
 function HomeSkeleton() {
   return (
     <div aria-busy="true" aria-label="Loading your dashboard" className="space-y-6">
-      <div className="h-8 w-40 animate-pulse rounded bg-slate-200 motion-reduce:animate-none" />
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+      <div className="h-8 w-40 animate-pulse rounded bg-line motion-reduce:animate-none" />
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="space-y-6">
-          <div className="h-64 animate-pulse rounded-2xl bg-slate-900/90 motion-reduce:animate-none" />
-          <div className="h-40 animate-pulse rounded-2xl bg-slate-900/90 motion-reduce:animate-none" />
+          <div className="h-64 animate-pulse rounded-2xl bg-dusk/90 motion-reduce:animate-none" />
+          <div className="h-40 animate-pulse rounded-2xl bg-dusk/90 motion-reduce:animate-none" />
         </div>
-        <div className="hidden h-48 animate-pulse rounded-2xl bg-slate-200 lg:block motion-reduce:animate-none" />
+        <div className="hidden h-48 animate-pulse rounded-2xl bg-line lg:block motion-reduce:animate-none" />
       </div>
     </div>
   );

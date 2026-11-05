@@ -65,11 +65,11 @@ export function MarketingOptInRow() {
   return (
     <section
       aria-label="Product news and offers"
-      className="flex flex-col gap-4 rounded-2xl bg-white p-5 ring-1 ring-slate-200 sm:flex-row sm:items-center sm:justify-between sm:p-6"
+      className="flex flex-col gap-4 rounded-2xl bg-white p-5 ring-1 ring-line sm:flex-row sm:items-center sm:justify-between sm:p-6"
     >
       <div>
-        <p className="font-bold text-slate-950">Want product news and offers?</p>
-        <p className="text-sm text-slate-600">
+        <p className="font-bold text-ink">Want product news and offers?</p>
+        <p className="text-sm text-ink-muted">
           Occasional emails about new car-care products. Booking emails and receipts always come.
         </p>
       </div>
@@ -78,7 +78,7 @@ export function MarketingOptInRow() {
           type="button"
           onClick={subscribe}
           disabled={saving}
-          className="min-h-11 rounded-lg bg-slate-950 px-4 font-semibold text-white hover:bg-slate-800 disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-950"
+          className="min-h-11 rounded-lg bg-night px-4 font-semibold text-on-night hover:bg-night-raised disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
         >
           Yes, email me
         </button>
@@ -86,7 +86,7 @@ export function MarketingOptInRow() {
           type="button"
           onClick={dismiss}
           disabled={saving}
-          className="min-h-11 rounded-lg px-4 font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-slate-950"
+          className="min-h-11 rounded-lg px-4 font-semibold text-ink-muted hover:bg-line-soft focus-visible:outline-2 focus-visible:outline-focus"
         >
           No thanks
         </button>

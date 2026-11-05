@@ -16,7 +16,7 @@ export function LicensePlate({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-[5px] border border-slate-300 bg-white font-mono font-semibold uppercase text-slate-950 shadow-[0_1px_0_rgb(0_0_0/0.25)]",
+        "inline-flex items-center rounded-[5px] border border-line bg-white font-mono font-semibold uppercase text-ink shadow-[0_1px_0_rgb(0_0_0/0.25)]",
         size === "md" && "px-2 py-0.5 text-sm tracking-[0.12em]",
         size === "xl" && "px-4 py-2 text-3xl tracking-[0.14em] sm:text-4xl",
         className,
