@@ -40,7 +40,7 @@ const BODY_TYPES = [
 export default function BookingModal() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
-  const { isBookingModalOpen, closeBookingModal } = useBooking();
+  const { closeBookingModal } = useBooking();
   const [authOpen, setAuthOpen] = useState(false);
 
   const [subscriptionVehicles, setSubscriptionVehicles] = useState<any[]>([]);
@@ -134,11 +134,6 @@ export default function BookingModal() {
         : `/service?${params.toString()}`
     );
   };
-
-  // The modal is always mounted in the root layout, so bail out first when it
-  // is closed. Otherwise a closed modal would render a full-screen loader on
-  // every page while the auth session resolves.
-  if (!isBookingModalOpen) return null;
 
   // Modal is open: wait for the auth check before rendering the vehicle form.
   if (isLoading) {

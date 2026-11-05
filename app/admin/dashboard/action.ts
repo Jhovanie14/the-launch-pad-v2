@@ -28,16 +28,6 @@ export async function getDashboardStats() {
       .order("created_at", { ascending: false })
       .limit(5);
 
-    // Get booking growth data for the last 7 days
-    const { data: bookingGrowthData } = await supabase
-      .from("booking")
-      .select("created_at")
-      .gte("created_at", sevenDaysAgo.toISOString())
-      .order("created_at", { ascending: true });
-
-    // Process booking growth data by day
-    const bookingGrowthByDay = processUserGrowthByDay(bookingGrowthData || []);
-
     const { data: userGrowthData } = await supabase
       .from("profiles")
       .select("created_at")
@@ -51,7 +41,6 @@ export async function getDashboardStats() {
       totalUsers: totalUsers || 0,
       activeSubscriptions: activeSubscriptions || 0,
       recentUsers: recentUsers || [],
-      bookingGrowthByDay,
       userGrowthByDay,
     };
   } catch (error) {

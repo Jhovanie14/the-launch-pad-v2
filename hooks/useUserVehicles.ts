@@ -29,39 +29,29 @@ export function useUserVehicles() {
     }
     setLoading(true);
 
-    // 1. Directly linked vehicles (user_id on vehicles table)
-    const { data: direct } = await supabase
-      .from("vehicles")
-      .select("id, license_plate, year, make, model, body_type, colors")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
+    // Three independent lookups in parallel, then the two vehicle lists in
+    // parallel: two round trips instead of five in a row.
+    const [{ data: direct }, { data: expressSubs }, { data: selfSubs }] = await Promise.all([
+      supabase
+        .from("vehicles")
+        .select("id, license_plate, year, make, model, body_type, colors")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false }),
+      supabase.from("user_subscription").select("id").eq("user_id", user.id),
+      supabase.from("self_service_subscriptions").select("id").eq("user_id", user.id),
+    ]);
+    const expressIds = (expressSubs ?? []).map((s: { id: string }) => s.id);
+    const selfIds = (selfSubs ?? []).map((s: { id: string }) => s.id);
+    const vehicleCols = "vehicle:vehicles(id, license_plate, year, make, model, body_type, colors)";
 
-    // 2. Vehicles linked via subscriptions (express + self-service)
-    const { data: subVehicles } = await supabase
-      .from("subscription_vehicles")
-      .select("vehicle:vehicles(id, license_plate, year, make, model, body_type, colors)")
-      .in(
-        "subscription_id",
-        (
-          await supabase
-            .from("user_subscription")
-            .select("id")
-            .eq("user_id", user.id)
-        ).data?.map((s: { id: string }) => s.id) ?? []
-      );
-
-    const { data: selfSubVehicles } = await supabase
-      .from("self_service_subscription_vehicles")
-      .select("vehicle:vehicles(id, license_plate, year, make, model, body_type, colors)")
-      .in(
-        "subscription_id",
-        (
-          await supabase
-            .from("self_service_subscriptions")
-            .select("id")
-            .eq("user_id", user.id)
-        ).data?.map((s: { id: string }) => s.id) ?? []
-      );
+    const [{ data: subVehicles }, { data: selfSubVehicles }] = await Promise.all([
+      expressIds.length
+        ? supabase.from("subscription_vehicles").select(vehicleCols).in("subscription_id", expressIds)
+        : Promise.resolve({ data: [] as unknown[] }),
+      selfIds.length
+        ? supabase.from("self_service_subscription_vehicles").select(vehicleCols).in("subscription_id", selfIds)
+        : Promise.resolve({ data: [] as unknown[] }),
+    ]);
 
     // The to-one `vehicle:vehicles(...)` embed returns a single object at
     // runtime; the generated types model it as an array, so cast to the real
