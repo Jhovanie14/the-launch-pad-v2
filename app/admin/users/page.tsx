@@ -36,6 +36,18 @@ import {
   isCommercialPlan,
 } from "@/lib/pricing/flockPricing";
 import { toast } from "sonner";
+import { cleanSearchTerm, houstonToday } from "@/lib/admin/bookingQuery";
+
+/** Users load a page at a time, searched in the database. */
+const USERS_PAGE = 30;
+/** Keeps .in() lists short enough for a request URL. */
+const ID_CHUNK = 100;
+
+function chunk<T>(items: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+  return out;
+}
 
 export default function AdminUsersPage() {
   const supabase = createClient();
@@ -59,6 +71,9 @@ export default function AdminUsersPage() {
   const [expressSubs, setExpressSubs] = useState<any[]>([]);
   const [selfServiceSubs, setSelfServiceSubs] = useState<any[]>([]);
   const [search, setSearch] = useState("");
+  const [usersQuery, setUsersQuery] = useState({ term: "", limit: USERS_PAGE });
+  const [usersHasMore, setUsersHasMore] = useState(false);
+  const [usersLoading, setUsersLoading] = useState(true);
 
   // Walk-In Booking Modal
   const [showWalkInModal, setShowWalkInModal] = useState(false);
@@ -118,16 +133,25 @@ export default function AdminUsersPage() {
   }, []);
 
   async function loadAll() {
+    // Usage counts load from inside the subscriber loaders, scoped to those members.
     await Promise.all([
-      loadUsers(),
       loadExpressSubs(),
       loadSelfServiceSubs(),
-      loadExpressUsageCounts(),
-      loadSelfServiceUsageCounts(),
       loadVehicleChanges(),
       loadCustomerBlocks(),
     ]);
   }
+
+  // A search runs once typing pauses, and starts again from the first page.
+  useEffect(() => {
+    const t = setTimeout(() => setUsersQuery((q) => (q.term === search ? q : { term: search, limit: USERS_PAGE })), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  useEffect(() => {
+    loadUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [usersQuery]);
 
   async function loadCustomerBlocks() {
     const { data } = await supabase.from("customer_blocks").select("user_id, kind, value");
@@ -152,8 +176,37 @@ export default function AdminUsersPage() {
   }
 
   async function loadUsers() {
-    const { data } = await supabase.from("profiles").select("*");
-    setAllUsers(data || []);
+    const { term: rawTerm, limit } = usersQuery;
+    setUsersLoading(true);
+    try {
+      const term = cleanSearchTerm(rawTerm);
+      let query = supabase.from("profiles").select("*").order("created_at", { ascending: false });
+      if (term) {
+        // A plate search finds the cars first, then their owners.
+        const { data: cars } = await supabase
+          .from("vehicles")
+          .select("user_id")
+          .ilike("license_plate", `%${term}%`)
+          .not("user_id", "is", null)
+          .limit(100);
+        const ownerIds = [...new Set((cars ?? []).map((c: { user_id: string }) => c.user_id))];
+        const parts = [`full_name.ilike.%${term}%`, `email.ilike.%${term}%`, `phone.ilike.%${term}%`];
+        if (ownerIds.length) parts.push(`id.in.(${ownerIds.join(",")})`);
+        query = query.or(parts.join(","));
+      }
+      // One extra row tells us whether there is another page.
+      const { data, error } = await query.range(0, limit);
+      if (error) {
+        console.error("Error loading users:", error);
+        toast.error("Couldn't load users");
+        return;
+      }
+      const rows = data ?? [];
+      setUsersHasMore(rows.length > limit);
+      setAllUsers(rows.slice(0, limit));
+    } finally {
+      setUsersLoading(false);
+    }
   }
 
   async function loadExpressSubs() {
@@ -188,6 +241,7 @@ export default function AdminUsersPage() {
       )
       .eq("status", "active");
     setExpressSubs(data || []);
+    loadExpressUsageCounts((data || []).map((s: any) => s.user_id));
   }
 
   async function loadSelfServiceSubs() {
@@ -202,34 +256,46 @@ export default function AdminUsersPage() {
       )
       .eq("status", "active");
     setSelfServiceSubs(data || []);
+    loadSelfServiceUsageCounts((data || []).map((s: any) => s.id));
   }
 
   // --- Monthly usage count loaders ---
-  async function loadExpressUsageCounts() {
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-    const { data } = await supabase
-      .from("bookings")
-      .select("user_id")
-      .gte("appointment_date", startOfMonth);
+  // This month's usage, counted only for active members (not every booking).
+  async function loadExpressUsageCounts(userIds: string[]) {
+    const startOfMonth = `${houstonToday().slice(0, 8)}01`;
     const counts: Record<string, number> = {};
-    (data || []).forEach((b: any) => {
-      counts[b.user_id] = (counts[b.user_id] || 0) + 1;
-    });
+    const ids = [...new Set(userIds.filter(Boolean))];
+    const results = await Promise.all(
+      chunk(ids, ID_CHUNK).map((part) =>
+        supabase.from("bookings").select("user_id").in("user_id", part).gte("appointment_date", startOfMonth),
+      ),
+    );
+    for (const { data } of results) {
+      (data || []).forEach((b: any) => {
+        counts[b.user_id] = (counts[b.user_id] || 0) + 1;
+      });
+    }
     setExpressUsage(counts);
   }
 
-  async function loadSelfServiceUsageCounts() {
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-    const { data } = await supabase
-      .from("self_service_usage_logs")
-      .select("subscription_id")
-      .gte("check_in_time", startOfMonth);
+  async function loadSelfServiceUsageCounts(subscriptionIds: string[]) {
+    const startOfMonth = `${houstonToday().slice(0, 8)}01`;
     const counts: Record<string, number> = {};
-    (data || []).forEach((l: any) => {
-      counts[l.subscription_id] = (counts[l.subscription_id] || 0) + 1;
-    });
+    const ids = [...new Set(subscriptionIds.filter(Boolean))];
+    const results = await Promise.all(
+      chunk(ids, ID_CHUNK).map((part) =>
+        supabase
+          .from("self_service_usage_logs")
+          .select("subscription_id")
+          .in("subscription_id", part)
+          .gte("check_in_time", startOfMonth),
+      ),
+    );
+    for (const { data } of results) {
+      (data || []).forEach((l: any) => {
+        counts[l.subscription_id] = (counts[l.subscription_id] || 0) + 1;
+      });
+    }
     setSelfServiceUsage(counts);
   }
 
@@ -487,7 +553,7 @@ export default function AdminUsersPage() {
                   <CardTitle>All Users</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {filterList(allUsers).map((u) => (
+                  {allUsers.map((u) => (
                     <div
                       key={u.id}
                       onClick={() => openUserModal(u)}
@@ -520,8 +586,22 @@ export default function AdminUsersPage() {
                       </div>
                     </div>
                   ))}
-                  {filterList(allUsers).length === 0 && (
+                  {usersLoading && allUsers.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">Loading users…</div>
+                  )}
+                  {!usersLoading && allUsers.length === 0 && (
                     <div className="text-center py-8 text-muted-foreground">No users found.</div>
+                  )}
+                  {usersHasMore && (
+                    <div className="flex justify-center pt-2">
+                      <Button
+                        variant="outline"
+                        disabled={usersLoading}
+                        onClick={() => setUsersQuery((q) => ({ ...q, limit: q.limit + USERS_PAGE }))}
+                      >
+                        {usersLoading ? "Loading…" : "Load more users"}
+                      </Button>
+                    </div>
                   )}
                 </CardContent>
               </Card>
