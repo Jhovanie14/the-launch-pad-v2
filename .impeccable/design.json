@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-05T16:46:21.000Z",
+  "generatedAt": "2026-11-05T21:12:21.305Z",
   "title": "Design System: The Launch Pad",
   "extensions": {
     "colorMeta": {
@@ -387,6 +387,97 @@
           "oklch(0.96 0.04 90)"
         ],
         "utility": "--gold (only inside .storefront)"
+      },
+      "email-night": {
+        "role": "email",
+        "displayName": "Email Night",
+        "canonical": "#041335",
+        "tonalRamp": [],
+        "utility": "hex equivalent of night for email (lib/email/layout.ts EMAIL_COLORS)"
+      },
+      "email-flame": {
+        "role": "email",
+        "displayName": "Email Flame",
+        "canonical": "#fec92f",
+        "tonalRamp": [],
+        "utility": "hex equivalent of flame for email (lib/email/layout.ts EMAIL_COLORS)"
+      },
+      "email-ink-muted": {
+        "role": "email",
+        "displayName": "Email Ink Muted",
+        "canonical": "#4a596f",
+        "tonalRamp": [],
+        "utility": "hex equivalent of ink-muted for email (lib/email/layout.ts EMAIL_COLORS)"
+      },
+      "email-ink-subtle": {
+        "role": "email",
+        "displayName": "Email Ink Subtle",
+        "canonical": "#637389",
+        "tonalRamp": [],
+        "utility": "hex equivalent of ink-subtle for email (lib/email/layout.ts EMAIL_COLORS)"
+      },
+      "email-line": {
+        "role": "email",
+        "displayName": "Email Line",
+        "canonical": "#dae2ec",
+        "tonalRamp": [],
+        "utility": "hex equivalent of line for email (lib/email/layout.ts EMAIL_COLORS)"
+      },
+      "email-line-soft": {
+        "role": "email",
+        "displayName": "Email Line Soft",
+        "canonical": "#ecf1f7",
+        "tonalRamp": [],
+        "utility": "hex equivalent of line-soft for email (lib/email/layout.ts EMAIL_COLORS)"
+      },
+      "email-canvas": {
+        "role": "email",
+        "displayName": "Email Canvas",
+        "canonical": "#f4f7fb",
+        "tonalRamp": [],
+        "utility": "hex equivalent of canvas for email (lib/email/layout.ts EMAIL_COLORS)"
+      },
+      "email-brand-blue": {
+        "role": "email",
+        "displayName": "Email Brand Blue",
+        "canonical": "#2460b7",
+        "tonalRamp": [],
+        "utility": "hex equivalent of brand-blue for email (lib/email/layout.ts EMAIL_COLORS)"
+      },
+      "email-warn-bg": {
+        "role": "email",
+        "displayName": "Email Warn Background",
+        "canonical": "#fff6db",
+        "tonalRamp": [],
+        "utility": "email notice tint (lib/email/layout.ts EMAIL_COLORS)"
+      },
+      "email-danger-bg": {
+        "role": "email",
+        "displayName": "Email Danger Background",
+        "canonical": "#fdecec",
+        "tonalRamp": [],
+        "utility": "email notice tint (lib/email/layout.ts EMAIL_COLORS)"
+      },
+      "email-danger-ink": {
+        "role": "email",
+        "displayName": "Email Danger Ink",
+        "canonical": "#a3171c",
+        "tonalRamp": [],
+        "utility": "email notice tint (lib/email/layout.ts EMAIL_COLORS)"
+      },
+      "email-ok-bg": {
+        "role": "email",
+        "displayName": "Email OK Background",
+        "canonical": "#e8f5ee",
+        "tonalRamp": [],
+        "utility": "email notice tint (lib/email/layout.ts EMAIL_COLORS)"
+      },
+      "email-ok-ink": {
+        "role": "email",
+        "displayName": "Email OK Ink",
+        "canonical": "#14653a",
+        "tonalRamp": [],
+        "utility": "email notice tint (lib/email/layout.ts EMAIL_COLORS)"
       }
     },
     "typographyMeta": {
@@ -441,6 +532,34 @@
       "plate-xl": {
         "displayName": "Plate XL",
         "purpose": "License plates on the full-screen bay pass; 2.25rem from 640px."
+      },
+      "email-heading": {
+        "displayName": "Email Heading",
+        "purpose": "The one h1 in every email (28px, 900)."
+      },
+      "email-subheading": {
+        "displayName": "Email Subheading",
+        "purpose": "Section headings inside an email card (18px, 800)."
+      },
+      "email-body": {
+        "displayName": "Email Body",
+        "purpose": "Email paragraphs (16px)."
+      },
+      "email-detail": {
+        "displayName": "Email Detail",
+        "purpose": "Values in email detail tables and notices (15px, 600)."
+      },
+      "email-small": {
+        "displayName": "Email Small",
+        "purpose": "Muted helper lines and detail labels in email (14px)."
+      },
+      "email-footer": {
+        "displayName": "Email Footer",
+        "purpose": "Email footer site facts (13px)."
+      },
+      "email-plate": {
+        "displayName": "Email Plate",
+        "purpose": "License plates inside emails, system monospace."
       }
     },
     "shadows": [
@@ -640,6 +759,11 @@
         "name": "The Tone-Not-Shadow Rule",
         "body": "Separate blocks by surface tone (Canvas / white / Dusk / Night) and hairline rings. Add a shadow only when the object is physical (the pass, a plate) or sits over scrolling content (the bar).",
         "section": "elevation"
+      },
+      {
+        "name": "Email Uses the Hex Twins",
+        "body": "Email clients cannot read CSS variables, OKLCH or web fonts, so every email is built from lib/email/layout.ts with the hex equivalents of the brand tokens (email-* colours) and the system sans stack: navy band with the logo, one h1, facts in data tables, one flame action, tinted notices, site facts in the footer. Every dynamic value is escaped.",
+        "section": "email"
       }
     ],
     "dos": [
