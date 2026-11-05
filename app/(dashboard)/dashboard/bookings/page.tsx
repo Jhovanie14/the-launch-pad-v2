@@ -1,22 +1,82 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Calendar, Clock, Car, DollarSign, Crown } from "lucide-react";
+import Link from "next/link";
+import {
+  AlertCircle,
+  ArrowRight,
+  CalendarX2,
+  Check,
+  CheckCircle2,
+  Clock,
+  MapPin,
+  RotateCcw,
+  Sparkles,
+  Star,
+  Timer,
+  XCircle,
+  type LucideIcon,
+} from "lucide-react";
 import { useBookingRealtime } from "@/hooks/useBookingRealtime";
 import { ReviewForm } from "@/components/user/review-form";
 import { useAuth } from "@/context/auth-context";
+import { useBooking } from "@/context/bookingContext";
 import { useBookingDetails } from "@/hooks/useBookingDetails";
-import { redirect } from "next/navigation";
 import { Pagination } from "@/components/ui/pagination";
+import { LicensePlate } from "@/components/dashboard-home/license-plate";
+import { DIRECTIONS_URL } from "@/components/dashboard-home/now-card";
+import { formatAppointment, rebookHref, vehicleLabel } from "@/lib/dashboard/home";
+import { cn } from "@/lib/utils";
+import type { Booking } from "@/types";
+
+// Focus outline that stays visible (3:1+) on white.
+const LIGHT_FOCUS = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
+const ROW_ACTION = cn(
+  "inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-ink ring-1 ring-line hover:bg-canvas",
+  LIGHT_FOCUS,
+);
+const PRIMARY_ACTION =
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-flame px-5 font-bold text-on-flame transition-colors hover:bg-flame-bright focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
+
+/** Status reads as words plus an icon; colour never carries it alone. */
+const STATUS: Record<Booking["status"], { label: string; icon: LucideIcon }> = {
+  pending: { label: "Waiting for confirmation", icon: Clock },
+  confirmed: { label: "Confirmed", icon: CheckCircle2 },
+  in_progress: { label: "In progress", icon: Timer },
+  completed: { label: "Completed", icon: Check },
+  cancelled: { label: "Cancelled", icon: XCircle },
+};
+
+function money(value: string | number | null | undefined): string {
+  const n = Number(value ?? 0);
+  return `$${n.toFixed(2)}`;
+}
+
+function paymentLabel(method: string | null | undefined): string {
+  switch (method) {
+    case "card":
+      return "Paid by card";
+    case "cash":
+      return "Pay at the site";
+    case "subscription":
+      return "Membership";
+    default:
+      return method ? method.charAt(0).toUpperCase() + method.slice(1) : "";
+  }
+}
+
+function colorsLabel(colors: unknown): string {
+  if (Array.isArray(colors)) return colors.filter(Boolean).join(", ");
+  return typeof colors === "string" ? colors : "";
+}
 
 export default function BookingsList() {
   const { user, isLoading: authLoading } = useAuth();
+  const { openBookingModal } = useBooking();
   const {
     bookings,
     loading,
+    error,
     reviewedBookings,
     setReviewedBookings,
     setBookings,
@@ -32,213 +92,84 @@ export default function BookingsList() {
 
   useEffect(() => {
     if (user) loadBookings(currentPage, user.id);
-  }, [currentPage, user]);
+  }, [currentPage, user, loadBookings]);
   // Realtime channel (only this user's bookings)
   useBookingRealtime(setBookings);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "pending":
-        return "bg-yellow-100 text-yellow-800";
-      case "confirmed":
-        return "bg-green-100 text-green-800";
-      case "completed":
-        return "bg-blue-100 text-blue-800";
-      case "cancelled":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const formatTime = (time: string) => {
-    const [hours, minutes] = time.split(":").map(Number);
-    const period = hours >= 12 ? "PM" : "AM";
-    const formattedHours = hours % 12 || 12;
-    return `${formattedHours}:${minutes.toString().padStart(2, "0")} ${period}`;
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="bg-white shadow-sm border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <div className="animate-pulse bg-gray-200 h-8 w-16 rounded"></div>
-              <div className="animate-pulse bg-gray-200 h-6 w-48 rounded"></div>
-            </div>
-          </div>
-        </div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="space-y-6">
-            <div className="animate-pulse bg-white rounded-lg p-6 h-48"></div>
-            <div className="animate-pulse bg-white rounded-lg p-6 h-64"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="py-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Bookings Dashboard</h1>
-        <p className="text-gray-600">
-          Manage customer appointments and services
-        </p>
+    <div>
+      <h1 className="text-3xl font-black tracking-tight text-ink">Your bookings</h1>
+      <p className="mt-1 text-ink-muted">
+        Express detailing appointments at 10410 S Main St.
+      </p>
+
+      <div className="mt-6">
+        {authLoading || loading ? (
+          <BookingsSkeleton />
+        ) : error ? (
+          <div
+            role="alert"
+            className="rounded-2xl bg-paper p-5 ring-1 ring-line sm:p-7"
+          >
+            <p className="flex items-center gap-2 font-semibold text-ink">
+              <AlertCircle aria-hidden className="size-5 shrink-0 text-destructive" />
+              We couldn&apos;t load your bookings.
+            </p>
+            <p className="mt-1 text-sm text-ink-muted">
+              Check your connection and try again.
+            </p>
+            <button
+              type="button"
+              onClick={() => user && loadBookings(currentPage, user.id)}
+              className={cn(ROW_ACTION, "mt-4")}
+            >
+              <RotateCcw aria-hidden className="size-4" /> Try again
+            </button>
+          </div>
+        ) : bookings.length === 0 ? (
+          <div className="rounded-2xl bg-paper p-5 ring-1 ring-line sm:p-7">
+            <CalendarX2 aria-hidden className="size-8 text-ink-subtle" />
+            <h2 className="mt-3 text-xl font-black tracking-tight text-ink">
+              No bookings yet
+            </h2>
+            <p className="mt-1 max-w-prose text-sm text-ink-muted">
+              Book an express detail and it will show up here, with the time,
+              your vehicle and what you paid.
+            </p>
+            <button
+              type="button"
+              onClick={openBookingModal}
+              className={cn(PRIMARY_ACTION, "mt-5")}
+            >
+              Book a detail <ArrowRight aria-hidden className="size-4" />
+            </button>
+          </div>
+        ) : (
+          <>
+            <ul className="grid gap-6 lg:grid-cols-2">
+              {bookings.map((booking) => (
+                <li key={booking.id}>
+                  <BookingCard
+                    booking={booking}
+                    reviewed={!!reviewedBookings[booking.id]}
+                    onReview={() => setSelectedBookingId(booking.id)}
+                  />
+                </li>
+              ))}
+            </ul>
+            {totalBookings > pageSize && (
+              <Pagination
+                page={currentPage}
+                total={totalBookings}
+                pageSize={pageSize}
+                onPageChange={(page) => setCurrentPage(page)}
+              />
+            )}
+          </>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {bookings.map((booking) => (
-          <Card key={booking.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <div className="flex justify-end mb-2">
-                <Badge className={getStatusColor(booking.status)}>
-                  {booking.status}
-                </Badge>
-              </div>
-              <div className="flex items-center">
-                <CardTitle>Booking #{booking.id}</CardTitle>
-              </div>
-            </CardHeader>
-
-            <CardContent className="flex flex-col h-full space-y-4">
-              {/* Vehicle Info */}
-              <div className="flex items-center text-sm text-gray-600">
-                <Car className="w-4 h-4 mr-2" />
-                <span>
-                  {booking.vehicle?.year} {booking.vehicle?.make}{" "}
-                  {booking.vehicle?.model} {booking.vehicle?.license_plate}
-                </span>
-              </div>
-              <div className="text-sm text-gray-600 ml-6">
-                {booking.vehicle?.body_type} • {booking.vehicle?.colors}
-              </div>
-
-              {/* Service Info */}
-              <div className="bg-blue-50 rounded-lg p-3">
-                <div className="font-medium text-blue-900 mb-2">
-                  {booking.service_package_name}
-                </div>
-                <div className="flex justify-between items-center">
-                  <p className="text-sm text-blue-700">
-                    {Number(booking.service_package_price) === 0
-                      ? "Free"
-                      : `$${booking.service_package_price}`}
-                  </p>
-                  <Crown className="w-4 h-4 text-amber-400" />
-                </div>
-              </div>
-
-              {/* Add-ons */}
-              {booking.add_ons?.length > 0 &&
-                booking.add_ons?.map((addon) => (
-                  <div key={addon.id} className="flex justify-between text-sm">
-                    <span className="text-gray-600">+ {addon.name}</span>
-                    <span className="font-medium">+${addon.price}</span>
-                  </div>
-                ))}
-
-              <div className="space-y-2 flex justify-between text-sm">
-                <span className="text-sm font-medium text-gray-700 mb-2">
-                  Payment Type
-                </span>
-                <span className="text-gray-600">{booking.payment_method}</span>
-              </div>
-
-              {/* Appointment Details */}
-              <div className="space-y-2">
-                <div className="flex items-center text-sm text-gray-600">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  {formatDate(booking.appointment_date)}
-                </div>
-                <div className="flex items-center text-sm text-gray-600">
-                  <Clock className="w-4 h-4 mr-2" />
-                  {formatTime(booking.appointment_time)} (
-                  {booking.total_duration} min)
-                </div>
-              </div>
-
-              <div className="flex-1" />
-
-              {/* Total */}
-              <div className="border-t pt-3">
-                <div className="flex items-center justify-between text-lg font-semibold">
-                  <span>Total</span>
-                  <div className="flex items-center text-green-600">
-                    <DollarSign className="w-4 h-4 mr-1" />
-                    {Number(booking.total_price).toLocaleString()}
-                  </div>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-2 pt-2">
-                {booking.status === "completed" &&
-                !reviewedBookings[booking.id] ? (
-                  <Button
-                    size="sm"
-                    variant="default"
-                    className="flex-1"
-                    onClick={() => setSelectedBookingId(booking.id)}
-                  >
-                    Submit Review
-                  </Button>
-                ) : reviewedBookings[booking.id] ? (
-                  <span className="w-full text-center text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                    Reviewed ✅
-                  </span>
-                ) : (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className={`flex-1 ${
-                      booking.status === "confirmed"
-                        ? "text-blue-900 border-blue-900"
-                        : ""
-                    }`}
-                  >
-                    {booking.status === "pending"
-                      ? "Waiting for confirmation"
-                      : booking.status === "confirmed"
-                        ? "Booking Confirmed!"
-                        : ""}
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-      <Pagination
-        page={currentPage} // <--- was currentPage
-        total={totalBookings} // <--- was totalPages
-        pageSize={pageSize} // page size
-        onPageChange={(page) => setCurrentPage(page)}
-      />
-      <div className="mt-6 flex justify-center"></div>
-      {bookings.length === 0 && (
-        <div className="text-center py-12">
-          <Car className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            No bookings yet
-          </h3>
-          <p className="text-gray-600">
-            Customer bookings will appear here once they start booking services.
-          </p>
-        </div>
-      )}
-
-      {/* Review Modal */}
+      {/* Review dialog */}
       {user && selectedBookingId && (
         <ReviewForm
           bookingId={selectedBookingId}
@@ -257,6 +188,149 @@ export default function BookingsList() {
           }}
         />
       )}
+    </div>
+  );
+}
+
+function BookingCard({
+  booking,
+  reviewed,
+  onReview,
+}: {
+  booking: Booking;
+  reviewed: boolean;
+  onReview: () => void;
+}) {
+  const status = STATUS[booking.status] ?? { label: booking.status, icon: Clock };
+  const StatusIcon = status.icon;
+  const serviceName = booking.service_package_name ?? "Express detailing";
+  const when = booking.appointment_date
+    ? formatAppointment(booking.appointment_date, booking.appointment_time)
+    : null;
+  const car = vehicleLabel(booking.vehicle);
+  const carDetail = [booking.vehicle?.body_type, colorsLabel(booking.vehicle?.colors)]
+    .filter(Boolean)
+    .join(" · ");
+  const packagePrice = Number(booking.service_package_price ?? 0);
+  const upcoming = booking.status === "pending" || booking.status === "confirmed";
+  const cancelled = booking.status === "cancelled";
+
+  return (
+    <article
+      aria-labelledby={`booking-${booking.id}`}
+      className="flex h-full flex-col rounded-2xl bg-paper p-5 ring-1 ring-line sm:p-7"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+        <h2 id={`booking-${booking.id}`} className="min-w-0">
+          <span className="flex items-center gap-2 text-xl font-black tracking-tight text-ink">
+            <Sparkles aria-hidden className="size-5 shrink-0 text-svc-detail-mark" />
+            <span className={cn(cancelled && "line-through decoration-ink-subtle")}>
+              {serviceName}
+            </span>
+          </span>
+          {when && (
+            <span className="mt-1 block font-semibold text-ink">
+              {when.split(" · ").map((part, i) => (
+                <span key={part} className="whitespace-nowrap">
+                  {i > 0 && " · "}
+                  {part}
+                </span>
+              ))}
+            </span>
+          )}
+        </h2>
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-canvas px-2.5 py-1 text-sm font-semibold text-ink-muted ring-1 ring-line">
+          <StatusIcon aria-hidden className="size-4" />
+          {status.label}
+        </span>
+      </div>
+
+      {(car || booking.vehicle?.license_plate) && (
+        <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1">
+          {car && <span className="font-medium text-ink">{car}</span>}
+          {booking.vehicle?.license_plate && (
+            <LicensePlate plate={booking.vehicle.license_plate} />
+          )}
+          {carDetail && (
+            <span className="w-full text-sm text-ink-muted">{carDetail}</span>
+          )}
+        </div>
+      )}
+
+      <dl className="mt-4 divide-y divide-line-soft border-t border-line-soft text-sm">
+        <div className="flex justify-between gap-4 py-2">
+          <dt className="text-ink-muted">{serviceName}</dt>
+          <dd className="font-medium tabular-nums text-ink">
+            {packagePrice === 0 ? "Free" : money(packagePrice)}
+          </dd>
+        </div>
+        {booking.add_ons?.map((addon) => (
+          <div key={addon.id} className="flex justify-between gap-4 py-2">
+            <dt className="text-ink-muted">{addon.name}</dt>
+            <dd className="font-medium tabular-nums text-ink">+{money(addon.price)}</dd>
+          </div>
+        ))}
+        {booking.total_duration > 0 && (
+          <div className="flex justify-between gap-4 py-2">
+            <dt className="text-ink-muted">Time at the site</dt>
+            <dd className="font-medium text-ink">About {booking.total_duration} min</dd>
+          </div>
+        )}
+        <div className="flex items-baseline justify-between gap-4 py-2">
+          <dt className="font-semibold text-ink">
+            Total
+            {booking.payment_method && (
+              <span className="ml-2 font-normal text-ink-muted">
+                {paymentLabel(booking.payment_method)}
+              </span>
+            )}
+          </dt>
+          <dd className="text-base font-black tabular-nums text-ink">
+            {money(booking.total_price)}
+          </dd>
+        </div>
+      </dl>
+
+      <div className="flex-1" />
+
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        {booking.status === "completed" && !reviewed && (
+          <button type="button" onClick={onReview} className={ROW_ACTION}>
+            <Star aria-hidden className="size-4" /> How was it?
+          </button>
+        )}
+        {booking.status === "completed" && reviewed && (
+          <span className="inline-flex min-h-11 items-center gap-1.5 px-1 text-sm font-semibold text-ink-muted">
+            <Check aria-hidden className="size-4" /> Thanks for your review
+          </span>
+        )}
+        {(booking.status === "completed" || cancelled) && (
+          <Link href={rebookHref(booking)} className={ROW_ACTION}>
+            <RotateCcw aria-hidden className="size-4" /> Book again
+          </Link>
+        )}
+        {upcoming && (
+          <a href={DIRECTIONS_URL} target="_blank" rel="noreferrer" className={ROW_ACTION}>
+            <MapPin aria-hidden className="size-4" /> Directions
+          </a>
+        )}
+        <span className="ml-auto text-xs text-ink-subtle">
+          Ref {booking.id.slice(0, 8).toUpperCase()}
+        </span>
+      </div>
+    </article>
+  );
+}
+
+function BookingsSkeleton() {
+  return (
+    <div aria-busy="true" aria-label="Loading your bookings" className="grid gap-6 lg:grid-cols-2">
+      {[0, 1].map((i) => (
+        <div
+          key={i}
+          className="h-72 animate-pulse rounded-2xl bg-line motion-reduce:animate-none"
+        />
+      ))}
     </div>
   );
 }

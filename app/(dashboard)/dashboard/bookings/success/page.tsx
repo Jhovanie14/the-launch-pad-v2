@@ -1,12 +1,19 @@
-import { CheckCircle, Package, Calendar, CreditCard } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import {
+  ArrowRight,
+  CalendarDays,
+  CheckCircle2,
+  CreditCard,
+  MapPin,
+  Sparkles,
+} from "lucide-react";
 import Link from "next/link";
 import { stripe } from "@/lib/stripe/stripe";
-import { redirect } from "next/navigation";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { OrderData } from "@/types";
+
+// Kept here: a server page can't read a value exported from a client module.
+const DIRECTIONS_URL =
+  "https://www.google.com/maps/dir/?api=1&destination=10410+S+Main+St,+Houston,+TX+77025";
 
 interface SuccessPageProps {
   searchParams: { session_id?: string; booking_id?: string };
@@ -88,7 +95,7 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
     orderData = {
       type: "checkout",
       date: bookingMeta?.ad
-        ? new Date(bookingMeta.ad).toLocaleDateString()
+        ? formatCalendarDate(bookingMeta.ad)
         : new Date(session.created * 1000).toLocaleDateString(),
       orderNumber: paymentIntentId ?? session.id,
       paymentMethod: paymentType === "CASH" ? "Cash" : "Card",
@@ -128,9 +135,6 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
         ? "Cash"
         : "Card"
       : "Subscription";
-      
-    const type: "checkout" | "subscription" =
-      booking.payment_method === "card" ? "checkout" : "checkout";
     // 🔸 Only show add-ons if user actually paid for them
     const items = [
       {
@@ -151,7 +155,7 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
 
     orderData = {
       type: hasAddOns ? "checkout" : "subscription",
-      date: new Date(booking.appointment_date).toLocaleDateString(), // ✅ FIXED date
+      date: formatCalendarDate(booking.appointment_date),
       orderNumber: booking.id,
       paymentMethod,
       items,
@@ -165,131 +169,139 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
 
   if (!orderData) throw new Error("No session_id or booking_id provided");
 
-  // ✅ UI rendering
+  const isCard = orderData.paymentMethod === "Card";
+  const discount = orderData.discountAmount ?? 0;
+  const addOnsPaid = orderData.type === "checkout" && addOns.length > 0;
+
   return (
-    <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl mx-auto">
-        {/* Success Header */}
-        <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
-            <CheckCircle className="h-16 w-16 text-green-500" />
+    <div className="max-w-2xl">
+      <CheckCircle2 aria-hidden className="size-10 text-ink" />
+      <h1 className="mt-3 text-3xl font-black tracking-tight text-ink">
+        {isCard ? "Payment received, you're booked" : "You're booked"}
+      </h1>
+      <p className="mt-2 max-w-prose text-ink-muted">
+        We&apos;ve emailed your confirmation. See you at 10410 S Main St.
+      </p>
+
+      <section
+        aria-labelledby="receipt-heading"
+        className="mt-6 rounded-2xl bg-paper p-5 ring-1 ring-line sm:p-7"
+      >
+        <h2 id="receipt-heading" className="text-xl font-black tracking-tight text-ink">
+          Booking details
+        </h2>
+
+        <dl className="mt-4 divide-y divide-line-soft text-sm">
+          <div className="flex justify-between gap-4 py-2.5">
+            <dt className="flex items-center gap-2 text-ink-muted">
+              <CalendarDays aria-hidden className="size-4" /> Appointment
+            </dt>
+            <dd className="font-semibold text-ink">{orderData.date}</dd>
           </div>
-          <h1 className="text-3xl font-bold text-primary mb-2">
-            {orderData.paymentMethod === "Card"
-              ? "Payment Successful!"
-              : "Booking Confirmed!"}
-          </h1>
-          <p className="text-muted-foreground text-lg">
-            Thank you for your purchase. Your order has been confirmed.
-          </p>
-        </div>
+          <div className="flex justify-between gap-4 py-2.5">
+            <dt className="flex items-center gap-2 text-ink-muted">
+              <CreditCard aria-hidden className="size-4" /> Payment
+            </dt>
+            <dd className="font-semibold text-ink">
+              {orderData.paymentMethod === "Subscription"
+                ? "Membership"
+                : orderData.paymentMethod}
+            </dd>
+          </div>
+        </dl>
 
-        {/* Order Details */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5" /> Booking Details
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex justify-between items-center text-sm">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Calendar className="h-4 w-4" /> Booking Date
-              </div>
-              <span className="font-medium">{orderData.date}</span>
+        <h3 className="mt-6 font-bold text-ink">What you booked</h3>
+        <dl className="mt-2 divide-y divide-line-soft border-y border-line-soft text-sm">
+          {orderData.items.map((item, index) => (
+            <div key={index} className="flex justify-between gap-4 py-2.5">
+              <dt className="flex items-center gap-2 font-medium text-ink">
+                <Sparkles aria-hidden className="size-4 shrink-0 text-svc-detail-mark" />
+                {item.name}
+              </dt>
+              <dd className="tabular-nums text-ink">${item.price.toFixed(2)}</dd>
             </div>
-
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-muted-foreground">Booking Number</span>
-              <span className="font-medium">{orderData.orderNumber}</span>
-            </div>
-
-            <div className="flex justify-between items-center text-sm">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <CreditCard className="h-4 w-4" /> Payment Method
+          ))}
+          {/* Only show add-ons when paid for */}
+          {addOnsPaid &&
+            addOns.map((addon) => (
+              <div key={addon.id} className="flex justify-between gap-4 py-2.5 pl-6">
+                <dt className="text-ink-muted">Add-on: {addon.name}</dt>
+                <dd className="tabular-nums text-ink">${addon.price.toFixed(2)}</dd>
               </div>
-              <span className="font-medium">{orderData.paymentMethod}</span>
+            ))}
+        </dl>
+
+        <dl className="mt-2 text-sm">
+          <div className="flex justify-between gap-4 py-1.5">
+            <dt className="text-ink-muted">Subtotal</dt>
+            <dd className="tabular-nums text-ink">${orderData.subtotal.toFixed(2)}</dd>
+          </div>
+          {discount > 0 && (
+            <div className="flex justify-between gap-4 py-1.5">
+              <dt className="text-ink-muted">
+                Discount ({orderData.discountPercent ?? 0}% off)
+              </dt>
+              <dd className="tabular-nums text-ink">&minus;${discount.toFixed(2)}</dd>
             </div>
+          )}
+          <div className="flex justify-between gap-4 py-1.5">
+            <dt className="text-ink-muted">Tax</dt>
+            <dd className="tabular-nums text-ink">${orderData.tax.toFixed(2)}</dd>
+          </div>
+          <div className="mt-1 flex items-baseline justify-between gap-4 border-t border-line pt-3">
+            <dt className="font-semibold text-ink">Total</dt>
+            <dd className="text-xl font-black tabular-nums tracking-tight text-ink">
+              ${orderData.total.toFixed(2)}
+            </dd>
+          </div>
+        </dl>
 
-            <Separator />
+        <p className="mt-4 break-all text-xs text-ink-subtle">
+          Reference {orderData.orderNumber}
+        </p>
+      </section>
 
-            <div className="space-y-3">
-              <h4 className="font-medium">Items Purchased</h4>
-              {orderData.items.map((item, index) => (
-                <div key={index} className="flex justify-between items-center">
-                  <span className="text-sm">{item.name}</span>
-                  <span className="font-medium">${item.price.toFixed(2)}</span>
-                </div>
-              ))}
-              {/* ✅ Only show add-ons when paid for */}
-              {orderData.type === "checkout" && addOns.length > 0 && (
-                <div className="pl-4 mt-2 space-y-1">
-                  <span className="text-sm text-muted-foreground font-medium block">
-                    Add-ons
-                  </span>
-                  {addOns.map((addon) => (
-                    <div
-                      key={addon.id}
-                      className="flex justify-between items-center text-sm pl-2"
-                    >
-                      <span>- {addon.name}</span>
-                      <span>${addon.price.toFixed(2)}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <Separator />
-
-            <div className="space-y-2">
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">Subtotal</span>
-                <span>${orderData.subtotal.toFixed(2)}</span>
-              </div>
-
-              {orderData.discountAmount && orderData.discountAmount > 0 && (
-                <div className="flex justify-between items-center text-sm text-green-600">
-                  <span>Discount ({orderData.discountPercent ?? 0}%)</span>
-                  <span>- ${orderData.discountAmount.toFixed(2)}</span>
-                </div>
-              )}
-
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">Tax</span>
-                <span>${orderData.tax.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between items-center font-semibold text-lg">
-                <span>Total</span>
-                <span className="text-primary">
-                  ${orderData.total.toFixed(2)}
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="text-center mt-8 p-4 bg-card rounded-lg border mb-4">
-          <p className="text-sm text-green-500">
-            A confirmation email has been sent to your registered email address.
-            If you have any questions, please contact our support team.
-          </p>
-        </div>
-
-        <div className="space-y-4">
-          <Button asChild className="w-full" size="lg">
-            <Link href="/dashboard/bookings">View Your Bookings</Link>
-          </Button>
-          {/* <div className="flex gap-4">
-            <Button asChild variant="outline" className="flex-1 bg-transparent">
-              <Link href="/">Continue Shopping</Link>
-            </Button>
-            <Button asChild variant="outline" className="flex-1 bg-transparent">
-              <Link href="/support">Contact Support</Link>
-            </Button>
-          </div> */}
-        </div>
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <Link
+          href="/dashboard/bookings"
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-flame px-5 font-bold text-on-flame transition-colors hover:bg-flame-bright focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+        >
+          See your bookings <ArrowRight aria-hidden className="size-4" />
+        </Link>
+        <a
+          href={DIRECTIONS_URL}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 font-semibold text-ink ring-1 ring-line hover:bg-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+        >
+          <MapPin aria-hidden className="size-4 text-brand-blue" /> Get directions
+        </a>
       </div>
+
+      <p className="mt-6 text-sm text-ink-muted">
+        Need to change something? Call{" "}
+        <a
+          href="tel:+18322198320"
+          className="rounded font-semibold text-ink underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+        >
+          (832) 219-8320
+        </a>{" "}
+        or email{" "}
+        <a
+          href="mailto:info@thelaunchpadwash.com"
+          className="rounded font-semibold text-ink underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+        >
+          info@thelaunchpadwash.com
+        </a>
+        .
+      </p>
     </div>
   );
+}
+
+/** "YYYY-MM-DD" is a calendar date, not an instant: format it in UTC so the
+ * server's own time zone can never move it to the previous day. */
+function formatCalendarDate(value: string): string {
+  const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T00:00:00Z` : value);
+  return date.toLocaleDateString("en-US", { timeZone: "UTC", month: "short", day: "numeric", year: "numeric" });
 }

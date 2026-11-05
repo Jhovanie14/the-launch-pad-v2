@@ -3,22 +3,22 @@
 import { useAuth } from "@/context/auth-context";
 import { createClient } from "@/utils/supabase/client";
 import { useEffect, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import Link from "next/link";
 import { toast } from "sonner";
 import {
-  Car,
-  Clock,
-  CheckCircle,
-  User,
-  Calendar,
-  LogOut,
-  LogIn,
   AlertCircle,
+  ArrowRight,
+  Check,
+  Droplets,
+  RotateCcw,
+  Timer,
+  XCircle,
+  type LucideIcon,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
-import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
+import { LicensePlate } from "@/components/dashboard-home/license-plate";
+import { BUSINESS_TIME_ZONE, formatClock, vehicleLabel } from "@/lib/dashboard/home";
+import { cn } from "@/lib/utils";
+
 type UsageLog = {
   id: string;
   check_in_time: string;
@@ -29,228 +29,254 @@ type UsageLog = {
   vehicle?: any;
 };
 
+// A session nobody checked out of after this long was simply never closed;
+// don't tell the customer they're still at the bay (matches the home).
+const OPEN_SESSION_MAX_MS = 6 * 60 * 60 * 1000;
+
+const LIGHT_FOCUS = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
+const ROW_ACTION = cn(
+  "inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-ink ring-1 ring-line hover:bg-canvas",
+  LIGHT_FOCUS,
+);
+
+/** Status reads as words plus an icon; colour never carries it alone. */
+const STATUS: Record<string, { label: string; icon: LucideIcon }> = {
+  in_progress: { label: "At the bay", icon: Timer },
+  completed: { label: "Done", icon: Check },
+  cancelled: { label: "Cancelled", icon: XCircle },
+};
+
+function visitDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: BUSINESS_TIME_ZONE,
+  });
+}
+
+function colorsLabel(colors: unknown): string {
+  if (Array.isArray(colors)) return colors.filter(Boolean).join(", ");
+  return typeof colors === "string" ? colors : "";
+}
+
+function isOpenNow(log: UsageLog, now: number): boolean {
+  return (
+    log.status === "in_progress" &&
+    !log.check_out_time &&
+    now - new Date(log.check_in_time).getTime() < OPEN_SESSION_MAX_MS
+  );
+}
+
 export default function SelfServiceLog() {
   const supabase = createClient();
-  const { user, isLoading: authLoading } = useAuth();
+  const { user } = useAuth();
 
   const [usageLogs, setUsageLogs] = useState<UsageLog[]>([]);
-  const [loading, setLoading] = useState(false);
   const [fetchingLogs, setFetchingLogs] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [now] = useState(() => Date.now());
 
   useEffect(() => {
     async function fetchUsageLogs() {
-      if (!user?.id) return console.log(user?.id);
+      if (!user?.id) return;
 
       setFetchingLogs(true);
+      setLoadError(false);
       try {
         const { data, error } = await supabase
           .from("self_service_usage_logs")
           .select(
             `
               *,
-              vehicle:vehicles (year, make, model, body_type, colors)
+              vehicle:vehicles (year, make, model, body_type, colors, license_plate)
               `
           )
           .eq("user_id", user?.id)
-          .order("check_in_time", { ascending: false });
-
-        console.log("self service logs", data);
+          .order("check_in_time", { ascending: false })
+          // Latest 100 visits: enough history without loading years of rows.
+          .limit(100);
 
         if (error) {
           console.error("Error fetching usage logs:", error);
-          toast.error("Failed to fetch usage logs");
+          toast.error("Couldn't load your bay visits");
+          setLoadError(true);
           return;
         }
 
         setUsageLogs(data || []);
       } catch (err) {
         console.error(err);
-        toast.error("Something went wrong");
+        toast.error("Couldn't load your bay visits");
+        setLoadError(true);
       } finally {
         setFetchingLogs(false);
       }
     }
 
     fetchUsageLogs();
-  }, [user?.id, supabase]);
+  }, [user?.id, supabase, attempt]);
 
   const getDuration = (log: UsageLog) => {
-    if (!log.check_out_time) return "In Progress";
+    if (!log.check_out_time) return null;
 
-    const diffMs =
-      new Date(log.check_out_time).getTime() -
-      new Date(log.check_in_time).getTime();
-    const diffMin = diffMs / 1000 / 60;
-
-    if (diffMin < 60) return `${diffMin.toFixed(0)} min`;
-    const diffHr = diffMin / 60;
-    return `${diffHr.toFixed(1)} hr`;
+    const diffMin = Math.max(
+      0,
+      Math.round(
+        (new Date(log.check_out_time).getTime() -
+          new Date(log.check_in_time).getTime()) /
+          60000
+      )
+    );
+    if (diffMin < 60) return `${diffMin} min`;
+    const hours = Math.floor(diffMin / 60);
+    const minutes = diffMin % 60;
+    return minutes ? `${hours} hr ${minutes} min` : `${hours} hr`;
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "in_progress":
-        return "bg-blue-100 text-blue-800";
-      case "completed":
-        return "bg-green-100 text-green-800";
-      case "cancelled":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
+  const active = usageLogs.find((log) => isOpenNow(log, now));
+  const history = usageLogs.filter((log) => log !== active);
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "in_progress":
-        return <Clock className="w-5 h-5 text-blue-500" />;
-      case "completed":
-        return <CheckCircle className="w-5 h-5 text-green-500" />;
-      case "cancelled":
-        return <AlertCircle className="w-5 h-5 text-red-500" />;
-      default:
-        return null;
-    }
-  };
   return (
-    <div className="space-y-4 mt-6">
-      {fetchingLogs ? (
-        <div className="text-center py-8">
-          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-sm text-muted-foreground mt-4">
-            Loading usage logs...
-          </p>
-        </div>
-      ) : usageLogs.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">
-              No usage history found for this subscriber
+    <div>
+      <h1 className="text-3xl font-black tracking-tight text-ink">Self-service</h1>
+      <p className="mt-1 text-ink-muted">
+        Your bay visits at 10410 S Main St. The bays are open 24/7.
+      </p>
+
+      <div className="mt-6 space-y-6">
+        {fetchingLogs ? (
+          <div aria-busy="true" aria-label="Loading your bay visits" className="space-y-6">
+            <div className="h-72 animate-pulse rounded-2xl bg-line motion-reduce:animate-none" />
+          </div>
+        ) : loadError ? (
+          <div role="alert" className="rounded-2xl bg-paper p-5 ring-1 ring-line sm:p-7">
+            <p className="flex items-center gap-2 font-semibold text-ink">
+              <AlertCircle aria-hidden className="size-5 shrink-0 text-destructive" />
+              We couldn&apos;t load your bay visits.
             </p>
-          </CardContent>
-        </Card>
-      ) : (
-        usageLogs.map((log) => (
-          <Card
-            key={log.id}
-            className={`border-2 transition-all ${
-              log.status === "in_progress"
-                ? "border-blue-300 bg-blue-50/50"
-                : log.status === "completed"
-                  ? "border-green-300 bg-green-50/50"
-                  : "border-border"
-            }`}
-          >
-            <CardContent className="p-6 space-y-4">
-              {/* Header */}
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  {getStatusIcon(log.status)}
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-lg">
-                        {log.vehicle?.year} {log.vehicle?.make}{" "}
-                        {log.vehicle?.model}
-                      </h3>
-                      <Badge className={getStatusColor(log.status)}>
-                        {log.status.replace("_", " ")}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Session #{log.id.slice(0, 8)}
-                    </p>
-                  </div>
-                </div>
-                {log.status === "completed" && (
-                  <div className="text-right">
-                    <p className="text-xl font-bold text-green-600">
-                      {getDuration(log)}
-                    </p>
-                    <p className="text-sm text-muted-foreground">Duration</p>
-                  </div>
+            <p className="mt-1 text-sm text-ink-muted">
+              Check your connection and try again.
+            </p>
+            <button
+              type="button"
+              onClick={() => setAttempt((n) => n + 1)}
+              className={cn(ROW_ACTION, "mt-4")}
+            >
+              <RotateCcw aria-hidden className="size-4" /> Try again
+            </button>
+          </div>
+        ) : (
+          <>
+            {active && (
+              <section
+                aria-labelledby="active-visit"
+                className="rounded-2xl bg-dusk p-5 text-on-night ring-1 ring-white/10 sm:p-7"
+              >
+                <h2
+                  id="active-visit"
+                  className="text-3xl font-black tracking-tight text-balance sm:text-4xl"
+                >
+                  You&apos;re checked in since {formatClock(active.check_in_time)}
+                </h2>
+                <p className="mt-1 text-on-night-muted">
+                  <span className="font-semibold text-svc-self">Self-service bay</span>
+                  {active.vehicle && ` · ${vehicleLabel(active.vehicle)}`}
+                </p>
+                {active.vehicle?.license_plate && (
+                  <LicensePlate plate={active.vehicle.license_plate} className="mt-3" />
                 )}
-              </div>
+              </section>
+            )}
 
-              {/* Details */}
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <LogIn className="w-4 h-4 text-muted-foreground" />
-                    <span className="font-medium">Check-In:</span>
-                    <span>
-                      {format(
-                        new Date(log.check_in_time),
-                        "MMM dd, yyyy h:mm a"
-                      )}
-                    </span>
-                  </div>
+            <section
+              aria-labelledby="visits-heading"
+              className="rounded-2xl bg-paper p-5 ring-1 ring-line sm:p-7"
+            >
+              <h2 id="visits-heading" className="text-xl font-black tracking-tight text-ink">
+                Your bay visits
+              </h2>
 
-                  {log.check_out_time && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <LogOut className="w-4 h-4 text-muted-foreground" />
-                      <span className="font-medium">Check-Out:</span>
-                      <span>
-                        {format(
-                          new Date(log.check_out_time),
-                          "MMM dd, yyyy h:mm a"
-                        )}
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-2 text-sm">
-                    <Car className="w-4 h-4 text-muted-foreground" />
-                    <span>
-                      {log.vehicle?.body_type} -{" "}
-                      {log.vehicle?.colors?.join(", ")}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  {log.attendant_name && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <User className="w-4 h-4 text-muted-foreground" />
-                      <span>
-                        <strong>Verified by:</strong> {log.attendant_name}
-                      </span>
-                    </div>
-                  )}
-
-                  {log.notes && (
-                    <div className="text-sm">
-                      <p className="font-medium">Notes:</p>
-                      <p className="text-muted-foreground italic">
-                        "{log.notes}"
-                      </p>
-                    </div>
-                  )}
-
-                  {log.status === "in_progress" && (
-                    <div className="text-sm">
-                      <p className="font-medium text-blue-600 flex items-center gap-2">
-                        <Clock className="w-4 h-4" />
-                        Currently washing...
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Progress Bar for In Progress */}
-              {log.status === "in_progress" && (
-                <div className="space-y-2">
-                  <Progress value={50} className="h-2 bg-blue-200" />
-                  <p className="text-xs text-center text-muted-foreground">
-                    Session in progress
+              {history.length === 0 ? (
+                <div className="mt-3 max-w-prose">
+                  <p className="text-sm text-ink-muted">
+                    {active
+                      ? "Earlier visits will show up here once you've checked out."
+                      : "No bay visits yet. When staff check you in at a self-service bay, the visit shows up here with how long you stayed."}
                   </p>
+                  {!active && (
+                    <Link href="/self-service" className={cn(ROW_ACTION, "mt-4")}>
+                      How self-service works <ArrowRight aria-hidden className="size-4" />
+                    </Link>
+                  )}
                 </div>
+              ) : (
+                <ol className="mt-4 divide-y divide-line-soft">
+                  {history.map((log) => {
+                    const duration = getDuration(log);
+                    const status = STATUS[log.status];
+                    const notClosed = log.status === "in_progress" && !log.check_out_time;
+                    const car = vehicleLabel(log.vehicle);
+                    const carDetail = [log.vehicle?.body_type, colorsLabel(log.vehicle?.colors)]
+                      .filter(Boolean)
+                      .join(" · ");
+                    return (
+                      <li key={log.id} className="py-4 first:pt-0 last:pb-0">
+                        <div className="flex items-start gap-4">
+                          <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-canvas ring-1 ring-line">
+                            <Droplets aria-hidden className="size-4 text-svc-self-mark" />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                              <h3 className="font-bold text-ink">
+                                <time dateTime={log.check_in_time}>{visitDate(log.check_in_time)}</time>
+                              </h3>
+                              {log.status !== "cancelled" && duration ? (
+                                <span className="text-lg font-black tabular-nums tracking-tight text-ink">
+                                  {duration}
+                                </span>
+                              ) : notClosed ? (
+                                <span className="text-sm text-ink-muted">No check-out recorded</span>
+                              ) : status ? (
+                                <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink-muted">
+                                  <status.icon aria-hidden className="size-4" />
+                                  {status.label}
+                                </span>
+                              ) : null}
+                            </div>
+                            <p className="mt-0.5 text-sm tabular-nums text-ink-muted">
+                              In {formatClock(log.check_in_time)}
+                              {log.check_out_time && <> &ndash; out {formatClock(log.check_out_time)}</>}
+                            </p>
+                            {(car || log.vehicle?.license_plate) && (
+                              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                                {car && <span className="font-medium text-ink">{car}</span>}
+                                {log.vehicle?.license_plate && (
+                                  <LicensePlate plate={log.vehicle.license_plate} />
+                                )}
+                                {carDetail && <span className="text-ink-muted">{carDetail}</span>}
+                              </div>
+                            )}
+                            {(log.attendant_name || log.notes) && (
+                              <p className="mt-1 text-sm text-ink-muted">
+                                {log.attendant_name && <>Checked in by {log.attendant_name}</>}
+                                {log.attendant_name && log.notes && " · "}
+                                {log.notes && <>Note: {log.notes}</>}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ol>
               )}
-            </CardContent>
-          </Card>
-        ))
-      )}
+            </section>
+          </>
+        )}
+      </div>
     </div>
   );
 }
