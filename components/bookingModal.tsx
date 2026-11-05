@@ -1,8 +1,9 @@
 "use client";
 
 import { useBooking } from "@/context/bookingContext";
-import { Button } from "./ui/button";
-import { Car, PenLine, X } from "lucide-react";
+import { ArrowRight, Car, PenLine, X } from "lucide-react";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "./ui/dialog";
+import { LicensePlate } from "./dashboard-home/license-plate";
 import { useAuth } from "@/context/auth-context";
 import { useEffect, useState } from "react";
 import AuthPromptModal from "./user/authPromptModal";
@@ -13,7 +14,9 @@ import { Label } from "./ui/label";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
@@ -140,131 +143,131 @@ export default function BookingModal() {
     return <LoadingDots />;
   }
 
+  const vehicleOption = (v: { id: string; license_plate?: string | null; year?: number | string | null; make?: string | null; model?: string | null }) => {
+    const details = [v.year, v.make, v.model].filter(Boolean).join(" ");
+    return (
+      <SelectItem key={v.id} value={v.id}>
+        <span className="flex items-center gap-2">
+          {v.license_plate && <LicensePlate plate={v.license_plate} />}
+          {details && <span className="text-sm text-ink-muted">{details}</span>}
+        </span>
+      </SelectItem>
+    );
+  };
+  const otherSaved = savedVehicles.filter((sv) => !subscriptionVehicles.some((sub) => sub.id === sv.id));
+
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 w-full max-w-xl mx-4">
-          <div className="flex items-center justify-between mb-1">
-            <h2 className="text-2xl font-bold">
-              {showDropdown ? "Select Your Vehicle" : "Enter Your Vehicle Info"}
-            </h2>
-            <Button
-              variant="outline"
-              size="icon"
-              className="rounded-full"
-              onClick={closeBookingModal}
+      <Dialog open onOpenChange={(open) => !open && closeBookingModal()}>
+        <DialogContent showCloseButton={false}
+          className="gap-0 overflow-hidden rounded-2xl border-0 bg-paper p-0 text-ink sm:max-w-lg">
+          <div className="relative bg-night py-6 pr-16 pl-6 text-on-night">
+            <DialogClose
+              aria-label="Close"
+              className="absolute top-4 right-4 inline-flex size-11 items-center justify-center rounded-lg text-on-night hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-flame"
             >
-              <X className="text-red-600" />
-            </Button>
+              <X aria-hidden className="size-5" />
+            </DialogClose>
+            <DialogTitle className="text-2xl font-black tracking-tight text-on-night">
+              {showDropdown ? "Which car is it?" : "Enter your license plate"}
+            </DialogTitle>
+            <DialogDescription className="mt-1 text-on-night-muted">
+              We use it to show your price and have the bay ready for you.
+            </DialogDescription>
           </div>
 
-          <p className="text-sm text-muted-foreground mb-6">
-            Add your car information to help our team prepare for your service.
-          </p>
-
-          {showDropdown ? (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Select Vehicle</Label>
-                <Select value={selectedVehicleId ?? ""} onValueChange={handleVehicleSelect}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Choose a saved vehicle" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {subscriptionVehicles.length > 0 && (
-                      <>
-                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                          Subscription Vehicles
-                        </div>
-                        {subscriptionVehicles.map((v) => {
-                          const details = [v.year, v.make, v.model].filter(Boolean).join(" ");
-                          return (
-                            <SelectItem key={v.id} value={v.id}>
-                              <div className="flex items-center gap-2">
-                                <Car className="w-3.5 h-3.5 shrink-0" />
-                                <span className="font-mono font-semibold">{v.license_plate}</span>
-                                {details && <span className="text-muted-foreground text-xs">— {details}</span>}
-                              </div>
-                            </SelectItem>
-                          );
-                        })}
-                      </>
-                    )}
-                    {savedVehicles.length > 0 && (
-                      <>
-                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                          My Saved Vehicles
-                        </div>
-                        {savedVehicles
-                          .filter((sv) => !subscriptionVehicles.some((sub) => sub.id === sv.id))
-                          .map((v) => {
-                            const details = [v.year, v.make, v.model].filter(Boolean).join(" ");
-                            return (
-                              <SelectItem key={v.id} value={v.id}>
-                                <div className="flex items-center gap-2">
-                                  <Car className="w-3.5 h-3.5 shrink-0" />
-                                  <span className="font-mono font-semibold">{v.license_plate}</span>
-                                  {details && <span className="text-muted-foreground text-xs">— {details}</span>}
-                                </div>
-                              </SelectItem>
-                            );
-                          })}
-                      </>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-              <button
-                type="button"
-                onClick={() => { setEnterManually(true); setSelectedVehicleId(null); }}
-                className="flex items-center gap-1.5 text-sm text-blue-700 hover:underline"
-              >
-                <PenLine className="w-3.5 h-3.5" /> Enter a different plate
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <div className="space-y-2">
-                <Label>License Plate</Label>
-                <Input
-                  value={vehicleInfo.license_plate}
-                  onChange={(e) =>
-                    setVehicleInfo((prev) => ({
-                      ...prev,
-                      license_plate: e.target.value.toUpperCase(),
-                    }))
-                  }
-                  placeholder="e.g., ABC 1234 or leave blank"
-                  className="text-lg font-mono uppercase tracking-widest"
-                  autoFocus
-                />
-                {errors.license_plate && (
-                  <p className="text-red-500 text-sm">{errors.license_plate}</p>
-                )}
-              </div>
-              {hasSavedOrSubscription && (
+          <div className="space-y-4 px-6 pt-5 pb-6">
+            {showDropdown ? (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="booking-vehicle" className="font-semibold text-ink">
+                    Your vehicles
+                  </Label>
+                  <Select value={selectedVehicleId ?? ""} onValueChange={handleVehicleSelect}>
+                    <SelectTrigger id="booking-vehicle" className="h-12 w-full bg-paper">
+                      <SelectValue placeholder="Choose a vehicle" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-paper text-ink">
+                      {subscriptionVehicles.length > 0 && (
+                        <SelectGroup>
+                          <SelectLabel className="text-ink-muted">On your membership</SelectLabel>
+                          {subscriptionVehicles.map(vehicleOption)}
+                        </SelectGroup>
+                      )}
+                      {otherSaved.length > 0 && (
+                        <SelectGroup>
+                          <SelectLabel className="text-ink-muted">Saved vehicles</SelectLabel>
+                          {otherSaved.map(vehicleOption)}
+                        </SelectGroup>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <button
                   type="button"
-                  onClick={() => { setEnterManually(false); setVehicleInfo((p) => ({ ...p, license_plate: "" })); }}
-                  className="flex items-center gap-1.5 text-sm text-blue-700 hover:underline"
+                  onClick={() => {
+                    setEnterManually(true);
+                    setSelectedVehicleId(null);
+                  }}
+                  className="inline-flex min-h-11 items-center gap-2 rounded-lg px-1 text-sm font-semibold text-brand-blue hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
                 >
-                  <Car className="w-3.5 h-3.5" /> Choose a saved vehicle
+                  <PenLine aria-hidden className="size-4" /> Use a different plate
                 </button>
-              )}
-            </div>
-          )}
+              </>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="booking-plate" className="font-semibold text-ink">
+                    License plate
+                  </Label>
+                  <Input
+                    id="booking-plate"
+                    value={vehicleInfo.license_plate}
+                    onChange={(e) =>
+                      setVehicleInfo((prev) => ({
+                        ...prev,
+                        license_plate: e.target.value.toUpperCase(),
+                      }))
+                    }
+                    placeholder="ABC 1234"
+                    aria-invalid={!!errors.license_plate}
+                    aria-describedby={errors.license_plate ? "booking-plate-error" : undefined}
+                    className="h-14 bg-paper text-center font-mono text-2xl font-semibold uppercase tracking-[0.14em]"
+                    autoFocus
+                  />
+                  {errors.license_plate && (
+                    <p id="booking-plate-error" className="text-sm font-medium text-destructive">
+                      {errors.license_plate}
+                    </p>
+                  )}
+                </div>
+                {hasSavedOrSubscription && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEnterManually(false);
+                      setVehicleInfo((p) => ({ ...p, license_plate: "" }));
+                    }}
+                    className="inline-flex min-h-11 items-center gap-2 rounded-lg px-1 text-sm font-semibold text-brand-blue hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                  >
+                    <Car aria-hidden className="size-4" /> Choose one of your vehicles
+                  </button>
+                )}
+              </>
+            )}
 
-          <div className="mt-6">
-            <Button
-              className="w-full bg-blue-900 text-white hover:bg-blue-800"
+            <button
+              type="button"
               onClick={handleBooking}
               disabled={savedLoading}
+              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-flame px-5 font-bold text-on-flame transition-colors hover:bg-flame-bright disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
             >
-              {showDropdown ? "Proceed to Services" : "See My Pricing"}
-            </Button>
+              {showDropdown ? "Choose a service" : "See my pricing"}
+              <ArrowRight aria-hidden className="size-4" />
+            </button>
           </div>
-        </div>
-      </div>
+        </DialogContent>
+      </Dialog>
 
       <AuthPromptModal open={authOpen} onClose={() => setAuthOpen(false)} />
     </>
