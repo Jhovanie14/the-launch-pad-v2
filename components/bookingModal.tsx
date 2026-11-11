@@ -5,9 +5,10 @@ import { ArrowRight, Car, PenLine, X } from "lucide-react";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "./ui/dialog";
 import { LicensePlate } from "./dashboard-home/license-plate";
 import { useAuth } from "@/context/auth-context";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AuthPromptModal from "./user/authPromptModal";
 import { useVehicleForm } from "@/hooks/useVehicleForm";
+import { normalizePlate, plateError } from "@/lib/booking/plate";
 import { useUserVehicles } from "@/hooks/useUserVehicles";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -61,7 +62,9 @@ function BookingModalContent() {
   const [enterManually, setEnterManually] = useState(false);
 
   const { vehicles: savedVehicles, loading: savedLoading } = useUserVehicles();
-  const { vehicleInfo, setVehicleInfo, errors, validate } = useVehicleForm();
+  const { vehicleInfo, setVehicleInfo, validate } = useVehicleForm();
+  const [formError, setFormError] = useState<string | null>(null);
+  const plateInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     async function fetchSubscriptionVehicle() {
@@ -115,6 +118,7 @@ function BookingModalContent() {
   // Pre-fill plate when user picks a saved vehicle
   const handleVehicleSelect = (id: string) => {
     setSelectedVehicleId(id);
+    setFormError(null);
     const fromSub = subscriptionVehicles.find((v) => v.id === id);
     const fromSaved = savedVehicles.find((v) => v.id === id);
     const plate = fromSub?.license_plate ?? fromSaved?.license_plate ?? "";
@@ -124,7 +128,12 @@ function BookingModalContent() {
   const handleBooking = () => {
     let params: URLSearchParams;
 
-    if (showDropdown && selectedVehicleId) {
+    setFormError(null);
+    if (showDropdown) {
+      if (!selectedVehicleId) {
+        setFormError("Choose one of your vehicles, or use a different plate.");
+        return;
+      }
       const fromSub = subscriptionVehicles.find((v) => v.id === selectedVehicleId);
       const fromSaved = savedVehicles.find((v) => v.id === selectedVehicleId);
       const selected = fromSub ?? fromSaved;
@@ -133,8 +142,17 @@ function BookingModalContent() {
       if (selected.license_plate) params.set("license_plate", selected.license_plate);
       params.set("vehicle_id", selected.id);
     } else {
+      const problem = plateError(vehicleInfo.license_plate);
+      if (problem) {
+        setFormError(problem);
+        plateInputRef.current?.focus();
+        return;
+      }
       if (!validate()) return;
-      const entries = Object.entries(vehicleInfo).filter(
+      const entries = Object.entries({
+        ...vehicleInfo,
+        license_plate: normalizePlate(vehicleInfo.license_plate),
+      }).filter(
         (e): e is [string, string] => e[1] !== undefined && e[1] !== "",
       );
       params = new URLSearchParams(entries);
@@ -194,7 +212,12 @@ function BookingModalContent() {
                     Your vehicles
                   </Label>
                   <Select value={selectedVehicleId ?? ""} onValueChange={handleVehicleSelect}>
-                    <SelectTrigger id="booking-vehicle" className="h-12 w-full bg-paper">
+                    <SelectTrigger
+                      id="booking-vehicle"
+                      aria-invalid={!!formError}
+                      aria-describedby={formError ? "booking-vehicle-error" : undefined}
+                      className="h-12 w-full bg-paper"
+                    >
                       <SelectValue placeholder="Choose a vehicle" />
                     </SelectTrigger>
                     <SelectContent className="bg-paper text-ink">
@@ -212,12 +235,18 @@ function BookingModalContent() {
                       )}
                     </SelectContent>
                   </Select>
+                  {formError && (
+                    <p id="booking-vehicle-error" role="alert" className="text-sm font-medium text-destructive">
+                      {formError}
+                    </p>
+                  )}
                 </div>
                 <button
                   type="button"
                   onClick={() => {
                     setEnterManually(true);
                     setSelectedVehicleId(null);
+                    setFormError(null);
                   }}
                   className="inline-flex min-h-11 items-center gap-2 rounded-lg px-1 text-sm font-semibold text-brand-blue hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
                 >
@@ -231,23 +260,30 @@ function BookingModalContent() {
                     License plate
                   </Label>
                   <Input
+                    ref={plateInputRef}
                     id="booking-plate"
                     value={vehicleInfo.license_plate}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      setFormError(null);
                       setVehicleInfo((prev) => ({
                         ...prev,
                         license_plate: e.target.value.toUpperCase(),
-                      }))
-                    }
+                      }));
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleBooking();
+                    }}
+                    maxLength={10}
+                    autoComplete="off"
                     placeholder="ABC 1234"
-                    aria-invalid={!!errors.license_plate}
-                    aria-describedby={errors.license_plate ? "booking-plate-error" : undefined}
+                    aria-invalid={!!formError}
+                    aria-describedby={formError ? "booking-plate-error" : undefined}
                     className="h-14 bg-paper text-center font-mono text-2xl font-semibold uppercase tracking-[0.14em]"
                     autoFocus
                   />
-                  {errors.license_plate && (
-                    <p id="booking-plate-error" className="text-sm font-medium text-destructive">
-                      {errors.license_plate}
+                  {formError && (
+                    <p id="booking-plate-error" role="alert" className="text-sm font-medium text-destructive">
+                      {formError}
                     </p>
                   )}
                 </div>
@@ -256,6 +292,7 @@ function BookingModalContent() {
                     type="button"
                     onClick={() => {
                       setEnterManually(false);
+                      setFormError(null);
                       setVehicleInfo((p) => ({ ...p, license_plate: "" }));
                     }}
                     className="inline-flex min-h-11 items-center gap-2 rounded-lg px-1 text-sm font-semibold text-brand-blue hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"

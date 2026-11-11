@@ -11,6 +11,7 @@ import { Check, Car, ChevronRight, Loader2, Tag } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { createClient } from "@/utils/supabase/client";
 import TermsModal from "../terms-modal";
+import { FIRST_SUBSCRIPTION_PROMO } from "@/lib/pricing/firstSubscriptionPromo";
 import MultiVehicleBenefitsDialog from "./MultiVehicleBenefitsDialog";
 import {
   MAX_VEHICLES_PER_SUBSCRIPTION,
@@ -105,9 +106,9 @@ export default function SubscriptionCart({
 
   // Promo configuration
   const PROMO_CONFIG = {
-    enabled: true,
+    enabled: FIRST_SUBSCRIPTION_PROMO.enabled,
     stripeCouponId_Subscription: "SOBGLcnf",
-    isSubscriptionPercent: 10,
+    isSubscriptionPercent: FIRST_SUBSCRIPTION_PROMO.percent,
   };
   // HLT1ibSl
 
@@ -780,6 +781,7 @@ export default function SubscriptionCart({
                 Billing will occur on the same subscription date each month
                 until I cancel or terminate my membership{" "}
                 <button
+                  type="button"
                   onClick={() => setIsModalOpen(true)}
                   className="text-blue-900 hover:underline"
                 >
@@ -815,6 +817,10 @@ export default function SubscriptionCart({
         <TermsModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
+          onAccept={() => {
+            setIsAuthorized(true);
+            setError("");
+          }}
         />
 
         <MultiVehicleBenefitsDialog

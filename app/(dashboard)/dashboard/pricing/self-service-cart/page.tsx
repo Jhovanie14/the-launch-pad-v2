@@ -383,7 +383,14 @@ export default function SelfServiceCart() {
         </section>
       </div>
 
-      <TermsModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <TermsModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onAccept={() => {
+          setIsAuthorized(true);
+          setError("");
+        }}
+      />
     </div>
   );
 }

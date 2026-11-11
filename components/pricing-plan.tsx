@@ -1,15 +1,21 @@
 "use client";
 
-import {
-  Card,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { CheckCircle, Crown, X } from "lucide-react";
+import { Check, CheckCircle2, Crown, Info, Minus } from "lucide-react";
 import Image from "next/image";
+import { cn } from "@/lib/utils";
+import { FIRST_SUBSCRIPTION_PROMO, firstPeriodPrice } from "@/lib/pricing/firstSubscriptionPromo";
+
+/*
+  One membership plan. Used on the public pricing page, the self-service page
+  and Dashboard → Membership, so every colour is a brand token (no .lp-theme
+  assumptions). Navy header with the price, white body with what you get,
+  one action at the bottom: flame for the featured plan, navy for the rest.
+*/
+
+const FOCUS =
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus";
+
+const money = (n: number) => `$${n.toFixed(2)}`;
 
 export default function PricingCard({
   plan,
@@ -29,250 +35,178 @@ export default function PricingCard({
         ? "monthly"
         : subscription?.billing_cycle;
 
-  // Detect if this is the self-service card
   const isSelfServicePlan = plan.name === "Self-Service Bay Membership";
-
-  // Detect if the user has any subscription passed to this card
   const hasSubscription = Boolean(subscription);
-
-  // Detect if this is a normal carwash plan the user currently has
   const isCurrentPlan =
     !isSelfServicePlan &&
     subscription?.plan_id === plan.id &&
     normalizedBillingCycle === pricing;
 
-  // Button text logic
   let buttonText = `Select ${plan.name}`;
-
   if (hasSubscription) {
-    if (isSelfServicePlan) {
-      buttonText = "Add more vehicle";
-    } else if (isCurrentPlan) {
-      buttonText = "Current Plan";
-    } else {
-      buttonText = "Upgrade";
-    }
+    if (isSelfServicePlan) buttonText = "Add more vehicle";
+    else if (isCurrentPlan) buttonText = "Current Plan";
+    else buttonText = "Upgrade";
   }
 
-  // Popular plans
   const popularPlans = "Express Detail";
   const isPopular = popularPlans.includes(plan.name);
 
-  // Calculate pricing with discount for yearly
+  const isYearly = pricing === "yearly";
+  const period = isYearly ? "year" : "month";
   const monthlyPrice = Number(plan.monthly_price) || 0;
   const yearlyPrice = Number(plan.yearly_price) || 0;
-  const monthlyEquivalent = monthlyPrice * 12;
-  const isYearly = pricing === "yearly";
-  const showDiscount = isYearly && monthlyEquivalent > 0;
-  const discountPercentage = showDiscount
-    ? Math.round(((monthlyEquivalent - yearlyPrice) / monthlyEquivalent) * 100)
-    : 0;
-  const currentPrice = isYearly ? yearlyPrice : monthlyPrice;
-  const originalPrice = isYearly ? monthlyEquivalent : null;
+  const price = isYearly ? yearlyPrice : monthlyPrice;
 
-  // ============================================
-  // PROMO CODE DISCOUNT (COMMENT OUT WHEN PROMO ENDS)
-  // ============================================
-  const promoDiscountPercent = isSelfServicePlan ? 0 : 0.1;
-  const originalPriceWithPromo = currentPrice;
-  const discountedPriceWithPromo = currentPrice * (1 - promoDiscountPercent);
+  // Yearly saving against twelve monthly payments.
+  const twelveMonths = monthlyPrice * 12;
+  const yearlySavingPercent =
+    isYearly && twelveMonths > 0 ? Math.round(((twelveMonths - yearlyPrice) / twelveMonths) * 100) : 0;
 
-  // Calculate daily cost
-  const dailyCost = isYearly
-    ? (discountedPriceWithPromo / 365).toFixed(2)
-    : (discountedPriceWithPromo / 30).toFixed(2);
-  // ============================================
+  // 10% off the first period, for first-time subscribers only.
+  const showPromo = FIRST_SUBSCRIPTION_PROMO.enabled && !isSelfServicePlan && !hasSubscription && price > 0;
+  const firstPrice = showPromo ? firstPeriodPrice(price) : price;
+
+  const dailyCost = (price / (isYearly ? 365 : 30)).toFixed(2);
+
+  const showCommercialNote =
+    !isSelfServicePlan && !plan.name?.toLowerCase().includes("commercial");
 
   return (
-    <div className={`relative ${isPopular ? "md:scale-105" : ""}`}>
-      <div
-        className={`relative overflow-hidden rounded-xl border-4 transition-all duration-300 ${
-          isPopular
-            ? "border-yellow-400 shadow-xl"
-            : isCurrentPlan
-              ? "border-accent shadow-lg shadow-accent/20"
-              : ""
-        }`}
-      >
-        {/* Header Section with Gradient Background */}
-        <div className="relative bg-linear-to-br from-blue-900 to-blue-800 p-6 overflow-hidden">
-          {/* Popular Badge */}
-          {isPopular && (
-            <div className="absolute top-0 right-0 bg-yellow-400 text-slate-900 px-4 py-1 text-xs font-bold rounded-bl-lg z-10">
-              BEST VALUE
-            </div>
+    <article
+      aria-labelledby={`plan-${plan.id}`}
+      className={cn(
+        "flex h-full w-full flex-col overflow-hidden rounded-2xl bg-paper text-ink ring-1",
+        isPopular || isCurrentPlan ? "ring-2 ring-flame" : "ring-line",
+      )}
+    >
+      {/* Name and price */}
+      <div className="bg-night px-6 pt-6 pb-7 text-on-night">
+        <div className="flex min-h-7 flex-wrap items-center gap-2">
+          {isCurrentPlan ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-flame px-3 py-1 text-xs font-bold text-on-flame">
+              <CheckCircle2 aria-hidden className="size-3.5" />
+              Your plan
+            </span>
+          ) : isPopular ? (
+            <span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-bold text-flame ring-1 ring-flame/60">
+              Best value
+            </span>
+          ) : null}
+          {yearlySavingPercent > 0 && (
+            <span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold text-on-night-muted ring-1 ring-on-night-subtle/50">
+              Save {yearlySavingPercent}% yearly
+            </span>
           )}
+        </div>
 
-          {/* Current Plan Badge */}
-          {isCurrentPlan && (
-            <div className="absolute top-0 right-0 bg-linear-to-r from-yellow-400 to-yellow-500 text-slate-900 px-4 py-1 text-xs font-bold rounded-bl-lg z-10">
-              CURRENT PLAN
-            </div>
+        <div className="mt-4 flex items-center gap-4">
+          {plan.image_url ? (
+            <Image
+              src={plan.image_url}
+              alt=""
+              width={56}
+              height={56}
+              className="size-14 shrink-0 rounded-full object-cover ring-2 ring-white/15"
+            />
+          ) : (
+            <Crown aria-hidden className="size-12 shrink-0 stroke-[1.25] text-flame" />
           )}
-
-          {/* Yearly Discount Badge */}
-          {showDiscount && discountPercentage > 0 && !promoDiscountPercent && (
-            <div className="absolute top-0 left-0 bg-linear-to-r from-green-500 to-green-600 text-white px-3 py-1 text-xs font-bold rounded-br-lg z-10">
-              {discountPercentage}% OFF
-            </div>
-          )}
-
-          {/* Icon/Image */}
-          <div className="mb-4 flex justify-center mt-4">
-            {plan.image_url ? (
-              <Image
-                src={plan.image_url}
-                alt={plan.name}
-                width={80}
-                height={80}
-                className="w-20 h-20 object-cover rounded-full border-4 border-white/20"
-              />
-            ) : (
-              <Crown className="w-20 h-20 text-yellow-400 stroke-1" />
-            )}
-          </div>
-
-          {/* Plan Name */}
-          <h3 className="text-2xl font-bold text-white text-center mb-4">
+          <h3 id={`plan-${plan.id}`} className="text-2xl font-black tracking-tight text-balance">
             {plan.name}
           </h3>
-
-          {/* Pricing Section */}
-          <div className="text-center mb-4">
-            {/* ============================================
-                PROMO CODE DISCOUNT DISPLAY (COMMENT OUT WHEN PROMO ENDS)
-                ============================================ */}
-            {promoDiscountPercent > 0 && !isSelfServicePlan && (
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <span className="text-lg text-blue-200 line-through">
-                  ${originalPriceWithPromo.toFixed(2)}
-                </span>
-                <span className="text-xs text-yellow-400 font-semibold bg-yellow-400/20 px-2 py-0.5 rounded">
-                  Save {(promoDiscountPercent * 100).toFixed(0)}%
-                </span>
-              </div>
-            )}
-
-            <div className="text-4xl font-bold text-yellow-400">
-              ${discountedPriceWithPromo.toFixed(2)}
-            </div>
-            <p className="text-blue-200 text-sm">
-              per {pricing === "monthly" ? "month" : "year"}
-            </p>
-
-            {/* Daily Cost Breakdown */}
-            <div className="mt-2 inline-block bg-yellow-400/20 px-3 py-1 rounded-full">
-              <p className="text-yellow-400 font-bold text-lg">
-                Only ${dailyCost}/day
-              </p>
-            </div>
-
-            {/* Equivalent monthly price for yearly */}
-            {isYearly && (
-              <p className="text-blue-200 text-xs mt-2">
-                ${(discountedPriceWithPromo / 12).toFixed(2)}/month billed
-                annually
-              </p>
-            )}
-            {/* ============================================
-                ORIGINAL PRICE DISPLAY (UNCOMMENT WHEN PROMO ENDS)
-                ============================================ */}
-            {/* {showDiscount && originalPrice && (
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <span className="text-lg text-blue-200 line-through">
-                  ${originalPrice.toFixed(2)}
-                </span>
-                <span className="text-xs text-green-600 font-semibold bg-green-50 px-2 py-0.5 rounded">
-                  Save ${(originalPrice - currentPrice).toFixed(2)}
-                </span>
-              </div>
-            )}
-            <div className="text-4xl font-bold text-yellow-400">
-              ${currentPrice.toFixed(2)}
-            </div>
-            <p className="text-blue-200 text-sm">
-              per {pricing === "monthly" ? "month" : "year"}
-            </p>
-            <div className="mt-2 inline-block bg-yellow-400/20 px-3 py-1 rounded-full">
-              <p className="text-yellow-400 font-bold text-lg">
-                Only ${dailyCost}/day
-              </p>
-            </div>
-            {isYearly && (
-              <p className="text-blue-200 text-xs mt-2">
-                ${(currentPrice / 12).toFixed(2)}/month billed annually
-              </p>
-            )} */}
-            {/* ============================================ */}
-          </div>
         </div>
 
-        {/* Features Section */}
-        <div className="bg-white p-6">
-          {/* Description */}
-          <CardDescription className="text-base font-medium text-slate-700 leading-relaxed mb-6 text-center">
-            {plan.description}
-          </CardDescription>
-
-          {/* Features List */}
-          <ul className="space-y-3" role="list">
-            {(plan.features ?? []).map((feature: string, index: number) => (
-              <li key={index} className="flex items-start gap-3">
-                {feature.toLowerCase().includes("no") ? (
-                  <X className="h-5 w-5 shrink-0 text-red-400 mt-0.5" />
-                ) : (
-                  <CheckCircle className="h-5 w-5 shrink-0 text-yellow-400 mt-0.5" />
-                )}
-                <span className="text-sm md:text-start text-slate-800 font-medium">
-                  {feature}
-                </span>
-              </li>
-            ))}
-          </ul>
-
-          {/* Savings Box (if applicable) */}
-          {plan.savings_info && (
-            <div className="mt-6 p-4 bg-blue-50 backdrop-blur-sm rounded-lg border border-blue-200">
-              <p className="text-sm text-slate-800">
-                <strong>Savings vs. pay-per-use:</strong> {plan.savings_info}
-                <br />
-                <span className="text-blue-600 text-xs">
-                  {plan.savings_note}
-                </span>
+        <div className="mt-6">
+          {showPromo ? (
+            <>
+              <p className="flex flex-wrap items-baseline gap-x-2">
+                <span className="text-4xl font-black tracking-tight tabular-nums">{money(firstPrice)}</span>
+                <span className="text-sm font-semibold text-on-night-muted">first {period}</span>
               </p>
-            </div>
+              <p className="mt-1 text-sm text-on-night-muted">
+                <span className="font-semibold text-flame">{FIRST_SUBSCRIPTION_PROMO.percent}% off</span> for new
+                members, then <span className="tabular-nums">{money(price)}</span>/{period}
+              </p>
+            </>
+          ) : (
+            <p className="flex flex-wrap items-baseline gap-x-2">
+              <span className="text-4xl font-black tracking-tight tabular-nums">{money(price)}</span>
+              <span className="text-sm font-semibold text-on-night-muted">per {period}</span>
+            </p>
           )}
-        </div>
-
-        {/* Footer/CTA */}
-        <div className="bg-white px-6 pb-6 pt-0">
-          <Button
-            className={`w-full font-semibold transition-all cursor-pointer py-6 text-base ${
-              isPopular
-                ? "bg-yellow-400 text-slate-900 hover:bg-yellow-500 border-2 border-yellow-500"
-                : isCurrentPlan
-                  ? "bg-accent text-accent-foreground hover:bg-accent/90"
-                  : "bg-blue-900 text-white hover:bg-blue-800"
-            }`}
-            onClick={() => handleCheckout(plan.id)}
-            aria-label={`Select ${plan.name} plan`}
-            disabled={isCurrentPlan}
-          >
-            {buttonText}
-          </Button>
-          <p className="text-xs text-center text-slate-500 mt-3">
-            1 Vehicle per subscription
+          <p className="mt-2 text-sm text-on-night-subtle tabular-nums">
+            About ${dailyCost} a day
+            {isYearly && <> · {money(price / 12)}/month billed yearly</>}
           </p>
-          {!isSelfServicePlan && !plan.name?.toLowerCase().includes("commercial") && (
-            <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
-              <p className="font-semibold mb-1">⚠️ Personal vehicles only</p>
-              <p className="leading-relaxed">
-                Commercial vehicles excluded — tow trucks, 8 ft/9 ft bed trucks, and sprinter vans require a separate commercial plan.
-              </p>
-            </div>
-          )}
         </div>
       </div>
-    </div>
+
+      {/* What you get */}
+      <div className="flex flex-1 flex-col px-6 pt-6">
+        {plan.description && (
+          <p className="text-base leading-relaxed text-ink-muted">{plan.description}</p>
+        )}
+
+        {(plan.features ?? []).length > 0 && (
+          <ul className="mt-5 space-y-3" role="list">
+            {(plan.features ?? []).map((feature: string, index: number) => {
+              const excluded = feature.toLowerCase().includes("no");
+              return (
+                <li key={index} className="flex items-start gap-3 text-sm font-medium text-ink">
+                  {excluded ? (
+                    <Minus aria-hidden className="mt-0.5 size-4 shrink-0 text-ink-subtle" />
+                  ) : (
+                    <Check aria-hidden className="mt-0.5 size-4 shrink-0 text-brand-blue" strokeWidth={3} />
+                  )}
+                  <span>{feature}</span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
+        {plan.savings_info && (
+          <div className="mt-6 rounded-xl bg-canvas p-4 text-sm text-ink ring-1 ring-line">
+            <p>
+              <strong>Savings vs. pay-per-use:</strong> {plan.savings_info}
+            </p>
+            {plan.savings_note && <p className="mt-1 text-xs text-ink-muted">{plan.savings_note}</p>}
+          </div>
+        )}
+      </div>
+
+      {/* Action */}
+      <div className="px-6 pt-6 pb-6">
+        <button
+          type="button"
+          onClick={() => handleCheckout(plan.id)}
+          disabled={isCurrentPlan}
+          aria-label={isCurrentPlan ? `${plan.name} is your current plan` : `${buttonText}: ${plan.name}`}
+          className={cn(
+            "inline-flex min-h-12 w-full items-center justify-center rounded-lg px-5 text-base font-bold transition-colors disabled:cursor-default",
+            FOCUS,
+            isCurrentPlan
+              ? "bg-line-soft text-ink-muted"
+              : isPopular
+                ? "bg-flame text-on-flame hover:bg-flame-bright"
+                : "bg-night text-on-night hover:bg-night-raised",
+          )}
+        >
+          {buttonText}
+        </button>
+        <p className="mt-3 text-center text-xs text-ink-muted">1 vehicle per subscription</p>
+
+        {showCommercialNote && (
+          <div className="mt-4 flex gap-2.5 rounded-xl bg-canvas p-3 text-xs leading-relaxed text-ink-muted ring-1 ring-line">
+            <Info aria-hidden className="mt-px size-4 shrink-0 text-ink-subtle" />
+            <p>
+              <span className="font-semibold text-ink">Personal vehicles only.</span> Tow trucks, 8 ft and 9 ft
+              bed trucks, and sprinter vans need a commercial plan.
+            </p>
+          </div>
+        )}
+      </div>
+    </article>
   );
 }

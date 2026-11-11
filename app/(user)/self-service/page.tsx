@@ -198,7 +198,7 @@ export default function SelfServicePage() {
                 <LoadingDots />
               ) : plan ? (
                 <>
-                  <div className="border-4 rounded-xl border-yellow-400 shadow-xl">
+                  <div>
                     <PricingCard
                       plan={plan}
                       pricing="monthly"
