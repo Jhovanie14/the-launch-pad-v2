@@ -19,13 +19,14 @@ const QUIET_LINK =
   plans are compared; this page links there instead of repeating it.
 */
 export default function BillingPage() {
-  const { subscription, loading, error, refetch } = useSubscription();
+  // Billing also shows a plan whose payment failed, so the customer can fix it.
+  const { subscription, loading, error, refetch } = useSubscription({ includeOverdue: true });
   const {
     subscription: selfSubs,
     loading: selfLoading,
     error: selfError,
     reload: reloadSelfSubs,
-  } = useSelfServiceSubscription();
+  } = useSelfServiceSubscription({ includeOverdue: true });
 
   return (
     <div>

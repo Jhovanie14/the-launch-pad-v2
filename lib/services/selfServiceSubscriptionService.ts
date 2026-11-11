@@ -1,20 +1,22 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { SelfServiceSubscription } from "@/types";
+import { BILLING_VISIBLE_STATUSES, pickBillingSubscription } from "@/lib/subscriptions/billingStatus";
 
+/**
+ * The customer's self-service plan. Default: active only. includeOverdue:
+ * also past_due / unpaid, for the Billing page.
+ */
 export async function getActiveSelfServiceSubscription(
   supabase: SupabaseClient,
-  userId: string
+  userId: string,
+  opts: { includeOverdue?: boolean } = {},
 ): Promise<SelfServiceSubscription | null> {
-  // Query the self_service_subscriptions table
-  const { data: subs, error: subError } = await supabase
-    .from("self_service_subscriptions")
-    .select("*")
-    .eq("user_id", userId)
-    .eq("status", "active")
-    .maybeSingle();
-
-  console.log("📌 Subscription row:", subs);
-  console.log("📌 Subscription error:", subError);
+  const query = supabase.from("self_service_subscriptions").select("*").eq("user_id", userId);
+  const { data: subs, error: subError } = opts.includeOverdue
+    ? await query
+        .in("status", [...BILLING_VISIBLE_STATUSES])
+        .then((r) => ({ ...r, data: pickBillingSubscription(r.data) }))
+    : await query.eq("status", "active").maybeSingle();
 
   if (subError) throw subError;
   if (!subs) return null;

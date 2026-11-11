@@ -6,7 +6,8 @@ import { Subscription } from "@/types";
 import { createClient } from "@/utils/supabase/client";
 import { useEffect, useMemo, useState } from "react";
 
-export function useSubscription() {
+/** includeOverdue: also load a past_due / unpaid plan (Billing page only). */
+export function useSubscription({ includeOverdue = false }: { includeOverdue?: boolean } = {}) {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +30,7 @@ export function useSubscription() {
       setLoading(true);
       setError(null);
       // console.log("abot dri")
-      const sub = await getActiveSubscription(supabase, user?.id);
+      const sub = await getActiveSubscription(supabase, user?.id, { includeOverdue });
       setSubscription(sub);
     } catch (err) {
       console.error("Error fetching subscription:", err);

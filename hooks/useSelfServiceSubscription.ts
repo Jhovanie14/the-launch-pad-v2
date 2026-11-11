@@ -6,7 +6,8 @@ import { createClient } from "@/utils/supabase/client";
 import { getActiveSelfServiceSubscription } from "@/lib/services/selfServiceSubscriptionService";
 import { SelfServiceSubscription } from "@/types";
 
-export function useSelfServiceSubscription() {
+/** includeOverdue: also load a past_due / unpaid plan (Billing page only). */
+export function useSelfServiceSubscription({ includeOverdue = false }: { includeOverdue?: boolean } = {}) {
   const [subscription, setSubscription] =
     useState<SelfServiceSubscription | null>(null);
   const [loading, setLoading] = useState(true);
@@ -29,7 +30,7 @@ export function useSelfServiceSubscription() {
     try {
       setLoading(true);
       setError(null);
-      const sub = await getActiveSelfServiceSubscription(supabase, user.id);
+      const sub = await getActiveSelfServiceSubscription(supabase, user.id, { includeOverdue });
       setSubscription(sub);
     } catch (err) {
       console.error("Error fetching self-service subscription:", err);

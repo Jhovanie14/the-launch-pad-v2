@@ -246,6 +246,7 @@ export default function SubscriptionStatus({
       case "active":
         return { icon: CheckCircle2, tone: "text-ink", label: membershipStatusLine(subscription) };
       case "past_due":
+      case "unpaid":
         return { icon: AlertCircle, tone: "text-destructive", label: "Payment past due. Update your card to keep washing." };
       case "canceled":
         return { icon: XCircle, tone: "text-ink-muted", label: `Ended ${formatDate(subscription.current_period_end)}` };

@@ -1,3 +1,4 @@
+import { isOverdue } from "@/lib/subscriptions/billingStatus";
 import { useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -107,6 +108,8 @@ export default function SelfServiceSubscriptionStatus({
   }
 
   const isActive = subscription.status === "active";
+  // A failed payment is exactly when the card needs updating.
+  const canUpdateCard = isActive || isOverdue(subscription.status);
   const ending = subscription.cancel_at_period_end;
   const price = subscription.subscription_plans?.monthly_price;
 
@@ -116,6 +119,7 @@ export default function SelfServiceSubscriptionStatus({
       case "active":
         return { icon: CheckCircle2, tone: "text-ink", label: membershipStatusLine(subscription) };
       case "past_due":
+      case "unpaid":
         return { icon: AlertCircle, tone: "text-destructive", label: "Payment past due. Update your card to keep using the plan." };
       case "canceled":
         return { icon: XCircle, tone: "text-ink-muted", label: `Ended ${formatDate(subscription.current_period_end)}` };
@@ -182,14 +186,14 @@ export default function SelfServiceSubscriptionStatus({
         <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="flex items-center gap-2 text-sm text-ink-muted">
             <CreditCard aria-hidden className="size-4 shrink-0" />
-            {isActive
+            {canUpdateCard
               ? "Your card is kept by Stripe, our secure payment provider."
               : "You can update your card while the plan is active."}
           </p>
           <Button
             variant="outline"
             onClick={handleUpdatePayment}
-            disabled={loading || !isActive}
+            disabled={loading || !canUpdateCard}
             className="h-11 shrink-0 px-5 font-semibold"
           >
             {loading ? "Opening Stripe…" : "Update payment method"}
