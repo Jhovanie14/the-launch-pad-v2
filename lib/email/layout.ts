@@ -184,6 +184,16 @@ export function list(items: string[]): string {
     .join("")}</ul>`;
 }
 
+/**
+ * "Call or email us" line. Emails come from noreply@, so they point at the
+ * phone and inbox people actually answer instead of asking for a reply.
+ */
+export function contactLine(lead: string): string {
+  return paragraph(
+    `${lead} Call <a href="${SITE.phoneHref}">${SITE.phone}</a> or email <a href="mailto:${SITE.email}">${SITE.email}</a>.`,
+  );
+}
+
 export function signoff(): string {
   return paragraph(`See you at the pad,<br>The Launch Pad team`, { muted: true });
 }

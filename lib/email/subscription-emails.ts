@@ -7,6 +7,7 @@ import {
   FROM,
   SITE_URL,
   button,
+  contactLine,
   details,
   emailLayout,
   heading,
@@ -167,9 +168,7 @@ export function buildPaymentFailedEmail({ name, attemptCount }: PaymentFailedEma
       "It takes less than a minute, and your membership picks up as soon as a charge succeeds.",
       { muted: true, small: true },
     ),
-    paragraph(
-      `Questions? Reply to this email or <a href="${text(`${SITE_URL}/contact`)}">contact us</a>. We're happy to help.`,
-    ),
+    contactLine("Questions? We're happy to help."),
     signoff(),
   ].join("\n");
 
@@ -229,9 +228,7 @@ export function buildCancellationScheduledEmail({
       `You can reactivate from your billing page any time before ${text(periodEndDate)}.`,
       { muted: true, small: true },
     ),
-    paragraph(
-      "If there's something we could have done better, we'd really like to hear it. Just reply to this email.",
-    ),
+    contactLine("If there's something we could have done better, we'd really like to hear it."),
     signoff(),
   ].join("\n");
 
@@ -273,7 +270,7 @@ export function buildSubscriptionCancelledEmail({ name }: SubscriptionCancelledE
     subheading("Waiting for you if you come back"),
     list([
       "<strong>Unlimited washes</strong>: keep your car clean every week",
-      "<strong>Save over pay-per-wash</strong>: members save an average of $40 a month",
+      "<strong>Plans from $39.99 a month</strong>: Basic $39.99 or Deluxe $59.99, any vehicle",
       `<strong>Family pricing</strong>: add up to ${MAX_VEHICLES_PER_SUBSCRIPTION - 1} more vehicles, up to ${FAMILY_DISCOUNT_PERCENT}% off`,
       "<strong>Priority service</strong>: no waiting in the regular line",
     ]),
@@ -282,9 +279,7 @@ export function buildSubscriptionCancelledEmail({ name }: SubscriptionCancelledE
     ),
     button(plansUrl, "See plans and rejoin"),
     paragraph("No contract. Cancel anytime, just like before.", { muted: true, small: true }),
-    paragraph(
-      "If something could have been better, we'd love to know. Reply to this email and a real person will read it.",
-    ),
+    contactLine("If something could have been better, we'd love to know. A real person will pick up."),
     signoff(),
   ].join("\n");
 

@@ -99,6 +99,19 @@ describe.each(cases)("%s email", (_label, build) => {
     expect(email.html.match(/background:#fec92f/g)).toHaveLength(1);
     expect(email.html.match(/<h1/g)).toHaveLength(1);
   });
+
+  // Sent from noreply@, so a reply goes nowhere.
+  it("never asks the customer to reply", () => {
+    expect(email.html).not.toMatch(/reply to this email|just reply/i);
+  });
+});
+
+describe("subscription cancelled email", () => {
+  it("quotes the real starting plan price, not an unverified saving", () => {
+    const { html } = buildSubscriptionCancelledEmail({ name: "Sam" });
+    expect(html).not.toContain("$40");
+    expect(html).toContain("$39.99");
+  });
 });
 
 describe("invoice email", () => {

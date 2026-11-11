@@ -31,7 +31,7 @@ Here's the breakdown:
 
 You were not overcharged. The higher amount this month is simply the partial charge for your new vehicle's remaining days, added on top of your normal renewal.
 
-If you have any questions, feel free to reply to this email or call us at (832) 219-8320. We're happy to walk you through the details!
+If you have any questions, call us at (832) 219-8320 or email info@thelaunchpadwash.com. We're happy to walk you through the details!
 
 Thank you for trusting us with your vehicle,
 The Launch Pad Wash Team`,
