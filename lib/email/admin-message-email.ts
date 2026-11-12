@@ -30,7 +30,7 @@ export function adminMessageBodyHtml(body: string): string {
 }
 
 /** Only our own Supabase-hosted https images (isAllowedBannerUrl). */
-function bannerHtml(bannerUrl: string | undefined): string {
+export function bannerHtml(bannerUrl: string | undefined): string {
   if (!isAllowedBannerUrl(bannerUrl)) return "";
   return `<img src="${text(bannerUrl)}" alt="" width="536" style="display:block;width:100%;max-width:536px;height:auto;border:0;border-radius:12px;margin:0 0 24px;">`;
 }

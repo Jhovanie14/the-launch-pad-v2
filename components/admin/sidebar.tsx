@@ -23,6 +23,7 @@ import {
   MessageSquare,
   ShoppingBasket,
   Package,
+  Megaphone,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/auth-context";
@@ -52,6 +53,7 @@ const navigation = [
   { name: "QR payment/Tip", href: "/admin/qr", icon: QrCode },
   { name: "Blog", href: "/admin/blog", icon: Notebook },
   { name: "Contact", href: "/admin/contact", icon: MessageCircle },
+  { name: "Campaigns", href: "/admin/campaigns", icon: Megaphone },
   { name: "Broadcasts", href: "/admin/broadcast", icon: RadioTower },
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
