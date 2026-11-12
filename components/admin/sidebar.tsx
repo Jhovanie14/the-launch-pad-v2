@@ -18,7 +18,7 @@ import {
   MessageCircle,
   HandHelping,
   QrCode,
-  RadioTower,
+  Mail,
   UserRound,
   MessageSquare,
   ShoppingBasket,
@@ -54,7 +54,7 @@ const navigation = [
   { name: "Blog", href: "/admin/blog", icon: Notebook },
   { name: "Contact", href: "/admin/contact", icon: MessageCircle },
   { name: "Campaigns", href: "/admin/campaigns", icon: Megaphone },
-  { name: "Broadcasts", href: "/admin/broadcast", icon: RadioTower },
+  { name: "Direct email", href: "/admin/broadcast", icon: Mail },
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 

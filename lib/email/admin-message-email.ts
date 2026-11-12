@@ -1,8 +1,9 @@
 /**
- * Emails whose words an admin wrote in /admin/broadcast: a broadcast to all
- * active members, or a direct message to one customer. The admin's text is
- * kept exactly as written (escaped, one paragraph per line); the layout adds
- * the brand, the one action and the footer.
+ * Emails whose words an admin wrote in /admin/broadcast (Direct email): a
+ * message to one customer. Bulk email goes through Campaigns
+ * (lib/marketing/campaignEmail.ts), which only reaches opted-in customers.
+ * The admin's text is kept exactly as written (escaped, one paragraph per
+ * line); the layout adds the brand, the one action and the footer.
  */
 import { isAllowedBannerUrl } from "./escapeHtml";
 import { EMAIL_COLORS, SITE_URL, button, emailLayout, heading, paragraph, text } from "./layout";
@@ -42,16 +43,6 @@ function messageBody({ subject, title, body, bannerUrl }: AdminMessageParams, ac
     adminMessageBodyHtml(body),
     action,
   ].join("\n");
-}
-
-/** Broadcast to every active membership / self-service plan holder. */
-export function buildBroadcastEmailHtml(params: AdminMessageParams): string {
-  return emailLayout({
-    title: params.subject,
-    preheader: params.title?.trim() ? params.title : params.subject,
-    body: messageBody(params, button(`${SITE_URL}/service`, "Book a wash")),
-    footerNote: "You're getting this email because you have an active Launch Pad membership or self-service plan.",
-  });
 }
 
 /** A one-to-one message from the team to a single customer. */

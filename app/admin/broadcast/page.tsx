@@ -1,10 +1,10 @@
 "use client";
 
-import { Loader2, Mail, Send, User, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { Loader2, Mail, Send, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { createClient } from "@/utils/supabase/client";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 // --- Proration template ---
 function buildProrationTemplate(
@@ -38,7 +38,7 @@ The Launch Pad Wash Team`,
   };
 }
 
-export default function BroadcastPage() {
+export default function DirectEmailPage() {
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -48,98 +48,21 @@ export default function BroadcastPage() {
               <div className="p-2 bg-blue-600 rounded-lg">
                 <Mail className="w-6 h-6 text-white" />
               </div>
-              <h1 className="text-3xl font-bold text-slate-900">Email Center</h1>
+              <h1 className="text-3xl font-bold text-slate-900">Direct email</h1>
             </div>
-            <p className="text-slate-600">Broadcast to all subscribers or send a direct message to one customer</p>
+            <p className="text-slate-600">
+              Send a one-off email to one customer, like a note about their bill. To email news or offers to many
+              customers, use{" "}
+              <Link href="/admin/campaigns" className="font-semibold text-blue-700 underline underline-offset-2">
+                Campaigns
+              </Link>
+              : it only reaches people who said yes and includes an unsubscribe link.
+            </p>
           </div>
 
-          <Tabs defaultValue="broadcast">
-            <TabsList className="mb-6">
-              <TabsTrigger value="broadcast" className="flex items-center gap-2">
-                <Send className="w-4 h-4" />
-                Broadcast All
-              </TabsTrigger>
-              <TabsTrigger value="direct" className="flex items-center gap-2">
-                <User className="w-4 h-4" />
-                Direct Message
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="broadcast">
-              <BroadcastForm />
-            </TabsContent>
-
-            <TabsContent value="direct">
-              <DirectMessageForm />
-            </TabsContent>
-          </Tabs>
+          <DirectMessageForm />
         </div>
       </div>
-    </div>
-  );
-}
-
-// ─── Broadcast All ────────────────────────────────────────────────────────────
-
-function BroadcastForm() {
-  const [subject, setSubject] = useState("");
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
-  const [bannerUrl, setBannerUrl] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const isFormValid = subject && body;
-
-  const handleSend = async () => {
-    if (!isFormValid) return;
-    setLoading(true);
-    try {
-      const res = await fetch("/api/broadcast", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subject, title, body, bannerUrl }),
-      });
-      const data = await res.json();
-      if (!data.success) {
-        toast.error(data.error || "Failed to send broadcast");
-      } else {
-        toast.success(`Successfully sent to ${data.sentTo} active subscribers!`);
-        setSubject(""); setTitle(""); setBody(""); setBannerUrl("");
-      }
-    } catch (err: any) {
-      toast.error(err.message || "Something went wrong");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-      <div className="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
-        <div className="p-6 md:p-8 space-y-6">
-          <InputField label="Email Subject *" placeholder="e.g. Important Update from The Launch Pad Wash" value={subject} onChange={setSubject} />
-          <InputField label="Email Title" placeholder="Main heading shown in the email" value={title} onChange={setTitle} />
-          <TextAreaField label="Email Body *" placeholder="Write your message here..." value={body} onChange={setBody} />
-          <InputField label="Banner Image URL (Optional)" placeholder="https://..." value={bannerUrl} onChange={setBannerUrl} />
-
-          <button
-            onClick={handleSend}
-            disabled={loading || !isFormValid}
-            className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 rounded-lg transition-colors"
-          >
-            {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> Sending...</> : <><Send className="w-5 h-5" /> Send to All Active Subscribers</>}
-          </button>
-        </div>
-        <div className="px-6 md:px-8 py-4 bg-slate-50 border-t border-slate-200">
-          <p className="text-xs text-slate-600">
-            <span className="font-semibold">Note:</span> Sends to all active Express and Self-Service subscribers.
-          </p>
-        </div>
-      </div>
-
-      {(subject || title || body || bannerUrl) && (
-        <PreviewCard subject={subject} title={title} body={body} bannerUrl={bannerUrl} />
-      )}
     </div>
   );
 }
