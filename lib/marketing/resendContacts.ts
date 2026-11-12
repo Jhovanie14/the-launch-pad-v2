@@ -20,6 +20,7 @@ export interface ResendContactsLike {
       email: string;
       firstName?: string;
       topics: { id: string; subscription: TopicSubscription }[];
+      segments?: { id: string }[];
     }): Promise<ResendResult>;
     update(o: { email: string; unsubscribed: boolean }): Promise<ResendResult>;
     topics: {
@@ -31,6 +32,9 @@ export interface ResendContactsLike {
         data: { data: { id: string; subscription: TopicSubscription }[] } | null;
         error: unknown;
       }>;
+    };
+    segments: {
+      add(o: { email: string; segmentId: string }): Promise<ResendResult>;
     };
   };
 }
@@ -49,10 +53,21 @@ function isNotFound(error: unknown): boolean {
   return e.statusCode === 404 || e.name === "not_found";
 }
 
+/**
+ * Campaigns go out as Resend broadcasts, which must name a segment; the topic
+ * then narrows it to people who opted in. So everyone who opts in is also put
+ * in the campaign segment (RESEND_MARKETING_SEGMENT_ID). Opting out leaves
+ * them in it: the topic opt-out is what stops campaigns.
+ */
+export interface SyncOptions {
+  segmentId?: string;
+}
+
 export async function syncContactToResend(
   resend: ResendContactsLike,
   topicId: string | undefined,
   c: { email: string; firstName?: string | null; subscribed: boolean },
+  opts: SyncOptions = {},
 ): Promise<boolean> {
   if (!topicId) {
     console.error(`${LOG} RESEND_MARKETING_TOPIC_ID is not set; contact not synced`);
@@ -74,6 +89,7 @@ export async function syncContactToResend(
         console.error(`${LOG} clearing global unsubscribe failed:`, cleared.error);
         return false;
       }
+      await addToSegment(resend, c.email, opts.segmentId);
       return true;
     }
     if (!isNotFound(error)) {
@@ -87,6 +103,7 @@ export async function syncContactToResend(
       email: c.email,
       ...(c.firstName ? { firstName: c.firstName } : {}),
       topics,
+      ...(opts.segmentId ? { segments: [{ id: opts.segmentId }] } : {}),
     });
     if (created.error) {
       console.error(`${LOG} contact create failed:`, created.error);
@@ -96,6 +113,20 @@ export async function syncContactToResend(
   } catch (err) {
     console.error(`${LOG} Resend sync threw:`, err);
     return false;
+  }
+}
+
+/**
+ * Best effort: the consent itself is already saved in Resend (the topic), so a
+ * failure here is logged, not retried. Already being in the segment is fine.
+ */
+async function addToSegment(resend: ResendContactsLike, email: string, segmentId: string | undefined) {
+  if (!segmentId) return;
+  try {
+    const { error } = await resend.contacts.segments.add({ email, segmentId });
+    if (error) console.error(`${LOG} adding contact to campaign segment failed:`, error);
+  } catch (err) {
+    console.error(`${LOG} adding contact to campaign segment threw:`, err);
   }
 }
 

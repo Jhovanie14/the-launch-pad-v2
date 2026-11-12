@@ -42,7 +42,9 @@ type SyncFn = (c: { email: string; firstName?: string | null; subscribed: boolea
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const defaultSync: SyncFn = (c) =>
-  syncContactToResend(getResend(), process.env.RESEND_MARKETING_TOPIC_ID, c);
+  syncContactToResend(getResend(), process.env.RESEND_MARKETING_TOPIC_ID, c, {
+    segmentId: process.env.RESEND_MARKETING_SEGMENT_ID,
+  });
 
 export async function recordConsent(
   db: SupabaseClient,

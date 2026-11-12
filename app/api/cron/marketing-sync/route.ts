@@ -15,7 +15,9 @@ export async function GET(req: Request) {
 
   try {
     const result = await resyncUnsynced(createAdminClient(), (c) =>
-      syncContactToResend(getResend(), process.env.RESEND_MARKETING_TOPIC_ID, c),
+      syncContactToResend(getResend(), process.env.RESEND_MARKETING_TOPIC_ID, c, {
+        segmentId: process.env.RESEND_MARKETING_SEGMENT_ID,
+      }),
     );
     return NextResponse.json(result);
   } catch (err) {

@@ -12,14 +12,18 @@ function fakeResend(opts: {
   update?: () => Promise<{ error: unknown }>;
   create?: () => Promise<{ error: unknown }>;
   contactUpdate?: () => Promise<{ error: unknown }>;
+  segmentAdd?: () => Promise<{ error: unknown }>;
   list?: () => Promise<{ data: { data: { id: string; subscription: "opt_in" | "opt_out" }[] } | null; error: unknown }>;
 } = {}) {
   const update = vi.fn(opts.update ?? (async () => ({ error: null })));
   const create = vi.fn(opts.create ?? (async () => ({ error: null })));
   const list = vi.fn(opts.list ?? (async () => ({ data: { data: [] }, error: null })));
   const contactUpdate = vi.fn(opts.contactUpdate ?? (async () => ({ error: null })));
-  const resend = { contacts: { create, update: contactUpdate, topics: { update, list } } } as unknown as ResendContactsLike;
-  return { resend, update, create, list, contactUpdate };
+  const segmentAdd = vi.fn(opts.segmentAdd ?? (async () => ({ error: null })));
+  const resend = {
+    contacts: { create, update: contactUpdate, topics: { update, list }, segments: { add: segmentAdd } },
+  } as unknown as ResendContactsLike;
+  return { resend, update, create, list, contactUpdate, segmentAdd };
 }
 
 const notFound = async () => ({ error: { statusCode: 404, name: "not_found", message: "Contact not found" } });
@@ -89,6 +93,46 @@ describe("syncContactToResend", () => {
     await expect(syncContactToResend(resend, undefined, { email: EMAIL, subscribed: true })).resolves.toBe(false);
     expect(update).not.toHaveBeenCalled();
     expect(create).not.toHaveBeenCalled();
+  });
+});
+
+describe("syncContactToResend with a campaign segment", () => {
+  const SEGMENT = "segment_1";
+
+  it("creates a new contact inside the segment", async () => {
+    const { resend, create } = fakeResend({ update: notFound });
+    await syncContactToResend(resend, TOPIC, { email: EMAIL, subscribed: true }, { segmentId: SEGMENT });
+    expect(create).toHaveBeenCalledWith({
+      email: EMAIL,
+      topics: [{ id: TOPIC, subscription: "opt_in" }],
+      segments: [{ id: SEGMENT }],
+    });
+  });
+
+  it("adds an existing contact to the segment when they opt in", async () => {
+    const { resend, segmentAdd } = fakeResend();
+    const ok = await syncContactToResend(resend, TOPIC, { email: EMAIL, subscribed: true }, { segmentId: SEGMENT });
+    expect(ok).toBe(true);
+    expect(segmentAdd).toHaveBeenCalledWith({ email: EMAIL, segmentId: SEGMENT });
+  });
+
+  it("does not touch the segment when opting out (the topic already stops campaigns)", async () => {
+    const { resend, segmentAdd } = fakeResend();
+    await syncContactToResend(resend, TOPIC, { email: EMAIL, subscribed: false }, { segmentId: SEGMENT });
+    expect(segmentAdd).not.toHaveBeenCalled();
+  });
+
+  it("still reports the consent as synced when adding to the segment fails", async () => {
+    const { resend } = fakeResend({ segmentAdd: async () => ({ error: { statusCode: 422 } }) });
+    const ok = await syncContactToResend(resend, TOPIC, { email: EMAIL, subscribed: true }, { segmentId: SEGMENT });
+    expect(ok).toBe(true);
+  });
+
+  it("skips the segment when none is configured", async () => {
+    const { resend, segmentAdd, create } = fakeResend({ update: notFound });
+    await syncContactToResend(resend, TOPIC, { email: EMAIL, subscribed: true });
+    expect(segmentAdd).not.toHaveBeenCalled();
+    expect((create.mock.calls as unknown[][])[0][0]).not.toHaveProperty("segments");
   });
 });
 
