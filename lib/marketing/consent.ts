@@ -20,7 +20,8 @@ export type ConsentSource =
   | "settings"
   | "resend_unsubscribe"
   | "resend_preferences"
-  | "block";
+  | "block"
+  | "email_link";
 
 export type ConsentStatus = "subscribed" | "unsubscribed";
 
