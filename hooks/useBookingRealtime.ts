@@ -2,15 +2,31 @@ import { Booking } from "@/types";
 import { createClient } from "@/utils/supabase/client";
 import { useEffect } from "react";
 
+type WatchedTable = "bookings" | "vehicles" | "booking_add_ons";
+
+/** One live change, reported after the booking has been refetched (null when it was deleted). */
+export type BookingRealtimeChange = {
+  table: WatchedTable;
+  type: "INSERT" | "UPDATE" | "DELETE";
+  id: string;
+  booking: Booking | null;
+};
+
+/**
+ * Keeps bookings live. Pass `setBookings` to have a single list kept in sync,
+ * or `null` and handle each change in `onChange` (which must be stable, e.g.
+ * from useCallback, since it is an effect dependency).
+ */
 export function useBookingRealtime(
-  setBookings: React.Dispatch<React.SetStateAction<Booking[]>>,
-  onNewBooking?: (booking: Booking) => void // Add callback for new bookings
+  setBookings: React.Dispatch<React.SetStateAction<Booking[]>> | null,
+  onNewBooking?: (booking: Booking) => void,
+  onChange?: (change: BookingRealtimeChange) => void
 ) {
   const supabase = createClient();
 
   useEffect(() => {
     // Tables to watch
-    const tablesToSubscribe: ("bookings" | "vehicles" | "booking_add_ons")[] = [
+    const tablesToSubscribe: WatchedTable[] = [
       "bookings",
       "vehicles",
       "booking_add_ons",
@@ -43,6 +59,14 @@ export function useBookingRealtime(
             }
 
             if (!affectedBookingId) return;
+            const bookingId: string = affectedBookingId;
+
+            // A deleted booking can't be refetched: remove it directly.
+            if (table === "bookings" && payload.eventType === "DELETE") {
+              setBookings?.((current) => current.filter((b) => b.id !== bookingId));
+              onChange?.({ table, type: "DELETE", id: bookingId, booking: null });
+              return;
+            }
 
             // Fetch full booking with vehicle and add-ons
             const { data, error } = await supabase
@@ -56,7 +80,7 @@ export function useBookingRealtime(
                 )
               `
               )
-              .eq("id", affectedBookingId)
+              .eq("id", bookingId)
               .single();
 
             if (error || !data) return;
@@ -70,29 +94,18 @@ export function useBookingRealtime(
             };
 
             // Update state
-            setBookings((current) => {
-              switch (payload.eventType) {
-                case "INSERT":
-                  // Trigger notification for new bookings
-                  if (
-                    onNewBooking &&
-                    !current.find((b) => b.id === fullBooking.id)
-                  ) {
-                    onNewBooking(fullBooking);
-                  }
-                  return current.find((b) => b.id === fullBooking.id)
-                    ? current
-                    : [fullBooking, ...current];
-                case "UPDATE":
-                  return current.map((b) =>
-                    b.id === fullBooking.id ? fullBooking : b
-                  );
-                case "DELETE":
-                  return current.filter((b) => b.id !== affectedBookingId);
-                default:
-                  return current;
+            setBookings?.((current) => {
+              const exists = current.some((b) => b.id === fullBooking.id);
+              if (payload.eventType === "INSERT") {
+                // Trigger notification for new bookings
+                if (onNewBooking && !exists) onNewBooking(fullBooking);
+                return exists ? current : [fullBooking, ...current];
               }
+              // UPDATE, or a vehicle / add-on row changing under the booking.
+              return current.map((b) => (b.id === fullBooking.id ? fullBooking : b));
             });
+
+            onChange?.({ table, type: payload.eventType, id: bookingId, booking: fullBooking });
           }
         )
         .subscribe();
@@ -104,5 +117,5 @@ export function useBookingRealtime(
     return () => {
       channels.forEach((channel) => supabase.removeChannel(channel));
     };
-  }, [supabase, setBookings, onNewBooking]);
+  }, [supabase, setBookings, onNewBooking, onChange]);
 }

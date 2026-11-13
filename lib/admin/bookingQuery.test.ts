@@ -47,10 +47,21 @@ describe("bookingSearchOr", () => {
   it("returns null with no term", () => {
     expect(bookingSearchOr("", [])).toBeNull();
   });
-  it("matches name, email and service, plus matching vehicles", () => {
+  it("matches name, email, service and phone, plus matching vehicles", () => {
     expect(bookingSearchOr("ab 12", ["v1", "v2"])).toBe(
-      "customer_name.ilike.%ab 12%,customer_email.ilike.%ab 12%,service_package_name.ilike.%ab 12%,vehicle_id.in.(v1,v2)",
+      "customer_name.ilike.%ab 12%,customer_email.ilike.%ab 12%,service_package_name.ilike.%ab 12%,customer_phone.ilike.%ab 12%,vehicle_id.in.(v1,v2)",
     );
+  });
+  it("finds a short reference across all dates by uuid range", () => {
+    const or = bookingSearchOr("#1A2B3C4D", []);
+    expect(or).toContain(
+      "and(id.gte.1a2b3c4d-0000-0000-0000-000000000000,id.lte.1a2b3c4d-ffff-ffff-ffff-ffffffffffff)",
+    );
+    expect(bookingSearchOr("James Ca", [])).not.toContain("id.gte.");
+  });
+  it("includes bookings found by short reference", () => {
+    expect(bookingSearchOr("1a2b3c4d", [], ["id-1", "id-2"])).toContain("id.in.(id-1,id-2)");
+    expect(bookingSearchOr("x", [], [])).not.toContain("id.in.");
   });
   it("matches a booking by its full id", () => {
     const id = "1a2b3c4d-1111-2222-3333-444455556666";

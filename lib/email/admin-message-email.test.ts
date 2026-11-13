@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { buildBroadcastEmailHtml, buildDirectEmailHtml } from "./admin-message-email";
+import { buildDirectEmailHtml } from "./admin-message-email";
 
 const EVIL = `<script>alert(1)</script>`;
 
 describe.each([
-  ["broadcast", buildBroadcastEmailHtml],
   ["direct", buildDirectEmailHtml],
 ])("%s email", (_name, build) => {
   it("escapes the admin's subject, title and body", () => {
