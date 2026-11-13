@@ -64,17 +64,21 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /**
  * The `or` filter for a search: customer name, email or service contains the
  * term, or the booking's vehicle is one of `vehicleIds` (found separately by
- * plate / make / model), or the term is the booking's full id.
+ * plate / make / model), or the term is the booking's full id. Also matches
+ * the customer's phone, and any `bookingIds` found separately (e.g. by the
+ * 8-character short reference among bookings already loaded).
  */
-export function bookingSearchOr(rawTerm: string, vehicleIds: string[]): string | null {
+export function bookingSearchOr(rawTerm: string, vehicleIds: string[], bookingIds: string[] = []): string | null {
   const term = cleanSearchTerm(rawTerm);
   if (!term) return null;
   const parts = [
     `customer_name.ilike.%${term}%`,
     `customer_email.ilike.%${term}%`,
     `service_package_name.ilike.%${term}%`,
+    `customer_phone.ilike.%${term}%`,
   ];
   if (vehicleIds.length) parts.push(`vehicle_id.in.(${vehicleIds.join(",")})`);
+  if (bookingIds.length) parts.push(`id.in.(${bookingIds.join(",")})`);
   if (UUID.test(term)) parts.push(`id.eq.${term}`);
   return parts.join(",");
 }
