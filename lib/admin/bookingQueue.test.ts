@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   QUEUE_STATUS_LABEL, dayCounts, firstName, formatTime12, isNewBooking, isShortRefTerm,
   matchesShortRef, nextWaitingId, queueStatus, shortName, shortRef, timeMinutes, tookLabel,
-  applyBookingChange, monthBounds, monthGrid, monthOf, shiftMonth, sortSearchResults,
+  applyBookingChange, dayLabel, monthBounds, monthGrid, monthOf, shiftMonth, sortSearchResults,
 } from "./bookingQueue";
 
 describe("queueStatus", () => {
@@ -143,5 +143,12 @@ describe("sortSearchResults", () => {
     expect(sortSearchResults(rows, "2026-11-13").map((r) => r.id)).toEqual([
       "today-early", "today-late", "next-week", "past-recent", "past-old",
     ]);
+  });
+});
+
+describe("dayLabel", () => {
+  it("names a calendar date without shifting it by time zone", () => {
+    expect(dayLabel("2026-11-13")).toBe("Fri, Nov 13");
+    expect(dayLabel("2027-01-01")).toBe("Fri, Jan 1");
   });
 });
