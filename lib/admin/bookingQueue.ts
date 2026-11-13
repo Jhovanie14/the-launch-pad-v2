@@ -1,4 +1,5 @@
 import type { Booking } from "@/types";
+import { addDays } from "./bookingQuery";
 
 /** The attendant's view of a booking's status. */
 export type QueueStatus = "waiting" | "in_progress" | "done" | "cancelled";
@@ -121,4 +122,63 @@ export function nextWaitingId(rows: Pick<Booking, "id" | "status" | "appointment
     if (!best || at < best.at) best = { id: row.id, at };
   }
   return best?.id ?? null;
+}
+
+/** The light row the month calendar needs. */
+export type CalendarEntry = Pick<Booking, "id" | "appointment_date" | "appointment_time" | "status" | "customer_name">;
+
+export const CALENDAR_SELECT = "id, appointment_date, appointment_time, status, customer_name";
+
+/** "2026-11-13" → "2026-11". */
+export function monthOf(date: string): string {
+  return date.slice(0, 7);
+}
+
+export function shiftMonth(month: string, delta: number): string {
+  const [y, m] = month.split("-").map(Number);
+  const d = new Date(Date.UTC(y, m - 1 + delta, 1));
+  return d.toISOString().slice(0, 7);
+}
+
+/** Monday-first weeks covering the month, as "YYYY-MM-DD" cells. */
+export function monthGrid(month: string): string[][] {
+  const mondayIndex = (date: string) => (new Date(`${date}T00:00:00Z`).getUTCDay() + 6) % 7;
+  const first = `${month}-01`;
+  const last = addDays(`${shiftMonth(month, 1)}-01`, -1);
+  const end = addDays(last, 6 - mondayIndex(last));
+  const weeks: string[][] = [];
+  for (let cell = addDays(first, -mondayIndex(first)); cell <= end; ) {
+    const week: string[] = [];
+    for (let i = 0; i < 7; i++, cell = addDays(cell, 1)) week.push(cell);
+    weeks.push(week);
+  }
+  return weeks;
+}
+
+/** First and last cell of the month grid, for the calendar query. */
+export function monthBounds(month: string): { gte: string; lte: string } {
+  const grid = monthGrid(month);
+  return { gte: grid[0][0], lte: grid[grid.length - 1][6] };
+}
+
+export type Dated = { id: string; appointment_date: string; appointment_time: string };
+
+/** Date first, then time of day. */
+export function compareSlots(a: Dated, b: Dated): number {
+  if (a.appointment_date !== b.appointment_date) return a.appointment_date < b.appointment_date ? -1 : 1;
+  return timeMinutes(a.appointment_time) - timeMinutes(b.appointment_time);
+}
+
+/** Apply one live change: drop the old copy, add the new one if it still belongs, keep slot order. */
+export function applyBookingChange<T extends Dated>(list: T[], id: string, row: T | null, keep: (row: T) => boolean): T[] {
+  const next = list.filter((r) => r.id !== id);
+  if (row && keep(row)) next.push(row);
+  return next.sort(compareSlots);
+}
+
+/** Today and upcoming first (soonest first), then past bookings (most recent first). */
+export function sortSearchResults<T extends Dated>(rows: T[], today: string): T[] {
+  const upcoming = rows.filter((r) => r.appointment_date >= today).sort(compareSlots);
+  const past = rows.filter((r) => r.appointment_date < today).sort((a, b) => compareSlots(b, a));
+  return [...upcoming, ...past];
 }
