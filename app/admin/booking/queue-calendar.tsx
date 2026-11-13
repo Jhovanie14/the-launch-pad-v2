@@ -75,7 +75,7 @@ export function QueueCalendar({ month, today, selected, entries, onSelect, onMon
           <Button
             variant="outline"
             size="sm"
-            className="ml-1 h-9"
+            className="ml-1 h-11"
             onClick={() => {
               onMonthChange(monthOf(today));
               onSelect(today);

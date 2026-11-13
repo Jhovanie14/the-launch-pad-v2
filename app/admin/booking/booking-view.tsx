@@ -19,17 +19,17 @@ import {
   CALENDAR_SELECT,
   applyBookingChange,
   compareSlots,
+  createInFlight,
   dayCounts,
   dayLabel,
-  isShortRefTerm,
-  matchesShortRef,
+  filterPanel,
   monthBounds,
   monthOf,
   nextWaitingId,
-  queueStatus,
+  rollSelectedDay,
   sortSearchResults,
   type CalendarEntry,
-  type QueueStatus,
+  type PanelChip,
 } from "@/lib/admin/bookingQueue";
 import { cn } from "@/lib/utils";
 import type { Booking } from "@/types";
@@ -40,9 +40,7 @@ import { BOOKING_SELECT, withAddOns } from "./booking-select";
 import { BookingsListTab } from "./bookings-list-tab";
 import { QueueCalendar } from "./queue-calendar";
 
-type Chip = "all" | Exclude<QueueStatus, "cancelled">;
-
-const CHIPS: { value: Chip; label: string }[] = [
+const CHIPS: { value: PanelChip; label: string }[] = [
   { value: "all", label: "All" },
   { value: "waiting", label: "Waiting" },
   { value: "in_progress", label: "In progress" },
@@ -77,7 +75,7 @@ export default function BookingsView() {
   const [selected, setSelected] = useState(() => houstonToday());
   const [month, setMonth] = useState(() => monthOf(houstonToday()));
   const [showCancelled, setShowCancelled] = useState(false);
-  const [chip, setChip] = useState<Chip>("all");
+  const [chip, setChip] = useState<PanelChip>("all");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
@@ -91,7 +89,17 @@ export default function BookingsView() {
 
   const [drawerId, setDrawerId] = useState<string | null>(null);
   const [editing, setEditing] = useState<Booking | null>(null);
-  const [busyId, setBusyId] = useState<string | null>(null);
+  // Bookings with an action in flight: one booking can't be completed twice at once.
+  const [busyIds, setBusyIds] = useState<Set<string>>(() => new Set());
+  const inFlight = useRef(createInFlight());
+  const markBusy = useCallback((id: string, busy: boolean) => {
+    setBusyIds((prev) => {
+      const next = new Set(prev);
+      if (busy) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }, []);
   const [listRefresh, setListRefresh] = useState(0);
   const [showNewBooking, setShowNewBooking] = useState(false);
   const [newBookingNotification, setNewBookingNotification] = useState<Booking | null>(null);
@@ -100,15 +108,22 @@ export default function BookingsView() {
   const selectedRef = useRef(selected);
   const monthRef = useRef(month);
   const todayRef = useRef(today);
-  const dayRef = useRef(dayBookings);
-  const monthEntriesRef = useRef(monthEntries);
   useEffect(() => {
     selectedRef.current = selected;
     monthRef.current = month;
+  }, [selected, month]);
+
+  // Past midnight, a tablet left on "today" moves to the new today.
+  useEffect(() => {
+    const previousToday = todayRef.current;
     todayRef.current = today;
-    dayRef.current = dayBookings;
-    monthEntriesRef.current = monthEntries;
-  }, [selected, month, today, dayBookings, monthEntries]);
+    if (previousToday === today) return;
+    const next = rollSelectedDay(selectedRef.current, previousToday, today);
+    if (next !== selectedRef.current) {
+      setSelected(next);
+      setMonth(monthOf(next));
+    }
+  }, [today]);
 
   // Typing pauses for 300ms before a search query runs.
   useEffect(() => {
@@ -158,17 +173,8 @@ export default function BookingsView() {
         const { data } = await supabase.from("vehicles").select("id").or(vehicleOr).limit(100);
         vehicleIds = (data ?? []).map((v: { id: string }) => v.id);
       }
-      // Short "Ref" codes match among bookings already loaded (no DB prefix search on uuid).
-      const refIds = isShortRefTerm(term)
-        ? [
-            ...new Set(
-              [...dayRef.current, ...monthEntriesRef.current]
-                .filter((b) => matchesShortRef(b.id, term))
-                .map((b) => b.id),
-            ),
-          ]
-        : [];
-      const or = bookingSearchOr(term, vehicleIds, refIds);
+      // bookingSearchOr also matches the 8-character "Ref" across all dates.
+      const or = bookingSearchOr(term, vehicleIds);
       if (!or) return { rows: [], truncated: false };
       const { data, error } = await supabase
         .from("bookings")
@@ -218,6 +224,7 @@ export default function BookingsView() {
     if (!debouncedSearch) {
       setResults(null);
       setResultsTruncated(false);
+      setSearching(false);
       return;
     }
     let live = true;
@@ -332,8 +339,9 @@ export default function BookingsView() {
   }, []);
 
   const deleteBooking = async (bookingId: string) => {
+    if (!inFlight.current.start(bookingId)) return;
     try {
-      setBusyId(bookingId);
+      markBusy(bookingId, true);
 
       const { error } = await supabase
         .from("bookings")
@@ -353,7 +361,8 @@ export default function BookingsView() {
       console.error(err);
       toast.error("Something went wrong");
     } finally {
-      setBusyId(null);
+      inFlight.current.finish(bookingId);
+      markBusy(bookingId, false);
     }
   };
 
@@ -362,8 +371,9 @@ export default function BookingsView() {
     bookingId: string,
     newStatus: Booking["status"]
   ) => {
+    if (!inFlight.current.start(bookingId)) return;
     try {
-      setBusyId(bookingId);
+      markBusy(bookingId, true);
 
       const attendantName = userProfile?.full_name ?? "Unknown";
       const updates: Record<string, any> = {
@@ -420,7 +430,8 @@ export default function BookingsView() {
       console.error("Error updating booking status:", error);
       toast.error("Something went wrong");
     } finally {
-      setBusyId(null);
+      inFlight.current.finish(bookingId);
+      markBusy(bookingId, false);
     }
   };
 
@@ -433,19 +444,18 @@ export default function BookingsView() {
     setDebouncedSearch("");
   };
 
-  const counts = dayCounts(dayBookings);
-  const nextId = selected === today ? nextWaitingId(dayBookings) : null;
+  // Only the selected day: a previous day's rows never show while the new day loads.
+  const dayRows = dayBookings.filter((b) => b.appointment_date === selected);
+  const counts = dayCounts(dayRows);
+  const nextId = selected === today ? nextWaitingId(dayRows) : null;
   const isMember = (b: Booking) => !!b.user_id && memberIds.has(b.user_id);
-  const passesFilters = (b: Booking) => {
-    const s = queueStatus(b.status);
-    if (s === "cancelled") return showCancelled && chip === "all";
-    return chip === "all" || chip === s;
-  };
 
   const isSearching = debouncedSearch.length > 0 && results !== null;
-  const panelSource = isSearching ? results : dayBookings;
-  const panelRows = panelSource.filter(passesFilters);
-  const hiddenCount = panelSource.length - panelRows.length;
+  const { rows: panelRows, hidden: hiddenCount } = filterPanel(isSearching ? results : dayBookings, {
+    day: isSearching ? null : selected,
+    showCancelled,
+    chip,
+  });
   const calendarEntries = showCancelled ? monthEntries : monthEntries.filter((e) => e.status !== "cancelled");
 
   const drawerBooking =
@@ -519,7 +529,7 @@ export default function BookingsView() {
                     setSearch("");
                     setDebouncedSearch("");
                   }}
-                  className="absolute top-1/2 right-1 flex size-9 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:bg-slate-100"
+                  className="absolute top-1/2 right-0 flex size-11 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:bg-slate-100"
                 >
                   <X className="size-4" />
                 </button>
@@ -581,7 +591,7 @@ export default function BookingsView() {
                     isNext={!isSearching && b.id === nextId}
                     now={now}
                     showDate={isSearching}
-                    busy={busyId === b.id}
+                    busy={busyIds.has(b.id)}
                     onAdvance={(booking, next) => updateBookingStatus(booking.id, next)}
                     onOpen={(booking) => setDrawerId(booking.id)}
                   />
@@ -607,7 +617,8 @@ export default function BookingsView() {
           </div>
         </TabsContent>
 
-        <TabsContent value="list" className="min-h-0">
+        {/* Kept mounted so the office keeps its filters and page when switching tabs. */}
+        <TabsContent value="list" forceMount className="min-h-0 data-[state=inactive]:hidden">
           <BookingsListTab
             userProfile={userProfile}
             refreshKey={listRefresh}
@@ -621,7 +632,7 @@ export default function BookingsView() {
         booking={drawerBooking}
         isMember={drawerBooking ? isMember(drawerBooking) : false}
         canDelete={userProfile?.user_type === "super_admin"}
-        busy={drawerBooking ? busyId === drawerBooking.id : false}
+        busy={drawerBooking ? busyIds.has(drawerBooking.id) : false}
         onOpenChange={(open) => !open && setDrawerId(null)}
         onEdit={(b) => {
           setDrawerId(null);

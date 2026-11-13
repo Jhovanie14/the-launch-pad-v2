@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   QUEUE_STATUS_LABEL, dayCounts, firstName, formatTime12, isNewBooking, isShortRefTerm,
   matchesShortRef, nextWaitingId, queueStatus, shortName, shortRef, timeMinutes, tookLabel,
-  applyBookingChange, dayLabel, monthBounds, monthGrid, monthOf, shiftMonth, sortSearchResults,
+  applyBookingChange, createInFlight, dayLabel, filterPanel, monthBounds, rollSelectedDay, monthGrid, monthOf, shiftMonth, sortSearchResults,
 } from "./bookingQueue";
 
 describe("queueStatus", () => {
@@ -143,6 +143,47 @@ describe("sortSearchResults", () => {
     expect(sortSearchResults(rows, "2026-11-13").map((r) => r.id)).toEqual([
       "today-early", "today-late", "next-week", "past-recent", "past-old",
     ]);
+  });
+});
+
+describe("rollSelectedDay", () => {
+  it("follows today past midnight when the attendant was on today", () => {
+    expect(rollSelectedDay("2026-11-12", "2026-11-12", "2026-11-13")).toBe("2026-11-13");
+  });
+  it("keeps a day the attendant picked", () => {
+    expect(rollSelectedDay("2026-11-20", "2026-11-12", "2026-11-13")).toBe("2026-11-20");
+  });
+});
+
+describe("filterPanel", () => {
+  const rows = [
+    { id: "w", status: "pending" as const, appointment_date: "2026-11-13" },
+    { id: "d", status: "completed" as const, appointment_date: "2026-11-13" },
+    { id: "x", status: "cancelled" as const, appointment_date: "2026-11-13" },
+    { id: "old", status: "pending" as const, appointment_date: "2026-11-12" },
+  ];
+  it("shows only the selected day, never a previous day's leftovers", () => {
+    const out = filterPanel(rows, { day: "2026-11-13", showCancelled: false, chip: "all" });
+    expect(out.rows.map((r) => r.id)).toEqual(["w", "d"]);
+    expect(out.hidden).toBe(1);
+  });
+  it("shows cancelled only when asked, and chips narrow by status", () => {
+    expect(filterPanel(rows, { day: "2026-11-13", showCancelled: true, chip: "all" }).rows.map((r) => r.id)).toEqual(["w", "d", "x"]);
+    expect(filterPanel(rows, { day: "2026-11-13", showCancelled: true, chip: "done" }).rows.map((r) => r.id)).toEqual(["d"]);
+  });
+  it("search results keep every date", () => {
+    expect(filterPanel(rows, { day: null, showCancelled: false, chip: "waiting" }).rows.map((r) => r.id)).toEqual(["w", "old"]);
+  });
+});
+
+describe("createInFlight", () => {
+  it("refuses a second start for the same booking until it finishes", () => {
+    const f = createInFlight();
+    expect(f.start("a")).toBe(true);
+    expect(f.start("a")).toBe(false);
+    expect(f.start("b")).toBe(true);
+    f.finish("a");
+    expect(f.start("a")).toBe(true);
   });
 });
 

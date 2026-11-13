@@ -60,6 +60,7 @@ export function cleanSearchTerm(raw: string): string {
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const SHORT_REF = /^#?([0-9a-f]{8})$/i;
 
 /**
  * The `or` filter for a search: customer name, email or service contains the
@@ -80,6 +81,10 @@ export function bookingSearchOr(rawTerm: string, vehicleIds: string[], bookingId
   if (vehicleIds.length) parts.push(`vehicle_id.in.(${vehicleIds.join(",")})`);
   if (bookingIds.length) parts.push(`id.in.(${bookingIds.join(",")})`);
   if (UUID.test(term)) parts.push(`id.eq.${term}`);
+  // The 8-character "Ref" customers see: Postgres orders uuids byte-wise, the
+  // same as their hex text, so a prefix is a range on the primary key.
+  const ref = SHORT_REF.exec(term)?.[1]?.toLowerCase();
+  if (ref) parts.push(`and(id.gte.${ref}-0000-0000-0000-000000000000,id.lte.${ref}-ffff-ffff-ffff-ffffffffffff)`);
   return parts.join(",");
 }
 

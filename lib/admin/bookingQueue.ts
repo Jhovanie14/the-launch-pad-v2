@@ -189,3 +189,43 @@ export function dayLabel(date: string): string {
     new Date(`${date}T00:00:00Z`),
   );
 }
+
+/** At midnight, an attendant who was looking at "today" moves to the new today. */
+export function rollSelectedDay(selected: string, previousToday: string, today: string): string {
+  return selected === previousToday ? today : selected;
+}
+
+export type PanelChip = "all" | Exclude<QueueStatus, "cancelled">;
+
+/**
+ * What the side panel lists: the selected day only (or every date for search
+ * results, `day: null`), then "Show cancelled" and the status chip.
+ * `hidden` counts the day's rows the status filters hid.
+ */
+export function filterPanel<T extends Pick<Booking, "status" | "appointment_date">>(
+  rows: T[],
+  opts: { day: string | null; showCancelled: boolean; chip: PanelChip },
+): { rows: T[]; hidden: number } {
+  const source = opts.day === null ? rows : rows.filter((r) => r.appointment_date === opts.day);
+  const shown = source.filter((r) => {
+    const s = queueStatus(r.status);
+    if (s === "cancelled") return opts.showCancelled && opts.chip === "all";
+    return opts.chip === "all" || opts.chip === s;
+  });
+  return { rows: shown, hidden: source.length - shown.length };
+}
+
+/** Per-booking guard so one booking's action can't run twice at once. */
+export function createInFlight() {
+  const ids = new Set<string>();
+  return {
+    start(id: string): boolean {
+      if (ids.has(id)) return false;
+      ids.add(id);
+      return true;
+    },
+    finish(id: string): void {
+      ids.delete(id);
+    },
+  };
+}
