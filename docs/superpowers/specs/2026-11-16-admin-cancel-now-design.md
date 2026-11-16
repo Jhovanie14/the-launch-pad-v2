@@ -76,9 +76,10 @@ the block option and the customer notice in one step.
      response says "Cancelled, but the refund failed: refund it in Stripe",
      rather than money leaving while the plan stays active.
 3. **Webhook:** `customer.subscription.deleted` skips the "membership ended,
-   rejoin" email when `metadata.canceled_by === "admin"` (our notice was
-   already sent). Customer-initiated and payment-failure deletions still
-   get it.
+   rejoin" email when `metadata.canceled_now === "true"` (our notice was
+   already sent). Not on `canceled_by === "admin"` alone: end-of-period
+   admin cancels carry that tag too and still get the email when the
+   period ends. Customer-initiated and payment-failure deletions still get it.
 
 **Prorated amount:** `paid × unused / period`, where `unused` is the time
 from now to the period end and `period` is the billing period length,
