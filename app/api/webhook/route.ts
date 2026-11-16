@@ -21,6 +21,7 @@ import Stripe from "stripe";
 import type { AddOnRow } from "@/types/db";
 import { recordPromoRedemption } from "@/lib/pricing/validatePromo";
 import { recordConsent } from "@/lib/marketing/consent";
+import { isCustomerBlocked } from "@/lib/customers/customerBlocks";
 import { bookingMetaOptsIn } from "@/lib/marketing/bookingConsent";
 
 /** Shape of booking metadata encoded as JSON in session.metadata.booking */
@@ -1095,6 +1096,13 @@ async function handleSubscriptionDeleted(event: Stripe.Event) {
   // no "membership ended, come back" email on top of it.
   if (subscription.metadata?.canceled_now === "true") {
     console.log("Subscription deleted: cancelled now by staff, notice already sent");
+    return;
+  }
+
+  // This email invites them to rejoin: never send it to someone staff blocked
+  // (they can't buy a membership again anyway).
+  if (await isCustomerBlocked(supabase, { userId: result.userId, email: profile.email })) {
+    console.log("Subscription deleted: customer is blocked, skipping the rejoin email");
     return;
   }
 
