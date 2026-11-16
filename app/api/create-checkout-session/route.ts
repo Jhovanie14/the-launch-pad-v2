@@ -121,7 +121,7 @@ async function handler(req: Request) {
       );
     }
 
-    let rawId =
+    const rawId =
       billingCycle === "monthly"
         ? vPlan.stripe_price_id_monthly
         : vPlan.stripe_price_id_yearly;

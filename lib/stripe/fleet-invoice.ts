@@ -23,7 +23,7 @@ export async function createStripeFleetInvoice({
 }) {
   try {
     // 1. Create or retrieve Stripe customer
-    let customer = await findOrCreateStripeCustomer(email, companyName);
+    const customer = await findOrCreateStripeCustomer(email, companyName);
 
     // 2. Create invoice
     const invoice = await stripe.invoices.create({
