@@ -7,39 +7,38 @@
 <meta name="supported-color-schemes" content="light">
 <title>Sign in to The Launch Pad</title>
 <style>
-  a { color:#2460b7; }
+  a { color:#041335; }
   @media (max-width:600px) {
-    .lp-card { padding:28px 20px !important; }
-    .lp-h1 { font-size:24px !important; }
+    .lp-wrap { padding:28px 20px !important; }
     .lp-btn a { display:block !important; }
   }
 </style>
 </head>
-<body style="margin:0;padding:0;background:#f4f7fb;">
-<div lang="en" dir="ltr" style="background:#f4f7fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#041335;">
-  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#f4f7fb;">Your one-time sign-in link.&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;</div>
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f4f7fb;">
-    <tr><td align="center" style="padding:24px 12px;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;">
-        <tr><td style="background:#041335;border-radius:16px 16px 0 0;padding:20px 28px;">
-          <a href="https://www.thelaunchpadwash.com" style="text-decoration:none;color:#ffffff;">
-            <img src="https://www.thelaunchpadwash.com/thelaunchpad.png" width="44" height="44" alt="The Launch Pad" style="vertical-align:middle;border:0;">
-            <span style="vertical-align:middle;margin-left:10px;font-size:15px;font-weight:900;letter-spacing:0.02em;color:#ffffff;">THE LAUNCH PAD</span>
+<body style="margin:0;padding:0;background:#ffffff;">
+<div lang="en" dir="ltr" style="background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#1f2a3a;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#ffffff;">Your one-time sign-in link.&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff;">
+    <tr><td class="lp-wrap" align="center" style="padding:40px 20px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;">
+        <tr><td align="center" style="padding:0 0 28px;border-bottom:1px solid #e5e8ec;">
+          <a href="https://www.thelaunchpadwash.com" style="text-decoration:none;color:#041335;">
+            <img src="https://www.thelaunchpadwash.com/thelaunchpad.png" width="40" height="40" alt="The Launch Pad" style="display:block;margin:0 auto 10px;border:0;">
+            <span style="display:block;font-size:12px;font-weight:600;letter-spacing:0.28em;color:#041335;">THE LAUNCH PAD</span>
           </a>
         </td></tr>
-        <tr><td class="lp-card" style="background:#ffffff;padding:36px 32px;border-radius:0 0 16px 16px;font-size:16px;line-height:1.6;color:#041335;">
-<h1 class="lp-h1" style="margin:0 0 16px;font-size:28px;line-height:1.15;font-weight:900;letter-spacing:-0.02em;color:#041335;">Sign in to The Launch Pad</h1>
-<p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:#041335;">Use this link to sign in. It works once and expires soon.</p>
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" class="lp-btn" style="margin:24px 0;"><tr><td style="border-radius:10px;">
-  <a href="{{ .ConfirmationURL }}" style="background:#fec92f;color:#041335;border:2px solid #fec92f;display:inline-block;padding:14px 26px;border-radius:10px;font-size:16px;font-weight:800;text-decoration:none;text-align:center;">Sign in</a>
+        <tr><td style="padding:36px 0 12px;font-size:15px;line-height:1.7;color:#1f2a3a;">
+<h1 class="lp-h1" style="margin:0 0 24px;font-size:22px;line-height:1.3;font-weight:500;letter-spacing:-0.01em;color:#041335;">Sign in to The Launch Pad</h1>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#1f2a3a;">Use this link to sign in. It works once and expires soon.</p>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" class="lp-btn" style="margin:28px 0;"><tr><td style="border-radius:2px;">
+  <a href="{{ .ConfirmationURL }}" style="background:#041335;color:#ffffff;display:inline-block;padding:13px 30px;border-radius:2px;font-size:13px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;text-decoration:none;text-align:center;">Sign in</a>
 </td></tr></table>
-<p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#4a596f;">Button not working? Copy this link into your browser:<br><a href="{{ .ConfirmationURL }}" style="word-break:break-all;">{{ .ConfirmationURL }}</a></p>
-<p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#4a596f;">If you didn't try to sign in, you can ignore this email. Nothing changes until the link is used.</p>
+<p style="margin:0 0 16px;font-size:13px;line-height:1.7;color:#5b6675;">Button not working? Copy this link into your browser:<br><a href="{{ .ConfirmationURL }}" style="word-break:break-all;">{{ .ConfirmationURL }}</a></p>
+<p style="margin:0 0 16px;font-size:13px;line-height:1.7;color:#5b6675;">If you didn't try to sign in, you can ignore this email. Nothing changes until the link is used.</p>
         </td></tr>
-        <tr><td style="padding:24px 28px 8px;font-size:13px;line-height:1.6;color:#4a596f;text-align:center;">
-          <p style="margin:0;"><strong style="color:#041335;">The Launch Pad</strong> · 10410 S Main St, Houston, TX 77025</p>
-          <p style="margin:4px 0 0;"><a href="tel:+18322198320" style="color:#4a596f;">(832) 219-8320</a> · <a href="mailto:info@thelaunchpadwash.com" style="color:#4a596f;">info@thelaunchpadwash.com</a> · <a href="https://www.thelaunchpadwash.com" style="color:#4a596f;">thelaunchpadwash.com</a></p>
-          <p style="margin:12px 0 0;color:#637389;">You're getting this because a sign-in link was requested for this email.</p>
+        <tr><td style="padding:28px 0 0;border-top:1px solid #e5e8ec;font-size:12px;line-height:1.7;color:#7a8594;text-align:center;">
+          <p style="margin:0;">The Launch Pad · 10410 S Main St, Houston, TX 77025</p>
+          <p style="margin:2px 0 0;"><a href="tel:+18322198320" style="color:#7a8594;">(832) 219-8320</a> · <a href="mailto:info@thelaunchpadwash.com" style="color:#7a8594;">info@thelaunchpadwash.com</a> · <a href="https://www.thelaunchpadwash.com" style="color:#7a8594;">thelaunchpadwash.com</a></p>
+          <p style="margin:12px 0 0;">You're getting this because a sign-in link was requested for this email.</p>
           
         </td></tr>
       </table>
