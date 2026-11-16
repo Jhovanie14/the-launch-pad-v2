@@ -80,9 +80,15 @@ unsubscribes them, and `recordConsent` refuses to subscribe a blocked email.
 **Nudge:** the customer (grouped by lower-cased `customer_email`, plus
 `user_id` when present) had a paid wash **yesterday**, and has **exactly 2**
 paid washes with `appointment_date` in the 30 days ending yesterday
-(yesterday − 29 … yesterday). Exactly 2 means a third wash doesn't send it
-again; a customer who later has another run of two paid washes in 30 days
-can get it again, which is fine.
+(yesterday − 29 … yesterday), **and no paid wash in the 30 days before the
+earlier of the two** (added after review: a regular washing every few weeks
+always has two in the window and would be nudged after every wash). Exactly
+2 means a third wash doesn't send it again; a customer who comes back after
+a 30-day gap and starts a new run can get it again, which is fine.
+
+**Daily limit:** each automatic email (win-back too) sends at most 20 a day
+(`MARKETING_DAILY_LIMIT`); anyone over it is skipped that day and logged, so
+the three together can't use more than 60 of the shared 100/day.
 
 **Welcome:** a `marketing_consents` row whose **`created_at` Houston date is
 yesterday**, `status = 'subscribed'` and `unsubscribed_at is null`.
