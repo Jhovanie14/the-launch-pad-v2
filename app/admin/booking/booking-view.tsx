@@ -353,12 +353,16 @@ export default function BookingsView() {
 
   useBookingRealtime(null, undefined, onRealtimeChange);
 
-  const { isSupported, requestPermission, isGranted } = usePushNotifications();
+  const { isSupported, permission, requestPermission, isGranted } = usePushNotifications();
+  // Ask once, and only while the browser hasn't decided. requestPermission is a new function
+  // every render, so depending on it re-ran this on every render; with notifications blocked
+  // that stacked "Notifications are blocked" toasts over the status chips.
+  const askedForNotifications = useRef(false);
   useEffect(() => {
-    if (isSupported && !isGranted) {
-      requestPermission();
-    }
-  }, [isSupported, isGranted, requestPermission]);
+    if (!isSupported || permission !== "default" || askedForNotifications.current) return;
+    askedForNotifications.current = true;
+    requestPermission();
+  }, [isSupported, permission, requestPermission]);
 
   // ---- Actions --------------------------------------------------------
 
