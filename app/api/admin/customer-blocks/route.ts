@@ -3,8 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { requireAdmin } from "@/lib/auth/guards";
 import { apiError } from "@/lib/http/apiError";
-import { blockCustomer } from "@/lib/customers/customerBlocks";
-import { recordConsent } from "@/lib/marketing/consent";
+import { blockAndUnsubscribe } from "@/lib/customers/blockAndUnsubscribe";
 import { parseCustomerBlockRequest } from "./request";
 
 /**
@@ -22,16 +21,7 @@ export async function POST(req: Request) {
     const adminUser = await requireAdmin(supabase, admin);
     const { userId, reason } = parseCustomerBlockRequest(await req.json().catch(() => null));
 
-    const { email, plates } = await blockCustomer(admin, userId, adminUser.id, reason);
-
-    if (email) {
-      try {
-        await recordConsent(admin, { email, action: "unsubscribe", source: "block" });
-      } catch (consentError) {
-        // The block itself succeeded; a marketing hiccup must not undo it.
-        console.error("[customer-blocks] marketing unsubscribe failed:", consentError);
-      }
-    }
+    const { email, plates } = await blockAndUnsubscribe(admin, userId, adminUser.id, reason);
 
     const blocked = [email, ...plates].filter(Boolean).join(", ");
     return NextResponse.json({ success: true, email, plates, message: `Blocked: ${blocked}` });

@@ -368,6 +368,7 @@ export default function AdminUsersPage() {
   }
 
   function cancelSubscriptionAction(sub: any, product: "express" | "self_service"): AdminSubscriptionAction {
+    const alreadyBlocked = !!customerBlocks[sub.user_id]?.length;
     return {
       endpoint: "/api/admin/subscriptions/unsubscribe",
       body: { userId: sub.user_id, scope: "subscription", product },
@@ -377,6 +378,18 @@ export default function AdminUsersPage() {
       confirmLabel: "Yes, Cancel Subscription",
       destructive: true,
       refresh: product,
+      // Cancelling alone doesn't stop them buying a new plan; this does both in one step.
+      ...(alreadyBlocked
+        ? {}
+        : {
+            option: {
+              name: "alsoBlock",
+              label: "Also block this customer",
+              description:
+                "Their email and every license plate on their account go on the block list, so they can't start a new membership. Only with a manager's approval.",
+              confirmLabel: "Yes, Cancel and Block",
+            },
+          }),
     };
   }
 
