@@ -12,6 +12,15 @@ import { createUnsubscribeToken, unsubscribeUrl } from "./unsubscribeToken";
 
 const BATCH_SIZE = 100;
 
+/**
+ * Most emails one automatic email (win-back, nudge, welcome) sends in a day.
+ * Resend's free plan allows 100 a day IN TOTAL, shared with booking
+ * confirmations, tip emails and receipts; three automatic emails at 20 each
+ * leave room for those. Anyone over the limit is skipped for that day (the
+ * emails are stateless, so they don't carry over) and logged.
+ */
+export const MARKETING_DAILY_LIMIT = 20;
+
 /** The slice of the Resend SDK this module uses; tests pass fakes. */
 export interface MarketingResendLike {
   batch: {
@@ -32,11 +41,16 @@ export async function sendMarketingBatch<R extends { email: string }>(
     keyPrefix: string;
     build: (r: R, unsubscribeUrl: string) => { subject: string; html: string };
   },
-): Promise<{ sent: number; failed: number }> {
+): Promise<{ sent: number; failed: number; heldBack: number }> {
   let sent = 0;
   let failed = 0;
-  for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
-    const chunk = recipients.slice(i, i + BATCH_SIZE);
+  const heldBack = Math.max(0, recipients.length - MARKETING_DAILY_LIMIT);
+  if (heldBack > 0) {
+    console.warn(`[marketing] ${opts.keyPrefix}: daily limit ${MARKETING_DAILY_LIMIT} reached, ${heldBack} not sent today`);
+  }
+  const toSend = recipients.slice(0, MARKETING_DAILY_LIMIT);
+  for (let i = 0; i < toSend.length; i += BATCH_SIZE) {
+    const chunk = toSend.slice(i, i + BATCH_SIZE);
     const emails = chunk.map((r) => {
       const oneClick = `${opts.siteUrl}/api/marketing/unsubscribe?t=${createUnsubscribeToken(r.email, opts.secret)}`;
       const { subject, html } = opts.build(r, unsubscribeUrl(r.email, opts.secret, opts.siteUrl));
@@ -66,5 +80,5 @@ export async function sendMarketingBatch<R extends { email: string }>(
       failed += chunk.length;
     }
   }
-  return { sent, failed };
+  return { sent, failed, heldBack };
 }

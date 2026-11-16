@@ -13,7 +13,9 @@ export async function findMemberAccounts(
 ): Promise<(email: string, userIds: Iterable<string>) => boolean> {
   const profileIdByEmail = new Map<string, string>();
   if (emails.length > 0) {
-    const { data, error } = await db.from("profiles").select("id, email").in("email", emails);
+    // Profile emails come from sign-up (lower case); booking emails are as typed.
+    const variants = [...new Set(emails.flatMap((e) => [e, e.toLowerCase()]))];
+    const { data, error } = await db.from("profiles").select("id, email").in("email", variants);
     if (error) throw error;
     for (const p of (data ?? []) as { id: string; email: string | null }[]) {
       if (p.email) profileIdByEmail.set(p.email.toLowerCase(), p.id);

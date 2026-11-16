@@ -9,6 +9,7 @@ import {
   type WinbackResendLike,
 } from "./winback";
 import { fakeDb, type Row } from "./testing/fakeDb";
+import { MARKETING_DAILY_LIMIT } from "./sendMarketingBatch";
 
 const TODAY = "2026-11-12";
 const VISIT = "2026-10-13"; // 30 days earlier
@@ -149,15 +150,16 @@ describe("sendWinbackEmails", () => {
     return { resend: { batch: { send } } as unknown as WinbackResendLike, send };
   }
 
-  it("sends in batches of 100 with a one-click unsubscribe header", async () => {
+  it("sends up to the daily limit in one batch with a one-click unsubscribe header", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
     const { resend, send } = fakeResend();
     const recipients = Array.from({ length: 150 }, (_, i) => ({ email: `c${i}@example.com`, firstName: null }));
     const result = await sendWinbackEmails(resend, recipients, { secret: SECRET, siteUrl: SITE, today: TODAY });
 
-    expect(result).toEqual({ sent: 150, failed: 0 });
-    expect(send).toHaveBeenCalledTimes(2);
+    expect(result).toEqual({ sent: MARKETING_DAILY_LIMIT, failed: 0, heldBack: 150 - MARKETING_DAILY_LIMIT });
+    expect(send).toHaveBeenCalledTimes(1);
     const [firstBatch, firstOpts] = send.mock.calls[0] as [Array<Record<string, any>>, Record<string, string>];
-    expect(firstBatch).toHaveLength(100);
+    expect(firstBatch).toHaveLength(MARKETING_DAILY_LIMIT);
     expect(firstOpts.idempotencyKey).toBe(`winback/${TODAY}/0`);
 
     const email = firstBatch[0];
@@ -169,16 +171,14 @@ describe("sendWinbackEmails", () => {
     expect(email.html).toContain(`${SITE}/unsubscribe?t=`);
   });
 
-  it("counts a failed batch without stopping the rest", async () => {
-    const send = vi
-      .fn()
-      .mockResolvedValueOnce({ data: null, error: { message: "boom" } })
-      .mockResolvedValueOnce({ data: { data: [] }, error: null });
+  it("counts a failed batch as failed", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const send = vi.fn().mockResolvedValueOnce({ data: null, error: { message: "boom" } });
     const resend = { batch: { send } } as unknown as WinbackResendLike;
-    const recipients = Array.from({ length: 101 }, (_, i) => ({ email: `c${i}@example.com`, firstName: null }));
+    const recipients = Array.from({ length: 5 }, (_, i) => ({ email: `c${i}@example.com`, firstName: null }));
     await expect(
       sendWinbackEmails(resend, recipients, { secret: SECRET, siteUrl: SITE, today: TODAY }),
-    ).resolves.toEqual({ sent: 1, failed: 100 });
+    ).resolves.toEqual({ sent: 0, failed: 5, heldBack: 0 });
   });
 
   it("does nothing for nobody", async () => {
@@ -186,6 +186,7 @@ describe("sendWinbackEmails", () => {
     await expect(sendWinbackEmails(resend, [], { secret: SECRET, siteUrl: SITE, today: TODAY })).resolves.toEqual({
       sent: 0,
       failed: 0,
+      heldBack: 0,
     });
     expect(send).not.toHaveBeenCalled();
   });

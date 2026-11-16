@@ -19,6 +19,15 @@ describe("findMemberAccounts", () => {
     expect(isMember("pat@example.com", [])).toBe(true);
   });
 
+  it("finds a member whose booking email is capitalised differently from their profile", async () => {
+    const db = fakeDb({
+      profiles: [{ id: "u9", email: "sam@example.com" }],
+      user_subscription: [{ user_id: "u9", status: "active" }],
+    });
+    const isMember = await findMemberAccounts(db, ["Sam@Example.com"], []);
+    expect(isMember("Sam@Example.com", [])).toBe(true);
+  });
+
   it("ignores plans that aren't active", async () => {
     const db = fakeDb({ user_subscription: [{ user_id: "u1", status: "canceled" }] });
     const isMember = await findMemberAccounts(db, [], ["u1"]);

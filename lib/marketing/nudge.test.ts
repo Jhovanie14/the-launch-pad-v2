@@ -49,6 +49,30 @@ describe("findNudgeRecipients", () => {
     ).resolves.toEqual([]);
   });
 
+  it("not again for a regular who washes every 20 days", async () => {
+    // 10-06, 10-26, 11-15: the window holds two, but 10-06 is within 30 days before 10-26.
+    await expect(
+      find([wash({ appointment_date: "2026-10-06" }), wash({ appointment_date: "2026-10-26" }), wash()]),
+    ).resolves.toEqual([]);
+  });
+
+  it("nudges again for a new run of visits after a long gap", async () => {
+    // 10-20 had no paid wash in the 30 days before it (08-01 is far earlier).
+    await expect(
+      find([wash({ appointment_date: "2026-08-01" }), wash({ appointment_date: "2026-10-20" }), wash()]),
+    ).resolves.toHaveLength(1);
+  });
+
+  it("reads past the 1,000-rows-per-request limit", async () => {
+    // 1,000 one-off customers sort before this customer's rows by id.
+    const others = Array.from({ length: 1000 }, (_, i) =>
+      wash({ id: `a${String(i).padStart(4, "0")}`, customer_email: `o${i}@example.com`, appointment_date: "2026-10-20" }),
+    );
+    await expect(
+      find([...others, wash({ id: "z1", appointment_date: "2026-10-20" }), wash({ id: "z2" })]),
+    ).resolves.toEqual([{ email: "sam@example.com", firstName: "Sam", washes: 2, spent: 50 }]);
+  });
+
   it("not after a first paid wash", async () => {
     await expect(find([wash()])).resolves.toEqual([]);
   });

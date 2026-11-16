@@ -4,9 +4,11 @@
  * what a membership costs. Runs once a day from /api/cron/marketing-nudge.
  *
  * Stateless, like win-back: "exactly 2 paid washes in the 30 days ending
- * yesterday, one of them yesterday" fires once per run of visits (a third
- * wash makes it 3). A missed cron day is skipped; same-day retries are
- * deduplicated by Resend idempotency keys.
+ * yesterday, one of them yesterday, and none in the 30 days before the
+ * earlier one" fires once per run of visits (a third wash makes it 3, and a
+ * regular washing every few weeks never has the quiet 30 days). A missed
+ * cron day is skipped; same-day retries are deduplicated by Resend
+ * idempotency keys.
  *
  * Paid wash: completed, paid by card or cash, price above $0.
  * Never emailed: members with an active plan, anyone not opted in.
@@ -14,6 +16,7 @@
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { addDays } from "@/lib/admin/bookingQuery";
+import { fetchAllPages } from "@/lib/admin/bookingQueue";
 import { FIRST_SUBSCRIPTION_PROMO } from "@/lib/pricing/firstSubscriptionPromo";
 import { SITE_URL, button, emailLayout, heading, money, paragraph, text } from "@/lib/email/layout";
 import { getConsentStatus } from "./consent";
@@ -62,18 +65,26 @@ export async function findNudgeRecipients(
     deps.isOptedIn ?? (async (email: string) => (await getConsentStatus(db, email)) === "subscribed");
   const yesterday = addDays(today, -1);
   const windowStart = addDays(yesterday, -(NUDGE_WINDOW_DAYS - 1));
+  // Twice the window: the run's earlier wash needs 30 quiet days before it.
+  const lookbackStart = addDays(windowStart, -NUDGE_WINDOW_DAYS);
 
-  // Every completed booking in the window, grouped in code: emails differ in
-  // case between bookings, which an exact `in` filter would miss. A month of
-  // completed washes is a few hundred light rows.
-  const { data, error } = await db
-    .from("bookings")
-    .select("id, customer_email, customer_name, user_id, appointment_date, status, payment_method, total_price")
-    .eq("status", "completed")
-    .gte("appointment_date", windowStart)
-    .lte("appointment_date", yesterday);
+  // Every paid wash in the lookback, grouped in code: emails differ in case
+  // between bookings, which an exact `in` filter would miss. Paged, since a
+  // request returns at most 1,000 rows.
+  const { data, error } = await fetchAllPages<WashRow, unknown>((from, to) =>
+    db
+      .from("bookings")
+      .select("id, customer_email, customer_name, user_id, appointment_date, status, payment_method, total_price")
+      .eq("status", "completed")
+      .in("payment_method", ["card", "cash"])
+      .gt("total_price", 0)
+      .gte("appointment_date", lookbackStart)
+      .lte("appointment_date", yesterday)
+      .order("id")
+      .range(from, to),
+  );
   if (error) throw error;
-  const paid = ((data ?? []) as WashRow[]).filter(isPaidWash);
+  const paid = (data ?? []).filter(isPaidWash);
 
   // People with a paid wash yesterday, one per inbox.
   const people = new Map<string, { email: string; name: string | null; userIds: Set<string> }>();
@@ -90,10 +101,16 @@ export async function findNudgeRecipients(
 
   const candidates: (NudgeRecipient & { userIds: Set<string> })[] = [];
   for (const [key, person] of people) {
-    const theirs = paid.filter(
+    const all = paid.filter(
       (b) => b.customer_email?.trim().toLowerCase() === key || (!!b.user_id && person.userIds.has(b.user_id)),
     );
+    const theirs = all.filter((b) => b.appointment_date >= windowStart);
     if (theirs.length !== NUDGE_AT_PAID_WASHES) continue;
+    // A new run of visits only: a regular washing every few weeks always has
+    // two in the window, so also require 30 quiet days before the earlier one.
+    const runStart = theirs.reduce((min, b) => (b.appointment_date < min ? b.appointment_date : min), yesterday);
+    const quietFrom = addDays(runStart, -NUDGE_WINDOW_DAYS);
+    if (all.some((b) => b.appointment_date >= quietFrom && b.appointment_date < runStart)) continue;
     const spent = Math.round(theirs.reduce((sum, b) => sum + Number(b.total_price), 0) * 100) / 100;
     candidates.push({
       email: person.email,

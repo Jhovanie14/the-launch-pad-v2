@@ -140,7 +140,7 @@ export function sendWinbackEmails(
   resend: WinbackResendLike,
   recipients: WinbackRecipient[],
   opts: { secret: string; siteUrl: string; today: string },
-): Promise<{ sent: number; failed: number }> {
+): Promise<{ sent: number; failed: number; heldBack: number }> {
   return sendMarketingBatch(resend, recipients, {
     ...opts,
     keyPrefix: "winback",
