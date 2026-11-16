@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { button, details, emailLayout, heading, plate } from "./layout";
+import { button, details, emailLayout, heading, plate, signoff } from "./layout";
 
 describe("emailLayout", () => {
   const html = emailLayout({
@@ -28,8 +28,33 @@ describe("emailLayout", () => {
     expect(emailLayout({ title: "t", preheader: "p", body: "" })).not.toContain("Unsubscribe");
   });
 
-  it("brands the action button in flame with navy text", () => {
-    expect(html).toContain("background:#fec92f;color:#041335;");
+  it("draws the action button as a squared navy button with white text", () => {
+    expect(html).toContain("background:#041335;color:#ffffff;");
+    expect(html).toContain("border-radius:2px");
+  });
+
+  it("has a centred logo and spaced wordmark, with no navy band or tinted canvas", () => {
+    expect(html).toContain("letter-spacing:0.28em");
+    expect(html).toContain(">THE LAUNCH PAD<");
+    expect(html).not.toContain("border-radius:16px");
+    expect(html).not.toContain("#f4f7fb");
+  });
+});
+
+describe("quiet formal helpers", () => {
+  it("makes the secondary action a plain underlined link, not a box", () => {
+    const out = button("https://example.com/r", "Write a review", "secondary");
+    expect(out).toContain("text-decoration:underline");
+    expect(out).not.toContain("background:");
+  });
+
+  it("uses a medium-weight headline", () => {
+    expect(heading("Hello")).toContain("font-weight:500");
+  });
+
+  it("signs off formally", () => {
+    expect(signoff()).toContain("Kind regards,<br>The Launch Pad");
+    expect(signoff()).not.toContain("See you at the pad");
   });
 });
 

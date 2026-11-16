@@ -95,8 +95,8 @@ describe.each(cases)("%s email", (_label, build) => {
     expect(email.html).not.toMatch(/\p{Extended_Pictographic}/u);
   });
 
-  it("has exactly one primary flame button and one h1", () => {
-    expect(email.html.match(/background:#fec92f/g)).toHaveLength(1);
+  it("has exactly one primary navy button and one h1", () => {
+    expect(email.html.match(/background:#041335;color:#ffffff;/g)).toHaveLength(1);
     expect(email.html.match(/<h1/g)).toHaveLength(1);
   });
 
@@ -117,7 +117,7 @@ describe("subscription cancelled email", () => {
 describe("invoice email", () => {
   it("links the Stripe invoice as the primary action when present", () => {
     const { html } = cases[0][1]("Ana");
-    expect(html).toContain('href="https://invoice.stripe.com/i/abc" style="background:#fec92f');
+    expect(html).toContain('href="https://invoice.stripe.com/i/abc" style="background:#041335;color:#ffffff;');
   });
 
   it("keeps the subject meaning without emoji", () => {

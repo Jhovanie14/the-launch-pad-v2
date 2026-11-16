@@ -30,6 +30,8 @@ colors:
   email-flame: "#fec92f"
   email-ink-muted: "#4a596f"
   email-ink-subtle: "#637389"
+  email-ink: "#1f2a3a"
+  email-rule: "#e5e8ec"
   email-line: "#dae2ec"
   email-line-soft: "#ecf1f7"
   email-canvas: "#f4f7fb"
@@ -114,19 +116,31 @@ typography:
     letterSpacing: "0.14em"
   email-heading:
     fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
-    fontSize: "28px"
-    fontWeight: 900
-    lineHeight: 1.15
+    fontSize: "22px"
+    fontWeight: 500
+    lineHeight: 1.3
   email-subheading:
     fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
-    fontSize: "18px"
-    fontWeight: 800
-    lineHeight: 1.3
+    fontSize: "17px"
+    fontWeight: 600
+    lineHeight: 1.35
   email-body:
     fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
-    fontSize: "16px"
+    fontSize: "15px"
     fontWeight: 400
-    lineHeight: 1.6
+    lineHeight: 1.7
+  email-wordmark:
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
+    fontSize: "12px"
+    fontWeight: 600
+    lineHeight: 1.4
+    letterSpacing: "0.28em"
+  email-button:
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
+    fontSize: "13px"
+    fontWeight: 600
+    lineHeight: 1.2
+    letterSpacing: "0.12em"
   email-detail:
     fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
     fontSize: "15px"
@@ -139,7 +153,7 @@ typography:
     lineHeight: 1.6
   email-footer:
     fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
-    fontSize: "13px"
+    fontSize: "12px"
     fontWeight: 400
     lineHeight: 1.6
   email-plate:
@@ -148,10 +162,11 @@ typography:
     fontWeight: 700
     lineHeight: 1.4
 rounded:
+  email-button: "2px"
   plate: "5px"
   chip: "8px"
   control: "10px"
-  email-panel: "12px"
+  email-panel: "2px"
   tile: "14px"
   surface: "16px"
 spacing:
@@ -440,10 +455,12 @@ The home has no fields of its own. Inside `.lp-theme`, shadcn inputs and the rev
 
 Every email (transactional, membership, orders, admin broadcasts and the Supabase account emails) is built from one layout, `lib/email/layout.ts`, so the inbox looks like the site. Email clients can't read CSS variables, OKLCH or web fonts, so email uses the **hex equivalents** of the brand tokens (the `email-*` colours above) and the system sans stack instead of Geist. These are deliberate, not drift.
 
-- **Shape:** navy (email-night) band with the logo and wordmark, then a white card with exactly one h1 (email-heading, 900 weight), then a footer with the site's address, phone and email on email-canvas.
-- **One flame action** per email: email-flame fill, navy text, 10px corners. Any second link is a quiet outlined button or a text link.
-- **Facts** (date, plate, totals) sit in a real data table (`details()`, `th scope="row"`) on email-canvas with email-panel corners; line items use `th scope="col"`. Plates are drawn as plates.
-- **Notices** are tinted panels (warn, danger, ok, info). Never a coloured side stripe, never an emoji.
+- **Look: quiet formal** (chosen 2026-11-16 over the old navy band + flame button; see `docs/superpowers/specs/2026-11-16-email-restyle-design.md`). Premium, formal, plain: white page, no band, no rounded card, generous whitespace.
+- **Shape:** small centred logo over the spaced wordmark (email-wordmark), a 1px email-rule, exactly one h1 (email-heading, 500 weight), the message, then a centred grey footer (email-footer) after another rule.
+- **One navy action** per email: email-night fill, white text, email-button type (small spaced capitals), email-button corners. Any second action is an underlined navy text link, never a second box.
+- **Facts** (date, plate, totals) sit in a real data table (`details()`, `th scope="row"`) with hairline email-rule rows and no tinted box; line items use `th scope="col"`. Plates are drawn as plates.
+- **Notices** are quiet tinted panels (warn, danger, ok, info) with email-panel corners. Never a coloured side stripe, never an emoji.
+- **Voice:** formal and warm. "Dear <first name>," and "Kind regards, The Launch Pad"; no exclamation marks in subjects.
 - **Accessibility:** `lang`/`dir` on `<html>` and the body wrapper, `role="presentation"` on layout tables, a `<title>`, a hidden preheader. Every dynamic value goes through `text()` (HTML-escaped).
 - **Account emails** (confirm sign-up, reset password, magic link, change email, invite) are generated into `supabase/templates/` by `node scripts/build-auth-emails.mjs` and pasted into Supabase; they keep `{{ .ConfirmationURL }}`.
 

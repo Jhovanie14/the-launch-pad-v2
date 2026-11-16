@@ -40,7 +40,7 @@ function orderRef(orderId: string): string {
   return orderId.slice(0, 8).toUpperCase();
 }
 
-const cell = `padding:10px 0;border-bottom:1px solid ${C.lineSoft};font-size:15px;vertical-align:top;`;
+const cell = `padding:11px 0;border-bottom:1px solid ${C.rule};font-size:14px;vertical-align:top;`;
 
 /** Body rows (one per item) for the itemized order table. Pure so it can be unit tested. */
 export function orderItemsRowsHtml(items: OrderEmailItem[]): string {
@@ -64,11 +64,11 @@ function orderItemsTable(args: {
 }): string {
   const th = `padding:0 0 8px;border-bottom:1px solid ${C.line};font-size:13px;font-weight:600;color:${C.inkMuted};`;
   const totalRow = (label: string, value: string, strong = false) => `<tr>
-      <th scope="row" colspan="2" align="left" style="padding:${strong ? "10px" : "6px"} 0 0;font-size:${strong ? "16px" : "14px"};font-weight:${strong ? "900" : "500"};color:${strong ? C.ink : C.inkMuted};">${label}</th>
-      <td align="right" style="padding:${strong ? "10px" : "6px"} 0 0;font-size:${strong ? "18px" : "15px"};font-weight:${strong ? "900" : "600"};color:${C.ink};white-space:nowrap;">${value}</td>
+      <th scope="row" colspan="2" align="left" style="padding:${strong ? "10px" : "6px"} 0 0;font-size:${strong ? "15px" : "14px"};font-weight:${strong ? "600" : "400"};color:${strong ? C.night : C.inkMuted};">${label}</th>
+      <td align="right" style="padding:${strong ? "10px" : "6px"} 0 0;font-size:${strong ? "16px" : "14px"};font-weight:${strong ? "600" : "500"};color:${C.night};white-space:nowrap;">${value}</td>
     </tr>`;
   return `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px;border-collapse:collapse;">
-  <caption style="text-align:left;padding:0 0 8px;font-size:18px;font-weight:800;color:${C.ink};">Your order</caption>
+  <caption style="text-align:left;padding:0 0 8px;font-size:17px;font-weight:600;color:${C.night};">Your order</caption>
   <thead>
     <tr>
       <th scope="col" align="left" style="${th}">Item</th>

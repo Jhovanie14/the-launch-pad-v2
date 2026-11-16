@@ -10,7 +10,7 @@ import {
 
 const EVIL = '<img src=x onerror="alert(1)">';
 const EMOJI = /\p{Extended_Pictographic}/u;
-const FLAME_BUTTON = /background:#fec92f/g;
+const PRIMARY_BUTTON = /background:#041335;color:#ffffff;/g;
 
 const emails = {
   confirmation: buildBookingConfirmationEmail({
@@ -46,8 +46,8 @@ describe.each(Object.entries(emails))("%s email", (_name, email) => {
     expect(email.html).not.toMatch(EMOJI);
   });
 
-  it("has exactly one primary flame button and one h1", () => {
-    expect(email.html.match(FLAME_BUTTON)).toHaveLength(1);
+  it("has exactly one primary navy button and one h1", () => {
+    expect(email.html.match(PRIMARY_BUTTON)).toHaveLength(1);
     expect(email.html.match(/<h1/g)).toHaveLength(1);
   });
 });

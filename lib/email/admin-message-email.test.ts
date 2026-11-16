@@ -27,12 +27,12 @@ describe.each([
     expect(build({ subject: "s", body: "b", bannerUrl: "javascript:alert(1)" })).not.toContain("javascript:");
   });
 
-  it("has one h1 (title, else subject) and exactly one flame button", () => {
+  it("has one h1 (title, else subject) and exactly one navy button", () => {
     const withTitle = build({ subject: "Subject", title: "Title", body: "b" });
     expect(withTitle.match(/<h1/g)).toHaveLength(1);
     expect(withTitle).toMatch(/<h1[^>]*>Title<\/h1>/);
     expect(build({ subject: "Subject", body: "b" })).toMatch(/<h1[^>]*>Subject<\/h1>/);
-    expect(withTitle.match(/background:#fec92f/g)).toHaveLength(1);
+    expect(withTitle.match(/background:#041335;color:#ffffff;/g)).toHaveLength(1);
   });
 
   it("adds no emoji of its own", () => {

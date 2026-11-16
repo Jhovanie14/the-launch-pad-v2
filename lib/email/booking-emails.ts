@@ -191,7 +191,7 @@ function paymentMethodLabel(value: string | null): string {
 }
 
 function receiptTable(rows: Array<[string, string]>, total: string): string {
-  const cell = `padding:10px 0;border-bottom:1px solid ${C.lineSoft};font-size:15px;color:${C.ink};vertical-align:top;`;
+  const cell = `padding:11px 0;border-bottom:1px solid ${C.rule};font-size:14px;color:${C.ink};vertical-align:top;`;
   const head = `padding:0 0 8px;border-bottom:1px solid ${C.line};font-size:13px;font-weight:600;color:${C.inkMuted};text-transform:uppercase;letter-spacing:0.04em;`;
   const itemRows = rows
     .map(
@@ -205,7 +205,7 @@ function receiptTable(rows: Array<[string, string]>, total: string): string {
   <tbody>
 ${itemRows}
   </tbody>
-  <tfoot><tr><th scope="row" align="left" style="padding:14px 0 0;font-size:16px;font-weight:800;color:${C.ink};">Total paid</th><td align="right" style="padding:14px 0 0;font-size:20px;font-weight:900;color:${C.ink};white-space:nowrap;">${text(total)}</td></tr></tfoot>
+  <tfoot><tr><th scope="row" align="left" style="padding:14px 0 0;font-size:15px;font-weight:600;color:${C.night};">Total paid</th><td align="right" style="padding:14px 0 0;font-size:16px;font-weight:600;color:${C.night};white-space:nowrap;">${text(total)}</td></tr></tfoot>
 </table>`;
 }
 
