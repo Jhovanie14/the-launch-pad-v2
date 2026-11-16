@@ -9,6 +9,7 @@ import {
   heading,
   money,
   paragraph,
+  salutation,
   signoff,
   text,
 } from "./layout";
@@ -20,7 +21,7 @@ const DIRECTIONS_URL =
   "https://www.google.com/maps/dir/?api=1&destination=10410+S+Main+St,+Houston,+TX+77025";
 const ORDERS_URL = `${SITE_URL}/dashboard/orders`;
 
-const FOOTER_NOTE = "You're getting this email because you placed an order on thelaunchpadwash.com.";
+const FOOTER_NOTE = "You are receiving this email because you placed an order on thelaunchpadwash.com.";
 
 const C = EMAIL_COLORS;
 
@@ -108,11 +109,12 @@ export function buildProductOrderConfirmationEmail(args: ConfirmationArgs): Buil
   const isDelivery = args.fulfillmentMethod === "delivery";
   const ref = orderRef(args.orderId);
   const nextStep = isDelivery
-    ? paragraph(`We're getting your order ready now. We'll email you again when it's <strong>out for delivery</strong> to the address you gave at checkout.`)
-    : paragraph(`We're getting your order ready now. We'll email you again when it's <strong>ready for pickup</strong> at ${text(STORE_ADDRESS)}.`);
+    ? paragraph(`We are preparing your order now and will email you again when it is <strong>out for delivery</strong> to the address you gave at checkout.`)
+    : paragraph(`We are preparing your order now and will email you again when it is <strong>ready for pickup</strong> at ${text(STORE_ADDRESS)}.`);
   const body = [
     heading("Your order is confirmed"),
-    paragraph(`Hi ${text(args.name)}, thanks for your order. Here's what you bought.`),
+    salutation(args.name),
+    paragraph("Thank you for your order. The details are below."),
     details([
       ["Order", text(ref)],
       ["Fulfillment", isDelivery ? "Local delivery" : "Pickup at the store"],
@@ -126,7 +128,7 @@ export function buildProductOrderConfirmationEmail(args: ConfirmationArgs): Buil
     subject: `Your Launch Pad order ${ref} is confirmed`,
     html: emailLayout({
       title: "Your order is confirmed",
-      preheader: `Order ${ref}, ${money(args.total)}. We'll let you know when it's ${isDelivery ? "on its way" : "ready for pickup"}.`,
+      preheader: `Order ${ref}, ${money(args.total)}. We will let you know when it is ${isDelivery ? "on its way" : "ready for pickup"}.`,
       body,
       footerNote: FOOTER_NOTE,
     }),
@@ -139,7 +141,8 @@ export function buildProductOrderReadyForPickupEmail(args: StatusArgs): BuiltEma
   const ref = orderRef(args.orderId);
   const body = [
     heading("Your order is ready for pickup"),
-    paragraph(`Hi ${text(args.name)}, your order is packed and waiting for you at The Launch Pad.`),
+    salutation(args.name),
+    paragraph("Your order is packed and ready for you at The Launch Pad."),
     details([
       ["Order", text(ref)],
       ["Pick up at", text(STORE_ADDRESS)],
@@ -163,7 +166,8 @@ export function buildProductOrderOutForDeliveryEmail(args: StatusArgs): BuiltEma
   const ref = orderRef(args.orderId);
   const body = [
     heading("Your order is on its way"),
-    paragraph(`Hi ${text(args.name)}, your order has left The Launch Pad and is headed to the address you gave at checkout.`),
+    salutation(args.name),
+    paragraph("Your order has left The Launch Pad and is on its way to the address you gave at checkout."),
     details([
       ["Order", text(ref)],
       ["Status", "Out for delivery"],
@@ -186,7 +190,8 @@ export function buildProductOrderRefundedEmail(args: StatusArgs & { total: numbe
   const ref = orderRef(args.orderId);
   const body = [
     heading("Your order has been refunded"),
-    paragraph(`Hi ${text(args.name)}, we've refunded your order to the card you paid with.`),
+    salutation(args.name),
+    paragraph("We have refunded your order to the card you paid with."),
     details(
       [
         ["Order", text(ref)],
@@ -196,7 +201,7 @@ export function buildProductOrderRefundedEmail(args: StatusArgs & { total: numbe
     ),
     paragraph(`Depending on your bank, it can take 5&ndash;10 business days to show on your statement.`),
     paragraph(
-      `Questions about this refund? Call us at <a href="tel:+18322198320">(832) 219-8320</a> or email <a href="mailto:info@thelaunchpadwash.com">info@thelaunchpadwash.com</a>.`,
+      `Should you have any questions about this refund, please call us at <a href="tel:+18322198320">(832) 219-8320</a> or email <a href="mailto:info@thelaunchpadwash.com">info@thelaunchpadwash.com</a>.`,
     ),
     button(ORDERS_URL, "View your orders"),
     signoff(),
@@ -205,7 +210,7 @@ export function buildProductOrderRefundedEmail(args: StatusArgs & { total: numbe
     subject: `Your Launch Pad order ${ref} has been refunded`,
     html: emailLayout({
       title: "Your order has been refunded",
-      preheader: `We've refunded ${money(args.total)} for order ${ref}.`,
+      preheader: `We have refunded ${money(args.total)} for order ${ref}.`,
       body,
       footerNote: FOOTER_NOTE,
     }),

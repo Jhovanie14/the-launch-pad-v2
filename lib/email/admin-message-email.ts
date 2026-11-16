@@ -33,7 +33,7 @@ export function adminMessageBodyHtml(body: string): string {
 /** Only our own Supabase-hosted https images (isAllowedBannerUrl). */
 export function bannerHtml(bannerUrl: string | undefined): string {
   if (!isAllowedBannerUrl(bannerUrl)) return "";
-  return `<img src="${text(bannerUrl)}" alt="" width="536" style="display:block;width:100%;max-width:536px;height:auto;border:0;border-radius:12px;margin:0 0 24px;">`;
+  return `<img src="${text(bannerUrl)}" alt="" width="560" style="display:block;width:100%;max-width:560px;height:auto;border:0;border-radius:2px;margin:0 0 24px;">`;
 }
 
 function messageBody({ subject, title, body, bannerUrl }: AdminMessageParams, action: string): string {
@@ -50,7 +50,7 @@ export function buildDirectEmailHtml(params: AdminMessageParams): string {
   const action = [
     button(`${SITE_URL}/dashboard`, "Go to your dashboard"),
     paragraph(
-      `Questions? We're here to help. Call <a href="tel:+18322198320">(832) 219-8320</a> or email <a href="mailto:info@thelaunchpadwash.com">info@thelaunchpadwash.com</a>.`,
+      `Should you have any questions, we are glad to help. Call <a href="tel:+18322198320">(832) 219-8320</a> or email <a href="mailto:info@thelaunchpadwash.com">info@thelaunchpadwash.com</a>.`,
       { muted: true, small: true },
     ),
   ].join("\n");

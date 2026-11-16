@@ -34,15 +34,11 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const FAMILY_DISCOUNT_PERCENT = Math.round(FLOCK_DISCOUNT_RATE * 100);
 
 const BILLING_URL = `${SITE_URL}/dashboard/billing`;
-const MEMBER_FOOTER = "You're getting this because you have a Launch Pad membership.";
+const MEMBER_FOOTER = "You are receiving this email because you have a Launch Pad membership.";
 
 export interface BuiltEmail {
   subject: string;
   html: string;
-}
-
-function greeting(name: string): string {
-  return paragraph(`Hi ${text(name)},`);
 }
 
 function recurringTotal(newTotal: number, billingCycle: string): string {
@@ -81,17 +77,17 @@ export function buildSubscriptionInvoiceEmail({
   invoiceUrl,
   isRenewal,
 }: SubscriptionInvoiceEmailParams): BuiltEmail {
-  const title = isRenewal ? "Your membership renewed" : "Welcome to The Launch Pad";
+  const title = isRenewal ? "Your membership has renewed" : "Welcome to The Launch Pad";
   const subject = isRenewal
-    ? `Your subscription has been renewed — ${money(amountPaid)} charged`
+    ? `Your membership has renewed: ${money(amountPaid)} charged`
     : "Welcome to The Launch Pad: your membership is active";
 
   const body = [
     heading(title),
-    isRenewal ? greeting(name) : salutation(name),
+    salutation(name),
     paragraph(
       isRenewal
-        ? "Your membership renewed and your payment went through. Here's the summary."
+        ? "Your membership has renewed and your payment has been received. A summary is below."
         : "Thank you for becoming a member. Your first payment has been received and your membership is now active. Your receipt is below.",
     ),
     details(
@@ -109,7 +105,7 @@ export function buildSubscriptionInvoiceEmail({
           { muted: true, small: true },
         )
       : button(BILLING_URL, "View billing"),
-    paragraph(isRenewal ? "Thanks for being a member." : "We look forward to welcoming you."),
+    paragraph(isRenewal ? "Thank you for being a member." : "We look forward to welcoming you."),
     signoff(),
   ].join("\n");
 
@@ -141,35 +137,35 @@ export interface PaymentFailedEmailParams {
 
 export function buildPaymentFailedEmail({ name, attemptCount }: PaymentFailedEmailParams): BuiltEmail {
   const isLastAttempt = (attemptCount ?? 1) >= 3;
-  const title = isLastAttempt ? "Final notice: your payment failed" : "Your payment didn't go through";
+  const title = isLastAttempt ? "Final notice: your payment failed" : "Your payment was not successful";
   const subject = isLastAttempt
-    ? "Final notice: Your subscription will be cancelled — update your card now"
-    : "Action needed: Your payment failed — update your card";
+    ? "Final notice: please update your card to keep your membership"
+    : "Action needed: your payment was not successful";
 
   const body = [
     heading(title),
-    greeting(name),
+    salutation(name),
     paragraph(
-      "We tried to charge your card for your membership, but the payment didn't go through. Update your payment method to keep your membership active.",
+      "We were unable to charge your card for your membership. Please update your payment method to keep your membership active.",
     ),
     notice(
       isLastAttempt
-        ? "<strong>This was our last try.</strong> Please update your card today, or your membership will be cancelled."
-        : "<strong>Nothing is lost yet.</strong> Update your card soon to keep your membership running.",
+        ? "<strong>This was our final attempt.</strong> Please update your card today, or your membership will be cancelled."
+        : "<strong>Your membership is still active.</strong> Please update your card soon to keep it running.",
       isLastAttempt ? "danger" : "warn",
     ),
-    paragraph("If the payment can't go through:"),
+    paragraph("If the payment cannot be completed:"),
     list([
       "Your membership will be suspended after the retries fail",
-      "You'll lose unlimited express washes",
+      "Unlimited express washes will no longer be available",
       "Family pricing on your other vehicles will end",
     ]),
     button(BILLING_URL, "Update payment method"),
     paragraph(
-      "It takes less than a minute, and your membership picks up as soon as a charge succeeds.",
+      "Updating your card takes less than a minute, and your membership continues as soon as a payment succeeds.",
       { muted: true, small: true },
     ),
-    contactLine("Questions? We're happy to help."),
+    contactLine("Should you have any questions, we are glad to help."),
     signoff(),
   ].join("\n");
 
@@ -205,13 +201,13 @@ export function buildCancellationScheduledEmail({
   name,
   periodEndDate,
 }: CancellationScheduledEmailParams): BuiltEmail {
-  const title = "We'll miss you";
+  const title = "Your cancellation is confirmed";
 
   const body = [
     heading(title),
-    greeting(name),
+    salutation(name),
     paragraph(
-      `You asked to cancel your membership. That's completely fine, and you keep full access until <strong>${text(periodEndDate)}</strong>.`,
+      `We have received your request to cancel your membership. You keep full access until <strong>${text(periodEndDate)}</strong>.`,
     ),
     details([["Membership active until", text(periodEndDate)]]),
     subheading("What ends with your plan"),
@@ -222,19 +218,19 @@ export function buildCancellationScheduledEmail({
       "Walk-in visits with no appointment needed",
     ]),
     paragraph(
-      "Changed your mind? You can keep your membership with one click. No re-enrolling, and your vehicles stay linked.",
+      "Should you change your mind, you can keep your membership with one click. There is no need to re-enroll, and your vehicles stay linked.",
     ),
     button(BILLING_URL, "Keep my membership"),
     paragraph(
       `You can reactivate from your billing page any time before ${text(periodEndDate)}.`,
       { muted: true, small: true },
     ),
-    contactLine("If there's something we could have done better, we'd really like to hear it."),
+    contactLine("If there is anything we could have done better, we would be grateful to hear it."),
     signoff(),
   ].join("\n");
 
   return {
-    subject: `Your plan ends ${periodEndDate} — keep your subscription active`,
+    subject: `Your membership ends on ${periodEndDate}`,
     html: emailLayout({
       title,
       preheader: `Your membership stays active until ${periodEndDate}.`,
@@ -264,11 +260,11 @@ export function buildSubscriptionCancelledEmail({ name }: SubscriptionCancelledE
 
   const body = [
     heading(title),
-    greeting(name),
+    salutation(name),
     paragraph(
-      "Your membership has officially ended. Thank you for the time you spent with us. It was great having you.",
+      "Your membership has now ended. Thank you for the time you spent with us.",
     ),
-    subheading("Waiting for you if you come back"),
+    subheading("Should you wish to return"),
     list([
       "<strong>Unlimited washes</strong>: keep your car clean every week",
       "<strong>Plans from $39.99 a month</strong>: Basic $39.99 or Deluxe $59.99, any vehicle",
@@ -276,21 +272,21 @@ export function buildSubscriptionCancelledEmail({ name }: SubscriptionCancelledE
       "<strong>Priority service</strong>: no waiting in the regular line",
     ]),
     paragraph(
-      "Rejoining takes under a minute. Your vehicles and history are still saved, so just pick a plan and you're back in.",
+      "Rejoining takes under a minute. Your vehicles and history are saved, so you need only choose a plan.",
     ),
     button(plansUrl, "See plans and rejoin"),
-    paragraph("No contract. Cancel anytime, just like before.", { muted: true, small: true }),
-    contactLine("If something could have been better, we'd love to know. A real person will pick up."),
+    paragraph("There is no contract, and you may cancel at any time.", { muted: true, small: true }),
+    contactLine("If anything could have been better, we would be grateful to hear from you."),
     signoff(),
   ].join("\n");
 
   return {
-    subject: "Your Launch Pad subscription has ended — come back anytime",
+    subject: "Your Launch Pad membership has ended",
     html: emailLayout({
       title,
-      preheader: "Your vehicles are still saved if you want to come back.",
+      preheader: "Your vehicles remain saved should you wish to return.",
       body,
-      footerNote: "You're getting this because your Launch Pad membership just ended.",
+      footerNote: "You are receiving this email because your Launch Pad membership has ended.",
     }),
   };
 }
@@ -326,9 +322,9 @@ export function buildFamilyVehicleAddedEmail({
 
   const body = [
     heading(title),
-    greeting(name),
+    salutation(name),
     paragraph(
-      `You've added ${plate(licensePlate)} to your membership${
+      `You have added ${plate(licensePlate)} to your membership${
         isDiscounted ? ` at ${discountPercent}% off, every ${text(billingCycle)}, with no expiry.` : " at the full plan rate."
       }`,
     ),
@@ -383,7 +379,7 @@ export function buildFamilyVehicleRemovedEmail({
 
   const body = [
     heading(title),
-    greeting(name),
+    salutation(name),
     paragraph(
       `${plate(licensePlate)} has been unsubscribed from your membership. Your other vehicles keep their current pricing.`,
     ),
@@ -439,7 +435,7 @@ export function buildPrimaryVehicleSwappedEmail({
 
   const body = [
     heading(title),
-    greeting(name),
+    salutation(name),
     paragraph(
       `You unsubscribed <strong>${text(oldPrimaryLabel)}</strong>, your primary vehicle. Since you still have other vehicles on your membership, <strong>${text(newPrimaryLabel)}</strong> is now your primary vehicle. It bills at the full plan rate and anchors the family discount for your other vehicles.`,
     ),

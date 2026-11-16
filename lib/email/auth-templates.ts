@@ -23,14 +23,14 @@ export interface AuthTemplate {
 }
 
 const ignore = (what: string) =>
-  paragraph(`If you didn't ${what}, you can ignore this email. Nothing changes until the link is used.`, {
+  paragraph(`If you did not ${what}, you may ignore this email. Nothing changes until the link is used.`, {
     muted: true,
     small: true,
   });
 
 function linkFallback(): string {
   return paragraph(
-    `Button not working? Copy this link into your browser:<br><a href="${CONFIRMATION_URL}" style="word-break:break-all;">${CONFIRMATION_URL}</a>`,
+    `If the button does not work, copy this link into your browser:<br><a href="${CONFIRMATION_URL}" style="word-break:break-all;">${CONFIRMATION_URL}</a>`,
     { muted: true, small: true },
   );
 }
@@ -52,13 +52,13 @@ export function buildAuthTemplates(): AuthTemplate[] {
         body: [
           heading("Confirm your email"),
           paragraph(
-            "Thanks for signing up. Confirm this is your email and you can book express details, manage a membership and see every visit in one place.",
+            "Thank you for signing up. Please confirm your email address, and you will be able to book express details, manage a membership and see every visit in one place.",
           ),
           actionButton("Confirm my email"),
           linkFallback(),
           ignore("create a Launch Pad account"),
         ].join("\n"),
-        footerNote: "You're getting this because this email was used to sign up at thelaunchpadwash.com.",
+        footerNote: "You are receiving this email because this address was used to sign up at thelaunchpadwash.com.",
       }),
     },
     {
@@ -70,12 +70,12 @@ export function buildAuthTemplates(): AuthTemplate[] {
         preheader: "Choose a new password for your Launch Pad account.",
         body: [
           heading("Reset your password"),
-          paragraph("We got a request to reset the password for your Launch Pad account. The link works once and expires soon."),
+          paragraph("We received a request to reset the password for your Launch Pad account. The link works once and expires soon."),
           actionButton("Choose a new password"),
           linkFallback(),
           ignore("ask to reset your password"),
         ].join("\n"),
-        footerNote: "You're getting this because a password reset was requested for this email.",
+        footerNote: "You are receiving this email because a password reset was requested for this address.",
       }),
     },
     {
@@ -92,7 +92,7 @@ export function buildAuthTemplates(): AuthTemplate[] {
           linkFallback(),
           ignore("try to sign in"),
         ].join("\n"),
-        footerNote: "You're getting this because a sign-in link was requested for this email.",
+        footerNote: "You are receiving this email because a sign-in link was requested for this address.",
       }),
     },
     {
@@ -111,23 +111,23 @@ export function buildAuthTemplates(): AuthTemplate[] {
           linkFallback(),
           ignore("ask to change your email"),
         ].join("\n"),
-        footerNote: "You're getting this because an email change was requested for your account.",
+        footerNote: "You are receiving this email because an email change was requested for your account.",
       }),
     },
     {
       file: "invite.html",
       dashboardName: "Invite user",
-      subject: "You're invited to The Launch Pad",
+      subject: "You are invited to The Launch Pad",
       html: emailLayout({
-        title: "You're invited",
+        title: "You are invited",
         preheader: "Set up your Launch Pad account.",
         body: [
-          heading("You're invited"),
-          paragraph(`You've been invited to an account at ${text("The Launch Pad")}. Accept the invite to set your password.`),
+          heading("You are invited"),
+          paragraph(`You have been invited to an account at ${text("The Launch Pad")}. Accept the invite to set your password.`),
           actionButton("Accept the invite"),
           linkFallback(),
         ].join("\n"),
-        footerNote: "You're getting this because someone at The Launch Pad invited this email.",
+        footerNote: "You are receiving this email because someone at The Launch Pad invited this address.",
       }),
     },
   ];
