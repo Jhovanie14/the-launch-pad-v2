@@ -71,7 +71,7 @@ export function AdminSubscriptionActionDialog({ action, onClose, onDone }: Admin
     !!reason.trim() && (!action?.field || !!fieldValue.trim()) && (!action?.choice || !!choiceValue);
 
   async function handleConfirm() {
-    if (!action || !ready) return;
+    if (!action || !ready || loading) return;
     setLoading(true);
     try {
       const res = await fetch(action.endpoint, {

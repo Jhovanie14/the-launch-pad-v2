@@ -30,29 +30,59 @@ function fakeDb(rows: Record<string, Record<string, unknown>[]>) {
   return { db: { from } as any, updates };
 }
 
-function fakeStripe(opts: { paidCents?: number; status?: string; refundThrows?: boolean } = {}) {
+type Line = { amount: number; period: { start: number; end: number }; discount_amounts?: { amount: number }[] };
+
+function fakeStripe(
+  opts: {
+    paidCents?: number;
+    lines?: Line[];
+    noPaidInvoice?: boolean;
+    status?: string;
+    refundThrows?: boolean;
+    metadata?: Record<string, string>;
+    pendingItems?: { id: string; subscription: string | null }[];
+  } = {},
+) {
   const calls: string[] = [];
+  const paid = opts.paidCents ?? 3999;
   const stripe = {
     subscriptions: {
       retrieve: vi.fn(async () => ({
         id: "sub_1",
+        customer: "cus_1",
         status: opts.status ?? "active",
-        latest_invoice: "in_1",
+        metadata: opts.metadata ?? {},
         items: { data: [{ current_period_start: START, current_period_end: END }] },
       })),
       update: vi.fn(async () => (calls.push("update"), {})),
       cancel: vi.fn(async () => (calls.push("cancel"), {})),
     },
+    invoices: {
+      list: vi.fn(async () => ({
+        data: opts.noPaidInvoice
+          ? []
+          : [
+              {
+                id: "in_1",
+                amount_paid: paid,
+                lines: { data: opts.lines ?? [{ amount: paid, period: { start: START, end: END } }] },
+              },
+            ],
+      })),
+    },
     invoicePayments: {
       list: vi.fn(async () => ({
-        data: [
-          {
-            status: "paid",
-            amount_paid: opts.paidCents ?? 3999,
-            payment: { type: "payment_intent", payment_intent: "pi_1" },
-          },
-        ],
+        data: [{ status: "paid", amount_paid: paid, payment: { type: "payment_intent", payment_intent: "pi_1" } }],
       })),
+    },
+    invoiceItems: {
+      list: vi.fn(async () => ({
+        data: (opts.pendingItems ?? []).map((i) => ({
+          id: i.id,
+          parent: i.subscription ? { subscription_details: { subscription: i.subscription } } : null,
+        })),
+      })),
+      del: vi.fn(async () => (calls.push("del"), {})),
     },
     refunds: {
       create: vi.fn(async () => {
@@ -102,6 +132,29 @@ describe("loadCancelNowQuote", () => {
       fullCents: 0,
       proratedCents: 0,
     });
+  });
+
+  it("refunds only this period's charge, net of discounts, ignoring proration lines", async () => {
+    const { db } = fakeDb(active);
+    const { stripe } = fakeStripe({
+      paidCents: 4799,
+      lines: [
+        { amount: 3999, period: { start: START, end: END }, discount_amounts: [{ amount: 400 }] },
+        { amount: 1200, period: { start: START - 30 * DAY, end: START } },
+      ],
+    });
+    await expect(loadCancelNowQuote(db, stripe, "u1", "express", NOW)).resolves.toMatchObject({
+      paidCents: 3599,
+      fullCents: 3599,
+    });
+  });
+
+  it("quotes nothing when this period hasn't been paid", async () => {
+    const { db } = fakeDb(active);
+    const { stripe } = fakeStripe({ lines: [{ amount: 3999, period: { start: START - 30 * DAY, end: START } }] });
+    await expect(loadCancelNowQuote(db, stripe, "u1", "express", NOW)).resolves.toMatchObject({ fullCents: 0 });
+    const { stripe: none } = fakeStripe({ noPaidInvoice: true });
+    await expect(loadCancelNowQuote(db, none, "u1", "express", NOW)).resolves.toMatchObject({ fullCents: 0 });
   });
 
   it("404s without an active membership", async () => {
@@ -186,16 +239,46 @@ describe("cancelNow", () => {
     });
   });
 
-  it("removes the 'cancelled now' tag and refunds nothing when Stripe rejects the cancel", async () => {
+  it("restores the earlier tags and refunds nothing when Stripe rejects the cancel", async () => {
     const { db, updates } = fakeDb(active);
-    const { stripe } = fakeStripe();
+    const { stripe } = fakeStripe({ metadata: { canceled_by: "admin", canceled_by_admin_id: "admin0" } });
     stripe.subscriptions.cancel.mockRejectedValueOnce(new Error("stripe down"));
     await expect(cancelNow(db, stripe, { ...args, refund: "full" }, NOW)).rejects.toThrow("stripe down");
     expect(stripe.subscriptions.update).toHaveBeenLastCalledWith("sub_1", {
-      metadata: { canceled_by: "", canceled_by_admin_id: "", canceled_now: "" },
+      metadata: { canceled_by: "admin", canceled_by_admin_id: "admin0", canceled_now: "" },
     });
     expect(stripe.refunds.create).not.toHaveBeenCalled();
     expect(updates).toEqual([]);
+  });
+
+  it("carries on when the cancel call errors but Stripe did cancel", async () => {
+    const { db } = fakeDb(active);
+    const { stripe } = fakeStripe();
+    stripe.subscriptions.cancel.mockRejectedValueOnce(new Error("timeout"));
+    // First read (the quote) sees it active; the re-check after the error sees it cancelled.
+    const active1 = await stripe.subscriptions.retrieve();
+    stripe.subscriptions.retrieve.mockReset();
+    stripe.subscriptions.retrieve
+      .mockResolvedValueOnce(active1)
+      .mockResolvedValueOnce({ ...active1, status: "canceled" });
+    await expect(cancelNow(db, stripe, { ...args, refund: "full" }, NOW)).resolves.toMatchObject({
+      refundedCents: 3999,
+    });
+  });
+
+  it("deletes this subscription's pending charges so they never reach a later bill", async () => {
+    const { db } = fakeDb(active);
+    const { stripe } = fakeStripe({
+      pendingItems: [
+        { id: "ii_mine", subscription: "sub_1" },
+        { id: "ii_other", subscription: "sub_2" },
+        { id: "ii_loose", subscription: null },
+      ],
+    });
+    await cancelNow(db, stripe, { ...args, refund: "none" }, NOW);
+    expect(stripe.invoiceItems.list).toHaveBeenCalledWith({ customer: "cus_1", pending: true, limit: 100 });
+    expect(stripe.invoiceItems.del).toHaveBeenCalledTimes(1);
+    expect(stripe.invoiceItems.del).toHaveBeenCalledWith("ii_mine");
   });
 
   it("marks the membership cancelled in the database", async () => {

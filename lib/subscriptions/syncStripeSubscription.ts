@@ -60,6 +60,9 @@ export async function applySubscriptionUpdate(
       subscription_plan_id: planId,
     })
     .eq("stripe_subscription_id", f.stripeSubscriptionId)
+    // Stripe may deliver a stale "updated" after "deleted"; a cancelled
+    // subscription never becomes active again, so never revive the row.
+    .neq("status", "canceled")
     .select("id, user_id")
     .maybeSingle();
 
@@ -81,6 +84,7 @@ export async function applySubscriptionUpdate(
       cancel_at_period_end: f.cancelAtPeriodEnd,
     })
     .eq("stripe_subscription_id", f.stripeSubscriptionId)
+    .neq("status", "canceled")
     .select("id, user_id")
     .maybeSingle();
 

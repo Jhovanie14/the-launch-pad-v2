@@ -429,7 +429,10 @@ export default function AdminUsersPage() {
           label: `Refund (last payment ${usd(q.paid)})`,
           options: [
             { value: "full", label: `Full refund: ${usd(q.full)}` },
-            { value: "prorated", label: `Prorated refund: ${usd(q.prorated)} (${q.unusedDays} of ${q.periodDays} days unused)` },
+            {
+              value: "prorated",
+              label: `Prorated refund: about ${usd(q.prorated)} (${q.unusedDays} of ${q.periodDays} days unused; worked out to the second when you confirm)`,
+            },
             { value: "none", label: "No refund" },
           ],
         },

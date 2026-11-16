@@ -1,7 +1,7 @@
 /**
  * Admin "Cancel now": end a membership immediately, with a full, prorated
- * or no refund of the latest payment. Super admins only (checked by the
- * route). Design: docs/superpowers/specs/2026-11-16-admin-cancel-now-design.md
+ * or no refund of what was paid for the current period. Super admins only
+ * (checked by the route). Design: docs/superpowers/specs/2026-11-16-admin-cancel-now-design.md
  *
  * Order matters: the subscription is cancelled BEFORE any refund, so money
  * never leaves while the membership stays active. A refund that fails after
@@ -22,26 +22,47 @@ const TABLE: Record<CancelNowProduct, string> = {
 };
 const DAY = 86_400;
 const ENDED = new Set(["canceled", "incomplete_expired"]);
+type CancelTag = "canceled_by" | "canceled_by_admin_id" | "canceled_now";
 
 type Id = string | { id: string } | null | undefined;
 const idOf = (v: Id): string | null => (typeof v === "string" ? v : (v?.id ?? null));
 
+type StripeSub = {
+  id: string;
+  customer: Id;
+  status: string;
+  metadata?: Record<string, string> | null;
+  items: { data: { current_period_start: number; current_period_end: number }[] };
+};
+
 /** The slice of the Stripe SDK this module uses. */
 export interface CancelNowStripe {
   subscriptions: {
-    retrieve(id: string): Promise<{
-      id: string;
-      status: string;
-      latest_invoice: Id;
-      items: { data: { current_period_start: number; current_period_end: number }[] };
-    }>;
+    retrieve(id: string): Promise<StripeSub>;
     update(id: string, params: Record<string, unknown>): Promise<unknown>;
     cancel(id: string, params: Record<string, unknown>): Promise<unknown>;
+  };
+  invoices: {
+    list(params: { subscription: string; status: "paid"; limit: number }): Promise<{
+      data: {
+        id: string;
+        amount_paid: number | null;
+        lines: {
+          data: { amount: number; period: { start: number; end: number }; discount_amounts?: { amount: number }[] | null }[];
+        };
+      }[];
+    }>;
   };
   invoicePayments: {
     list(params: { invoice: string; status?: string }): Promise<{
       data: { status: string; amount_paid: number | null; payment: { payment_intent?: Id; charge?: Id } }[];
     }>;
+  };
+  invoiceItems: {
+    list(params: { customer: string; pending: true; limit: number }): Promise<{
+      data: { id: string; parent?: { subscription_details?: { subscription?: string } | null } | null }[];
+    }>;
+    del(id: string): Promise<unknown>;
   };
   refunds: {
     create(
@@ -55,6 +76,9 @@ export interface CancelNowQuote {
   table: string;
   rowId: string;
   stripeSubscriptionId: string;
+  customerId: string | null;
+  /** The tags the subscription had before Cancel now, to restore if the cancel fails. */
+  previousTags: Record<CancelTag, string>;
   paidCents: number;
   paymentIntentId: string | null;
   chargeId: string | null;
@@ -99,25 +123,35 @@ export async function loadCancelNowQuote(
   const periodStart = item?.current_period_start ?? 0;
   const periodEnd = item?.current_period_end ?? 0;
 
+  // What was paid for THIS period: the latest paid invoice's lines for the
+  // current period, net of discounts, capped at what that invoice collected.
+  // Proration lines from vehicle changes cover other periods and are left out.
   let paidCents = 0;
   let paymentIntentId: string | null = null;
   let chargeId: string | null = null;
-  const invoiceId = idOf(sub.latest_invoice);
-  if (invoiceId) {
-    const { data } = await stripe.invoicePayments.list({ invoice: invoiceId, status: "paid" });
-    const paid = data.find((p) => p.status === "paid");
-    if (paid) {
-      paidCents = Math.max(0, paid.amount_paid ?? 0);
-      paymentIntentId = idOf(paid.payment.payment_intent);
-      chargeId = idOf(paid.payment.charge);
+  const { data: invoices } = await stripe.invoices.list({ subscription: sub.id, status: "paid", limit: 1 });
+  const invoice = invoices[0];
+  if (invoice) {
+    const periodNet = invoice.lines.data
+      .filter((l) => l.period.start === periodStart && l.period.end === periodEnd)
+      .reduce((sum, l) => sum + l.amount - (l.discount_amounts ?? []).reduce((d, x) => d + x.amount, 0), 0);
+    paidCents = Math.max(0, Math.min(invoice.amount_paid ?? 0, periodNet));
+    if (paidCents > 0) {
+      const { data } = await stripe.invoicePayments.list({ invoice: invoice.id, status: "paid" });
+      const payment = data.find((p) => p.status === "paid");
+      paymentIntentId = idOf(payment?.payment.payment_intent);
+      chargeId = idOf(payment?.payment.charge);
     }
   }
 
+  const tags = sub.metadata ?? {};
   const nowSec = Math.floor(now.getTime() / 1000);
   return {
     table,
     rowId: row.id,
     stripeSubscriptionId: sub.id,
+    customerId: idOf(sub.customer),
+    previousTags: { canceled_by: tags.canceled_by ?? "", canceled_by_admin_id: tags.canceled_by_admin_id ?? "", canceled_now: tags.canceled_now ?? "" },
     paidCents,
     paymentIntentId,
     chargeId,
@@ -128,6 +162,19 @@ export async function loadCancelNowQuote(
     unusedDays: Math.round(Math.max(0, periodEnd - nowSec) / DAY),
     periodDays: Math.round((periodEnd - periodStart) / DAY),
   };
+}
+
+/** Pending charges (prorations from a vehicle change) for this subscription would land on the customer's next bill. */
+async function deletePendingItems(stripe: CancelNowStripe, customerId: string | null, subscriptionId: string) {
+  if (!customerId) return;
+  try {
+    const { data } = await stripe.invoiceItems.list({ customer: customerId, pending: true, limit: 100 });
+    for (const item of data) {
+      if (item.parent?.subscription_details?.subscription === subscriptionId) await stripe.invoiceItems.del(item.id);
+    }
+  } catch (err) {
+    console.error("[cancel-now] could not remove pending charges; check the customer in Stripe:", err);
+  }
 }
 
 export async function cancelNow(
@@ -144,16 +191,23 @@ export async function cancelNow(
     metadata: { canceled_by: "admin", canceled_by_admin_id: args.adminId, canceled_now: "true" },
     cancellation_details: { comment: `Cancelled now by admin: ${args.reason}` },
   });
+
   try {
     await stripe.subscriptions.cancel(id, { prorate: false });
   } catch (err) {
-    // Still active: drop the tag, or it would later suppress their normal
-    // "membership ended" email. Empty strings unset Stripe metadata keys.
-    await stripe.subscriptions
-      .update(id, { metadata: { canceled_by: "", canceled_by_admin_id: "", canceled_now: "" } })
-      .catch((untagError) => console.error("[cancel-now] could not remove the tag after a failed cancel:", untagError));
-    throw err;
+    // A timeout can hide a cancel that did happen: check before giving up.
+    const actual = await stripe.subscriptions.retrieve(id).catch(() => null);
+    if (!actual || !ENDED.has(actual.status)) {
+      // Still active: restore the earlier tags, or the "cancelled now" tag would
+      // later suppress their normal "membership ended" email.
+      await stripe.subscriptions
+        .update(id, { metadata: quote.previousTags })
+        .catch((untagError) => console.error("[cancel-now] could not restore the tags after a failed cancel:", untagError));
+      throw err;
+    }
   }
+
+  await deletePendingItems(stripe, quote.customerId, id);
 
   // The webhook confirms the same; stamp now so the admin page is right at once.
   const { error: stampError } = await db

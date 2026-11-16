@@ -49,7 +49,8 @@ function recurringTotal(newTotal: number, billingCycle: string): string {
   return `${money(newTotal)}/${text(billingCycle)}`;
 }
 
-async function sendBuilt(to: string, email: BuiltEmail, label: string) {
+/** Sends one email; resolves false (and logs) when Resend refuses it, true when accepted. */
+async function sendBuilt(to: string, email: BuiltEmail, label: string): Promise<boolean> {
   const { error } = await resend.emails.send({
     from: FROM,
     to,
@@ -57,8 +58,12 @@ async function sendBuilt(to: string, email: BuiltEmail, label: string) {
     html: email.html,
   });
 
-  if (error) console.error(`[email] ${label} send error:`, error);
-  else console.log(`[email] ${label} email sent to:`, to);
+  if (error) {
+    console.error(`[email] ${label} send error:`, error);
+    return false;
+  }
+  console.log(`[email] ${label} email sent to:`, to);
+  return true;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -321,7 +326,7 @@ export function buildMembershipEndedNowEmail({ name, refundedAmount }: Membershi
     salutation(name),
     paragraph("We are writing to let you know that your Launch Pad membership has ended today."),
     refunded
-      ? details([["Refunded to your card", money(refundedAmount)]], { emphasizeLast: true }) +
+      ? details([["Refunded", money(refundedAmount)]], { emphasizeLast: true }) +
         paragraph("Depending on your bank, it can take 5–10 business days to appear on your statement.")
       : "",
     button(BILLING_URL, "View billing"),
@@ -342,8 +347,12 @@ export function buildMembershipEndedNowEmail({ name, refundedAmount }: Membershi
   };
 }
 
-export async function sendMembershipEndedNowEmail({ to, ...params }: MembershipEndedNowEmailParams & { to: string }) {
-  await sendBuilt(to, buildMembershipEndedNowEmail(params), "membership ended now");
+/** True only when Resend accepted it: the admin is told whether the customer was really emailed. */
+export async function sendMembershipEndedNowEmail({
+  to,
+  ...params
+}: MembershipEndedNowEmailParams & { to: string }): Promise<boolean> {
+  return sendBuilt(to, buildMembershipEndedNowEmail(params), "membership ended now");
 }
 
 // ─────────────────────────────────────────────────────────────

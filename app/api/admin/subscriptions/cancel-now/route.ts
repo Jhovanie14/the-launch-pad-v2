@@ -86,6 +86,7 @@ export async function POST(req: Request) {
     const block = await blockAfterCancel(body.alsoBlock === true, admin, userId, adminUser.id, reason);
 
     let emailNote = " The customer has been emailed.";
+    let emailFailed = false;
     try {
       const [{ data: authData }, { data: profile }] = await Promise.all([
         admin.auth.admin.getUserById(userId),
@@ -93,16 +94,22 @@ export async function POST(req: Request) {
       ]);
       const to = authData?.user?.email;
       if (to) {
-        await sendMembershipEndedNowEmail({
+        const sent = await sendMembershipEndedNowEmail({
           to,
           name: profile?.full_name ?? "",
           refundedAmount: result.refundedCents > 0 ? refunded : null,
         });
+        if (!sent) {
+          emailFailed = true;
+          emailNote = " The email to the customer could not be sent, so let them know yourself.";
+        }
       } else {
+        emailFailed = true;
         emailNote = " No email on file, so let the customer know yourself.";
       }
     } catch (err) {
       console.error("[cancel-now] notice email failed:", err);
+      emailFailed = true;
       emailNote = " The email to the customer failed, so let them know yourself.";
     }
 
@@ -112,7 +119,11 @@ export async function POST(req: Request) {
         : result.refundError
           ? ` The refund failed (${result.refundError}): refund it in Stripe.`
           : ` Refunded $${refunded.toFixed(2)}.`;
-    const warnings = [result.refundError ? "refund" : null, block.warning ?? null].filter(Boolean);
+    const warnings = [
+      result.refundError ? "refund" : null,
+      block.warning ?? null,
+      emailFailed ? "email" : null,
+    ].filter(Boolean);
 
     return NextResponse.json({
       success: true,

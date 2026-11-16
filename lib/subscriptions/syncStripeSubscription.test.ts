@@ -29,6 +29,22 @@ function fakeDb(opts: {
     user_subscription: [],
     self_service_subscriptions: [],
   };
+  // neq filters on each update, e.g. ["status", "canceled"].
+  const guards: Record<string, [string, unknown][]> = {
+    user_subscription: [],
+    self_service_subscriptions: [],
+  };
+  const updateChain = (table: string, values: any, result: () => any) => {
+    const tail = {
+      select: () => ({
+        maybeSingle: async () => {
+          updates[table].push(values);
+          return { data: result(), error: null };
+        },
+      }),
+    };
+    return { eq: () => ({ ...tail, neq: (c: string, v: unknown) => (guards[table].push([c, v]), tail) }) };
+  };
   const db = {
     from(table: string) {
       if (table === "user_subscription") {
@@ -41,36 +57,18 @@ function fakeDb(opts: {
               }),
             }),
           }),
-          update: (values: any) => ({
-            eq: () => ({
-              select: () => ({
-                maybeSingle: async () => {
-                  updates.user_subscription.push(values);
-                  return { data: opts.express ?? null, error: null };
-                },
-              }),
-            }),
-          }),
+          update: (values: any) => updateChain("user_subscription", values, () => opts.express ?? null),
         };
       }
       if (table === "self_service_subscriptions") {
         return {
-          update: (values: any) => ({
-            eq: () => ({
-              select: () => ({
-                maybeSingle: async () => {
-                  updates.self_service_subscriptions.push(values);
-                  return { data: opts.self ?? null, error: null };
-                },
-              }),
-            }),
-          }),
+          update: (values: any) => updateChain("self_service_subscriptions", values, () => opts.self ?? null),
         };
       }
       throw new Error(`unexpected table ${table}`);
     },
   } as any;
-  return { db, updates };
+  return { db, updates, guards };
 }
 
 describe("applySubscriptionUpdate", () => {
@@ -122,6 +120,13 @@ describe("applySubscriptionUpdate", () => {
     const { db } = fakeDb({ express: null, self: null });
     const result = await applySubscriptionUpdate(db, FIELDS);
     expect(result).toEqual({ table: null, userId: null, rowId: null });
+  });
+
+  it("never brings a cancelled row back to life (a late \"updated\" event after \"deleted\")", async () => {
+    const { db, guards } = fakeDb({ express: null, self: null });
+    await applySubscriptionUpdate(db, FIELDS);
+    expect(guards.user_subscription).toEqual([["status", "canceled"]]);
+    expect(guards.self_service_subscriptions).toEqual([["status", "canceled"]]);
   });
 
   it("keeps the existing billing cycle when metadata has none", async () => {

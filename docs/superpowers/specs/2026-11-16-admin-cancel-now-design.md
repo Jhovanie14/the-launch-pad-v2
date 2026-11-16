@@ -85,6 +85,23 @@ the block option and the customer notice in one step.
 from now to the period end and `period` is the billing period length,
 rounded down to the cent, never above `paid`, never below 0.
 
+## Added after the code review (2026-11-16)
+
+- **No revived rows:** `applySubscriptionUpdate` never writes over a row
+  already `canceled`, so a late `customer.subscription.updated` (from the
+  tagging step) cannot flip a refunded membership back to active.
+- **What "paid" means:** the latest **paid** invoice's lines for the current
+  period, net of discounts, capped at what it collected. Proration lines from
+  vehicle changes (other periods) are excluded; an unpaid current period
+  quotes $0.
+- **Pending charges:** after the cancel, pending invoice items belonging to
+  this subscription are deleted so they never reach a later bill.
+- **Timeouts:** if the cancel call errors, the subscription is re-read; if
+  Stripe did cancel, the sequence carries on (refund, notice). Otherwise the
+  earlier tags are restored, not blanked.
+- **Email result:** the notice reports whether Resend accepted it; the admin
+  is told to contact the customer when it did not.
+
 ## UI
 
 Users page, beside Cancel Subscription, for super admins only: **Cancel
