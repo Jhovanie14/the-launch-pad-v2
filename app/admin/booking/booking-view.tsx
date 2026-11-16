@@ -22,14 +22,17 @@ import {
   createInFlight,
   dayCounts,
   dayLabel,
+  fetchAllPages,
   filterPanel,
   monthBounds,
   monthOf,
   nextWaitingId,
+  replayChanges,
   rollSelectedDay,
   sortSearchResults,
   type CalendarEntry,
   type PanelChip,
+  type TimedChange,
 } from "@/lib/admin/bookingQueue";
 import { cn } from "@/lib/utils";
 import type { Booking } from "@/types";
@@ -48,6 +51,9 @@ const CHIPS: { value: PanelChip; label: string }[] = [
 ];
 
 const SEARCH_LIMIT = 50;
+/** How long a live change is kept, to replay over a load that was in flight when it arrived. */
+const REPLAY_WINDOW_MS = 120_000;
+const NOTIFICATION_MS = 120_000;
 
 function toEntry(b: Booking): CalendarEntry {
   return {
@@ -103,6 +109,16 @@ export default function BookingsView() {
   const [listRefresh, setListRefresh] = useState(0);
   const [showNewBooking, setShowNewBooking] = useState(false);
   const [newBookingNotification, setNewBookingNotification] = useState<Booking | null>(null);
+  // One timer for the notification: a newer booking restarts it, so an older timer can't close it early.
+  const notificationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (notificationTimer.current) clearTimeout(notificationTimer.current);
+    },
+    [],
+  );
+  // Recent live changes, replayed over any load that was in flight when they arrived.
+  const liveChanges = useRef<TimedChange<Booking>[]>([]);
 
   // Latest values for the realtime handler and search, without re-subscribing.
   const selectedRef = useRef(selected);
@@ -135,6 +151,7 @@ export default function BookingsView() {
 
   // The day panel: the selected date's bookings, with vehicle and add-ons.
   const loadDay = useCallback(async (): Promise<Booking[] | null> => {
+    const since = Date.now();
     const { data, error } = await supabase
       .from("bookings")
       .select(BOOKING_SELECT)
@@ -145,23 +162,40 @@ export default function BookingsView() {
       toast.error("Couldn't load this day's bookings");
       return null;
     }
-    return withAddOns(data).sort(compareSlots);
+    return replayChanges(
+      withAddOns(data).sort(compareSlots),
+      liveChanges.current,
+      since,
+      (r) => r.appointment_date === selected,
+    );
   }, [supabase, selected]);
 
   // The calendar: a light row per booking across the visible grid.
   const loadMonth = useCallback(async (): Promise<CalendarEntry[] | null> => {
     const { gte, lte } = monthBounds(month);
-    const { data, error } = await supabase
-      .from("bookings")
-      .select(CALENDAR_SELECT)
-      .gte("appointment_date", gte)
-      .lte("appointment_date", lte);
+    const since = Date.now();
+    // Paged by id: a busy month can pass Supabase's 1,000-rows-per-request cap.
+    const { data, error } = await fetchAllPages((from, to) =>
+      supabase
+        .from("bookings")
+        .select(CALENDAR_SELECT)
+        .gte("appointment_date", gte)
+        .lte("appointment_date", lte)
+        .order("id")
+        .range(from, to),
+    );
     if (error) {
       console.error("Error fetching month bookings:", error);
       toast.error("Couldn't load the calendar");
       return null;
     }
-    return ((data ?? []) as CalendarEntry[]).sort(compareSlots);
+    const changes = liveChanges.current.map((c) => ({ ...c, row: c.row ? toEntry(c.row) : null }));
+    return replayChanges(
+      ((data ?? []) as CalendarEntry[]).sort(compareSlots),
+      changes,
+      since,
+      (r) => r.appointment_date >= gte && r.appointment_date <= lte,
+    );
   }, [supabase, month]);
 
   // Search results: every matching booking at any date.
@@ -284,6 +318,11 @@ export default function BookingsView() {
 
   const onRealtimeChange = useCallback((c: BookingRealtimeChange) => {
     const row = c.booking;
+    const at = Date.now();
+    liveChanges.current = [
+      ...liveChanges.current.filter((x) => at - x.at < REPLAY_WINDOW_MS),
+      { at, id: c.id, row },
+    ];
     setDayBookings((prev) =>
       applyBookingChange(prev, c.id, row, (r) => r.appointment_date === selectedRef.current),
     );
@@ -307,7 +346,8 @@ export default function BookingsView() {
 
     if (c.table === "bookings" && c.type === "INSERT" && row) {
       setNewBookingNotification(row);
-      setTimeout(() => setNewBookingNotification(null), 120_000);
+      if (notificationTimer.current) clearTimeout(notificationTimer.current);
+      notificationTimer.current = setTimeout(() => setNewBookingNotification(null), NOTIFICATION_MS);
     }
   }, []);
 
@@ -487,12 +527,15 @@ export default function BookingsView() {
               <TabsTrigger value="calendar" className="px-4">Calendar</TabsTrigger>
               <TabsTrigger value="list" className="px-4">List</TabsTrigger>
             </TabsList>
-            <div className="flex h-11 items-center gap-2 rounded-md border px-3">
-              <Switch id="show-cancelled" checked={showCancelled} onCheckedChange={setShowCancelled} />
-              <Label htmlFor="show-cancelled" className="cursor-pointer text-sm font-normal">
-                Show cancelled
-              </Label>
-            </div>
+            {/* The List tab has its own status filter; this toggle only drives the calendar and day panel. */}
+            {tab === "calendar" && (
+              <div className="flex h-11 items-center gap-2 rounded-md border px-3">
+                <Switch id="show-cancelled" checked={showCancelled} onCheckedChange={setShowCancelled} />
+                <Label htmlFor="show-cancelled" className="cursor-pointer text-sm font-normal">
+                  Show cancelled
+                </Label>
+              </div>
+            )}
             <Button className="h-11 bg-blue-900 text-white hover:bg-blue-800" onClick={() => setShowNewBooking(true)}>
               <Plus className="size-4" aria-hidden /> New booking
             </Button>
@@ -561,6 +604,7 @@ export default function BookingsView() {
                 today={today}
                 selected={selected}
                 entries={calendarEntries}
+                showCancelled={showCancelled}
                 onSelect={selectDay}
                 onMonthChange={setMonth}
               />
@@ -597,14 +641,21 @@ export default function BookingsView() {
                   />
                 ))}
 
-                {panelRows.length === 0 && !(dayLoading && !isSearching) && !searching && (
+                {panelRows.length === 0 && hiddenCount === 0 && !(dayLoading && !isSearching) && !searching && (
                   <p className="px-2 py-8 text-center text-sm text-muted-foreground">
                     {isSearching ? `No bookings match "${debouncedSearch}".` : "No bookings on this day."}
                   </p>
                 )}
+                {/* When everything is hidden, this line stands in for the empty message. */}
                 {hiddenCount > 0 && (
-                  <p className="px-2 py-1 text-center text-xs text-muted-foreground">
-                    {hiddenCount} hidden by the status filter or "Show cancelled".
+                  <p
+                    className={cn(
+                      "px-2 text-center text-muted-foreground",
+                      panelRows.length === 0 ? "py-8 text-sm" : "py-1 text-xs",
+                    )}
+                  >
+                    {hiddenCount} {hiddenCount === 1 ? "booking" : "bookings"} hidden by the status filter or
+                    "Show cancelled".
                   </p>
                 )}
                 {isSearching && resultsTruncated && (

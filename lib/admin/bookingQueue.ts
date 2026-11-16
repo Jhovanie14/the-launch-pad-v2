@@ -176,6 +176,41 @@ export function applyBookingChange<T extends Dated>(list: T[], id: string, row: 
   return next.sort(compareSlots);
 }
 
+/** A live change, stamped with when it arrived (ms). */
+export type TimedChange<T> = { at: number; id: string; row: T | null };
+
+/**
+ * A load that started at `since` may have read the database before some live
+ * changes landed; re-apply those so the load's result doesn't undo them.
+ */
+export function replayChanges<T extends Dated>(
+  rows: T[],
+  changes: TimedChange<T>[],
+  since: number,
+  keep: (row: T) => boolean,
+): T[] {
+  return changes
+    .filter((c) => c.at >= since)
+    .reduce((list, c) => applyBookingChange(list, c.id, c.row, keep), rows);
+}
+
+type PageResult<T, E> = { data: T[] | null; error: E | null };
+
+/** Reads every page of a query (Supabase returns at most 1,000 rows per request). */
+export async function fetchAllPages<T, E>(
+  fetchPage: (from: number, to: number) => PromiseLike<PageResult<T, E>>,
+  pageSize = 1000,
+): Promise<PageResult<T, E>> {
+  const all: T[] = [];
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await fetchPage(from, from + pageSize - 1);
+    if (error) return { data: null, error };
+    const rows = data ?? [];
+    all.push(...rows);
+    if (rows.length < pageSize) return { data: all, error: null };
+  }
+}
+
 /** Today and upcoming first (soonest first), then past bookings (most recent first). */
 export function sortSearchResults<T extends Dated>(rows: T[], today: string): T[] {
   const upcoming = rows.filter((r) => r.appointment_date >= today).sort(compareSlots);
