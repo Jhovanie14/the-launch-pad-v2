@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { requireAdmin } from "@/lib/auth/guards";
 import { apiError, ApiError } from "@/lib/http/apiError";
+import { blockAfterCancel } from "@/lib/customers/blockAndUnsubscribe";
 import {
   cancelSubscriptionAtPeriodEnd,
   recordAdminSubscriptionAction,
@@ -18,8 +19,11 @@ import {
  *     Primary → oldest family vehicle promoted, or the whole subscription
  *     cancelled at period end if it was the only vehicle.
  *
- *   { userId, scope: "subscription", product: "express" | "self_service", reason }
- *     Whole subscription cancelled at period end, never refunded.
+ *   { userId, scope: "subscription", product: "express" | "self_service", reason, alsoBlock? }
+ *     Whole subscription cancelled at period end, never refunded. With
+ *     `alsoBlock: true` the customer is then blocked as "Block Customer"
+ *     does (also when the cancel was already scheduled). A failed block
+ *     doesn't undo the cancel; it comes back as `warning`.
  *
  * Runs the same actions as the customer's own buttons, so billing, records
  * and customer emails behave identically. `reason` (what the customer asked
@@ -101,12 +105,16 @@ export async function POST(req: Request) {
       if (!PRODUCTS.includes(product)) throw new ApiError("Invalid product", 400);
 
       const result = await cancelSubscriptionAtPeriodEnd(admin, userId, product, actor);
+      const block = () => blockAfterCancel(body.alsoBlock === true, admin, userId, adminUser.id, reason);
 
       if (result.alreadyScheduled) {
+        const { blockedNote = "", warning } = await block();
+        const message = "This subscription is already set to cancel at the end of the billing period.";
         return NextResponse.json({
           success: true,
           outcome: "already-scheduled",
-          message: "This subscription is already set to cancel at the end of the billing period.",
+          message: warning ? `${message} ${warning}` : message + blockedNote,
+          ...(warning ? { warning: true } : {}),
         });
       }
 
@@ -119,11 +127,13 @@ export async function POST(req: Request) {
         reason,
       });
 
+      const { blockedNote = "", warning } = await block();
+      const message = "Cancellation scheduled for the end of the billing period. The customer will be emailed.";
       return NextResponse.json({
         success: true,
         outcome: "canceled",
-        message:
-          "Cancellation scheduled for the end of the billing period. The customer will be emailed.",
+        message: warning ? `${message} ${warning}` : message + blockedNote,
+        ...(warning ? { warning: true } : {}),
       });
     }
 

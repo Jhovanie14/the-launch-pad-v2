@@ -12,6 +12,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,6 +35,8 @@ export interface AdminSubscriptionAction {
   field?: { name: string; label: string; placeholder?: string; uppercase?: boolean };
   /** Small print under the consequence; defaults to the "only when asked" reminder. */
   note?: string;
+  /** An extra step staff can tick, sent as `{ [name]: true | false }`. Unticked by default. */
+  option?: { name: string; label: string; description: string; confirmLabel: string };
 }
 
 interface AdminSubscriptionActionDialogProps {
@@ -50,11 +53,13 @@ interface AdminSubscriptionActionDialogProps {
 export function AdminSubscriptionActionDialog({ action, onClose, onDone }: AdminSubscriptionActionDialogProps) {
   const [reason, setReason] = useState("");
   const [fieldValue, setFieldValue] = useState("");
+  const [optionChecked, setOptionChecked] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setReason("");
     setFieldValue("");
+    setOptionChecked(false);
   }, [action]);
 
   const ready = !!reason.trim() && (!action?.field || !!fieldValue.trim());
@@ -69,13 +74,16 @@ export function AdminSubscriptionActionDialog({ action, onClose, onDone }: Admin
         body: JSON.stringify({
           ...action.body,
           ...(action.field ? { [action.field.name]: fieldValue.trim() } : {}),
+          ...(action.option ? { [action.option.name]: optionChecked } : {}),
           reason: reason.trim(),
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Something went wrong");
 
-      toast.success(data.message ?? "Done.");
+      // Part of it worked (e.g. cancelled, but the block failed): keep it on screen until read.
+      if (data.warning) toast.warning(data.message, { duration: Infinity, closeButton: true });
+      else toast.success(data.message ?? "Done.");
       onDone(action);
       onClose();
     } catch (err) {
@@ -117,6 +125,24 @@ export function AdminSubscriptionActionDialog({ action, onClose, onDone }: Admin
           </div>
         )}
 
+        {action?.option && (
+          <div className="flex items-start gap-3 rounded-md border p-3">
+            <Checkbox
+              id="admin-action-option"
+              checked={optionChecked}
+              onCheckedChange={(v) => setOptionChecked(v === true)}
+              disabled={loading}
+              className="mt-0.5"
+            />
+            <div className="space-y-1">
+              <Label htmlFor="admin-action-option" className="cursor-pointer">
+                {action.option.label}
+              </Label>
+              <p className="text-sm text-muted-foreground">{action.option.description}</p>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-2">
           <Label htmlFor="admin-action-reason">Reason (required)</Label>
           <Textarea
@@ -136,7 +162,7 @@ export function AdminSubscriptionActionDialog({ action, onClose, onDone }: Admin
             disabled={loading || !ready}
             className={action?.destructive ? "bg-red-600 hover:bg-red-700 text-white" : undefined}
           >
-            {loading ? "Working..." : action?.confirmLabel}
+            {loading ? "Working..." : optionChecked && action?.option ? action.option.confirmLabel : action?.confirmLabel}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>
