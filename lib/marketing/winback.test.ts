@@ -115,17 +115,19 @@ describe("findWinbackRecipients", () => {
 describe("buildWinbackEmail", () => {
   const unsubscribe = "https://www.thelaunchpadwash.com/unsubscribe?t=abc";
 
-  it("greets the customer and links to booking", () => {
+  it("greets the customer formally and links to booking", () => {
     const { subject, html } = buildWinbackEmail({ firstName: "Sam", unsubscribeUrl: unsubscribe });
-    expect(subject).toBe("We miss you at The Launch Pad");
-    expect(html).toContain("It’s been a while, Sam");
+    expect(subject).toBe("We look forward to your next visit");
+    expect(html).toContain("It has been a while");
+    expect(html).toContain("Dear Sam,");
     expect(html).toContain("/service");
+    expect(html).toContain("Kind regards,<br>The Launch Pad");
   });
 
   it("works without a name", () => {
     const { html } = buildWinbackEmail({ firstName: null, unsubscribeUrl: unsubscribe });
-    expect(html).toContain("It’s been a while");
-    expect(html).not.toContain("while, ");
+    expect(html).toContain("Hello,");
+    expect(html).not.toContain("Dear ");
   });
 
   it("escapes the name and carries the unsubscribe link", () => {

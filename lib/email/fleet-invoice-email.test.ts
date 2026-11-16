@@ -20,16 +20,16 @@ describe("buildFleetInvoiceEmail", () => {
     expect(html).toContain("December 1, 2026"); // date-only string never slips a day
   });
 
-  it("has no emoji and exactly one flame button to the hosted invoice", () => {
+  it("has no emoji and exactly one navy button to the hosted invoice", () => {
     const { subject, html } = buildFleetInvoiceEmail(params);
     expect(subject + html).not.toMatch(/\p{Extended_Pictographic}/u);
-    expect(html.match(/background:#fec92f/g)).toHaveLength(1);
+    expect(html.match(/background:#041335;color:#ffffff;/g)).toHaveLength(1);
     expect(html).toContain('href="https://invoice.stripe.com/i/acct_1/test_123"');
   });
 
   it("has no button when there is no hosted invoice link", () => {
     const { html } = buildFleetInvoiceEmail({ ...params, hostedInvoiceUrl: null });
-    expect(html).not.toContain("background:#fec92f");
+    expect(html).not.toContain("background:#041335;color:#ffffff;");
     expect(html).not.toContain('href="null"');
   });
 });

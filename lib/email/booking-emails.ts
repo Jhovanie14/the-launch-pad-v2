@@ -13,6 +13,7 @@ import {
   list,
   money,
   paragraph,
+  salutation,
   signoff,
   subheading,
   text,
@@ -137,28 +138,27 @@ export function buildTipEmail({ customerName, bookingId }: TipEmailParams): Buil
   const tipLink = `${TIP_URL}?booking=${encodeURIComponent(bookingId)}`;
 
   const body = [
-    heading("Thanks for coming in"),
-    greeting(customerName),
+    heading("Thank you for your visit"),
+    salutation(customerName),
     paragraph(
-      "We just finished your car, and it's looking great. Our crew took care with every detail, and we hope it shows.",
+      "Thank you for choosing The Launch Pad today. Your vehicle is complete, and we trust the result meets your expectations.",
     ),
     paragraph(
-      "If the result made your day, a tip is a kind way to say thanks. Every tip goes to the attendants who worked on your car.",
+      "Should you wish to thank the team who cared for your vehicle, you may leave a tip below. Every tip goes directly to the attendants.",
     ),
     button(tipLink, "Leave a tip"),
-    paragraph("Happy with how it turned out? A Google review helps other drivers find us."),
-    button(GOOGLE_REVIEW_URL, "Leave a Google review", "secondary"),
-    paragraph("No pressure either way. We're glad you came by.", { muted: true, small: true }),
+    paragraph("If you were pleased with your visit, we would be grateful for a Google review."),
+    button(GOOGLE_REVIEW_URL, "Write a review", "secondary"),
     signoff(),
   ].join("\n");
 
   return {
-    subject: "Your car looks incredible — help us celebrate!",
+    subject: "Thank you for visiting The Launch Pad",
     html: emailLayout({
-      title: "Thanks for coming in",
-      preheader: "Your car is done. If you loved the result, you can leave the crew a tip.",
+      title: "Thank you for your visit",
+      preheader: "Your vehicle is complete. Thank you for choosing The Launch Pad.",
       body,
-      footerNote: "You're getting this because your car was just serviced at The Launch Pad.",
+      footerNote: "You are receiving this email because your vehicle was serviced at The Launch Pad.",
     }),
   };
 }
@@ -191,7 +191,7 @@ function paymentMethodLabel(value: string | null): string {
 }
 
 function receiptTable(rows: Array<[string, string]>, total: string): string {
-  const cell = `padding:10px 0;border-bottom:1px solid ${C.lineSoft};font-size:15px;color:${C.ink};vertical-align:top;`;
+  const cell = `padding:11px 0;border-bottom:1px solid ${C.rule};font-size:14px;color:${C.ink};vertical-align:top;`;
   const head = `padding:0 0 8px;border-bottom:1px solid ${C.line};font-size:13px;font-weight:600;color:${C.inkMuted};text-transform:uppercase;letter-spacing:0.04em;`;
   const itemRows = rows
     .map(
@@ -205,7 +205,7 @@ function receiptTable(rows: Array<[string, string]>, total: string): string {
   <tbody>
 ${itemRows}
   </tbody>
-  <tfoot><tr><th scope="row" align="left" style="padding:14px 0 0;font-size:16px;font-weight:800;color:${C.ink};">Total paid</th><td align="right" style="padding:14px 0 0;font-size:20px;font-weight:900;color:${C.ink};white-space:nowrap;">${text(total)}</td></tr></tfoot>
+  <tfoot><tr><th scope="row" align="left" style="padding:14px 0 0;font-size:15px;font-weight:600;color:${C.night};">Total paid</th><td align="right" style="padding:14px 0 0;font-size:16px;font-weight:600;color:${C.night};white-space:nowrap;">${text(total)}</td></tr></tfoot>
 </table>`;
 }
 

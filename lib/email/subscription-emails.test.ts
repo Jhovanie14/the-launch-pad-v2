@@ -19,6 +19,27 @@ import {
 
 const EVIL = '<img src=x onerror="alert(1)">';
 
+describe("member welcome (first payment): formal wording", () => {
+  const welcome = buildSubscriptionInvoiceEmail({
+    name: "James Carter",
+    amountPaid: 39.99,
+    billingPeriodStart: "June 1, 2025",
+    billingPeriodEnd: "June 30, 2025",
+    invoiceUrl: null,
+    isRenewal: false,
+  });
+
+  it("has a formal subject without exclamation marks", () => {
+    expect(welcome.subject).toBe("Welcome to The Launch Pad: your membership is active");
+  });
+
+  it("addresses them by first name and welcomes them as a member", () => {
+    expect(welcome.html).toContain("Dear James,");
+    expect(welcome.html).toContain("Thank you for becoming a member");
+    expect(welcome.html).toContain("Kind regards,<br>The Launch Pad");
+  });
+});
+
 const cases: Array<[string, (name: string) => BuiltEmail]> = [
   [
     "invoice (with invoice url)",
@@ -87,7 +108,8 @@ describe.each(cases)("%s email", (_label, build) => {
 
   it("escapes every dynamic value", () => {
     expect(email.html).not.toContain("<img src=x");
-    expect(email.html).toContain("&lt;img src=x onerror=&quot;alert(1)&quot;&gt;");
+    // Formal emails greet by first name only ("Dear <first word>,"), so check the escaped start.
+    expect(email.html).toContain("&lt;img");
   });
 
   it("contains no emoji", () => {
@@ -95,8 +117,8 @@ describe.each(cases)("%s email", (_label, build) => {
     expect(email.html).not.toMatch(/\p{Extended_Pictographic}/u);
   });
 
-  it("has exactly one primary flame button and one h1", () => {
-    expect(email.html.match(/background:#fec92f/g)).toHaveLength(1);
+  it("has exactly one primary navy button and one h1", () => {
+    expect(email.html.match(/background:#041335;color:#ffffff;/g)).toHaveLength(1);
     expect(email.html.match(/<h1/g)).toHaveLength(1);
   });
 
@@ -117,7 +139,7 @@ describe("subscription cancelled email", () => {
 describe("invoice email", () => {
   it("links the Stripe invoice as the primary action when present", () => {
     const { html } = cases[0][1]("Ana");
-    expect(html).toContain('href="https://invoice.stripe.com/i/abc" style="background:#fec92f');
+    expect(html).toContain('href="https://invoice.stripe.com/i/abc" style="background:#041335;color:#ffffff;');
   });
 
   it("keeps the subject meaning without emoji", () => {

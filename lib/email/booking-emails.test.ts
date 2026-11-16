@@ -10,7 +10,24 @@ import {
 
 const EVIL = '<img src=x onerror="alert(1)">';
 const EMOJI = /\p{Extended_Pictographic}/u;
-const FLAME_BUTTON = /background:#fec92f/g;
+const PRIMARY_BUTTON = /background:#041335;color:#ffffff;/g;
+
+describe("tip email: formal wording", () => {
+  const { subject, html } = buildTipEmail({ customerName: "James Carter", bookingId: "1a2b3c4d-0000" });
+
+  it("has a formal subject without exclamation marks", () => {
+    expect(subject).toBe("Thank you for visiting The Launch Pad");
+  });
+
+  it("addresses them by first name, offers the tip and a review link, and signs off", () => {
+    expect(html).toContain("Thank you for your visit");
+    expect(html).toContain("Dear James,");
+    expect(html).toContain("Leave a tip");
+    expect(html).toContain("Write a review");
+    expect(html).toContain("Kind regards,<br>The Launch Pad");
+    expect(html).not.toContain("No pressure");
+  });
+});
 
 const emails = {
   confirmation: buildBookingConfirmationEmail({
@@ -38,7 +55,8 @@ const emails = {
 describe.each(Object.entries(emails))("%s email", (_name, email) => {
   it("escapes a malicious customer value", () => {
     expect(email.html).not.toContain("<img src=x");
-    expect(email.html).toContain("&lt;img src=x onerror=&quot;alert(1)&quot;&gt;");
+    // Formal emails greet by first name only ("Dear <first word>,"), so check the escaped start.
+    expect(email.html).toContain("&lt;img");
   });
 
   it("has no emoji in subject or html", () => {
@@ -46,8 +64,8 @@ describe.each(Object.entries(emails))("%s email", (_name, email) => {
     expect(email.html).not.toMatch(EMOJI);
   });
 
-  it("has exactly one primary flame button and one h1", () => {
-    expect(email.html.match(FLAME_BUTTON)).toHaveLength(1);
+  it("has exactly one primary navy button and one h1", () => {
+    expect(email.html.match(PRIMARY_BUTTON)).toHaveLength(1);
     expect(email.html.match(/<h1/g)).toHaveLength(1);
   });
 });

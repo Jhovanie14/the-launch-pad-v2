@@ -9,7 +9,7 @@ import {
 
 const EVIL = `<img src=x onerror=alert(1)>`;
 const EMOJI = /\p{Extended_Pictographic}/u;
-const FLAME_BUTTON = /background:#fec92f/g;
+const PRIMARY_BUTTON = /background:#041335;color:#ffffff;/g;
 
 describe("orderItemsRowsHtml", () => {
   it("renders one row per item with quantity and line total", () => {
@@ -63,8 +63,8 @@ describe.each(Object.entries(builders))("%s email", (_name, build) => {
     expect(html).not.toMatch(EMOJI);
   });
 
-  it("has exactly one primary flame button", () => {
-    expect(html.match(FLAME_BUTTON)).toHaveLength(1);
+  it("has exactly one primary navy button", () => {
+    expect(html.match(PRIMARY_BUTTON)).toHaveLength(1);
   });
 
   it("uses the short order number the dashboard shows", () => {
