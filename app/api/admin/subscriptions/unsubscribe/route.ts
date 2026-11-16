@@ -128,7 +128,9 @@ export async function POST(req: Request) {
       });
 
       const { blockedNote = "", warning } = await block();
-      const message = "Cancellation scheduled for the end of the billing period. The customer will be emailed.";
+      // Staff cancellations send no email (the webhook skips canceled_by=admin).
+      const message =
+        "Cancellation scheduled for the end of the billing period. No email is sent, so let the customer know yourself.";
       return NextResponse.json({
         success: true,
         outcome: "canceled",
