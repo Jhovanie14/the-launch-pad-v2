@@ -32,7 +32,7 @@ export async function POST() {
     //   );
     // }
 
-    let { data: subscription, error } = await supabase
+    let { data: subscription } = await supabase
       .from("user_subscription")
       .select("stripe_customer_id")
       .eq("user_id", user.id)

@@ -248,7 +248,7 @@ async function processNewBooking(session: Stripe.Checkout.Session) {
       .eq("email", customer_email)
       .maybeSingle();
 
-    let userId = existingProfile?.user_id || null;
+    const userId = existingProfile?.user_id || null;
 
     // If no existing profile, we'll create booking without user_id (guest booking)
     console.log("User lookup result:", { existingProfile, userId });
