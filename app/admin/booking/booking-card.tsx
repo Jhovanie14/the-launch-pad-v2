@@ -1,6 +1,5 @@
 "use client";
 
-import type { KeyboardEvent, MouseEvent } from "react";
 import { Banknote, CreditCard, Loader2, Repeat, StickyNote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -72,32 +71,22 @@ export function BookingCard({ booking, isMember, isNext, now, showDate, busy, on
   const plate = booking.vehicle?.license_plate?.trim();
   const PaymentIcon = PAYMENT_ICON[booking.payment_method];
 
-  const open = () => onOpen(booking);
-  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.target !== e.currentTarget) return;
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      open();
-    }
-  };
-  const advance = (e: MouseEvent<HTMLButtonElement>, next: "confirmed" | "completed") => {
-    e.stopPropagation();
-    onAdvance(booking, next);
-  };
-
   return (
+    // Not a button itself: an overlay button opens the details, and Start / Complete sit
+    // above it as siblings, so screen readers never meet a button nested in a button.
     <div
-      role="button"
-      tabIndex={0}
-      onClick={open}
-      onKeyDown={onKeyDown}
-      aria-label={`${formatTime12(booking.appointment_time)}, ${shortName(booking.customer_name)}, ${QUEUE_STATUS_LABEL[status]}. Open details`}
       className={cn(
-        "rounded-lg border bg-card p-3 text-left shadow-xs transition-colors hover:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-900/40 cursor-pointer",
+        "relative rounded-lg border bg-card p-3 text-left shadow-xs transition-colors hover:border-slate-300",
         isNext && "ring-2 ring-blue-900 border-transparent",
         status === "cancelled" && "opacity-60",
       )}
     >
+      <button
+        type="button"
+        onClick={() => onOpen(booking)}
+        aria-label={`${formatTime12(booking.appointment_time)}, ${shortName(booking.customer_name)}, ${QUEUE_STATUS_LABEL[status]}. Open details`}
+        className="absolute inset-0 cursor-pointer rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-900/40"
+      />
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           {showDate && (
@@ -161,10 +150,9 @@ export function BookingCard({ booking, isMember, isNext, now, showDate, busy, on
 
       {status === "waiting" && (
         <Button
-          className="mt-3 min-h-12 w-full bg-blue-900 text-base font-semibold hover:bg-blue-800"
+          className="relative z-10 mt-3 min-h-12 w-full bg-blue-900 text-base font-semibold hover:bg-blue-800"
           disabled={busy}
-          onClick={(e) => advance(e, "confirmed")}
-          onKeyDown={(e) => e.stopPropagation()}
+          onClick={() => onAdvance(booking, "confirmed")}
         >
           {busy && <Loader2 className="size-4 animate-spin" aria-hidden />}
           Start
@@ -172,10 +160,9 @@ export function BookingCard({ booking, isMember, isNext, now, showDate, busy, on
       )}
       {status === "in_progress" && (
         <Button
-          className="mt-3 min-h-12 w-full bg-green-700 text-base font-semibold hover:bg-green-800"
+          className="relative z-10 mt-3 min-h-12 w-full bg-green-700 text-base font-semibold hover:bg-green-800"
           disabled={busy}
-          onClick={(e) => advance(e, "completed")}
-          onKeyDown={(e) => e.stopPropagation()}
+          onClick={() => onAdvance(booking, "completed")}
         >
           {busy && <Loader2 className="size-4 animate-spin" aria-hidden />}
           Complete

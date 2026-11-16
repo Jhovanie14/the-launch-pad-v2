@@ -3,6 +3,7 @@ import {
   QUEUE_STATUS_LABEL, dayCounts, firstName, formatTime12, isNewBooking, isShortRefTerm,
   matchesShortRef, nextWaitingId, queueStatus, shortName, shortRef, timeMinutes, tookLabel,
   applyBookingChange, createInFlight, dayLabel, filterPanel, monthBounds, rollSelectedDay, monthGrid, monthOf, shiftMonth, sortSearchResults,
+  fetchAllPages, replayChanges,
 } from "./bookingQueue";
 
 describe("queueStatus", () => {
@@ -128,6 +129,47 @@ describe("applyBookingChange", () => {
   });
   it("drops a booking moved off the day", () => {
     expect(applyBookingChange(list, "b", row("b", "2026-11-14", "11:00:00"), onDay).map((r) => r.id)).toEqual(["a"]);
+  });
+});
+
+describe("replayChanges", () => {
+  const row = (id: string, time: string) => ({ id, appointment_date: "2026-11-13", appointment_time: time });
+  const all = () => true;
+  const loaded = [row("a", "09:00:00"), row("b", "11:00:00")];
+  it("re-applies only the changes that arrived after the load started", () => {
+    const changes = [
+      { at: 100, id: "a", row: null },
+      { at: 200, id: "c", row: row("c", "10:00:00") },
+      { at: 300, id: "b", row: null },
+    ];
+    expect(replayChanges(loaded, changes, 200, all).map((r) => r.id)).toEqual(["a", "c"]);
+  });
+  it("returns the loaded rows unchanged when nothing arrived", () => {
+    expect(replayChanges(loaded, [], 0, all)).toEqual(loaded);
+  });
+});
+
+describe("fetchAllPages", () => {
+  const pager = (total: number, calls: [number, number][]) => async (from: number, to: number) => {
+    calls.push([from, to]);
+    const data = Array.from({ length: Math.max(0, Math.min(to, total - 1) - from + 1) }, (_, i) => from + i);
+    return { data, error: null };
+  };
+  it("keeps asking until a page comes back short", async () => {
+    const calls: [number, number][] = [];
+    const result = await fetchAllPages(pager(5, calls), 2);
+    expect(result).toEqual({ data: [0, 1, 2, 3, 4], error: null });
+    expect(calls).toEqual([[0, 1], [2, 3], [4, 5]]);
+  });
+  it("asks once more when the last page is exactly full", async () => {
+    const calls: [number, number][] = [];
+    expect((await fetchAllPages(pager(4, calls), 2)).data).toEqual([0, 1, 2, 3]);
+    expect(calls).toHaveLength(3);
+  });
+  it("stops on an error", async () => {
+    const error = { message: "boom" };
+    const result = await fetchAllPages(async () => ({ data: null, error }), 2);
+    expect(result).toEqual({ data: null, error });
   });
 });
 

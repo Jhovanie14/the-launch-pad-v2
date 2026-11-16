@@ -23,6 +23,8 @@ type Props = {
   selected: string;
   /** Already filtered for "Show cancelled". */
   entries: CalendarEntry[];
+  /** Adds Cancelled to the legend when cancelled bookings are on the calendar. */
+  showCancelled: boolean;
   onSelect: (date: string) => void;
   onMonthChange: (month: string) => void;
 };
@@ -37,7 +39,7 @@ function monthTitle(month: string): string {
   );
 }
 
-export function QueueCalendar({ month, today, selected, entries, onSelect, onMonthChange }: Props) {
+export function QueueCalendar({ month, today, selected, entries, showCancelled, onSelect, onMonthChange }: Props) {
   const weeks = useMemo(() => monthGrid(month), [month]);
   const byDate = useMemo(() => {
     const map = new Map<string, CalendarEntry[]>();
@@ -94,6 +96,11 @@ export function QueueCalendar({ month, today, selected, entries, onSelect, onMon
           <li className="flex items-center gap-1">
             <span className={cn("size-2 rounded-full", STATUS_DOT.done)} aria-hidden /> Done
           </li>
+          {showCancelled && (
+            <li className="flex items-center gap-1">
+              <span className={cn("size-2 rounded-full", STATUS_DOT.cancelled)} aria-hidden /> Cancelled
+            </li>
+          )}
         </ul>
       </div>
 

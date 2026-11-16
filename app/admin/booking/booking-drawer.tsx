@@ -122,9 +122,13 @@ export function BookingDrawer({ booking, isMember, canDelete, busy, onOpenChange
                 <Section title="Vehicle">
                   {booking.vehicle ? (
                     <p className="text-sm">
-                      <span className="mr-2 rounded border border-slate-300 bg-slate-50 px-1.5 py-0.5 font-mono text-xs font-semibold uppercase tracking-wide">
-                        {booking.vehicle.license_plate}
-                      </span>
+                      {booking.vehicle.license_plate?.trim() ? (
+                        <span className="mr-2 rounded border border-slate-300 bg-slate-50 px-1.5 py-0.5 font-mono text-xs font-semibold uppercase tracking-wide">
+                          {booking.vehicle.license_plate.trim()}
+                        </span>
+                      ) : (
+                        <span className="mr-2 text-muted-foreground">No plate on file</span>
+                      )}
                       {vehicleLine(booking)}
                     </p>
                   ) : (
