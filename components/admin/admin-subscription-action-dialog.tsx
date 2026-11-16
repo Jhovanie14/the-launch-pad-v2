@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 
 /** A subscription change staff make on a customer's behalf. */
@@ -37,6 +38,8 @@ export interface AdminSubscriptionAction {
   note?: string;
   /** An extra step staff can tick, sent as `{ [name]: true | false }`. Unticked by default. */
   option?: { name: string; label: string; description: string; confirmLabel: string };
+  /** A required pick from a few options, sent as `{ [name]: value }` (e.g. the refund for Cancel now). */
+  choice?: { name: string; label: string; options: { value: string; label: string }[] };
 }
 
 interface AdminSubscriptionActionDialogProps {
@@ -54,15 +57,18 @@ export function AdminSubscriptionActionDialog({ action, onClose, onDone }: Admin
   const [reason, setReason] = useState("");
   const [fieldValue, setFieldValue] = useState("");
   const [optionChecked, setOptionChecked] = useState(false);
+  const [choiceValue, setChoiceValue] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setReason("");
     setFieldValue("");
     setOptionChecked(false);
+    setChoiceValue("");
   }, [action]);
 
-  const ready = !!reason.trim() && (!action?.field || !!fieldValue.trim());
+  const ready =
+    !!reason.trim() && (!action?.field || !!fieldValue.trim()) && (!action?.choice || !!choiceValue);
 
   async function handleConfirm() {
     if (!action || !ready) return;
@@ -75,6 +81,7 @@ export function AdminSubscriptionActionDialog({ action, onClose, onDone }: Admin
           ...action.body,
           ...(action.field ? { [action.field.name]: fieldValue.trim() } : {}),
           ...(action.option ? { [action.option.name]: optionChecked } : {}),
+          ...(action.choice ? { [action.choice.name]: choiceValue } : {}),
           reason: reason.trim(),
         }),
       });
@@ -123,6 +130,24 @@ export function AdminSubscriptionActionDialog({ action, onClose, onDone }: Admin
               disabled={loading}
             />
           </div>
+        )}
+
+        {action?.choice && (
+          <fieldset className="space-y-2" disabled={loading}>
+            <legend className="mb-2 text-sm font-medium">{action.choice.label} (required)</legend>
+            <RadioGroup value={choiceValue} onValueChange={setChoiceValue} className="gap-2">
+              {action.choice.options.map((o) => (
+                <Label
+                  key={o.value}
+                  htmlFor={`admin-action-choice-${o.value}`}
+                  className="flex min-h-11 cursor-pointer items-center gap-3 rounded-md border px-3 font-normal has-[[data-state=checked]]:border-slate-900"
+                >
+                  <RadioGroupItem id={`admin-action-choice-${o.value}`} value={o.value} />
+                  {o.label}
+                </Label>
+              ))}
+            </RadioGroup>
+          </fieldset>
         )}
 
         {action?.option && (
