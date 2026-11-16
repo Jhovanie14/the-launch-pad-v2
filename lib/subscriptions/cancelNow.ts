@@ -144,7 +144,16 @@ export async function cancelNow(
     metadata: { canceled_by: "admin", canceled_by_admin_id: args.adminId, canceled_now: "true" },
     cancellation_details: { comment: `Cancelled now by admin: ${args.reason}` },
   });
-  await stripe.subscriptions.cancel(id, { prorate: false });
+  try {
+    await stripe.subscriptions.cancel(id, { prorate: false });
+  } catch (err) {
+    // Still active: drop the tag, or it would later suppress their normal
+    // "membership ended" email. Empty strings unset Stripe metadata keys.
+    await stripe.subscriptions
+      .update(id, { metadata: { canceled_by: "", canceled_by_admin_id: "", canceled_now: "" } })
+      .catch((untagError) => console.error("[cancel-now] could not remove the tag after a failed cancel:", untagError));
+    throw err;
+  }
 
   // The webhook confirms the same; stamp now so the admin page is right at once.
   const { error: stampError } = await db

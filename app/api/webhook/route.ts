@@ -1091,6 +1091,13 @@ async function handleSubscriptionDeleted(event: Stripe.Event) {
 
   if (!profile?.email) return;
 
+  // Staff used "Cancel now": the customer already got our formal notice, so
+  // no "membership ended, come back" email on top of it.
+  if (subscription.metadata?.canceled_now === "true") {
+    console.log("Subscription deleted: cancelled now by staff, notice already sent");
+    return;
+  }
+
   await sendSubscriptionCancelledEmail({
     to: profile.email,
     name: profile.full_name ?? "there",

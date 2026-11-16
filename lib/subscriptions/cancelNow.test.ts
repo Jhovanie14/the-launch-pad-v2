@@ -186,6 +186,18 @@ describe("cancelNow", () => {
     });
   });
 
+  it("removes the 'cancelled now' tag and refunds nothing when Stripe rejects the cancel", async () => {
+    const { db, updates } = fakeDb(active);
+    const { stripe } = fakeStripe();
+    stripe.subscriptions.cancel.mockRejectedValueOnce(new Error("stripe down"));
+    await expect(cancelNow(db, stripe, { ...args, refund: "full" }, NOW)).rejects.toThrow("stripe down");
+    expect(stripe.subscriptions.update).toHaveBeenLastCalledWith("sub_1", {
+      metadata: { canceled_by: "", canceled_by_admin_id: "", canceled_now: "" },
+    });
+    expect(stripe.refunds.create).not.toHaveBeenCalled();
+    expect(updates).toEqual([]);
+  });
+
   it("marks the membership cancelled in the database", async () => {
     const { db, updates } = fakeDb(active);
     const { stripe } = fakeStripe();
