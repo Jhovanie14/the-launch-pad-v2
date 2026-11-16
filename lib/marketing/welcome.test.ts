@@ -78,6 +78,12 @@ describe("buildWelcomeEmail", () => {
     expect(email.subject).toBe("Welcome to The Launch Pad");
   });
 
+  it("addresses them formally and signs off", () => {
+    expect(email.html).toContain("Dear Pat,");
+    expect(buildWelcomeEmail({ firstName: null, unsubscribeUrl: url }).html).toContain("Hello,");
+    expect(email.html).toContain("Kind regards,<br>The Launch Pad");
+  });
+
   it("says where we are, links to booking and mentions the membership price", () => {
     expect(email.html).toContain("10410 S Main St");
     expect(email.html).toContain("/service");

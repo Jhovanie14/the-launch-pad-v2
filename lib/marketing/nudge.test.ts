@@ -141,8 +141,13 @@ describe("buildNudgeEmail", () => {
   const url = "https://www.thelaunchpadwash.com/unsubscribe?t=abc";
   const email = buildNudgeEmail({ firstName: "Sam", washes: 2, spent: 50, unsubscribeUrl: url });
 
-  it("has the agreed subject", () => {
-    expect(email.subject).toBe("Two washes this month? A membership could save you money");
+  it("has a formal subject without a question or exclamation mark", () => {
+    expect(email.subject).toBe("Two visits this month: a membership may suit you");
+  });
+
+  it("addresses them formally and signs off", () => {
+    expect(email.html).toContain("Dear Sam,");
+    expect(email.html).toContain("Kind regards,<br>The Launch Pad");
   });
 
   it("shows what they paid, the membership price and the plans link", () => {

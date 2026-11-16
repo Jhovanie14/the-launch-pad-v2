@@ -14,7 +14,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { addDays } from "@/lib/admin/bookingQuery";
 import { FIRST_SUBSCRIPTION_PROMO } from "@/lib/pricing/firstSubscriptionPromo";
-import { SITE_URL, button, emailLayout, heading, paragraph, text } from "@/lib/email/layout";
+import { SITE_URL, button, emailLayout, heading, salutation, signoff, paragraph, text } from "@/lib/email/layout";
 import { getConsentStatus } from "./consent";
 import { findMemberAccounts } from "./members";
 import { sendMarketingBatch, type MarketingResendLike } from "./sendMarketingBatch";
@@ -105,29 +105,30 @@ export function buildWinbackEmail(r: { firstName: string | null; unsubscribeUrl:
   subject: string;
   html: string;
 } {
-  const subject = "We miss you at The Launch Pad";
-  const greeting = r.firstName ? `It’s been a while, ${r.firstName}` : "It’s been a while";
+  const subject = "We look forward to your next visit";
   const promo = FIRST_SUBSCRIPTION_PROMO.enabled
-    ? `, and new members get <strong>${FIRST_SUBSCRIPTION_PROMO.percent}% off</strong> their first month`
+    ? `, and new members receive <strong>${FIRST_SUBSCRIPTION_PROMO.percent}% off</strong> their first month`
     : "";
   const body = [
-    heading(greeting),
+    heading("It has been a while"),
+    salutation(r.firstName),
     paragraph(
-      "Your last wash with us was about a month ago. Houston roads don't stay kind to a clean car for long, so come back and let us get it shining again.",
+      "Your last visit to The Launch Pad was about a month ago. Whenever you are ready, we would be pleased to have your vehicle looking its best again.",
     ),
     button(`${SITE_URL}/service`, "Book a wash"),
     paragraph(
-      `Washing every few weeks? A membership starts at <strong>$39.99 a month</strong>${promo}. <a href="${SITE_URL}/pricing">See the plans</a>.`,
+      `If you wash regularly, unlimited memberships start at <strong>$39.99 a month</strong>${promo}. <a href="${SITE_URL}/pricing">See the plans</a>.`,
     ),
+    signoff(),
   ].join("\n");
 
   return {
     subject,
     html: emailLayout({
       title: subject,
-      preheader: "Your car is due for a wash. Book in under a minute.",
+      preheader: "Your vehicle is due for a wash. Booking takes under a minute.",
       body,
-      footerNote: "You're getting this email because you asked for news and offers from The Launch Pad.",
+      footerNote: "You are receiving this email because you asked for news and offers from The Launch Pad.",
       unsubscribeUrl: text(r.unsubscribeUrl),
     }),
   };

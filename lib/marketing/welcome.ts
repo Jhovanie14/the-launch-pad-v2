@@ -13,7 +13,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { addDays, houstonToday } from "@/lib/admin/bookingQuery";
 import { FIRST_SUBSCRIPTION_PROMO } from "@/lib/pricing/firstSubscriptionPromo";
-import { SITE_URL, button, emailLayout, heading, paragraph, text } from "@/lib/email/layout";
+import { SITE_URL, button, emailLayout, heading, salutation, signoff, paragraph, text } from "@/lib/email/layout";
 import { findMemberAccounts } from "./members";
 
 export interface WelcomeRecipient {
@@ -75,15 +75,17 @@ export function buildWelcomeEmail(r: { firstName: string | null; unsubscribeUrl:
     ? `, with <strong>${FIRST_SUBSCRIPTION_PROMO.percent}% off</strong> your first month`
     : "";
   const body = [
-    heading(r.firstName ? `Welcome, ${r.firstName}` : "Welcome to The Launch Pad"),
+    heading("Welcome to The Launch Pad"),
+    salutation(r.firstName),
     paragraph("Thank you for signing up for news and offers from The Launch Pad."),
     paragraph(
-      "You'll find us at <strong>10410 S Main St, Houston</strong>. We offer express washes and full details, and you can book online in under a minute.",
+      "You will find us at <strong>10410 S Main St, Houston</strong>. We offer express washes and full detailing, and you can book online in under a minute.",
     ),
     button(`${SITE_URL}/service`, "Book a wash"),
     paragraph(
-      `Washing often? Unlimited memberships start at <strong>$39.99 a month</strong>${offer}. <a href="${SITE_URL}/pricing">See the plans</a>.`,
+      `If you wash regularly, unlimited memberships start at <strong>$39.99 a month</strong>${offer}. <a href="${SITE_URL}/pricing">See the plans</a>.`,
     ),
+    signoff(),
   ].join("\n");
 
   return {
@@ -92,7 +94,7 @@ export function buildWelcomeEmail(r: { firstName: string | null; unsubscribeUrl:
       title: subject,
       preheader: "Where to find us, and how to book your next wash.",
       body,
-      footerNote: "You're getting this email because you asked for news and offers from The Launch Pad.",
+      footerNote: "You are receiving this email because you asked for news and offers from The Launch Pad.",
       unsubscribeUrl: text(r.unsubscribeUrl),
     }),
   };

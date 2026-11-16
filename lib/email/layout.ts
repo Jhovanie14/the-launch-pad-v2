@@ -183,6 +183,12 @@ export function contactLine(lead: string): string {
   );
 }
 
+/** The formal opening: "Dear Pat," from a first or full name, else "Hello,". */
+export function salutation(name: string | null | undefined): string {
+  const first = (name ?? "").trim().split(/\s+/)[0];
+  return paragraph(first ? `Dear ${text(first)},` : "Hello,");
+}
+
 export function signoff(): string {
   return `<p style="margin:28px 0 0;font-size:15px;line-height:1.7;color:${C.ink};">Kind regards,<br>The Launch Pad</p>`;
 }

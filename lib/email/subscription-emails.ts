@@ -16,6 +16,7 @@ import {
   notice,
   paragraph,
   plate,
+  salutation,
   signoff,
   subheading,
   text,
@@ -83,15 +84,15 @@ export function buildSubscriptionInvoiceEmail({
   const title = isRenewal ? "Your membership renewed" : "Welcome to The Launch Pad";
   const subject = isRenewal
     ? `Your subscription has been renewed — ${money(amountPaid)} charged`
-    : "Payment confirmed — welcome to The Launch Pad!";
+    : "Welcome to The Launch Pad: your membership is active";
 
   const body = [
     heading(title),
-    greeting(name),
+    isRenewal ? greeting(name) : salutation(name),
     paragraph(
       isRenewal
         ? "Your membership renewed and your payment went through. Here's the summary."
-        : "Thanks for joining. Your first payment went through and your membership is active. Here's your receipt.",
+        : "Thank you for becoming a member. Your first payment has been received and your membership is now active. Your receipt is below.",
     ),
     details(
       [
@@ -108,7 +109,7 @@ export function buildSubscriptionInvoiceEmail({
           { muted: true, small: true },
         )
       : button(BILLING_URL, "View billing"),
-    paragraph("Thanks for being a member."),
+    paragraph(isRenewal ? "Thanks for being a member." : "We look forward to welcoming you."),
     signoff(),
   ].join("\n");
 

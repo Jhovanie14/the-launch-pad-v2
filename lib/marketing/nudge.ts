@@ -18,7 +18,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { addDays } from "@/lib/admin/bookingQuery";
 import { fetchAllPages } from "@/lib/admin/bookingQueue";
 import { FIRST_SUBSCRIPTION_PROMO } from "@/lib/pricing/firstSubscriptionPromo";
-import { SITE_URL, button, emailLayout, heading, money, paragraph, text } from "@/lib/email/layout";
+import { SITE_URL, button, emailLayout, heading, salutation, signoff, money, paragraph, text } from "@/lib/email/layout";
 import { getConsentStatus } from "./consent";
 import { findMemberAccounts } from "./members";
 
@@ -143,19 +143,20 @@ export function buildNudgeEmail(r: {
   spent: number;
   unsubscribeUrl: string;
 }): { subject: string; html: string } {
-  const subject = "Two washes this month? A membership could save you money";
-  const greeting = r.firstName ? `Thanks for coming back, ${r.firstName}` : "Thanks for coming back";
+  const subject = "Two visits this month: a membership may suit you";
   const offer = FIRST_SUBSCRIPTION_PROMO.enabled
-    ? `, and new members get <strong>${FIRST_SUBSCRIPTION_PROMO.percent}% off</strong> their first month`
+    ? `, and new members receive <strong>${FIRST_SUBSCRIPTION_PROMO.percent}% off</strong> their first month`
     : "";
   const body = [
-    heading(greeting),
+    heading("Thank you for coming back"),
+    salutation(r.firstName),
     paragraph(
-      `You've paid <strong>${money(r.spent)}</strong> for ${r.washes} washes in the last ${NUDGE_WINDOW_DAYS} days.`,
+      `Thank you for your recent visits. You have paid <strong>${money(r.spent)}</strong> for ${r.washes} washes in the last ${NUDGE_WINDOW_DAYS} days.`,
     ),
-    paragraph(`Unlimited memberships start at <strong>$39.99 a month</strong>${offer}.`),
+    paragraph(`If you wash regularly, unlimited memberships start at <strong>$39.99 a month</strong>${offer}.`),
     button(`${SITE_URL}/pricing`, "See the plans"),
-    paragraph("No contract. Cancel any time.", { muted: true }),
+    paragraph("There is no contract, and you may cancel at any time.", { muted: true }),
+    signoff(),
   ].join("\n");
 
   return {
@@ -164,7 +165,7 @@ export function buildNudgeEmail(r: {
       title: subject,
       preheader: "Wash as often as you like for one monthly price.",
       body,
-      footerNote: "You're getting this email because you asked for news and offers from The Launch Pad.",
+      footerNote: "You are receiving this email because you asked for news and offers from The Launch Pad.",
       unsubscribeUrl: text(r.unsubscribeUrl),
     }),
   };

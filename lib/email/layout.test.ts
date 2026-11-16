@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { button, details, emailLayout, heading, plate, signoff } from "./layout";
+import { button, details, emailLayout, heading, plate, salutation, signoff } from "./layout";
 
 describe("emailLayout", () => {
   const html = emailLayout({
@@ -50,6 +50,13 @@ describe("quiet formal helpers", () => {
 
   it("uses a medium-weight headline", () => {
     expect(heading("Hello")).toContain("font-weight:500");
+  });
+
+  it("opens with 'Dear <first name>,' or 'Hello,' and escapes the name", () => {
+    expect(salutation("Pat")).toContain("Dear Pat,");
+    expect(salutation(null)).toContain("Hello,");
+    expect(salutation("  ")).toContain("Hello,");
+    expect(salutation("<b>")).toContain("Dear &lt;b&gt;,");
   });
 
   it("signs off formally", () => {

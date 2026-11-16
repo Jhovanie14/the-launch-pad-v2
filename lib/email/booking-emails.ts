@@ -13,6 +13,7 @@ import {
   list,
   money,
   paragraph,
+  salutation,
   signoff,
   subheading,
   text,
@@ -137,28 +138,27 @@ export function buildTipEmail({ customerName, bookingId }: TipEmailParams): Buil
   const tipLink = `${TIP_URL}?booking=${encodeURIComponent(bookingId)}`;
 
   const body = [
-    heading("Thanks for coming in"),
-    greeting(customerName),
+    heading("Thank you for your visit"),
+    salutation(customerName),
     paragraph(
-      "We just finished your car, and it's looking great. Our crew took care with every detail, and we hope it shows.",
+      "Thank you for choosing The Launch Pad today. Your vehicle is complete, and we trust the result meets your expectations.",
     ),
     paragraph(
-      "If the result made your day, a tip is a kind way to say thanks. Every tip goes to the attendants who worked on your car.",
+      "Should you wish to thank the team who cared for your vehicle, you may leave a tip below. Every tip goes directly to the attendants.",
     ),
     button(tipLink, "Leave a tip"),
-    paragraph("Happy with how it turned out? A Google review helps other drivers find us."),
-    button(GOOGLE_REVIEW_URL, "Leave a Google review", "secondary"),
-    paragraph("No pressure either way. We're glad you came by.", { muted: true, small: true }),
+    paragraph("If you were pleased with your visit, we would be grateful for a Google review."),
+    button(GOOGLE_REVIEW_URL, "Write a review", "secondary"),
     signoff(),
   ].join("\n");
 
   return {
-    subject: "Your car looks incredible — help us celebrate!",
+    subject: "Thank you for visiting The Launch Pad",
     html: emailLayout({
-      title: "Thanks for coming in",
-      preheader: "Your car is done. If you loved the result, you can leave the crew a tip.",
+      title: "Thank you for your visit",
+      preheader: "Your vehicle is complete. Thank you for choosing The Launch Pad.",
       body,
-      footerNote: "You're getting this because your car was just serviced at The Launch Pad.",
+      footerNote: "You are receiving this email because your vehicle was serviced at The Launch Pad.",
     }),
   };
 }
