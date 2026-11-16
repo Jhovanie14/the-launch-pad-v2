@@ -99,10 +99,25 @@ export async function findNudgeRecipients(
     people.set(key, person);
   }
 
+  // One account booking under two emails is one person: merge entries that
+  // share an account, keeping the first email seen.
+  const persons: { email: string; name: string | null; keys: Set<string>; userIds: Set<string> }[] = [];
+  for (const [key, p] of people) {
+    const into = persons.find((m) => [...p.userIds].some((id) => m.userIds.has(id)));
+    if (into) {
+      into.keys.add(key);
+      for (const id of p.userIds) into.userIds.add(id);
+      into.name ??= p.name;
+    } else {
+      persons.push({ ...p, keys: new Set([key]), userIds: new Set(p.userIds) });
+    }
+  }
+
   const candidates: (NudgeRecipient & { userIds: Set<string> })[] = [];
-  for (const [key, person] of people) {
+  for (const person of persons) {
     const all = paid.filter(
-      (b) => b.customer_email?.trim().toLowerCase() === key || (!!b.user_id && person.userIds.has(b.user_id)),
+      (b) =>
+        person.keys.has(b.customer_email?.trim().toLowerCase() ?? "") || (!!b.user_id && person.userIds.has(b.user_id)),
     );
     const theirs = all.filter((b) => b.appointment_date >= windowStart);
     if (theirs.length !== NUDGE_AT_PAID_WASHES) continue;

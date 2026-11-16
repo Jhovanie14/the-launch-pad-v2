@@ -23,6 +23,7 @@ export interface WelcomeRecipient {
 
 type ConsentRow = { email: string; user_id: string | null; created_at: string; unsubscribed_at: string | null };
 type ProfileRow = { id: string; email: string | null; full_name: string | null };
+type BookingNameRow = { customer_email: string | null; customer_name: string | null; created_at: string };
 
 const firstName = (name: string | null | undefined) => name?.trim().split(/\s+/)[0] || null;
 
@@ -47,21 +48,35 @@ export async function findWelcomeRecipients(db: SupabaseClient, today: string): 
   const emails = rows.map((r) => r.email);
   const userIds = [...new Set(rows.map((r) => r.user_id).filter((id): id is string => !!id))];
 
-  const [isMember, byId, byEmail] = await Promise.all([
+  // Profile emails are stored lower case; booking emails as typed. Ask for both spellings.
+  const emailVariants = [...new Set(emails.flatMap((e) => [e, e.toLowerCase()]))];
+  const [isMember, byId, byEmail, bookings] = await Promise.all([
     findMemberAccounts(db, emails, userIds),
     userIds.length ? db.from("profiles").select("id, email, full_name").in("id", userIds) : { data: [], error: null },
-    db.from("profiles").select("id, email, full_name").in("email", emails),
+    db.from("profiles").select("id, email, full_name").in("email", emailVariants),
+    // Guests have no profile: their latest booking carries the name they gave.
+    db.from("bookings").select("customer_email, customer_name, created_at").in("customer_email", emailVariants),
   ]);
-  for (const r of [byId, byEmail]) if (r.error) throw r.error;
+  for (const r of [byId, byEmail, bookings]) if (r.error) throw r.error;
   const profiles = [...((byId.data ?? []) as ProfileRow[]), ...((byEmail.data ?? []) as ProfileRow[])];
+  const latestBookingName = new Map<string, { name: string; at: string }>();
+  for (const b of (bookings.data ?? []) as BookingNameRow[]) {
+    const key = b.customer_email?.toLowerCase();
+    if (!key || !b.customer_name?.trim()) continue;
+    const seen = latestBookingName.get(key);
+    if (!seen || b.created_at > seen.at) latestBookingName.set(key, { name: b.customer_name, at: b.created_at });
+  }
 
   const recipients: WelcomeRecipient[] = [];
   for (const r of rows) {
     if (isMember(r.email, r.user_id ? [r.user_id] : [])) continue;
+    const key = r.email.toLowerCase();
     const profile =
-      profiles.find((p) => r.user_id && p.id === r.user_id) ??
-      profiles.find((p) => p.email?.toLowerCase() === r.email.toLowerCase());
-    recipients.push({ email: r.email, firstName: firstName(profile?.full_name) });
+      profiles.find((p) => r.user_id && p.id === r.user_id) ?? profiles.find((p) => p.email?.toLowerCase() === key);
+    recipients.push({
+      email: r.email,
+      firstName: firstName(profile?.full_name) ?? firstName(latestBookingName.get(key)?.name),
+    });
   }
   return recipients;
 }
