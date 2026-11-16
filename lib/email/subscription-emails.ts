@@ -303,6 +303,50 @@ export async function sendSubscriptionCancelledEmail({
 }
 
 // ─────────────────────────────────────────────────────────────
+// MEMBERSHIP ENDED NOW (admin "Cancel now")
+// ─────────────────────────────────────────────────────────────
+export interface MembershipEndedNowEmailParams {
+  name: string;
+  /** Dollars refunded, or null when there was no refund. */
+  refundedAmount: number | null;
+}
+
+/** Formal notice when staff end a membership immediately. No "rejoin" pitch. */
+export function buildMembershipEndedNowEmail({ name, refundedAmount }: MembershipEndedNowEmailParams): BuiltEmail {
+  const title = "Your membership has ended";
+  const refunded = refundedAmount !== null && refundedAmount > 0;
+
+  const body = [
+    heading(title),
+    salutation(name),
+    paragraph("We are writing to let you know that your Launch Pad membership has ended today."),
+    refunded
+      ? details([["Refunded to your card", money(refundedAmount)]], { emphasizeLast: true }) +
+        paragraph("Depending on your bank, it can take 5–10 business days to appear on your statement.")
+      : "",
+    button(BILLING_URL, "View billing"),
+    contactLine("Should you have any questions, we are glad to help."),
+    signoff(),
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return {
+    subject: "Your Launch Pad membership has ended",
+    html: emailLayout({
+      title,
+      preheader: refunded ? `Your membership has ended. ${money(refundedAmount)} has been refunded.` : "Your membership has ended.",
+      body,
+      footerNote: MEMBER_FOOTER,
+    }),
+  };
+}
+
+export async function sendMembershipEndedNowEmail({ to, ...params }: MembershipEndedNowEmailParams & { to: string }) {
+  await sendBuilt(to, buildMembershipEndedNowEmail(params), "membership ended now");
+}
+
+// ─────────────────────────────────────────────────────────────
 // 5. FAMILY VEHICLE ADDED
 // ─────────────────────────────────────────────────────────────
 export interface FamilyVehicleAddedEmailParams {
