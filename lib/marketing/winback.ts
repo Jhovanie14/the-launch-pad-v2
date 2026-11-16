@@ -14,12 +14,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { addDays } from "@/lib/admin/bookingQuery";
 import { FIRST_SUBSCRIPTION_PROMO } from "@/lib/pricing/firstSubscriptionPromo";
-import { FROM, SITE_URL, button, emailLayout, heading, paragraph, text } from "@/lib/email/layout";
+import { SITE_URL, button, emailLayout, heading, paragraph, text } from "@/lib/email/layout";
 import { getConsentStatus } from "./consent";
-import { createUnsubscribeToken, unsubscribeUrl } from "./unsubscribeToken";
+import { findMemberAccounts } from "./members";
+import { sendMarketingBatch, type MarketingResendLike } from "./sendMarketingBatch";
 
 export const WINBACK_AFTER_DAYS = 30;
-const BATCH_SIZE = 100; // Resend batch limit
 
 export interface WinbackRecipient {
   email: string;
@@ -78,44 +78,23 @@ export async function findWinbackRecipients(
           .in(col, values);
 
   // Members: found by the booking's account or by a profile with that email.
-  const { data: profiles, error: profileError } = await db
-    .from("profiles")
-    .select("id, email")
-    .in("email", emails);
-  if (profileError) throw profileError;
-  const profileIdByEmail = new Map<string, string>();
-  for (const p of (profiles ?? []) as { id: string; email: string | null }[]) {
-    if (p.email) profileIdByEmail.set(p.email.toLowerCase(), p.id);
-  }
-  const accountIds = [...new Set([...userIds, ...profileIdByEmail.values()])];
-
-  const activePlans = (table: string) =>
-    accountIds.length === 0
-      ? Promise.resolve({ data: [] as { user_id: string }[], error: null })
-      : db.from(table).select("user_id").eq("status", "active").in("user_id", accountIds);
-
-  const [byEmailLater, byUserLater, plans, selfPlans] = await Promise.all([
+  const [byEmailLater, byUserLater, isMember] = await Promise.all([
     later("customer_email", emails),
     later("user_id", userIds),
-    activePlans("user_subscription"),
-    activePlans("self_service_subscriptions"),
+    findMemberAccounts(db, emails, userIds),
   ]);
-  for (const r of [byEmailLater, byUserLater, plans, selfPlans]) if (r.error) throw r.error;
+  for (const r of [byEmailLater, byUserLater]) if (r.error) throw r.error;
 
   const returnedEmails = new Set(
     ((byEmailLater.data ?? []) as VisitRow[]).map((r) => r.customer_email?.toLowerCase()).filter(Boolean),
   );
   const returnedUsers = new Set(((byUserLater.data ?? []) as VisitRow[]).map((r) => r.user_id).filter(Boolean));
-  const members = new Set(
-    [...(plans.data ?? []), ...(selfPlans.data ?? [])].map((r) => (r as { user_id: string }).user_id),
-  );
 
   const recipients: WinbackRecipient[] = [];
   for (const [key, entry] of byEmail) {
     if (returnedEmails.has(key)) continue;
-    if ([...entry.userIds].some((id) => returnedUsers.has(id) || members.has(id))) continue;
-    const profileId = profileIdByEmail.get(key);
-    if (profileId && members.has(profileId)) continue;
+    if ([...entry.userIds].some((id) => returnedUsers.has(id))) continue;
+    if (isMember(entry.email, entry.userIds)) continue;
     if (!(await isOptedIn(entry.email))) continue;
     recipients.push({ email: entry.email, firstName: firstName(entry.name) });
   }
@@ -154,56 +133,17 @@ export function buildWinbackEmail(r: { firstName: string | null; unsubscribeUrl:
   };
 }
 
-/** The slice of the Resend SDK this module uses; tests pass fakes. */
-export interface WinbackResendLike {
-  batch: {
-    send(
-      emails: { from: string; to: string; subject: string; html: string; headers: Record<string, string> }[],
-      options: { idempotencyKey: string },
-    ): Promise<{ data: unknown; error: unknown }>;
-  };
-}
+/** Kept for the win-back route; same shape as every marketing sender. */
+export type WinbackResendLike = MarketingResendLike;
 
-export async function sendWinbackEmails(
+export function sendWinbackEmails(
   resend: WinbackResendLike,
   recipients: WinbackRecipient[],
   opts: { secret: string; siteUrl: string; today: string },
 ): Promise<{ sent: number; failed: number }> {
-  let sent = 0;
-  let failed = 0;
-  for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
-    const chunk = recipients.slice(i, i + BATCH_SIZE);
-    const emails = chunk.map((r) => {
-      const oneClick = `${opts.siteUrl}/api/marketing/unsubscribe?t=${createUnsubscribeToken(r.email, opts.secret)}`;
-      const { subject, html } = buildWinbackEmail({
-        firstName: r.firstName,
-        unsubscribeUrl: unsubscribeUrl(r.email, opts.secret, opts.siteUrl),
-      });
-      return {
-        from: FROM,
-        to: r.email,
-        subject,
-        html,
-        headers: {
-          "List-Unsubscribe": `<${oneClick}>`,
-          "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
-        },
-      };
-    });
-    try {
-      const { error } = await resend.batch.send(emails, {
-        idempotencyKey: `winback/${opts.today}/${i / BATCH_SIZE}`,
-      });
-      if (error) {
-        console.error("[marketing] win-back batch failed:", error);
-        failed += chunk.length;
-      } else {
-        sent += chunk.length;
-      }
-    } catch (err) {
-      console.error("[marketing] win-back batch threw:", err);
-      failed += chunk.length;
-    }
-  }
-  return { sent, failed };
+  return sendMarketingBatch(resend, recipients, {
+    ...opts,
+    keyPrefix: "winback",
+    build: (r, url) => buildWinbackEmail({ firstName: r.firstName, unsubscribeUrl: url }),
+  });
 }

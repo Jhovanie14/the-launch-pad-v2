@@ -8,26 +8,7 @@ import {
   winbackVisitDate,
   type WinbackResendLike,
 } from "./winback";
-
-/* A tiny in-memory stand-in for the Supabase query builder: enough of
-   select / eq / neq / gt / in to run the real queries against rows. */
-type Row = Record<string, unknown>;
-function fakeDb(tables: Record<string, Row[]>) {
-  const from = vi.fn((table: string) => {
-    const preds: ((r: Row) => boolean)[] = [];
-    const chain = {
-      select: () => chain,
-      eq: (c: string, v: unknown) => (preds.push((r) => r[c] === v), chain),
-      neq: (c: string, v: unknown) => (preds.push((r) => r[c] !== v), chain),
-      gt: (c: string, v: string) => (preds.push((r) => String(r[c]) > v), chain),
-      in: (c: string, vs: unknown[]) => (preds.push((r) => vs.includes(r[c])), chain),
-      then: (resolve: (v: { data: Row[]; error: null }) => void) =>
-        resolve({ data: (tables[table] ?? []).filter((r) => preds.every((p) => p(r))), error: null }),
-    };
-    return chain;
-  });
-  return { from } as any;
-}
+import { fakeDb, type Row } from "./testing/fakeDb";
 
 const TODAY = "2026-11-12";
 const VISIT = "2026-10-13"; // 30 days earlier
