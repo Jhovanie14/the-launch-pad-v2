@@ -130,6 +130,24 @@ export async function unblockCustomer(db: SupabaseClient, userId: string): Promi
   return data?.length ?? 0;
 }
 
+/**
+ * Has staff blocked this customer? True when a block was made for their
+ * account, or their email is on the block list (any alias). Used to skip
+ * emails that invite them back. An account-lookup error falls back to the
+ * email check (which itself fails open), so a hiccup only risks one email.
+ */
+export async function isCustomerBlocked(
+  db: SupabaseClient,
+  who: { userId?: string | null; email?: string | null },
+): Promise<boolean> {
+  if (who.userId) {
+    const { data, error } = await db.from("customer_blocks").select("id").eq("user_id", who.userId).limit(1);
+    if (error) console.error(`${LOG} account block lookup failed:`, error);
+    else if ((data ?? []).length > 0) return true;
+  }
+  return (await findCustomerBlock(db, { email: who.email })) !== null;
+}
+
 /** Throws a 403 when the email or any plate is blocked. */
 export async function assertNotBlocked(
   db: SupabaseClient,
