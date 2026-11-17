@@ -68,6 +68,26 @@ describe("findWelcomeRecipients", () => {
       find([consent({ user_id: "u1" })], { profiles: [{ id: "u1", email: "pat@example.com", full_name: "Pat Lee" }] }),
     ).resolves.toEqual([{ email: "pat@example.com", firstName: "Pat" }]);
   });
+
+  it("finds the profile name when the consent email is capitalised differently", async () => {
+    await expect(
+      find([consent({ email: "Pat@Example.com" })], {
+        profiles: [{ id: "u1", email: "pat@example.com", full_name: "Pat Lee" }],
+      }),
+    ).resolves.toEqual([{ email: "Pat@Example.com", firstName: "Pat" }]);
+  });
+
+  it("for a guest with no profile, takes the first name from their latest booking", async () => {
+    await expect(
+      find([consent()], {
+        bookings: [
+          { customer_email: "pat@example.com", customer_name: "Patricia Old", created_at: "2026-10-01T15:00:00Z" },
+          { customer_email: "pat@example.com", customer_name: "Pat Lee", created_at: "2026-11-15T14:00:00Z" },
+          { customer_email: "pat@example.com", customer_name: "  ", created_at: "2026-11-15T16:00:00Z" },
+        ],
+      }),
+    ).resolves.toEqual([{ email: "pat@example.com", firstName: "Pat" }]);
+  });
 });
 
 describe("buildWelcomeEmail", () => {

@@ -117,6 +117,15 @@ describe("findNudgeRecipients", () => {
     ).resolves.toEqual([{ email: "sam@example.com", firstName: "Sam", washes: 2, spent: 50 }]);
   });
 
+  it("sends one nudge to an account that booked under two emails yesterday", async () => {
+    await expect(
+      find([
+        wash({ user_id: "u1", customer_email: "home@example.com" }),
+        wash({ user_id: "u1", customer_email: "work@example.com" }),
+      ]),
+    ).resolves.toEqual([{ email: "home@example.com", firstName: "Sam", washes: 2, spent: 50 }]);
+  });
+
   it("sums prices given as strings", async () => {
     await expect(
       find([wash({ appointment_date: "2026-10-20", total_price: "25.00" }), wash({ total_price: "33.50" })]),
