@@ -56,7 +56,7 @@ export function buildFleetInvoiceEmail({
     ),
     payLink,
     paragraph(
-      `Questions about this invoice? Call us at <a href="tel:+18322198320">(832) 219-8320</a> or email <a href="mailto:info@thelaunchpadwash.com">info@thelaunchpadwash.com</a>.`,
+      `Should you have any questions about this invoice, please call us at <a href="tel:+18322198320">(832) 219-8320</a> or email <a href="mailto:info@thelaunchpadwash.com">info@thelaunchpadwash.com</a>.`,
     ),
     paragraph(`Kind regards,<br>The Launch Pad fleet services team`, { muted: true }),
   ].join("\n");
@@ -67,7 +67,7 @@ export function buildFleetInvoiceEmail({
       title: `Invoice ${invoiceNumber}`,
       preheader: `${money(amount)} due ${due}.`,
       body,
-      footerNote: "You're receiving this because your company has a fleet services contract with The Launch Pad.",
+      footerNote: "You are receiving this email because your company has a fleet services contract with The Launch Pad.",
     }),
   };
 }

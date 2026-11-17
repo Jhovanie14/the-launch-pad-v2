@@ -80,7 +80,7 @@ export function buildCampaignHtml(c: CampaignContent, opts: { unsubscribeUrl: st
       adminMessageBodyHtml(c.body ?? ""),
       button(`${SITE_URL}/service`, "Book a wash"),
     ].join("\n"),
-    footerNote: "You're getting this email because you asked for news and offers from The Launch Pad.",
+    footerNote: "You are receiving this email because you asked for news and offers from The Launch Pad.",
     unsubscribeUrl: opts.unsubscribeUrl,
   });
 }

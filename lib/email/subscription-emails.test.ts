@@ -143,6 +143,6 @@ describe("invoice email", () => {
   });
 
   it("keeps the subject meaning without emoji", () => {
-    expect(cases[0][1]("Ana").subject).toBe("Your subscription has been renewed — $39.99 charged");
+    expect(cases[0][1]("Ana").subject).toBe("Your membership has renewed: $39.99 charged");
   });
 });

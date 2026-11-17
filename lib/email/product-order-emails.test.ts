@@ -55,7 +55,8 @@ describe.each(Object.entries(builders))("%s email", (_name, build) => {
 
   it("escapes the customer's name and product names", () => {
     expect(html).not.toContain("<img src=x");
-    expect(html).toContain("&lt;img src=x onerror=alert(1)&gt;");
+    // The greeting uses the first name only ("Dear <first word>,"), so check the escaped start.
+    expect(html).toContain("&lt;img");
   });
 
   it("has no emoji in subject or body", () => {

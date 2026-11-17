@@ -64,11 +64,6 @@ export function bookingReference(bookingId: string | number): string {
   return `#${String(bookingId).slice(0, 8)}`;
 }
 
-function greeting(name: string | null | undefined): string {
-  const trimmed = (name ?? "").trim();
-  return paragraph(`Hi ${trimmed ? text(trimmed) : "there"},`);
-}
-
 // ---------------------------------------------------------------------------
 // Booking confirmation
 // ---------------------------------------------------------------------------
@@ -98,29 +93,29 @@ export function buildBookingConfirmationEmail(params: BookingConfirmationParams)
   rows.push(["Booking reference", text(bookingReference(params.bookingId))]);
 
   const body = [
-    heading("You're booked"),
-    greeting(params.customerName),
-    paragraph("Your appointment is confirmed. Here are the details:"),
+    heading("Your booking is confirmed"),
+    salutation(params.customerName),
+    paragraph("Thank you for booking with The Launch Pad. Your appointment is confirmed, and the details are below."),
     details(rows),
-    subheading("What to expect"),
+    subheading("Before your visit"),
     list([
-      `We're at <strong>10410 S Main St, Houston, TX 77025</strong>.`,
+      `We are located at <strong>10410 S Main St, Houston, TX 77025</strong>.`,
       "Please arrive about 10 minutes before your appointment.",
-      "If you need to reschedule, let us know at least 24 hours ahead.",
+      "Should you need to reschedule, please let us know at least 24 hours in advance.",
     ]),
     button(DIRECTIONS_URL, "Get directions"),
     button(`${SITE_URL}/dashboard/bookings`, "View or change your booking", "secondary"),
     signoff(),
   ].join("\n");
 
-  const title = `You're booked for ${date} at ${time}`;
+  const title = `Your booking is confirmed: ${date} at ${time}`;
   return {
     subject: title,
     html: emailLayout({
       title,
       preheader: `${params.servicePackage} on ${date} at ${time}, 10410 S Main St.`,
       body,
-      footerNote: "You're getting this because you booked an appointment at The Launch Pad.",
+      footerNote: "You are receiving this email because you booked an appointment at The Launch Pad.",
     }),
   };
 }
@@ -233,8 +228,8 @@ export function buildReceiptEmail(params: ReceiptEmailParams): BuiltEmail {
 
   const body = [
     heading("Your receipt"),
-    greeting(params.customerName),
-    paragraph("Thanks for coming in. Here's what you paid for. A PDF copy is attached for your records."),
+    salutation(params.customerName),
+    paragraph("Thank you for your visit. Your receipt is below, and a PDF copy is attached for your records."),
     details(facts),
     receiptTable(items, total),
     button(`${SITE_URL}/dashboard/bookings`, "View your bookings"),
@@ -242,12 +237,12 @@ export function buildReceiptEmail(params: ReceiptEmailParams): BuiltEmail {
   ].join("\n");
 
   return {
-    subject: "Your Car Wash Receipt",
+    subject: "Your receipt from The Launch Pad",
     html: emailLayout({
       title: "Your receipt from The Launch Pad",
       preheader: `${total} paid${date ? ` on ${date}` : ""}. Your PDF receipt is attached.`,
       body,
-      footerNote: "You're getting this because your car was serviced at The Launch Pad.",
+      footerNote: "You are receiving this email because your vehicle was serviced at The Launch Pad.",
     }),
   };
 }
@@ -265,9 +260,9 @@ export function buildContactReplyEmail({ firstName, reply }: ContactReplyParams)
   const message = text(String(reply ?? "")).replace(/\r?\n/g, "<br>");
   const body = [
     heading("A reply from The Launch Pad"),
-    greeting(typeof firstName === "string" ? firstName : ""),
+    salutation(typeof firstName === "string" ? firstName : ""),
     paragraph(message),
-    paragraph("Want to follow up? Write to us and we'll get back to you.", { muted: true }),
+    paragraph("Should you wish to follow up, please write to us and we will reply.", { muted: true }),
     button(`mailto:${CONTACT_EMAIL}`, "Write back to us"),
     signoff(),
   ].join("\n");
@@ -276,9 +271,9 @@ export function buildContactReplyEmail({ firstName, reply }: ContactReplyParams)
     subject: "A reply from The Launch Pad",
     html: emailLayout({
       title: "A reply from The Launch Pad",
-      preheader: "We've answered your message.",
+      preheader: "We have answered your message.",
       body,
-      footerNote: "You're getting this because you contacted us.",
+      footerNote: "You are receiving this email because you contacted The Launch Pad.",
     }),
   };
 }
