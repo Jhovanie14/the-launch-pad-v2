@@ -10,6 +10,7 @@ import {
   buildCancellationScheduledEmail,
   buildFamilyVehicleAddedEmail,
   buildFamilyVehicleRemovedEmail,
+  buildMembershipEndedNowEmail,
   buildPaymentFailedEmail,
   buildPrimaryVehicleSwappedEmail,
   buildSubscriptionCancelledEmail,
@@ -144,5 +145,33 @@ describe("invoice email", () => {
 
   it("keeps the subject meaning without emoji", () => {
     expect(cases[0][1]("Ana").subject).toBe("Your membership has renewed: $39.99 charged");
+  });
+});
+
+describe("membership ended now (admin Cancel now) email", () => {
+  const refunded = buildMembershipEndedNowEmail({ name: "James Carter", refundedAmount: 26.4 });
+  const notRefunded = buildMembershipEndedNowEmail({ name: "James Carter", refundedAmount: null });
+
+  it("has a formal subject", () => {
+    expect(refunded.subject).toBe("Your Launch Pad membership has ended");
+  });
+
+  it("greets formally and says the membership ended today", () => {
+    expect(refunded.html).toContain("Dear James,");
+    expect(refunded.html).toContain("has ended today");
+    expect(refunded.html).toContain("Kind regards,<br>The Launch Pad");
+  });
+
+  it("shows the refund and its timing only when there is one", () => {
+    expect(refunded.html).toContain("$26.40");
+    expect(refunded.html).toContain("5–10 business days");
+    expect(notRefunded.html).not.toContain("refund");
+  });
+
+  it("does not invite them to rejoin, and has one primary button", () => {
+    for (const e of [refunded, notRefunded]) {
+      expect(e.html).not.toMatch(/rejoin|come back/i);
+      expect(e.html.match(/background:#041335;color:#ffffff;/g)).toHaveLength(1);
+    }
   });
 });

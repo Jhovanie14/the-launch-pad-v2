@@ -36,6 +36,7 @@ import {
   isCommercialPlan,
 } from "@/lib/pricing/flockPricing";
 import { toast } from "sonner";
+import { useAuth } from "@/context/auth-context";
 import { cleanSearchTerm, houstonToday } from "@/lib/admin/bookingQuery";
 
 /** Users load a page at a time, searched in the database. */
@@ -51,6 +52,9 @@ function chunk<T>(items: T[], size: number): T[][] {
 
 export default function AdminUsersPage() {
   const supabase = createClient();
+  const { userProfile } = useAuth();
+  const isSuperAdmin = userProfile?.user_type === "super_admin";
+  const [cancelNowLoading, setCancelNowLoading] = useState<string | null>(null);
 
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -391,6 +395,80 @@ export default function AdminUsersPage() {
             },
           }),
     };
+  }
+
+  /**
+   * Super admins only: end the membership now. Fetches the refund amounts
+   * first so the dialog shows real figures; the server recomputes them.
+   */
+  async function openCancelNow(sub: any, product: "express" | "self_service") {
+    setCancelNowLoading(sub.user_id);
+    try {
+      const res = await fetch("/api/admin/subscriptions/cancel-now", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: sub.user_id, product, preview: true }),
+      });
+      const q = await res.json();
+      if (!res.ok) throw new Error(q.error ?? "Couldn't load the refund amounts");
+      const usd = (n: number) => `$${Number(n).toFixed(2)}`;
+      const alreadyBlocked = !!customerBlocks[sub.user_id]?.length;
+      setAdminAction({
+        endpoint: "/api/admin/subscriptions/cancel-now",
+        body: { userId: sub.user_id, product },
+        customerName: customerNameOf(sub),
+        title: "Cancel Now",
+        consequence:
+          "The membership ends immediately and the customer loses access today. The customer is emailed a formal notice, with the refund if there is one. This can't be undone.",
+        confirmLabel: "Yes, Cancel Now",
+        destructive: true,
+        refresh: product,
+        note: "Super admins only. Use when the business ends a membership.",
+        choice: {
+          name: "refund",
+          label: `Refund (last payment ${usd(q.paid)})`,
+          options: [
+            { value: "full", label: `Full refund: ${usd(q.full)}` },
+            {
+              value: "prorated",
+              label: `Prorated refund: about ${usd(q.prorated)} (${q.unusedDays} of ${q.periodDays} days unused; worked out to the second when you confirm)`,
+            },
+            { value: "none", label: "No refund" },
+          ],
+        },
+        ...(alreadyBlocked
+          ? {}
+          : {
+              option: {
+                name: "alsoBlock",
+                label: "Also block this customer",
+                description:
+                  "Their email and every license plate on their account go on the block list, so they can't start a new membership.",
+                confirmLabel: "Yes, Cancel Now and Block",
+              },
+            }),
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't load the refund amounts");
+    } finally {
+      setCancelNowLoading(null);
+    }
+  }
+
+  function renderCancelNowButton(sub: any, product: "express" | "self_service") {
+    if (!isSuperAdmin) return null;
+    return (
+      <Button
+        size="sm"
+        variant="outline"
+        disabled={cancelNowLoading === sub.user_id}
+        onClick={() => openCancelNow(sub, product)}
+        className="flex items-center gap-2 text-red-700 border-red-300 hover:bg-red-50 hover:text-red-800"
+      >
+        <Ban size={16} />
+        {cancelNowLoading === sub.user_id ? "Loading..." : "Cancel Now"}
+      </Button>
+    );
   }
 
   function addVehicleAction(sub: any): AdminSubscriptionAction {
@@ -821,6 +899,7 @@ export default function AdminUsersPage() {
                             Cancel Subscription
                           </Button>
                         )}
+                        {renderCancelNowButton(sub, "express")}
                         {(() => {
                           const lock = vehicleChangeLock(vehicleChanges[sub.user_id] || []);
                           return lock.locked && !sub.cancel_at_period_end ? (
@@ -993,6 +1072,7 @@ export default function AdminUsersPage() {
                             Cancel Subscription
                           </Button>
                         )}
+                        {renderCancelNowButton(selfSub, "self_service")}
                         {renderBlockButton(selfSub.user_id, customerNameOf(selfSub))}
                       </div>
                     </div>

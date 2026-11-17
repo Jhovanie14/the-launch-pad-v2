@@ -1092,6 +1092,13 @@ async function handleSubscriptionDeleted(event: Stripe.Event) {
 
   if (!profile?.email) return;
 
+  // Staff used "Cancel now": the customer already got our formal notice, so
+  // no "membership ended, come back" email on top of it.
+  if (subscription.metadata?.canceled_now === "true") {
+    console.log("Subscription deleted: cancelled now by staff, notice already sent");
+    return;
+  }
+
   // This email invites them to rejoin: never send it to someone staff blocked
   // (they can't buy a membership again anyway).
   if (await isCustomerBlocked(supabase, { userId: result.userId, email: profile.email })) {
