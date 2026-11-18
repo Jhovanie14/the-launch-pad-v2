@@ -5,7 +5,9 @@ import {
   flockPriceMetadata,
   isCommercialPlan,
 } from "@/lib/pricing/flockPricing";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { createClient } from "@/utils/supabase/server";
+import { AuthError, requireSuperAdmin } from "@/lib/auth/guards";
 
 /**
  * Reprice legacy commercial flock items to the full plan price.
@@ -19,9 +21,10 @@ import { NextRequest, NextResponse } from "next/server";
  * a catch-up amount for the current cycle. The new rate simply appears on their
  * next renewal invoice.
  *
- * Dry run by default — it reports what it would change and touches nothing.
- *   Preview: GET /api/admin/reprice-commercial-flock?secret=SECRET
- *   Apply:   GET /api/admin/reprice-commercial-flock?secret=SECRET&apply=true
+ * Signed-in super admins only (it used to take a secret in the URL, which ends
+ * up in logs and browser history, and changed Stripe from a GET link).
+ *   Preview (changes nothing): GET  /api/admin/reprice-commercial-flock
+ *   Apply:                     POST /api/admin/reprice-commercial-flock
  */
 
 interface ItemPlan {
@@ -42,13 +45,27 @@ interface SubscriptionResult {
   error?: string;
 }
 
-export async function GET(req: NextRequest) {
-  const secret = req.nextUrl.searchParams.get("secret");
-  if (!secret || secret !== process.env.BACKFILL_SECRET) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+async function guarded(apply: boolean) {
+  try {
+    await requireSuperAdmin(await createClient(), createAdminClient());
+  } catch (err) {
+    if (err instanceof AuthError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
+    throw err;
   }
+  return reprice(apply);
+}
 
-  const apply = req.nextUrl.searchParams.get("apply") === "true";
+export async function GET() {
+  return guarded(false);
+}
+
+export async function POST() {
+  return guarded(true);
+}
+
+async function reprice(apply: boolean) {
   const admin = createAdminClient();
 
   // Every active subscription, with its plan. Filtering happens in code so the
@@ -271,7 +288,7 @@ export async function GET(req: NextRequest) {
     mode: apply ? "apply" : "dry-run",
     message: apply
       ? "Repriced. Customers are not charged a proration — the new rate applies from their next renewal."
-      : "Dry run — nothing was changed. Re-run with &apply=true to write these changes.",
+      : "Dry run — nothing was changed. Send the same request as a POST to write these changes.",
     summary: {
       subscriptions_processed: results.length,
       items_repriced: itemsRepriced,

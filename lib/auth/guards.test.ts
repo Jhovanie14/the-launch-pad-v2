@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { AuthError, requireAdmin, requireUser } from "./guards";
+import { AuthError, requireAdmin, requireSuperAdmin, requireUser } from "./guards";
 
 function fakeServerClient(user: any) {
   return { auth: { getUser: vi.fn().mockResolvedValue({ data: { user } }) } };
@@ -28,6 +28,40 @@ describe("requireUser", () => {
       status: 401,
     });
     expect(AuthError).toBeTruthy();
+  });
+});
+
+describe("requireSuperAdmin", () => {
+  const profileDb = (profile: any) =>
+    ({
+      from: () => ({
+        select: () => ({
+          eq: () => ({ maybeSingle: vi.fn().mockResolvedValue({ data: profile }) }),
+        }),
+      }),
+    }) as any;
+
+  it("returns the user for an admin who is a super admin", async () => {
+    const result = await requireSuperAdmin(
+      fakeServerClient({ id: "u1" }) as any,
+      profileDb({ role: "admin", user_type: "super_admin" })
+    );
+    expect(result.id).toBe("u1");
+  });
+
+  it("refuses a regular admin and a customer with only user_type set", async () => {
+    await expect(
+      requireSuperAdmin(fakeServerClient({ id: "u1" }) as any, profileDb({ role: "admin", user_type: "admin" }))
+    ).rejects.toMatchObject({ status: 403 });
+    await expect(
+      requireSuperAdmin(fakeServerClient({ id: "u1" }) as any, profileDb({ role: "user", user_type: "super_admin" }))
+    ).rejects.toMatchObject({ status: 403 });
+  });
+
+  it("refuses when signed out", async () => {
+    await expect(
+      requireSuperAdmin(fakeServerClient(null) as any, profileDb({ role: "admin", user_type: "super_admin" }))
+    ).rejects.toMatchObject({ status: 401 });
   });
 });
 

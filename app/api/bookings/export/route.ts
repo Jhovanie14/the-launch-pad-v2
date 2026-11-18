@@ -1,10 +1,23 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
+import { AuthError, requireAdmin } from "@/lib/auth/guards";
 import ExcelJS from "exceljs";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
 export async function GET(req: Request) {
   const supabase = await createClient();
+  // Staff only. (Row-level security would already limit a customer to their
+  // own bookings, but an export of customer details belongs behind the admin
+  // check, not on the database alone.)
+  try {
+    await requireAdmin(supabase, createAdminClient());
+  } catch (err) {
+    if (err instanceof AuthError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
+    throw err;
+  }
   const { searchParams } = new URL(req.url);
   const type = searchParams.get("type") || "pdf";
   const dateFilter = searchParams.get("date");

@@ -35,3 +35,24 @@ export async function requireAdmin(
   if (profile?.role !== "admin") throw new AuthError("Forbidden", 403);
   return user;
 }
+
+/**
+ * Returns the authenticated user if they are an admin AND a super admin
+ * (profiles.user_type = 'super_admin'), else throws. For tools that move money
+ * or change many customers at once.
+ */
+export async function requireSuperAdmin(
+  supabase: SupabaseClient,
+  admin: SupabaseClient
+): Promise<User> {
+  const user = await requireUser(supabase);
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("role, user_type")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (profile?.role !== "admin" || profile?.user_type !== "super_admin") {
+    throw new AuthError("Only super admins can do this", 403);
+  }
+  return user;
+}
