@@ -11,7 +11,6 @@ import {
   ChevronUp,
   Star,
   Phone,
-  Mail,
 } from "lucide-react";
 
 export default function ProcessSteps() {

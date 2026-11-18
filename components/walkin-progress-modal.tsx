@@ -15,14 +15,12 @@ import { createClient } from "@/utils/supabase/client";
 import {
   CheckCircle,
   Clock,
-  AlertCircle,
   CreditCard,
   Banknote,
   Repeat,
   Car,
   Calendar,
   Phone,
-  Mail,
   User,
 } from "lucide-react";
 import { format } from "date-fns";

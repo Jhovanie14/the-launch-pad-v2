@@ -3,7 +3,6 @@
 import { Suspense } from "react";
 import SubscriptionCart from "@/components/subscription/SubscriptionCart";
 import AuthPromptModal from "@/components/user/authPromptModal";
-import { useAuth } from "@/context/auth-context";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 

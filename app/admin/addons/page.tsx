@@ -1,4 +1,3 @@
-import { AdminSidebar } from "@/components/admin/sidebar";
 import { getUserProfile } from "@/auth/actions";
 import AddOnsView from "./addons-view";
 

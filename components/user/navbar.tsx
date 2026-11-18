@@ -16,9 +16,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import {
   Sheet,  
   SheetHeader,
-  SheetDescription,
   SheetTitle,
-  SheetTrigger,
   SheetContent,
 } from "@/components/ui/sheet";
 import {
