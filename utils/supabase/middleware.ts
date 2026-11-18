@@ -1,6 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+// Signed-in visitors are sent to their dashboard from these.
+const PUBLIC_ROUTES = ["/", "/login", "/signup", "/about", "/blog", "/contact", "/faq"];
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -31,13 +34,23 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // Get user and role
+  // Get user (this also refreshes the session cookie, so it runs everywhere).
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // The role is only read on the routes below that redirect by it. Every
+  // other request (the booking steps, server actions, API calls) used to pay
+  // for a second database round trip here that nothing used.
+  const routeNeedsRole =
+    PUBLIC_ROUTES.includes(pathname) ||
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/profile") ||
+    pathname.startsWith("/settings");
+
   let userRole = "user";
-  if (user) {
+  if (user && routeNeedsRole) {
     try {
       const { data: profile } = await supabase
         .from("profiles")
@@ -51,18 +64,7 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
-  // Allow auth routes to not pass through without checks
-  const publicRoutes = [
-    "/",
-    "/login",
-    "/signup",
-    "/about",
-    "/blog",
-    "/contact",
-    "/faq",
-  ];
-
-  if (publicRoutes.includes(pathname)) {
+  if (PUBLIC_ROUTES.includes(pathname)) {
     if (user) {
       // Authenticated user should be redirected away from public routes
       return NextResponse.redirect(

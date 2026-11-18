@@ -28,7 +28,9 @@ export default function LoadingDots() {
             height={200}
             className="object-contain"
             priority
-            unoptimized
+            // Optimised: the source PNG is ~600 KB; Next serves it resized
+            // to 200px as WebP/AVIF (a few KB) for this loading screen.
+            sizes="200px"
           />
         </motion.div>
 
