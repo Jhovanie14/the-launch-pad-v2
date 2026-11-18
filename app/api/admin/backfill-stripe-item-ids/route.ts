@@ -1,17 +1,24 @@
 import { stripe } from "@/lib/stripe/stripe";
 import { createAdminClient } from "@/utils/supabase/admin";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { createClient } from "@/utils/supabase/server";
+import { AuthError, requireSuperAdmin } from "@/lib/auth/guards";
 
 // One-time backfill: populate stripe_item_id for subscription_vehicles rows that have NULL.
-// Protect with a secret so only you can trigger it.
-// Usage: GET /api/admin/backfill-stripe-item-ids?secret=YOUR_BACKFILL_SECRET
+// Usage: POST /api/admin/backfill-stripe-item-ids as a signed-in super admin.
+// (It used to be a GET with ?secret= in the URL, which ends up in logs and
+// browser history.)
 //
 // After running successfully, you can delete this file.
 
-export async function GET(req: NextRequest) {
-  const secret = req.nextUrl.searchParams.get("secret");
-  if (!secret || secret !== process.env.BACKFILL_SECRET) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function POST() {
+  try {
+    await requireSuperAdmin(await createClient(), createAdminClient());
+  } catch (err) {
+    if (err instanceof AuthError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
+    throw err;
   }
 
   const admin = createAdminClient();
