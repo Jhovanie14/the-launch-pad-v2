@@ -19,12 +19,15 @@ interface BookingSummaryProps {
   promoApplied: boolean;
 }
 
+// "YYYY-MM-DD" parses as UTC midnight, so it must be formatted in UTC too;
+// in the browser's zone (Houston is UTC-6) it read as the day before.
 const formatDate = (dateString: string) =>
   new Date(dateString).toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
+    timeZone: "UTC",
   });
 
 const formatTime = (time: string) => {

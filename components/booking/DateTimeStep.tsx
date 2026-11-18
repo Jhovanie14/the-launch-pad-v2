@@ -17,28 +17,10 @@ import LoadingDots from "@/components/loading";
 import { useBookingFlow } from "@/hooks/useBookingFlow";
 import type { BookingAuthContext } from "@/hooks/useBookingAuthContext";
 import { DETAILING_CLOSED_WEEKDAYS } from "@/lib/booking/detailingDays";
+import { BOOKING_TIME_SLOTS, isSlotPast } from "@/lib/booking/appointment";
 
-// Detailing is open 9:30 AM – 6:30 PM and a service takes up to an hour, so
-// the last start time is 5:30 PM.
-const timeSlots = [
-  "9:30",
-  "10:00",
-  "10:30",
-  "11:00",
-  "11:30",
-  "12:00",
-  "12:30",
-  "13:00",
-  "13:30",
-  "14:00",
-  "14:30",
-  "15:00",
-  "15:30",
-  "16:00",
-  "16:30",
-  "17:00",
-  "17:30",
-];
+// The same slots the server accepts (lib/booking/appointment.ts).
+const timeSlots: string[] = [...BOOKING_TIME_SLOTS];
 
 export default function DateTimeStep({ ctx }: { ctx: BookingAuthContext }) {
   const router = useRouter();
@@ -110,43 +92,10 @@ export default function DateTimeStep({ ctx }: { ctx: BookingAuthContext }) {
     return `${year}-${month}-${day}`;
   };
 
-  // The shop runs on America/Chicago time; compare slots in that zone.
-  const getChicagoTime = () => {
-    const now = new Date();
-    const chicagoStr = now.toLocaleString("en-US");
-    return new Date(chicagoStr);
-  };
-
-  const isToday = (date: Date) => {
-    const chicagoNow = getChicagoTime();
-    const chicagoDate = new Date(date.toLocaleString("en-US"));
-
-    return (
-      chicagoNow.getFullYear() === chicagoDate.getFullYear() &&
-      chicagoNow.getMonth() === chicagoDate.getMonth() &&
-      chicagoNow.getDate() === chicagoDate.getDate()
-    );
-  };
-
-  const isPastTime = (time: string) => {
-    if (!selectedDate || !isToday(selectedDate)) return false;
-
-    const chicagoNow = getChicagoTime();
-    const chicagoDate = new Date(selectedDate.toLocaleString("en-US"));
-
-    const [hours, minutes] = time.split(":").map(Number);
-    const chicagoSlot = new Date(
-      chicagoDate.getFullYear(),
-      chicagoDate.getMonth(),
-      chicagoDate.getDate(),
-      hours,
-      minutes,
-      0,
-      0
-    );
-
-    return chicagoSlot <= chicagoNow;
-  };
+  // A slot that has started is greyed out, judged by the shop's clock in
+  // Houston rather than the visitor's device (same rule the server applies).
+  const isPastTime = (time: string) =>
+    !!selectedDate && isSlotPast(formatLocaleDate(selectedDate), time);
 
   const handleContinue = () => {
     if (!selectedDate || !selectedTime) return;

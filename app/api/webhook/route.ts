@@ -42,6 +42,8 @@ interface BookingMetadata {
   si: string;
   /** 1 when a guest ticked the marketing opt-in; absent otherwise. */
   mk?: number;
+  /** Promo code id applied at checkout; its use is counted once paid. */
+  pid?: number;
   addOns?: Array<{ id: string }>;
 }
 
@@ -254,26 +256,43 @@ async function processNewBooking(session: Stripe.Checkout.Session) {
     // If no existing profile, we'll create booking without user_id (guest booking)
     console.log("User lookup result:", { existingProfile, userId });
 
-    // 2. Create vehicle (can exist without user_id for guest bookings)
-    const colors = vehicle_color.split(",").map((c: string) => c.trim());
-
-    const { data: vehicle, error: vehicleError } = await supabase
-      .from("vehicles")
-      .insert({
-        user_id: userId, // Will be null for guest bookings
-        make: vehicle_make,
-        model: vehicle_model,
-        year: vehicle_year,
-        colors,
-        body_type: vehicle_body_type,
-        // license_plate: vehicle_license_plate || null,
-      })
-      .select()
-      .single();
-
-    if (vehicleError) {
-      console.error("Vehicle creation error:", vehicleError);
-      return;
+    // 2. The car, by plate. Staff's New booking form sends only the plate, so
+    // make, model, year, colour and body type are all optional here. This used
+    // to call vehicle_color.split() on a missing colour, which threw after the
+    // customer had paid and lost the booking.
+    const plate = (vehicle_license_plate || "").trim().toUpperCase();
+    let vehicle: { id: string } | null = null;
+    if (plate) {
+      const { data: existing } = await supabase
+        .from("vehicles")
+        .select("id")
+        .eq("license_plate", plate)
+        .limit(1)
+        .maybeSingle();
+      vehicle = existing ?? null;
+    }
+    if (!vehicle) {
+      const colors = vehicle_color
+        ? vehicle_color.split(",").map((c: string) => c.trim()).filter(Boolean)
+        : null;
+      const { data: inserted, error: vehicleError } = await supabase
+        .from("vehicles")
+        .insert({
+          user_id: userId, // Will be null for guest bookings
+          license_plate: plate || null,
+          make: vehicle_make || null,
+          model: vehicle_model || null,
+          year: vehicle_year ? Number(vehicle_year) || null : null,
+          colors,
+          body_type: vehicle_body_type || null,
+        })
+        .select("id")
+        .single();
+      if (vehicleError || !inserted) {
+        // Paid but no car row: throw so Stripe retries rather than losing it.
+        throw new Error(`Vehicle creation failed: ${vehicleError?.message}`);
+      }
+      vehicle = inserted;
     }
 
     // 3. Get service package details
@@ -356,8 +375,7 @@ async function processNewBooking(session: Stripe.Checkout.Session) {
         console.log("Duplicate booking insert prevented by DB constraint.");
         return;
       }
-      console.error("Booking creation error:", bookingError);
-      return;
+      throw new Error(`Paid staff booking could not be saved: ${bookingError.message}`);
     }
 
     console.log("New booking created:", booking.id);
@@ -410,6 +428,9 @@ async function processNewBooking(session: Stripe.Checkout.Session) {
     console.log("✅ New booking processed successfully:", booking.id);
   } catch (error) {
     console.error("Error processing new booking:", error);
+    // Let Stripe retry. A retry after the booking was saved stops at the
+    // payment_intent duplicate check at the top, so nothing is created twice.
+    throw error;
   }
 }
 
@@ -662,11 +683,22 @@ async function processBooking(session: Stripe.Checkout.Session) {
         console.log("Duplicate booking insert prevented by DB constraint.");
         return;
       }
-      console.error("Supabase insert error:", error);
-      return;
+      // Paid but not saved: throw so the claim is released and Stripe retries,
+      // instead of the booking being lost with only a log line.
+      throw new Error(`Paid booking could not be saved: ${error.message}`);
     }
 
     console.log("Booking inserted!", bookingRows);
+
+    // Count the promo use now that payment has succeeded (never before, so an
+    // abandoned checkout does not use up the code).
+    if (bookingMeta.pid) {
+      await recordPromoRedemption(supabase, {
+        promoId: Number(bookingMeta.pid),
+        userId: bookingMeta.uid || null,
+        customerEmail: bookingMeta.em || null,
+      });
+    }
 
     // Guest marketing opt-in, recorded only now that the booking is paid and
     // saved. A replayed event returns above (duplicate checks), so this runs
@@ -738,6 +770,9 @@ async function processBooking(session: Stripe.Checkout.Session) {
     }
   } catch (err) {
     console.error("Booking insert exception:", err);
+    // Let Stripe retry. A retry after the booking was saved stops at the
+    // payment_intent duplicate check above, so nothing is created twice.
+    throw err;
   }
 }
 
