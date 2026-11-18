@@ -35,7 +35,7 @@ import {
   Ellipsis,
   Repeat,
 } from "lucide-react";
-import { format } from "date-fns";
+import { formatCalendarDate } from "@/lib/booking/calendarDate";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Booking } from "@/types";
@@ -187,7 +187,7 @@ export function BookingsTable({
                 <div className="text-sm">
                   <div className="flex items-center">
                     <Calendar className="h-4 w-4 mr-1" />
-                    {format(new Date(booking.appointment_date), "MMM d, yyyy")}
+                    {formatCalendarDate(booking.appointment_date)}
                   </div>
                   <div className="flex items-center text-muted-foreground">
                     <Clock className="h-4 w-4 mr-1" />

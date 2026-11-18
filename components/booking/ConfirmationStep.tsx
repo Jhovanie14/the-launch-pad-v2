@@ -260,7 +260,7 @@ export default function ConfirmationStep({ ctx }: { ctx: BookingAuthContext }) {
                     variant="outline"
                     className="border-blue-900"
                     disabled={!promoCode || isFreeForSubscriber}
-                    onClick={applyPromoCode}
+                    onClick={() => applyPromoCode()}
                   >
                     Apply
                   </Button>

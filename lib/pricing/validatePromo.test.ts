@@ -8,6 +8,7 @@ function fakeDb(
     alreadyRedeemed?: boolean;
     redemptionCount?: number;
     service?: { name: string; category: string } | null;
+    activeSubscription?: boolean;
   } = {}
 ) {
   const inserts: any[] = [];
@@ -18,6 +19,7 @@ function fakeDb(
         select: () => q,
         ilike: () => q,
         eq: () => q,
+        limit: () => q,
         insert: async (row: any) => {
           inserts.push({ table, row });
           return { error: null };
@@ -27,6 +29,8 @@ function fakeDb(
           if (table === "service_packages") return { data: opts.service ?? null };
           if (table === "promo_code_redemptions")
             return { data: opts.alreadyRedeemed ? { id: 1 } : null };
+          if (table === "user_subscription")
+            return { data: opts.activeSubscription ? { id: "sub1" } : null };
           return { data: null };
         },
         // Awaiting the builder directly = a head/count query.
@@ -133,6 +137,27 @@ describe("validatePromo", () => {
     );
     const r = await validatePromo(db, { code: "SVC", baseAmount: 100, userId: "u1", serviceId: "s1" });
     expect(r.discountedAmount).toBe(100);
+    expect(r.promoId).toBeNull();
+  });
+
+  it("rejects a code a guest already used with the same email", async () => {
+    const db = fakeDb(
+      { ...base, id: 13, discount_type: "percent", discount_percent: 50 },
+      { alreadyRedeemed: true }
+    );
+    const r = await validatePromo(db, {
+      code: "ONCE", baseAmount: 100, userId: null, customerEmail: "Guest@Example.com", serviceId: "s1",
+    });
+    expect(r.promoId).toBeNull();
+    expect(r.discountedAmount).toBe(100);
+  });
+
+  it("refuses a service-restricted code to an active member", async () => {
+    const db = fakeDb(
+      { ...base, id: 14, discount_type: "percent", discount_percent: 20, restricted_to_service: "express" },
+      { service: { name: "Interior Refresh", category: "express detail" }, activeSubscription: true }
+    );
+    const r = await validatePromo(db, { code: "SVC", baseAmount: 100, userId: "u1", serviceId: "s1" });
     expect(r.promoId).toBeNull();
   });
 

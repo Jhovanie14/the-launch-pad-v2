@@ -6,6 +6,7 @@ import Link from "next/link";
 import { stripe } from "@/lib/stripe/stripe";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { OrderData } from "@/types";
+import { formatCalendarDate } from "@/lib/booking/calendarDate";
 
 interface SuccessPageProps {
   searchParams: { session_id?: string; booking_id?: string };
@@ -152,7 +153,8 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
 
     orderData = {
       type: hasAddOns ? "checkout" : "subscription",
-      date: new Date(booking.appointment_date).toLocaleDateString(), // ✅ FIXED date
+      // A calendar date: formatted in UTC so it is not shown a day early.
+      date: formatCalendarDate(booking.appointment_date),
       orderNumber: booking.id,
       paymentMethod,
       items,

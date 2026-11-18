@@ -15,9 +15,13 @@ function fakeDb(fixtures: {
   addOns?: any[];
   subscription?: any;
   plan?: any;
+  subVehicles?: any[];
 }) {
   return {
     from(table: string) {
+      if (table === "subscription_vehicles") {
+        return { select: () => ({ eq: async () => ({ data: fixtures.subVehicles ?? [] }) }) };
+      }
       const api: any = {
         select: () => api,
         eq: () => api,
@@ -72,6 +76,44 @@ describe("computeBookingAmount", () => {
     });
     expect(result.amount).toBe(sale(10));
     expect(result.isFree).toBe(true);
+  });
+
+  describe("a member's free wash is for the cars on their plan", () => {
+    const member = {
+      service: { id: "s1", price: 50, category: "express detail" },
+      subscription: { id: "sub1", subscription_plan_id: "p1", status: "active" },
+      plan: { id: "p1", name: "Express Detail Monthly" },
+      subVehicles: [{ vehicle_id: "v1", vehicles: { license_plate: "ABC 1234" } }],
+    };
+    const price = (vehicle: { plate?: string | null; vehicleId?: string | null }) =>
+      computeBookingAmount(fakeDb(member), {
+        servicePackageId: "s1",
+        addOnIds: [],
+        userId: "u1",
+        isAuthenticated: true,
+        paymentMethod: "subscription",
+        vehicle,
+      });
+
+    it("is free for a plate on the plan, however it is typed", async () => {
+      expect((await price({ plate: "abc-1234" })).isFree).toBe(true);
+      expect((await price({ plate: " ABC1234 " })).isFree).toBe(true);
+    });
+
+    it("is free for a vehicle id on the plan", async () => {
+      expect((await price({ vehicleId: "v1" })).isFree).toBe(true);
+    });
+
+    it("is charged for any other car", async () => {
+      const other = await price({ plate: "XYZ 9999" });
+      expect(other.isFree).toBe(false);
+      expect(other.servicePrice).toBe(sale(50));
+      expect((await price({ vehicleId: "someone-elses" })).isFree).toBe(false);
+    });
+
+    it("is charged when no car is given", async () => {
+      expect((await price({})).isFree).toBe(false);
+    });
   });
 
   it("charges exactly what the display lib shows (sale included)", async () => {

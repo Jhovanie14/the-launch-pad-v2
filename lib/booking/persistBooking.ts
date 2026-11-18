@@ -24,6 +24,12 @@ export interface PersistBookingInput {
   customerPhone?: string;
   notes?: string;
   specialInstructions?: string;
+  /**
+   * Give an ownerless car with this plate to the booking's user. Staff
+   * bookings only: membership cars are stored without an owner, so letting a
+   * customer's booking claim one would hand them someone else's car.
+   */
+  claimUnownedVehicle?: boolean;
 }
 
 export async function persistBooking(
@@ -52,7 +58,7 @@ export async function persistBooking(
         .select("id")
         .single();
       vehicleId = inserted?.id || null;
-    } else if (!existing?.user_id && input.userId) {
+    } else if (input.claimUnownedVehicle !== false && !existing?.user_id && input.userId) {
       // Link unowned vehicle to the booking's user
       await db
         .from("vehicles")

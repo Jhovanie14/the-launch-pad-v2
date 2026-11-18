@@ -1,24 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { createClient } from "@/utils/supabase/client";
-import { createBooking } from "@/app/(dashboard)/dashboard/booking/action";
+import { checkPromoCode, createBooking } from "@/app/(dashboard)/dashboard/booking/action";
 import { getVehicleDisplay, VehicleDisplay } from "@/app/actions/vehicle";
 import {
   BookingSelection,
   buildBookingSearch,
   parseBookingSelection,
 } from "@/lib/booking/bookingParams";
-import {
-  DETAILING_CLOSED_MESSAGE,
-  isDetailingOpenOn,
-} from "@/lib/booking/detailingDays";
-import {
-  promoAppliesToOneTime,
-  promoMatchesService,
-} from "@/lib/pricing/promoRules";
+import { validateAppointment } from "@/lib/booking/appointment";
 import {
   AppliedPromo,
   DisplayPricing,
@@ -55,6 +48,7 @@ export function useBookingFlow(ctx: BookingAuthContext, step: BookingStep) {
 
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = useRef(false);
 
   // Catalogs (service step only)
   const [services, setServices] = useState<ServicePackageRow[]>([]);
@@ -69,7 +63,6 @@ export function useBookingFlow(ctx: BookingAuthContext, step: BookingStep) {
   // Promo (display-side; the server re-validates on submit)
   const [promoCode, setPromoCode] = useState("");
   const [appliedPromo, setAppliedPromo] = useState<AppliedPromo | null>(null);
-  const [appliedPromoId, setAppliedPromoId] = useState<number | null>(null);
 
   // --- Catalog fetch (service step) ---
   useEffect(() => {
@@ -180,81 +173,30 @@ export function useBookingFlow(ctx: BookingAuthContext, step: BookingStep) {
     [service, addOns]
   );
 
-  // --- Promo validation (display/UX only — server re-validates on submit).
-  // Ported verbatim from the dashboard confirmation page. ---
-  const applyPromoCode = useCallback(async () => {
-    if (!promoCode) return;
-
-    const { data, error } = await supabase
-      .from("promo_codes")
-      .select(
-        "id, discount_type, discount_percent, discount_amount, is_active, applies_to, max_uses, used_count, restricted_to_service"
-      )
-      .ilike("code", promoCode.trim())
-      .maybeSingle();
-
-    if (error || !data) {
-      toast.error("Invalid promo code");
-      return;
-    }
-    if (!data.is_active) {
-      toast.error("This promo code is not active");
-      return;
-    }
-    if (!promoAppliesToOneTime(data.applies_to)) {
-      toast.error("This promo code cannot be used for one-time bookings");
-      return;
-    }
-
-    if (data.restricted_to_service) {
-      if (!promoMatchesService(data.restricted_to_service, service)) {
-        toast.error(
-          `This promo code is only valid for "${data.restricted_to_service}" bookings`
-        );
-        return;
-      }
-      if (ctx.subscription) {
-        toast.error("This promo code is only available for non-subscribers");
-        return;
-      }
-    }
-
-    if (ctx.userId) {
-      const { data: existing } = await supabase
-        .from("promo_code_redemptions")
-        .select("id")
-        .eq("promo_code_id", data.id)
-        .eq("user_id", ctx.userId)
-        .maybeSingle();
-      if (existing) {
-        toast.error("You have already used this promo code");
-        return;
-      }
-    }
-
-    const dtype = (data.discount_type ?? "percent") as "percent" | "flat";
-    setAppliedPromoId(data.id);
-    if (dtype === "flat") {
-      setAppliedPromo({ type: "flat", value: Number(data.discount_amount) });
-      toast.success(
-        `Promo applied! $${Number(data.discount_amount).toFixed(2)} off your total`
-      );
-    } else {
-      setAppliedPromo({ type: "percent", value: Number(data.discount_percent) });
-      toast.success(`Promo applied! ${data.discount_percent}% off your total`);
-    }
-  }, [promoCode, service, ctx.userId, ctx.subscription, supabase]);
-
-  const recordPromoRedemption = useCallback(
+  // --- Promo preview. Checked on the server with the same rules the booking
+  // uses, so the browser never reads the promo_codes table. ---
+  const applyPromoCode = useCallback(
     async (guestEmail?: string) => {
-      if (!appliedPromoId) return;
-      await supabase.from("promo_code_redemptions").insert({
-        promo_code_id: appliedPromoId,
-        user_id: ctx.userId,
-        customer_email: guestEmail ?? ctx.userEmail,
-      });
+      if (!promoCode.trim() || !service) return;
+      const result = await checkPromoCode({
+        code: promoCode,
+        serviceId: service.id,
+        addOnIds: addOns.map((a) => a.id),
+        guestEmail,
+      }).catch(() => null);
+      if (!result || !result.ok) {
+        setAppliedPromo(null);
+        toast.error(result && !result.ok ? result.message : "Could not check that code. Please try again.");
+        return;
+      }
+      setAppliedPromo({ type: result.type, value: result.value });
+      toast.success(
+        result.type === "flat"
+          ? `Promo applied: $${result.value.toFixed(2)} off your total`
+          : `Promo applied: ${result.value}% off your total`
+      );
     },
-    [appliedPromoId, ctx.userId, ctx.userEmail, supabase]
+    [promoCode, service, addOns]
   );
 
   // --- Navigation between steps ---
@@ -283,16 +225,21 @@ export function useBookingFlow(ctx: BookingAuthContext, step: BookingStep) {
       paymentMethod: "card" | "cash" | "subscription";
       guest?: GuestInfo;
     }) => {
+      // A double tap, or the modal's button pressed after the main one, must
+      // not create a second booking or a second Stripe checkout.
+      if (submittingRef.current) return;
       if (!service) {
         toast.error("Missing service selection. Please start over.");
         return;
       }
-      // The date picker already blocks these days; this catches a stale or
+      // The date picker already blocks these; this catches a stale or
       // hand-edited URL with a friendly message instead of a server error.
-      if (!selection.date || !isDetailingOpenOn(selection.date)) {
-        toast.error(DETAILING_CLOSED_MESSAGE);
+      const notBookable = validateAppointment(selection.date ?? "", selection.time ?? "");
+      if (notBookable) {
+        toast.error(notBookable);
         return;
       }
+      submittingRef.current = true;
       setIsSubmitting(true);
       try {
         if (opts.paymentMethod === "cash" || opts.paymentMethod === "subscription") {
@@ -312,13 +259,12 @@ export function useBookingFlow(ctx: BookingAuthContext, step: BookingStep) {
             payment_method: opts.paymentMethod,
             promoCode,
           });
-          if (!isFree) await recordPromoRedemption();
+          // The server counts the promo use; nothing to record here.
           window.location.href = `${ctx.successPath}?booking_id=${booking.id}`;
           return;
         }
 
-        // Card → Stripe checkout
-        await recordPromoRedemption(opts.guest?.email);
+        // Card → Stripe checkout. The webhook counts the promo once paid.
         const res = await fetch("/api/checkout_sessions", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -353,6 +299,7 @@ export function useBookingFlow(ctx: BookingAuthContext, step: BookingStep) {
         toast.error(
           err instanceof Error ? err.message : "Failed to complete booking. Please try again."
         );
+        submittingRef.current = false;
         setIsSubmitting(false);
       }
     },
@@ -366,7 +313,6 @@ export function useBookingFlow(ctx: BookingAuthContext, step: BookingStep) {
       ctx.successPath,
       ctx.userFullName,
       ctx.userEmail,
-      recordPromoRedemption,
     ]
   );
 

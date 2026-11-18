@@ -22,6 +22,10 @@ export interface CustomerBlockMatch {
 export const CUSTOMER_BLOCKED_MESSAGE =
   "We're unable to offer a membership on this account. Please contact us if you have questions.";
 
+/** The same refusal for an online booking. */
+export const CUSTOMER_BLOCKED_BOOKING_MESSAGE =
+  "We're unable to take online bookings for this account. Please contact us if you have questions.";
+
 const LOG = "[customer-blocks]";
 
 /**
@@ -152,10 +156,11 @@ export async function isCustomerBlocked(
 export async function assertNotBlocked(
   db: SupabaseClient,
   who: { email?: string | null; plates?: (string | null | undefined)[] },
+  message: string = CUSTOMER_BLOCKED_MESSAGE,
 ): Promise<void> {
   const match = await findCustomerBlock(db, who);
   if (match) {
     console.warn(`${LOG} refused: blocked ${match.kind}`);
-    throw new ApiError(CUSTOMER_BLOCKED_MESSAGE, 403);
+    throw new ApiError(message, 403);
   }
 }

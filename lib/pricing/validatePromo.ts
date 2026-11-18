@@ -5,6 +5,8 @@ export interface PromoInput {
   code: string;
   baseAmount: number;
   userId: string | null;
+  /** A guest's email, so a guest cannot reuse a code a second time either. */
+  customerEmail?: string | null;
   serviceId: string;
 }
 
@@ -58,14 +60,30 @@ export async function validatePromo(
           .maybeSingle()
       : { data: null };
     if (!promoMatchesService(promo.restricted_to_service, service)) return none;
+
+    // Service-restricted codes are for non-members (the booking page says so;
+    // this is the rule the server actually enforces).
+    if (input.userId) {
+      const { data: activeSub } = await db
+        .from("user_subscription")
+        .select("id")
+        .eq("user_id", input.userId)
+        .eq("status", "active")
+        .limit(1)
+        .maybeSingle();
+      if (activeSub) return none;
+    }
   }
 
-  if (input.userId) {
-    const { data: redeemed } = await db
-      .from("promo_code_redemptions")
-      .select("id")
-      .eq("promo_code_id", promo.id)
-      .eq("user_id", input.userId)
+  // One use per customer: by account, or by email for a guest.
+  const guestEmail = input.customerEmail?.trim().toLowerCase();
+  if (input.userId || guestEmail) {
+    const q = db.from("promo_code_redemptions").select("id").eq("promo_code_id", promo.id);
+    const { data: redeemed } = await (input.userId
+      ? q.eq("user_id", input.userId)
+      : q.ilike("customer_email", guestEmail!.replace(/[\\%_]/g, "\\$&"))
+    )
+      .limit(1)
       .maybeSingle();
     if (redeemed) return none;
   }
