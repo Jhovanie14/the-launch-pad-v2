@@ -166,7 +166,10 @@ export async function createBooking(car: CarData) {
         })
       : { discountedAmount: priced.amount, promoId: null };
 
-  const booking = await persistBooking(supabase, {
+  // Saved with the service role: everything above has already been checked
+  // here, and the database no longer lets a customer's own login insert
+  // bookings, add-ons or cars directly (migration 20261118000000).
+  const booking = await persistBooking(admin, {
     userId: currentUser.id,
     licensePlate: plate ?? undefined,
     vehicleId: vehicleId ?? undefined,
