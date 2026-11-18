@@ -7,215 +7,197 @@ import {
   flockPriceMetadata,
   flockUnitAmountCents,
 } from "@/lib/pricing/flockPricing";
+import { FIRST_SUBSCRIPTION_PROMO } from "@/lib/pricing/firstSubscriptionPromo";
+import {
+  firstPeriodDiscountCents,
+  parseMembershipCheckout,
+} from "@/lib/subscriptions/membershipCheckout";
+
+/** Membership statuses that still hold a car (anything not ended). */
+const ENDED_STATUSES = ["canceled", "cancelled", "incomplete_expired"];
+
+const json = (body: unknown, status: number) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
 
 export async function POST(req: Request) {
   try {
     return await handler(req);
   } catch (err: any) {
     console.error("[create-checkout-session] unhandled error:", err?.message);
-    return new Response(JSON.stringify({ error: err?.message ?? "Internal server error" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return json({ error: "We could not start checkout. Please try again." }, 500);
   }
 }
 
+/**
+ * Starts a membership checkout for the SIGNED-IN customer. Nothing the browser
+ * sends decides who is billed, what it costs or which discount applies: the
+ * account comes from the session, prices from the plan in the database and
+ * Stripe, and the first-period offer is worked out here.
+ */
 async function handler(req: Request) {
   const supabase = await createClient();
-  const body = await req.json();
-  const { planId, billingCycle, userId, vehicle, vehicles, couponId } =
-    body as {
-      planId: string;
-      billingCycle: "monthly" | "yearly";
-      userId?: string | null;
-      vehicle?: {
-        license_plate?: string;
-      };
-      vehicles?: Array<{
-        license_plate?: string;
-        planId?: string;
-      }>;
-      couponId?: string;
-    };
-
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const email = user?.email;
-
-  // Support both single vehicle (legacy) and multiple vehicles
-  const vehiclesList = vehicles || (vehicle ? [vehicle] : []);
-
-  if (vehiclesList.length === 0) {
-    return new Response(
-      JSON.stringify({ error: "At least one vehicle is required" }),
-      {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+  if (!user?.email) {
+    return json({ error: "Please sign in to start a membership." }, 401);
   }
+
+  const parsed = parseMembershipCheckout(await req.json().catch(() => null));
+  if (!parsed.ok) return json({ error: parsed.error }, 400);
+  const { planId, billingCycle, plates } = parsed.value;
+  const interval = billingCycle === "monthly" ? "month" : "year";
+
+  const admin = createAdminClient();
 
   // Staff-blocked customers and cars can't start a membership. Checked before
   // any vehicle row or Stripe price is created.
-  const blocked = await findCustomerBlock(createAdminClient(), {
-    email,
-    plates: vehiclesList.map((v) => v.license_plate),
-  });
-  if (blocked) {
-    return new Response(JSON.stringify({ error: CUSTOMER_BLOCKED_MESSAGE }), {
-      status: 403,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
+  const blocked = await findCustomerBlock(admin, { email: user.email, plates });
+  if (blocked) return json({ error: CUSTOMER_BLOCKED_MESSAGE }, 403);
 
-  // Ensure all vehicles exist and get their IDs
-  const vehicleIds: (string | null)[] = [];
-  for (const vehicle of vehiclesList) {
-    const vehicleId = await ensureVehicle({
-      license_plate: vehicle.license_plate ?? "",
-    });
-    vehicleIds.push(vehicleId);
+  // One membership per account: a second one would break every lookup that
+  // expects a single active row (cancel, billing portal, add a car).
+  const { data: memberships, error: membershipsError } = await admin
+    .from("user_subscription")
+    .select("id, status")
+    .eq("user_id", user.id);
+  if (membershipsError) throw membershipsError;
+  const live = (memberships ?? []).find(
+    (m) => !ENDED_STATUSES.includes(String(m.status ?? "").toLowerCase())
+  );
+  if (live) {
+    return json(
+      { error: "You already have a membership. Add more cars from your dashboard." },
+      409
+    );
   }
+  const hadMembershipBefore = (memberships ?? []).length > 0;
 
-  // Preload all relevant plan IDs (global planId and per-vehicle planIds)
-  const planIdsToFetch = new Set<string>();
-  if (planId) planIdsToFetch.add(planId);
-  for (const v of vehiclesList) {
-    if ((v as any).planId) planIdsToFetch.add((v as any).planId);
-  }
-
-  const { data: plans, error: plansError } = await supabase
+  const { data: plan, error: planError } = await admin
     .from("subscription_plans")
     .select(
-      "id, name, is_commercial, stripe_price_id_monthly, stripe_price_id_yearly, monthly_price, yearly_price"
+      "id, name, is_active, is_commercial, stripe_price_id_monthly, stripe_price_id_yearly, monthly_price, yearly_price"
     )
-    .in("id", Array.from(planIdsToFetch));
+    .eq("id", planId)
+    .maybeSingle();
+  if (planError) throw planError;
+  if (!plan || plan.is_active === false) {
+    return json({ error: "That plan is not available. Please choose another." }, 400);
+  }
 
-  if (plansError) console.error("Error fetching plans", plansError);
+  // Resolve the plan's Stripe price for this billing cycle.
+  let priceId: string | null =
+    (billingCycle === "monthly" ? plan.stripe_price_id_monthly : plan.stripe_price_id_yearly) ?? null;
+  if (priceId && priceId.startsWith("prod_")) {
+    const prices = await stripe.prices.list({
+      product: priceId,
+      active: true,
+      recurring: { interval },
+      limit: 1,
+    });
+    priceId = prices.data[0]?.id ?? null;
+  }
+  if (!priceId || !priceId.startsWith("price_")) {
+    return json({ error: "This plan cannot be bought online yet. Please contact us." }, 400);
+  }
+  const basePrice = await stripe.prices.retrieve(priceId);
+  const baseCents = basePrice.unit_amount ?? 0;
 
-  console.log(
-    "planId received:",
-    planId,
-    "lookup error:",
-    plansError,
-    "plan:",
-    planId
-  );
+  // The cars. New ones belong to this customer.
+  const vehicleIds: string[] = [];
+  for (const plate of plates) {
+    const id = await ensureVehicle({ license_plate: plate, user_id: user.id });
+    if (!id) return json({ error: `We could not save ${plate}. Please try again.` }, 500);
+    vehicleIds.push(id);
+  }
 
-  // Build line items: for each vehicle, use its plan's stripe price; apply 10% discount for additional vehicles
-  const lineItems: Array<{ price: string; quantity: number }> = [];
-  for (let i = 0; i < vehiclesList.length; i++) {
-    const isFirstVehicle = i === 0;
-    const vehicle = vehiclesList[i] as any;
-    const vPlanId: string = vehicle.planId ?? planId;
-    const vPlan = (plans || []).find((p: any) => p.id === vPlanId) || null;
-
-    if (!vPlan) {
-      return new Response(
-        JSON.stringify({ error: `Missing plan for vehicle at index ${i}` }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
+  // A car can only be on one live membership.
+  const { data: links, error: linksError } = await admin
+    .from("subscription_vehicles")
+    .select("vehicle_id, subscription_id")
+    .in("vehicle_id", vehicleIds);
+  if (linksError) throw linksError;
+  if ((links ?? []).length > 0) {
+    const { data: holders, error: holdersError } = await admin
+      .from("user_subscription")
+      .select("id, status")
+      .in("id", [...new Set((links ?? []).map((l) => l.subscription_id))]);
+    if (holdersError) throw holdersError;
+    const liveIds = new Set(
+      (holders ?? [])
+        .filter((h) => !ENDED_STATUSES.includes(String(h.status ?? "").toLowerCase()))
+        .map((h) => h.id)
+    );
+    const taken = (links ?? []).find((l) => liveIds.has(l.subscription_id));
+    if (taken) {
+      const plate = plates[vehicleIds.indexOf(taken.vehicle_id)] ?? "One of these cars";
+      return json(
+        { error: `${plate} is already on a membership. Please contact us if this is your car.` },
+        409
       );
-    }
-
-    const rawId =
-      billingCycle === "monthly"
-        ? vPlan.stripe_price_id_monthly
-        : vPlan.stripe_price_id_yearly;
-    let vPriceId: string | null = rawId ?? null;
-    if (vPriceId && vPriceId.startsWith("prod_")) {
-      const prices = await stripe.prices.list({
-        product: vPriceId,
-        active: true,
-        recurring: { interval: billingCycle === "monthly" ? "month" : "year" },
-        limit: 1,
-      });
-      vPriceId = prices.data[0]?.id ?? null;
-    }
-
-    if (!vPriceId || !vPriceId.startsWith("price_")) {
-      return new Response(
-        JSON.stringify({ error: "Plan missing Stripe price for vehicle" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    if (isFirstVehicle) {
-      // Apply promo discount only to the primary vehicle's price
-      if (couponId) {
-        const basePriceObj = await stripe.prices.retrieve(vPriceId);
-        const baseAmount = basePriceObj.unit_amount ?? 0;
-        // Retrieve coupon percent to calculate discounted amount
-        const coupon = await stripe.coupons.retrieve(couponId);
-        const discountFactor = coupon.percent_off ? (100 - coupon.percent_off) / 100 : 1;
-        const discountedAmount = Math.round(baseAmount * discountFactor);
-        const discountedPrice = await stripe.prices.create({
-          currency: basePriceObj.currency,
-          unit_amount: discountedAmount,
-          recurring: { interval: billingCycle === "monthly" ? "month" : "year" },
-          product: basePriceObj.product as string,
-          metadata: { plan_id: vPlanId, is_promo_discount: "true" },
-        });
-        lineItems.push({ price: discountedPrice.id, quantity: 1 });
-      } else {
-        lineItems.push({ price: vPriceId, quantity: 1 });
-      }
-    } else {
-      // Additional vehicle. Personal plans get the family discount; commercial
-      // plans bill at the full plan price. Either way this is a separate price
-      // object per vehicle: Stripe rejects the same price twice in one
-      // subscription, and remove-vehicle matches items by vehicle_index.
-      const basePriceObj = await stripe.prices.retrieve(vPriceId);
-      const baseAmount = basePriceObj.unit_amount ?? 0;
-      const discountedAmount = flockUnitAmountCents(baseAmount, vPlan);
-      const discountedPrice = await stripe.prices.create({
-        currency: basePriceObj.currency,
-        unit_amount: discountedAmount,
-        recurring: {
-          interval: billingCycle === "monthly" ? "month" : "year",
-        },
-        product: basePriceObj.product as string,
-        metadata: {
-          ...flockPriceMetadata(vPlanId, vPlan),
-          vehicle_index: i.toString(),
-        },
-      });
-      lineItems.push({ price: discountedPrice.id, quantity: 1 });
     }
   }
 
+  // Line items: the primary car at the plan price; each extra car at the
+  // family (or commercial) price as its own price object, because Stripe
+  // rejects the same price twice and remove-vehicle matches by vehicle_index.
+  const lineItems: Array<{ price: string; quantity: number }> = [{ price: priceId, quantity: 1 }];
+  for (let i = 1; i < plates.length; i++) {
+    const extra = await stripe.prices.create({
+      currency: basePrice.currency,
+      unit_amount: flockUnitAmountCents(baseCents, plan),
+      recurring: { interval },
+      product: basePrice.product as string,
+      metadata: {
+        ...flockPriceMetadata(planId, plan),
+        vehicle_index: i.toString(),
+      },
+    });
+    lineItems.push({ price: extra.id, quantity: 1 });
+  }
 
-  // console.log("Creating checkout session with metadata:", {
-  //   app_user_id: user?.id ?? userId ?? "",
-  //   plan_id: planId,
-  //   billing_cycle: billingCycle,
-  //   vehicle_ids: vehicleIds.join(","),
-  //   vehicle_count: vehiclesList.length,
-  // });
+  // First-period offer: the cart's percentage of the primary car only, as a
+  // single-use coupon that Stripe applies to the first invoice and never to a
+  // renewal. (It used to be a permanently discounted price, and the coupon id
+  // came from the browser.)
+  const discountCents = firstPeriodDiscountCents({
+    hadMembershipBefore,
+    promo: FIRST_SUBSCRIPTION_PROMO,
+    primaryCarCents: baseCents,
+  });
+  let discounts: Array<{ coupon: string }> | undefined;
+  if (discountCents > 0) {
+    const coupon = await stripe.coupons.create({
+      amount_off: discountCents,
+      currency: basePrice.currency,
+      duration: "once",
+      max_redemptions: 1,
+      redeem_by: Math.floor(Date.now() / 1000) + 2 * 24 * 60 * 60,
+      name: `First ${interval} ${FIRST_SUBSCRIPTION_PROMO.percent}% off`,
+      metadata: { purpose: "first_period_offer", user_id: user.id, plan_id: planId },
+    });
+    discounts = [{ coupon: coupon.id }];
+  }
 
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     payment_method_types: ["card"],
     line_items: lineItems,
-    customer_email: email,
-
-    // allow_promotion_codes: true,
+    customer_email: user.email,
+    ...(discounts ? { discounts } : {}),
     success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/pricing/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/pricing`,
     metadata: {
-      app_user_id: user?.id ?? userId ?? "",
+      app_user_id: user.id,
       plan_id: planId,
       billing_cycle: billingCycle,
-      vehicle_ids: vehicleIds.filter(Boolean).join(","),
-      vehicle_count: vehiclesList.length.toString(),
+      vehicle_ids: vehicleIds.join(","),
+      vehicle_count: plates.length.toString(),
     },
   });
 
-  return new Response(JSON.stringify({ url: session.url }), { status: 200 });
+  return json({ url: session.url }, 200);
 }
