@@ -15,6 +15,35 @@ export interface AdminMessageParams {
   bannerUrl?: string;
 }
 
+export type DirectEmailRequest =
+  | { ok: true; value: AdminMessageParams & { to: string } }
+  | { ok: false; error: string };
+
+const asText = (v: unknown) => (typeof v === "string" ? v.trim() : "");
+
+/**
+ * Checks and tidies what the Direct email page posts. The address, subject and
+ * title are trimmed, because a stray space typed into the subject used to reach
+ * the customer's inbox. Exactly one address is accepted, because this page is
+ * for one customer at a time. The body keeps its line breaks.
+ */
+export function parseDirectEmailRequest(input: unknown): DirectEmailRequest {
+  const raw = (input && typeof input === "object" ? input : {}) as Record<string, unknown>;
+  const to = asText(raw.to);
+  const subject = asText(raw.subject);
+  const title = asText(raw.title) || undefined;
+  const body = typeof raw.body === "string" ? raw.body : "";
+  const bannerUrl = asText(raw.bannerUrl) || undefined;
+
+  if (!to || !subject || !body.trim()) {
+    return { ok: false, error: "An address, a subject and a message are required." };
+  }
+  if (!/^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/.test(to)) {
+    return { ok: false, error: "That email address does not look right." };
+  }
+  return { ok: true, value: { to, subject, title, body, bannerUrl } };
+}
+
 /** One escaped paragraph per non-empty line; "•" / "-" lines are indented. */
 export function adminMessageBodyHtml(body: string): string {
   return body
