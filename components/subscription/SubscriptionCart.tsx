@@ -104,13 +104,12 @@ export default function SubscriptionCart({
     }
   }, [user]);
 
-  // Promo configuration
+  // Promo display only. The server decides whether the offer applies (first
+  // membership only) and creates the discount; nothing here is sent to it.
   const PROMO_CONFIG = {
     enabled: FIRST_SUBSCRIPTION_PROMO.enabled,
-    stripeCouponId_Subscription: "SOBGLcnf",
     isSubscriptionPercent: FIRST_SUBSCRIPTION_PROMO.percent,
   };
-  // HLT1ibSl
 
   useEffect(() => {
     if (!planId) return;
@@ -182,9 +181,26 @@ export default function SubscriptionCart({
     return isValid;
   };
 
-  const promoDiscountPercent = PROMO_CONFIG.enabled
-    ? PROMO_CONFIG.isSubscriptionPercent
-    : 0;
+  // The offer is for a first membership only (the server enforces this);
+  // hide it from someone who has had one before so the cart matches Stripe.
+  const [hadMembership, setHadMembership] = useState(false);
+  useEffect(() => {
+    if (!user?.id) return;
+    let active = true;
+    supabase
+      .from("user_subscription")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .then(({ count }) => {
+        if (active) setHadMembership((count ?? 0) > 0);
+      });
+    return () => {
+      active = false;
+    };
+  }, [user?.id, supabase]);
+
+  const promoDiscountPercent =
+    PROMO_CONFIG.enabled && !hadMembership ? PROMO_CONFIG.isSubscriptionPercent : 0;
 
   // Commercial plans bill every vehicle at the plan rate — no family discount.
   const planHasFlockDiscount = hasFlockDiscount(plan);
@@ -275,19 +291,13 @@ export default function SubscriptionCart({
         license_plate: vehicle.license_plate,
       }));
 
-      const couponId = PROMO_CONFIG.enabled
-        ? PROMO_CONFIG.stripeCouponId_Subscription
-        : undefined;
-
       const res = await fetch("/api/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           planId,
           billingCycle,
-          userId: user?.id,
           vehicles: vehiclesPayload,
-          couponId: couponId,
         }),
       });
 
