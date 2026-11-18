@@ -58,7 +58,6 @@ export function useBookingFlow(ctx: BookingAuthContext, step: BookingStep) {
   const [service, setService] = useState<ServicePackageRow | null>(null);
   const [addOns, setAddOns] = useState<AddOnRow[]>([]);
   const [vehicleInfo, setVehicleInfo] = useState<VehicleDisplay | null>(null);
-  const [isVehicleSubscribed, setIsVehicleSubscribed] = useState(false);
 
   // Promo (display-side; the server re-validates on submit)
   const [promoCode, setPromoCode] = useState("");
@@ -100,27 +99,20 @@ export function useBookingFlow(ctx: BookingAuthContext, step: BookingStep) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      if (selection.serviceId) {
-        const { data } = await supabase
-          .from("service_packages")
-          .select("*")
-          .eq("id", selection.serviceId)
-          .single();
-        if (!cancelled) setService(data);
-      } else {
-        setService(null);
-      }
-      if (selection.addOnIds.length > 0) {
-        const { data, error } = await supabase
-          .from("add_ons")
-          .select("*")
-          .in("id", selection.addOnIds);
-        if (error) console.error(error);
-        else if (!cancelled) setAddOns(data ?? []);
-      } else {
-        setAddOns([]);
-      }
-      if (step !== "service" && !cancelled) setLoading(false);
+      // Both at once: these used to run one after the other on every step.
+      const [serviceResult, addOnsResult] = await Promise.all([
+        selection.serviceId
+          ? supabase.from("service_packages").select("*").eq("id", selection.serviceId).maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
+        selection.addOnIds.length > 0
+          ? supabase.from("add_ons").select("*").in("id", selection.addOnIds)
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+      if (cancelled) return;
+      setService((serviceResult.data as ServicePackageRow | null) ?? null);
+      if (addOnsResult.error) console.error(addOnsResult.error);
+      else setAddOns((addOnsResult.data as AddOnRow[] | null) ?? []);
+      if (step !== "service") setLoading(false);
     })();
     return () => {
       cancelled = true;
@@ -135,22 +127,17 @@ export function useBookingFlow(ctx: BookingAuthContext, step: BookingStep) {
     getVehicleDisplay({ licensePlate, vehicleId }).then(setVehicleInfo);
   }, [step, selection.licensePlate, selection.vehicleId]);
 
-  // --- Is the selected vehicle on the active subscription? ---
-  useEffect(() => {
-    const plate = selection.licensePlate;
-    const subId = ctx.subscription?.id;
-    if (!plate || !subId) {
-      setIsVehicleSubscribed(false);
-      return;
-    }
-    supabase
-      .from("subscription_vehicles")
-      .select("id, vehicle:vehicles!inner(license_plate)")
-      .eq("subscription_id", subId)
-      .eq("vehicles.license_plate", plate)
-      .maybeSingle()
-      .then(({ data }) => setIsVehicleSubscribed(!!data));
-  }, [selection.licensePlate, ctx.subscription?.id, supabase]);
+  // --- Is the selected vehicle on the active subscription? The membership
+  // (already loaded, with its cars) answers it; no extra query. Same plate
+  // comparison as the server (case, spaces and dashes ignored). ---
+  const isVehicleSubscribed = useMemo(() => {
+    const key = (p: string | null | undefined) => (p ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const plate = key(selection.licensePlate);
+    const cars = (ctx.subscription?.vehicles ?? []) as Array<{ id?: string; license_plate?: string | null }>;
+    return cars.some(
+      (v) => (plate && key(v.license_plate) === plate) || (!!selection.vehicleId && v.id === selection.vehicleId)
+    );
+  }, [selection.licensePlate, selection.vehicleId, ctx.subscription]);
 
   const planName = ctx.subscription?.subscription_plans?.name ?? null;
 
@@ -336,5 +323,9 @@ export function useBookingFlow(ctx: BookingAuthContext, step: BookingStep) {
     goToConfirmation,
     isSubmitting,
     submit,
+    // Everything that decides the price is loaded: the chosen service and
+    // add-ons, sign-in and membership. Until then a member could be shown a
+    // payment screen for a wash that is free.
+    ready: ctx.ready && !loading && !!service,
   };
 }

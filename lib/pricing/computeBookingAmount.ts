@@ -79,11 +79,29 @@ export async function computeBookingAmount(
     throw new ApiError("Cash payment requires an account", 400);
   }
 
-  const { data: service } = await db
-    .from("service_packages")
-    .select("id, name, price, category, duration, is_active")
-    .eq("id", input.servicePackageId)
-    .maybeSingle();
+  // The service, the add-ons and the customer's membership do not depend on
+  // each other, so they are read at the same time (they used to be three
+  // round trips in a row on every booking, checkout and promo check).
+  const requested = [...new Set(input.addOnIds.filter(Boolean))];
+  const signedIn = input.isAuthenticated && !!input.userId;
+  const [{ data: service }, { data: addOns }, { data: sub }] = await Promise.all([
+    db
+      .from("service_packages")
+      .select("id, name, price, category, duration, is_active")
+      .eq("id", input.servicePackageId)
+      .maybeSingle(),
+    requested.length > 0
+      ? db.from("add_ons").select("id, price, duration, is_active").in("id", requested)
+      : Promise.resolve({ data: [] as any[] }),
+    signedIn
+      ? db
+          .from("user_subscription")
+          .select("id, subscription_plan_id, status")
+          .eq("user_id", input.userId!)
+          .eq("status", "active")
+          .maybeSingle()
+      : Promise.resolve({ data: null as any }),
+  ]);
 
   if (!service) throw new ApiError("Invalid service package", 400);
   if (input.requireActive && service.is_active === false) {
@@ -93,12 +111,7 @@ export async function computeBookingAmount(
   let addOnsTotal = 0;
   let addOnMinutes = 0;
   let addOnIds: string[] = [];
-  const requested = [...new Set(input.addOnIds.filter(Boolean))];
   if (requested.length > 0) {
-    const { data: addOns } = await db
-      .from("add_ons")
-      .select("id, price, duration, is_active")
-      .in("id", requested);
     const usable = (addOns ?? []).filter(
       (a: any) => !(input.requireActive && a.is_active === false)
     );
@@ -111,25 +124,16 @@ export async function computeBookingAmount(
   }
 
   let isFree = false;
-  if (input.isAuthenticated && input.userId) {
-    const { data: sub } = await db
-      .from("user_subscription")
-      .select("id, subscription_plan_id, status")
-      .eq("user_id", input.userId)
-      .eq("status", "active")
+  if (signedIn && sub) {
+    const { data: plan } = await db
+      .from("subscription_plans")
+      .select("id, name")
+      .eq("id", sub.subscription_plan_id)
       .maybeSingle();
-
-    if (sub) {
-      const { data: plan } = await db
-        .from("subscription_plans")
-        .select("id, name")
-        .eq("id", sub.subscription_plan_id)
-        .maybeSingle();
-      if (plan && planCoversCategory(plan.name, service.category ?? "")) {
-        isFree = input.vehicle
-          ? await vehicleOnSubscription(db, sub.id, input.vehicle)
-          : true;
-      }
+    if (plan && planCoversCategory(plan.name, service.category ?? "")) {
+      isFree = input.vehicle
+        ? await vehicleOnSubscription(db, sub.id, input.vehicle)
+        : true;
     }
   }
 

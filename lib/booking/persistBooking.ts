@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { after } from "next/server";
 import { sendBookingConfirmationEmail } from "@/lib/email/sendConfirmation";
 
 // Shared write path for the customer and admin booking actions. It trusts
@@ -96,7 +97,6 @@ export async function persistBooking(
     throw error;
   }
 
-  let addOnNames: string[] = [];
   if (input.addOnIds.length > 0) {
     const { error: addOnError } = await db.from("booking_add_ons").insert(
       input.addOnIds.map((addOnId) => ({
@@ -107,32 +107,37 @@ export async function persistBooking(
     if (addOnError) {
       console.error("Error inserting booking add-ons:", addOnError);
     }
-
-    const { data: addOnsData, error: addOnsError } = await db
-      .from("add_ons")
-      .select("name")
-      .in("id", input.addOnIds);
-    if (addOnsError) {
-      console.error("Error fetching add-on names:", addOnsError);
-    } else {
-      addOnNames = addOnsData?.map((a) => a.name) || [];
-    }
   }
 
+  // The confirmation email is sent after the response, so the customer is
+  // not kept waiting on the add-on names and Resend (it used to be awaited
+  // here, before they saw their booking). A failure is only logged, as before.
   if (booking.customer_email) {
-    try {
-      await sendBookingConfirmationEmail({
-        to: booking.customer_email,
-        customerName: booking.customer_name ?? "Customer",
-        bookingId: booking.id,
-        servicePackage: booking.service_package_name ?? "Service",
-        appointmentDate: booking.appointment_date,
-        appointmentTime: booking.appointment_time,
-        addOns: addOnNames,
-      });
-    } catch (emailErr) {
-      console.error("Error sending booking confirmation email:", emailErr);
-    }
+    const addOnIds = input.addOnIds;
+    after(async () => {
+      try {
+        let addOnNames: string[] = [];
+        if (addOnIds.length > 0) {
+          const { data: addOnsData, error: addOnsError } = await db
+            .from("add_ons")
+            .select("name")
+            .in("id", addOnIds);
+          if (addOnsError) console.error("Error fetching add-on names:", addOnsError);
+          else addOnNames = addOnsData?.map((a) => a.name) || [];
+        }
+        await sendBookingConfirmationEmail({
+          to: booking.customer_email,
+          customerName: booking.customer_name ?? "Customer",
+          bookingId: booking.id,
+          servicePackage: booking.service_package_name ?? "Service",
+          appointmentDate: booking.appointment_date,
+          appointmentTime: booking.appointment_time,
+          addOns: addOnNames,
+        });
+      } catch (emailErr) {
+        console.error("Error sending booking confirmation email:", emailErr);
+      }
+    });
   }
 
   return booking;

@@ -7,6 +7,7 @@ import { stripe } from "@/lib/stripe/stripe";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { OrderData } from "@/types";
 import { formatCalendarDate } from "@/lib/booking/calendarDate";
+import { waitForPaidBooking } from "@/lib/booking/waitForPaidBooking";
 
 interface SuccessPageProps {
   searchParams: { session_id?: string; booking_id?: string };
@@ -37,19 +38,14 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
     // console.log("Booking Meta:", bookingMeta);
     // console.log("Payment Intent ID:", paymentIntentId);
 
-    // 🟩 Fetch booking from Supabase using payment_intent_id
-    const { data: booking, error: bookingError } = await supabase
-      .from("bookings")
-      .select("id")
-      .eq("payment_intent_id", paymentIntentId)
-      .single();
-
-    if (bookingError || !booking) {
-      console.error("Booking not found for payment intent:", paymentIntentId);
+    // The webhook creates the booking; Stripe's redirect can get here first,
+    // so wait briefly for it. If it is still not saved but the payment went
+    // through, show the receipt from the payment details rather than an error.
+    const booking = await waitForPaidBooking(supabase, paymentIntentId);
+    if (!booking && session.payment_status !== "paid") {
+      console.error("No paid booking for payment intent:", paymentIntentId);
       throw new Error("Booking not found");
     }
-
-    console.log("Booking ID from DB:", booking.id);
 
     // 🟩 Build items array from metadata
     const items = [
@@ -60,16 +56,21 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
       },
     ];
 
-    // 🟩 Fetch add-ons linked to the booking using the DB booking ID
-    const { data: addOnsData, error: addOnsError } = await supabase
-      .from("booking_add_ons")
-      .select("add_ons(id, name, price)")
-      .eq("booking_id", booking.id);
-
-    // ✅ Assign to the outer addOns variable (not redeclare)
-    if (!addOnsError && addOnsData?.length) {
-      addOns = addOnsData.map((row: any) => row.add_ons);
-      console.log("Add-ons found:", addOns);
+    // Add-ons: from the saved booking, or (not saved yet) from the payment.
+    if (booking) {
+      const { data: addOnsData, error: addOnsError } = await supabase
+        .from("booking_add_ons")
+        .select("add_ons(id, name, price)")
+        .eq("booking_id", booking.id);
+      if (!addOnsError && addOnsData?.length) {
+        addOns = addOnsData.map((row: any) => row.add_ons);
+      }
+    } else if (bookingMeta?.aids) {
+      const ids = String(bookingMeta.aids).split(",").filter(Boolean);
+      const { data } = ids.length
+        ? await supabase.from("add_ons").select("id, name, price").in("id", ids)
+        : { data: [] };
+      addOns = (data ?? []) as typeof addOns;
     }
 
     // 🟩 Compute totals
@@ -88,7 +89,7 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
     orderData = {
       type: "checkout",
       date: bookingMeta?.ad
-        ? new Date(bookingMeta.ad).toLocaleDateString()
+        ? formatCalendarDate(bookingMeta.ad)
         : new Date(session.created * 1000).toLocaleDateString(),
       orderNumber: paymentIntentId ?? session.id,
       paymentMethod: paymentType === "CASH" ? "Cash" : "Card",

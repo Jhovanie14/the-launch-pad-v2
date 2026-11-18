@@ -64,6 +64,7 @@ export default function ConfirmationStep({ ctx }: { ctx: BookingAuthContext }) {
     applyPromoCode,
     isSubmitting,
     submit,
+    ready,
   } = useBookingFlow(ctx, "confirmation");
 
   const [paymentMethod, setPaymentMethod] = useState<"card" | "cash">("card");
@@ -270,11 +271,17 @@ export default function ConfirmationStep({ ctx }: { ctx: BookingAuthContext }) {
               {/* Action Buttons */}
               <Button
                 onClick={handleConfirmBooking}
-                disabled={isSubmitting}
+                disabled={isSubmitting || !ready}
                 className="bg-blue-900 hover:bg-blue-800 px-8 py-3"
               >
-                {isSubmitting && <Loader2 />}
-                {isSubmitting ? "Redirecting..." : "Proceed to Payment"}
+                {(isSubmitting || !ready) && <Loader2 />}
+                {isSubmitting
+                  ? "Redirecting..."
+                  : !ready
+                    ? "Loading your booking..."
+                    : isFreeForSubscriber
+                      ? "Confirm Booking"
+                      : "Proceed to Payment"}
               </Button>
             </div>
           </div>
