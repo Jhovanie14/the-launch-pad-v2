@@ -336,8 +336,7 @@ Logo navy and white, one flame-yellow signal, and one logo colour per service; n
 - **White hairlines**: borders on navy are white at low alpha: 10% rings and dividers, 12% active nav pill, 20% quiet-button outlines, 25% the navbar Book outline and avatar ring, 30% the bay "Done". These are alpha values, not tokens.
 
 ### Legacy and scoped colors (not part of this world)
-- **Legacy Navy** (blue-900): the older accent, still on the marketing site below the hero, the marketing navbar, the inner customer pages (bookings, billing, orders, pricing, settings, self-service log) and the admin console.
-- **Legacy Amber** (amber-400, with slate-950/900 and violet): the marketing hero still draws the old slate-and-amber world with raw palette classes.
+- **Legacy Navy** (blue-900): the older accent, still on the inner customer pages (bookings, billing, orders, pricing, settings, self-service log) and the admin console.
 - **Storefront Gold** (`--gold`): applied only inside `.storefront` on `/products`, where it becomes `--primary`. Outside `.lp-theme` and `.storefront`, shadcn `--primary` is still neutral near-black.
 
 ### Named Rules
@@ -382,7 +381,15 @@ Logo navy and white, one flame-yellow signal, and one logo colour per service; n
 
 **Surface padding.** Navy and white surfaces use 20px padding, 28px from 640px. The site card uses 20px.
 
-**Marketing hero.** Full-bleed at `min-h-svh` with a photograph (`/self-service.png`) under a dark scrim gradient (70% → 65% → 90%). Content is capped at 80rem with 20px / 32px gutters and 96px / 128px top padding. The service picker becomes three columns from 768px with 16px gaps.
+**Marketing home (2026-11-20).** A server-rendered page (`app/(user)/(home)/page.tsx`, `components/home/`) whose prices come from the same data as `/services`.
+
+- **Hero:** Night, full-bleed at `min-h-svh`, with the photograph (`/self-service.png`) under a Night scrim (70% → 65% → 90%). Content is capped at 80rem with 20px / 32px gutters and 96px / 128px top padding. It holds "Your car deserves better." in Display Hero, one flame "Book a detail" (opens the booking pop-up) beside a quiet ringed "Self-service bays", three facts (bays 24/7, detailing hours, address), then the shared `ServiceTileGrid` (three Dusk tiles tinted sky / flame / Membership Red Soft, with live prices). There is no entrance animation, eyebrow label or rating.
+- **"Why The Launch Pad?":** on Canvas, a photo, the story, and four facts in a divided list (`HOME_REASONS` in `lib/marketing/homePage.ts`).
+- **"What customers say":** on Night, three still Dusk review cards with flame stars.
+
+No ratings, "best price" or guarantee claims (a source test guards this).
+
+**Services page (2026-11-19).** a Night top with "Our services" in Display Hero, three Dusk tiles tinted by service (sky self-service, flame detailing, Membership Red Soft membership) whose prices come from real data (`lib/marketing/servicesPage.ts`), one flame "Book a detail", then the menu as white cards three across with a quiet "Book this" each. It renders on the server so search engines see the services and prices.
 
 **Booking flow.** The three steps (`components/booking/`) are shared by two frames. Guests book in `app/(booking-flow)/` (`/service`, `/datetime`, `/confirmation`): `.lp-theme` on Canvas under the navy Booking Header, with no marketing navbar or footer. Signed-in customers book at `/dashboard/booking/*` inside the dashboard shell, with Step Progress on Canvas above the page title. Every step uses `StepLayout`: a back link, a Headline title, the content column, and the action panel (a fixed Night bar at the bottom below 1024px; a sticky white surface in the 320px side column from 1024px). Content has 128px of bottom padding on phones so it clears the bar. The guest membership cart (`/pricing/cart`, in the same route group) uses this frame without Step Progress; signed-in customers see the same cart at `/dashboard/pricing/subscription`.
 
@@ -515,8 +522,5 @@ Every email (transactional, membership, orders, admin broadcasts and the Supabas
 
 ### Divergences (as built, not yet unified)
 - **Inner customer pages** (bookings, billing, orders, pricing, settings, self-service log) sit in the new navbar and `.lp-theme`, so their shadcn controls are navy, but their own markup still carries gray and blue-900 classes. The booking steps, their pop-ups and the booking success pages are on the tokens (2026-11-19).
-- **The marketing hero** (`components/user/hero.tsx`) is not on the tokens. It still draws the old world with raw slate-950/900, amber-400 CTA (slate-950 text, amber-500 glow), violet for membership and a fourth hue (emerald-400) on perk checks. Its service cards carry eyebrow labels ("DIY", "Most Popular", "Best Value"). New work follows the tokens and bans, not this instance.
-- **The marketing home below the hero** (`app/(user)/(home)/page.tsx`) returns to white with blue-900 headings, blue-700 checks and links, and shadcn cards. It also shows the unverified "4.9/5 From 500+ Reviews" badge, which PRODUCT.md says must not be amplified.
-- **`/services` is on the tokens (2026-11-19)** inside that older navbar and footer: a Night top with "Our services" in Display Hero, three Dusk tiles tinted by service (sky self-service, flame detailing, Membership Red Soft membership) whose prices come from real data (`lib/marketing/servicesPage.ts`), one flame "Book a detail", then the menu as white cards three across with a quiet "Book this" each. It renders on the server so search engines see the services and prices.
 - **The product store** (`/products`) is its own scoped world. The `.storefront` class swaps shadcn tokens for near-black with Storefront Gold as `--primary`, and headlines use Anton (`.font-display`, loaded only in `app/(user)/products/layout.tsx`, weight 400, tracking 0.01em, never for body or UI labels).
 - **The admin console** (`app/admin`, `AdminShell`) is not on the tokens: shadcn sidebar tokens on the neutral theme with blue-900 / blue-800 as the main accent and green/red status tints.
