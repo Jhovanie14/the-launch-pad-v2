@@ -22,7 +22,8 @@ import type { BookingAuthContext } from "@/hooks/useBookingAuthContext";
 import type { ServicePackage } from "@/lib/data/services";
 import type { AddOnRow, ServicePackageRow } from "@/types/db";
 
-export type BookingStep = "service" | "datetime" | "confirmation";
+import type { BookingStep } from "@/lib/booking/bookingParams";
+export type { BookingStep } from "@/lib/booking/bookingParams";
 
 export interface GuestInfo {
   name: string;
