@@ -20,6 +20,12 @@ describe("reviews page source", () => {
     expect(read(PAGE).match(/[\w:-]*-(slate|blue|amber|violet|emerald|gray|yellow)-\d+/g) ?? []).toEqual([]);
   });
 
+  // DESIGN.md: flame shows on white only as its darker mark shade (3:1).
+  it("stars on the white cards use the flame mark shade", () => {
+    expect(read(PAGE)).not.toMatch(/text-flame/);
+    expect(read(PAGE)).toContain("text-svc-detail-mark");
+  });
+
   it("the page is a server component built from the real reviews", () => {
     expect(read(PAGE)).not.toMatch(/^\s*["']use client["']/);
     expect(read(PAGE)).toContain("GOOGLE_REVIEWS");

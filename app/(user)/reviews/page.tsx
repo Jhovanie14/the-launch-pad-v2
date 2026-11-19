@@ -44,7 +44,7 @@ export default function ReviewsPage() {
           {GOOGLE_REVIEWS.map((review) => (
             <li key={review.author} className="mb-4 break-inside-avoid">
               <figure className={cn(SURFACE, "p-6")}>
-                <p className="flex gap-0.5 text-flame">
+                <p className="flex gap-0.5 text-svc-detail-mark">
                   <span className="sr-only">5 out of 5 stars</span>
                   {Array.from({ length: 5 }, (_, i) => (
                     <Star key={i} aria-hidden className="size-4 fill-current" />
