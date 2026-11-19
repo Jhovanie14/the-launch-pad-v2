@@ -1,275 +1,109 @@
 import Link from "next/link";
-import {
-  MapPin,
-  Phone,
-  Mail,
-  Wrench,
-  Sparkles,
-  Calendar,
-} from "lucide-react";
 import Image from "next/image";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+import { Clock, Mail, MapPin, Phone } from "lucide-react";
+import { copyrightLine, FOOTER_GROUPS, LEGAL_LINKS, SHOP } from "@/lib/marketing/footer";
+import { cn } from "@/lib/utils";
 
+const FOCUS_ON_NIGHT = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-flame";
+const LINK = cn(
+  "inline-flex min-h-11 items-center gap-2 rounded-md text-sm text-on-night-muted transition-colors hover:text-on-night motion-reduce:transition-none lg:min-h-9",
+  FOCUS_ON_NIGHT,
+);
+const HEADING = "mb-2 text-sm font-bold text-on-night";
+
+const SOCIALS = [
+  { name: "Instagram", href: "https://www.instagram.com/thelaunchpadwash/", icon: "/social/instagram.png" },
+  { name: "Facebook", href: "https://www.facebook.com/profile.php?id=61566883617151", icon: "/social/facebook.png" },
+  { name: "TikTok", href: "https://www.tiktok.com/@thelaunchpadwash?lang=en", icon: "/social/tiktok.png" },
+];
+
+/** The public pages' footer: the navy navbar's sibling, on the tokens. */
 export function Footer() {
   return (
-    <footer className="bg-[#2c3e50] text-gray-300">
-      <div className="container mx-auto px-6 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
-          {/* Brand Column */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg flex items-center justify-center">
-                <Image
-                  src="/thelaunchpad.png"
-                  alt="The Launch Pad Logo"
-                  width={45}
-                  height={45}
-                  className="object-contain"
-                />
-              </div>
-              <h3 className="text-xl font-semibold text-white">
-                The Launch Pad
-              </h3>
-            </div>
-            <p className="text-sm leading-relaxed">
-              Houston's premier car care destination featuring self-service
-              bays, professional detailing, and our famous handwash special.
-            </p>
-            <div className="flex gap-4">
-              <Link
-                href="https://www.instagram.com/thelaunchpadwash/"
-                target="_blank"
-                rel="noopener"
-                aria-label="Instagram"
-                className="hover:text-white transition-colors"
-              >
-                <Image
-                  src="/social/instagram.png"
-                  alt="The Launch Pad Logo"
-                  width={31}
-                  height={31}
-                  className="object-contain"
-                />
-              </Link>
-              <Link
-                href="https://www.facebook.com/profile.php?id=61566883617151"
-                target="_blank"
-                rel="noopener"
-                aria-label="Facebook"
-                className="hover:text-white transition-colors"
-              >
-                <Image
-                  src="/social/facebook.png"
-                  alt="Facebook Logo"
-                  width={31}
-                  height={31}
-                  className="object-contain"
-                />
-              </Link>
-              <Link
-                href="https://www.tiktok.com/@thelaunchpadwash?lang=en"
-                target="_blank"
-                rel="noopener"
-                aria-label="Tiktok"
-                className="hover:text-white transition-colors"
-              >
-                <Image
-                  src="/social/tiktok.png"
-                  alt="Facebook Logo"
-                  width={35}
-                  height={35}
-                  className="object-contain"
-                />
-              </Link>
-            </div>
-          </div>
-
-          {/* Quick Links Column */}
-          <div>
-            <h4 className="text-white font-semibold text-lg mb-4">
-              Quick Links
-            </h4>
-            <ul className="space-y-3">
-              <li>
-                <Link
-                  href="/"
-                  className="hover:text-white transition-colors text-sm"
+    <footer className="bg-night text-on-night">
+      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:grid-cols-2 sm:px-6 lg:grid-cols-[1.4fr_1fr_1fr_1fr] lg:px-8">
+        <div>
+          <Link href="/" className={cn("inline-flex items-center gap-3 rounded-lg", FOCUS_ON_NIGHT)}>
+            <Image src="/thelaunchpad.png" alt="" width={40} height={40} className="size-10 object-contain" />
+            <span className="text-lg font-bold">The Launch Pad</span>
+          </Link>
+          <p className="mt-4 max-w-xs text-sm leading-relaxed text-on-night-muted">
+            Houston&apos;s premier car care destination featuring self-service bays, professional detailing, and our
+            famous handwash special.
+          </p>
+          <ul className="mt-4 flex gap-1">
+            {SOCIALS.map((s) => (
+              <li key={s.name}>
+                <a
+                  href={s.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`The Launch Pad on ${s.name}`}
+                  className={cn("inline-flex size-11 items-center justify-center rounded-lg hover:bg-white/10", FOCUS_ON_NIGHT)}
                 >
-                  Home
-                </Link>
+                  <Image src={s.icon} alt="" width={28} height={28} className="size-7 object-contain" />
+                </a>
               </li>
-              <li>
-                <Link
-                  href="/about"
-                  className="hover:text-white transition-colors text-sm"
-                >
-                  About
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/how-it-works"
-                  className="hover:text-white transition-colors text-sm"
-                >
-                  how-it-works
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/blog"
-                  className="hover:text-white transition-colors text-sm"
-                >
-                  Blogs
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/faq"
-                  className="hover:text-white transition-colors text-sm"
-                >
-                  FAQ
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/contact"
-                  className="hover:text-white transition-colors text-sm"
-                >
-                  Contact Us
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/reviews"
-                  className="hover:text-white transition-colors text-sm"
-                >
-                  Reviews
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Services Column */}
-          <div>
-            <h4 className="text-white font-semibold text-lg mb-4">
-              Our Services
-            </h4>
-            <ul className="space-y-6">
-              <li>
-                <Link
-                  className="flex items-center gap-2 text-sm hover:text-white transition-colors"
-                  href="/self-service"
-                >
-                  <Wrench className="w-4 h-4" />
-                  Self-Service Car Wash
-                </Link>
-              </li>
-              <li>
-                <Link
-                  className="flex items-center gap-2 text-sm hover:text-white transition-colors"
-                  href="/blog/experience-the-ultimate-shine-with-our-professional-express-car-detailing"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  Professional Express Detailing
-                </Link>
-              </li>
-              <li>
-                <Link
-                  className="flex items-center gap-2 text-sm hover:text-white transition-colors"
-                  href="/pricing"
-                >
-                  <Calendar className="w-4 h-4" />
-                  Monthly Memberships
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Contact Column */}
-          <div>
-            <h4 className="text-white font-semibold text-lg mb-4">
-              Contact Us
-            </h4>
-            <ul className="space-y-3">
-              <li className="flex items-start gap-2 text-sm">
-                <MapPin className="w-4 h-4 mt-0.5 shrink-0" />
-                <span>10410 S Main St, Houston, TX 77025</span>
-              </li>
-              <li>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <a
-                      href="tel:8322198320"
-                      className="inline-flex items-center gap-2 text-sm md:text-base text-blue-400 hover:text-blue-300"
-                    >
-                      <Phone className="w-4 h-4 md:w-5 md:h-5 shrink-0" />
-                      <span>Tap to Call: (832) 219-8320</span>
-                    </a>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Click to call directly</p>
-                  </TooltipContent>
-                </Tooltip>
-              </li>
-              <li className="">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <a
-                      href="mailto:info@thelaunchpadwash.com"
-                      className="inline-flex items-center gap-2 text-sm md:text-base cursor-pointer text-blue-400"
-                    >
-                      <Mail className="w-4 h-4 shrink-0" />
-                      <span>info@thelaunchpadwash.com</span>
-                    </a>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Send us an email</p>
-                  </TooltipContent>
-                </Tooltip>
-              </li>
-            </ul>
-            <div className="mt-6 pt-4 border-t border-gray-600">
-              {/* <p className="text-white font-semibold text-sm mb-1">
-                $10 Handwash Special
-              </p> */}
-              <p className="text-xs text-gray-400">
-                Detailing: Thursday – Sunday, 9:30 AM – 6:30 PM. Self-service
-                bays open 24/7.
-              </p>
-              {/* <p className="text-xs text-gray-400">Sedans, Suvs, Trucks</p> */}
-            </div>
-          </div>
+            ))}
+          </ul>
         </div>
+
+        <div>
+          <h2 className={HEADING}>Visit</h2>
+          <ul>
+            <li>
+              <a href={SHOP.mapsUrl} target="_blank" rel="noopener noreferrer" className={cn(LINK, "items-start py-2.5")}>
+                <MapPin aria-hidden className="mt-0.5 size-4 shrink-0" />
+                {SHOP.address}
+              </a>
+            </li>
+            {SHOP.hours.map((line) => (
+              <li key={line} className="flex items-start gap-2 py-2.5 text-sm text-on-night-muted">
+                <Clock aria-hidden className="mt-0.5 size-4 shrink-0" />
+                {line}
+              </li>
+            ))}
+            <li>
+              <a href={SHOP.phoneHref} className={LINK}>
+                <Phone aria-hidden className="size-4 shrink-0" /> Call {SHOP.phoneDisplay}
+              </a>
+            </li>
+            <li>
+              <a href={`mailto:${SHOP.email}`} className={LINK}>
+                <Mail aria-hidden className="size-4 shrink-0" /> {SHOP.email}
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        {FOOTER_GROUPS.map((group) => (
+          <nav key={group.title} aria-label={group.title}>
+            <h2 className={HEADING}>{group.title}</h2>
+            <ul>
+              {group.links.map((link) => (
+                <li key={link.href}>
+                  <Link href={link.href} className={LINK}>
+                    {link.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        ))}
       </div>
 
-      {/* Bottom Bar */}
-      <div className="border-t border-white">
-        <div className="container mx-auto px-6 py-6">
-          <div className="flex flex-col md:flex-row justify-center items-center gap-4 text-sm text-gray-400">
-            <div className="flex gap-6">
-              <Link
-                href="/terms"
-                className="hover:text-white transition-colors"
-              >
-                Terms of Service
-              </Link>
-              <Link
-                href="/privacy"
-                className="hover:text-white transition-colors"
-              >
-                Privacy Policy
-              </Link>
-              <Link
-                href="/cookies"
-                className="hover:text-white transition-colors"
-              >
-                Cookie Policy
-              </Link>
-            </div>
-          </div>
-          <p className="text-center text-sm text-gray-400 mt-4">
-            © 2026 The Launch Pad. All rights reserved.
-          </p>
+      <div className="border-t border-white/10">
+        <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-6 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
+          <p className="text-sm text-on-night-subtle">{copyrightLine(new Date())}</p>
+          <ul className="flex flex-wrap gap-x-6">
+            {LEGAL_LINKS.map((link) => (
+              <li key={link.href}>
+                <Link href={link.href} className={LINK}>
+                  {link.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </footer>
