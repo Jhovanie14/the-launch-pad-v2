@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { publicPhoneMenu } from "./publicPhoneMenu";
+import { phoneMenuCurrent, publicPhoneMenu } from "./publicPhoneMenu";
 
 const names = (links: { name: string }[]) => links.map((l) => l.name);
 
@@ -44,5 +44,17 @@ describe("publicPhoneMenu", () => {
       const all = [...menu.primary, ...menu.more, ...menu.account];
       expect(all.some((l) => /log ?in/i.test(l.name) || l.href === "/login")).toBe(false);
     }
+  });
+});
+
+describe("phoneMenuCurrent", () => {
+  it("on the cart only the Cart row is current, not Products", () => {
+    expect(phoneMenuCurrent("/products/cart", "/products/cart")).toBe(true);
+    expect(phoneMenuCurrent("/products/cart", "/products")).toBe(false);
+  });
+
+  it("a product page still marks Products current", () => {
+    expect(phoneMenuCurrent("/products/some-wax", "/products")).toBe(true);
+    expect(phoneMenuCurrent("/blog/a-post", "/blog")).toBe(true);
   });
 });

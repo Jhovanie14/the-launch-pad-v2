@@ -7,7 +7,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { CalendarPlus, LogOut, Menu } from "lucide-react";
 import { AccountAvatar } from "@/components/user/AccountAvatar";
-import { SheetLink } from "@/components/user/SheetLink";
+import { NIGHT_SHEET_CONTENT, SheetLink } from "@/components/user/SheetLink";
 import { useAuth } from "@/context/auth-context";
 import { useBooking } from "@/context/bookingContext";
 import {
@@ -170,11 +170,8 @@ export function AuthNavbar() {
                   <Menu aria-hidden className="size-6" />
                 </button>
               </SheetTrigger>
-              <SheetContent
-                side="right"
-                className="w-[85vw] max-w-sm gap-0 border-l-0 bg-night p-0 text-on-night [&>button]:text-on-night [&>button]:opacity-100"
-              >
-                <div className="flex items-center gap-3 border-b border-white/10 p-5 pr-12">
+              <SheetContent side="right" className={NIGHT_SHEET_CONTENT}>
+                <div className="flex items-center gap-3 border-b border-white/10 p-5 pr-16">
                   <AccountAvatar src={userProfile?.avatar_url} initial={initial} />
                   <div className="min-w-0">
                     <SheetTitle className="truncate text-base font-bold text-on-night">

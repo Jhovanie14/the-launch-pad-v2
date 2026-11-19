@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,8 +22,8 @@ import { useProductCart } from "@/context/product-cart-context";
 import { isNavActive, showSignOutLoader } from "@/lib/navigation/isNavActive";
 import { cn } from "@/lib/utils";
 import { AccountAvatar } from "@/components/user/AccountAvatar";
-import { SheetLink } from "@/components/user/SheetLink";
-import { ACCOUNT_LINKS, MORE_LINKS, PRIMARY_LINKS, publicPhoneMenu } from "@/lib/navigation/publicPhoneMenu";
+import { NIGHT_SHEET_CONTENT, SheetLink } from "@/components/user/SheetLink";
+import { ACCOUNT_LINKS, MORE_LINKS, PRIMARY_LINKS, phoneMenuCurrent, publicPhoneMenu } from "@/lib/navigation/publicPhoneMenu";
 
 const FOCUS_ON_NIGHT = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-flame";
 
@@ -44,6 +44,9 @@ export function UserNavbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  // "Book a detail" hands focus to the booking pop-up, so the closing menu
+  // must not pull it back to the menu button.
+  const skipFocusReturn = useRef(false);
 
   // The phone sheet renders only after mount (it used to cause a hydration mismatch).
   useEffect(() => {
@@ -57,6 +60,7 @@ export function UserNavbar() {
   const closeMenu = () => setIsMobileMenuOpen(false);
 
   function book() {
+    skipFocusReturn.current = true;
     closeMenu();
     openBookingModal();
   }
@@ -187,107 +191,112 @@ export function UserNavbar() {
               </DropdownMenu>
             )}
 
-            <button
-              type="button"
-              onClick={() => setIsMobileMenuOpen(true)}
-              aria-expanded={isMobileMenuOpen}
-              className={cn("inline-flex size-11 items-center justify-center rounded-lg border border-white/25 hover:bg-white/10 lg:hidden", FOCUS_ON_NIGHT)}
-            >
-              <span className="sr-only">Open main menu</span>
-              <Menu aria-hidden className="size-6" />
-            </button>
+            {/* Phone menu: the dashboard menu's navy sibling. */}
+            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <button
+                  type="button"
+                  className={cn("inline-flex size-11 items-center justify-center rounded-lg border border-white/25 hover:bg-white/10 lg:hidden", FOCUS_ON_NIGHT)}
+                >
+                  <span className="sr-only">Open main menu</span>
+                  <Menu aria-hidden className="size-6" />
+                </button>
+              </SheetTrigger>
+              {isMounted && (
+                <SheetContent
+                  side="right"
+                  className={NIGHT_SHEET_CONTENT}
+                  onCloseAutoFocus={(event) => {
+                    if (skipFocusReturn.current) {
+                      event.preventDefault();
+                      skipFocusReturn.current = false;
+                    }
+                  }}
+                >
+                  <div className="flex items-center gap-3 border-b border-white/10 p-5 pr-16">
+                    {user ? (
+                      <>
+                        <AccountAvatar src={userProfile?.avatar_url} initial={initial} />
+                        <div className="min-w-0">
+                          <SheetTitle className="truncate text-base font-bold text-on-night">
+                            {userProfile?.full_name || "Your account"}
+                          </SheetTitle>
+                          <SheetDescription className="truncate text-sm text-on-night-subtle">
+                            {userProfile?.email ?? "Signed in"}
+                          </SheetDescription>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <Image src="/thelaunchpad.png" alt="" width={36} height={36} className="size-9 object-contain" />
+                        <SheetTitle className="text-base font-bold text-on-night">The Launch Pad</SheetTitle>
+                        <SheetDescription className="sr-only">Site menu</SheetDescription>
+                      </>
+                    )}
+                  </div>
+
+                  <nav aria-label="Main" className="flex-1 overflow-y-auto p-3">
+                    <button
+                      type="button"
+                      onClick={book}
+                      className={cn(
+                        "mb-3 flex min-h-12 w-full items-center gap-2 rounded-lg bg-flame px-4 font-bold text-on-flame hover:bg-flame-bright",
+                        FOCUS_ON_NIGHT,
+                      )}
+                    >
+                      <CalendarPlus aria-hidden className="size-5" /> Book a detail
+                    </button>
+                    <ul className="space-y-1">
+                      {menu.primary.map((link) => (
+                        <SheetLink key={link.href} {...link} active={phoneMenuCurrent(pathname, link.href)} onNavigate={closeMenu} />
+                      ))}
+                    </ul>
+                    <h2 className="mt-5 mb-1 px-4 text-xs font-semibold text-on-night-subtle">More</h2>
+                    <ul className="space-y-1">
+                      {menu.more.map((link) => (
+                        <SheetLink key={link.href} {...link} active={phoneMenuCurrent(pathname, link.href)} onNavigate={closeMenu} />
+                      ))}
+                    </ul>
+                    {menu.account.length > 0 && (
+                      <>
+                        <h2 className="mt-5 mb-1 px-4 text-xs font-semibold text-on-night-subtle">Account</h2>
+                        <ul className="space-y-1">
+                          {menu.account.map((link) => (
+                            <SheetLink key={link.href} {...link} active={phoneMenuCurrent(pathname, link.href)} onNavigate={closeMenu} />
+                          ))}
+                        </ul>
+                      </>
+                    )}
+                  </nav>
+
+                  <div className="space-y-1 border-t border-white/10 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+                    {user && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          closeMenu();
+                          handleSignOut();
+                        }}
+                        className={cn("flex min-h-12 w-full items-center gap-2 rounded-lg px-4 font-semibold text-on-night-muted hover:bg-white/10 hover:text-on-night", FOCUS_ON_NIGHT)}
+                      >
+                        <LogOut aria-hidden className="size-5" /> Sign out
+                      </button>
+                    )}
+                    {!isLoading && !user && (
+                      <Link href="/login" onClick={closeMenu} className={cn("flex min-h-12 w-full items-center gap-2 rounded-lg px-4 font-semibold text-on-night-muted hover:bg-white/10 hover:text-on-night", FOCUS_ON_NIGHT)}>
+                        <LogIn aria-hidden className="size-5" /> Sign in
+                      </Link>
+                    )}
+                    <a href="tel:+18322198320" className={cn("flex min-h-12 w-full items-center gap-2 rounded-lg px-4 font-semibold text-on-night-muted hover:bg-white/10 hover:text-on-night", FOCUS_ON_NIGHT)}>
+                      <Phone aria-hidden className="size-5" /> Call (832) 219-8320
+                    </a>
+                  </div>
+                </SheetContent>
+              )}
+            </Sheet>
           </div>
         </div>
       </header>
-
-      {/* Phone menu: the dashboard menu's navy sibling. */}
-      {isMounted && (
-        <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-          <SheetContent
-            side="right"
-            className="w-[85vw] max-w-sm gap-0 border-l-0 bg-night p-0 text-on-night [&>button]:text-on-night [&>button]:opacity-100"
-          >
-            <div className="flex items-center gap-3 border-b border-white/10 p-5 pr-12">
-              {user ? (
-                <>
-                  <AccountAvatar src={userProfile?.avatar_url} initial={initial} />
-                  <div className="min-w-0">
-                    <SheetTitle className="truncate text-base font-bold text-on-night">
-                      {userProfile?.full_name || "Your account"}
-                    </SheetTitle>
-                    <SheetDescription className="truncate text-sm text-on-night-subtle">
-                      {userProfile?.email ?? "Signed in"}
-                    </SheetDescription>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <Image src="/thelaunchpad.png" alt="" width={36} height={36} className="size-9 object-contain" />
-                  <SheetTitle className="text-base font-bold text-on-night">The Launch Pad</SheetTitle>
-                  <SheetDescription className="sr-only">Site menu</SheetDescription>
-                </>
-              )}
-            </div>
-
-            <nav aria-label="Main" className="flex-1 overflow-y-auto p-3">
-              <button
-                type="button"
-                onClick={book}
-                className={cn(
-                  "mb-3 flex min-h-12 w-full items-center gap-2 rounded-lg bg-flame px-4 font-bold text-on-flame hover:bg-flame-bright",
-                  FOCUS_ON_NIGHT,
-                )}
-              >
-                <CalendarPlus aria-hidden className="size-5" /> Book a detail
-              </button>
-              <ul className="space-y-1">
-                {menu.primary.map((link) => (
-                  <SheetLink key={link.href} {...link} active={isNavActive(pathname, link.href)} onNavigate={closeMenu} />
-                ))}
-              </ul>
-              <h2 className="mt-5 mb-1 px-4 text-xs font-semibold text-on-night-subtle">More</h2>
-              <ul className="space-y-1">
-                {menu.more.map((link) => (
-                  <SheetLink key={link.href} {...link} active={isNavActive(pathname, link.href)} onNavigate={closeMenu} />
-                ))}
-              </ul>
-              {menu.account.length > 0 && (
-                <>
-                  <h2 className="mt-5 mb-1 px-4 text-xs font-semibold text-on-night-subtle">Account</h2>
-                  <ul className="space-y-1">
-                    {menu.account.map((link) => (
-                      <SheetLink key={link.href} {...link} active={isNavActive(pathname, link.href)} onNavigate={closeMenu} />
-                    ))}
-                  </ul>
-                </>
-              )}
-            </nav>
-
-            <div className="space-y-1 border-t border-white/10 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-              {user && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    closeMenu();
-                    handleSignOut();
-                  }}
-                  className={cn("flex min-h-12 w-full items-center gap-2 rounded-lg px-4 font-semibold text-on-night-muted hover:bg-white/10 hover:text-on-night", FOCUS_ON_NIGHT)}
-                >
-                  <LogOut aria-hidden className="size-5" /> Sign out
-                </button>
-              )}
-              {!isLoading && !user && (
-                <Link href="/login" onClick={closeMenu} className={cn("flex min-h-12 w-full items-center gap-2 rounded-lg px-4 font-semibold text-on-night-muted hover:bg-white/10 hover:text-on-night", FOCUS_ON_NIGHT)}>
-                  <LogIn aria-hidden className="size-5" /> Sign in
-                </Link>
-              )}
-              <a href="tel:+18322198320" className={cn("flex min-h-12 w-full items-center gap-2 rounded-lg px-4 font-semibold text-on-night-muted hover:bg-white/10 hover:text-on-night", FOCUS_ON_NIGHT)}>
-                <Phone aria-hidden className="size-5" /> Call (832) 219-8320
-              </a>
-            </div>
-          </SheetContent>
-        </Sheet>
-      )}
     </>
   );
 }

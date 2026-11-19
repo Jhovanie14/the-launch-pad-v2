@@ -1,6 +1,8 @@
 // The public bar's links, shared by the desktop bar and the phone menu so the
 // two never drift apart.
 
+import { isNavActive } from "./isNavActive";
+
 export interface MenuLink {
   name: string;
   href: string;
@@ -39,4 +41,13 @@ export function publicPhoneMenu({ signedIn, cartCount }: { signedIn: boolean; ca
     more: MORE_LINKS.map(({ name, href }) => ({ name, href })),
     account: signedIn ? ACCOUNT_LINKS : [],
   };
+}
+
+/**
+ * Is this phone menu row the current page? Like isNavActive, except the cart
+ * row owns /products/cart, so Products is not marked current there too.
+ */
+export function phoneMenuCurrent(pathname: string, href: string): boolean {
+  if (href === "/products" && isNavActive(pathname, "/products/cart")) return false;
+  return isNavActive(pathname, href);
 }
