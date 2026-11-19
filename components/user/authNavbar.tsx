@@ -1,11 +1,12 @@
 "use client";
 
+import { isNavActive } from "@/lib/navigation/isNavActive";
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { CalendarPlus, LogOut, Menu } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AccountAvatar } from "@/components/user/AccountAvatar";
 import { useAuth } from "@/context/auth-context";
 import { useBooking } from "@/context/bookingContext";
 import {
@@ -45,9 +46,7 @@ const ACCOUNT_LINKS = [
 
 const FOCUS_ON_NIGHT = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-flame";
 
-function isActive(pathname: string, href: string) {
-  return href === "/dashboard" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
-}
+const isActive = isNavActive;
 
 /**
  * The customer area's bar: navy from the logo, the logo itself, the five
@@ -260,11 +259,3 @@ function SheetLink({
   );
 }
 
-function AccountAvatar({ src, initial }: { src?: string | null; initial: string }) {
-  return (
-    <Avatar className="size-9 ring-2 ring-white/25">
-      {src && <AvatarImage src={src} alt="" />}
-      <AvatarFallback className="bg-dusk font-bold text-on-night">{initial}</AvatarFallback>
-    </Avatar>
-  );
-}

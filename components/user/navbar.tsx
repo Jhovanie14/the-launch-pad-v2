@@ -2,268 +2,232 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-} from "../ui/navigation-menu";
+import { usePathname } from "next/navigation";
+import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+import { Sheet, SheetHeader, SheetTitle, SheetContent } from "@/components/ui/sheet";
 import {
-  Sheet,  
-  SheetHeader,
-  SheetTitle,
-  SheetContent,
-} from "@/components/ui/sheet";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   BellPlus,
+  CalendarPlus,
   ChevronDown,
   CircleQuestionMark,
   Home,
+  LogOut,
   NotebookPen,
   Phone,
   User,
   Users,
   Menu,
-  X,
   ShowerHead,
   Car,
   ShoppingBasket,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import LoadingDots from "@/components/loading";
+import { useAuth } from "@/context/auth-context";
 import { useBooking } from "@/context/bookingContext";
 import { useProductCart } from "@/context/product-cart-context";
-// import { ThemeToggle } from "../theme-toggle";
+import { isNavActive, showSignOutLoader } from "@/lib/navigation/isNavActive";
+import { cn } from "@/lib/utils";
+import { AccountAvatar } from "@/components/user/AccountAvatar";
 
-const services: {
-  title: string;
-  href: string;
-  description: string;
-  icon?: React.ComponentType<any>;
-}[] = [
-    {
-      icon: CircleQuestionMark,
-      title: "FAQ",
-      href: "/faq",
-      description:
-        "Got question? Our FAQs has answers to make your Launch Pad experience smooth and easy.",
-    },
-    {
-      icon: NotebookPen,
-      title: "Blog",
-      href: "/blog",
-      description:
-        "Quick and efficient exterior wash perfect for busy schedules.",
-    },
-    {
-      icon: Phone,
-      title: "Contact Us",
-      href: "/contact",
-      description: "We provide exceptional customer service.",
-    },
-    {
-      icon: Users,
-      title: "About Us",
-      href: "/about",
-      description: "Learn more about the team of the launch pad.",
-    },
-  ];
+const FOCUS_ON_NIGHT = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-flame";
 
-function ListItem({
-  title,
-  children,
-  href,
-  icon,
-  ...props
-}: React.ComponentPropsWithoutRef<"li"> & {
-  href: string;
-  icon?: React.ComponentType<{ className?: string }>;
-}) {
-  return (
-    <li {...props}>
-      <NavigationMenuLink asChild>
-        <Link
-          href={href}
-          className="flex flex-row items-center space-x-3 p-3 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
-        >
-          {icon &&
-            React.createElement(icon, { className: "w-4 h-4 flex-shrink-0" })}
-          <div className="flex-1 space-y-2">
-            <div className="text-lg leading-none font-medium">{title}</div>
-            <p className="text-accent-foreground line-clamp-2 text-sm leading-snug">
-              {children}
-            </p>
-          </div>
-        </Link>
-      </NavigationMenuLink>
-    </li>
-  );
-}
+const PRIMARY_LINKS = [
+  { name: "Services", href: "/services" },
+  { name: "Membership", href: "/pricing" },
+  { name: "Self-service", href: "/self-service" },
+  { name: "Products", href: "/products" },
+];
 
+const MORE_LINKS = [
+  { name: "About us", href: "/about", description: "Who we are and the wash on S Main St" },
+  { name: "FAQ", href: "/faq", description: "Answers about bays, booking and memberships" },
+  { name: "Blog", href: "/blog", description: "Car care tips and news from The Launch Pad" },
+  { name: "Contact", href: "/contact", description: "Call, email or send us a message" },
+];
+
+const ACCOUNT_LINKS = [
+  { name: "Dashboard", href: "/dashboard" },
+  { name: "Bookings", href: "/dashboard/bookings" },
+  { name: "Billing", href: "/dashboard/billing" },
+  { name: "Profile and settings", href: "/dashboard/settings" },
+];
+
+const PILL = "inline-flex min-h-10 items-center gap-1 rounded-lg px-3 text-sm font-semibold transition-colors motion-reduce:transition-none";
+const pillState = (active: boolean) =>
+  active ? "bg-white/12 text-on-night" : "text-on-night-muted hover:bg-white/8 hover:text-on-night";
+
+/**
+ * The public pages' bar: the dashboard bar's sibling (navy, logo, quiet
+ * links, a quiet "Book"), and it knows who is signed in. The phone menu
+ * (the sheet below) is redesigned separately.
+ */
 export function UserNavbar() {
   const { openBookingModal } = useBooking();
   const { count: cartCount } = useProductCart();
+  const { user, userProfile, isLoading, signOut } = useAuth();
+  const pathname = usePathname() ?? "";
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
   const [isAboutDropdownOpen, setIsAboutDropdownOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
-  // Fix hydration mismatch
+  // The phone sheet renders only after mount (it used to cause a hydration mismatch).
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 0);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  const name = userProfile?.full_name || userProfile?.email || "Your account";
+  const initial = (userProfile?.full_name || userProfile?.email || "?").charAt(0).toUpperCase();
+  const moreActive = MORE_LINKS.some((l) => isNavActive(pathname, l.href));
+
+  async function handleSignOut() {
+    setSigningOut(true);
+    try {
+      await signOut();
+    } finally {
+      // The bar stays mounted on public pages: never leave the loader up.
+      setSigningOut(false);
+    }
+  }
 
   return (
-    <nav
-      className={`sticky top-0 w-full z-50 transition-all duration-300 ${isMounted && isScrolled
-        ? "bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm dark:bg-gray-900/95"
-        : "bg-transparent"
-        }`}
-    >
-      <div className="mx-auto max-w-11/12 px-4 sm:px-6 lg:px-8">
-        <div className="flex h-32 justify-between">
-          <div className="flex">
-            <div className="flex shrink-0 items-center">
-              <Link href="/">
-                <div className="flex items-center">
-                  <Image
-                    src="/thelaunchpad.png"
-                    alt="The Launch Pad"
-                    width={250}
-                    height={250}
-                    className="h-20 w-20 sm:h-28 sm:w-28 object-contain"
-                  />
-                  <div className="hidden md:flex flex-col">
-                    <span className="text-xl sm:text-xl font-bold text-foreground tracking-tight">
-                      THE LAUNCH PAD
-                    </span>
-                    <span className="text-xs text-blue-600 font-medium uppercase tracking-wider">
-                      Premium Car Care
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            </div>
-            <div className="hidden xl:flex lg:gap-4">
-              <NavigationMenu className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-lg font-medium text-accent-foreground hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100">
-                <NavigationMenuList>
-                  <NavigationMenuItem>
-                    <NavigationMenuTrigger>
-                      <span className="text-lg font-medium text-accent-foreground hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100">
-                        About Launch Pad
-                      </span>
-                    </NavigationMenuTrigger>
-                    <NavigationMenuContent>
-                      <ul className="grid w-[500px] gap-2 md:w-[600px] md:grid-cols-2 lg:w-[700px] p-4">
-                        {services.map((service) => (
-                          <ListItem
-                            icon={service.icon}
-                            key={service.title}
-                            title={service.title}
-                            href={service.href}
-                          >
-                            {service.description}
-                          </ListItem>
-                        ))}
-                      </ul>
-                    </NavigationMenuContent>
-                  </NavigationMenuItem>
-                </NavigationMenuList>
-              </NavigationMenu>
-              <Link
-                href="/products"
-                className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-lg font-medium text-accent-foreground hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
-              >
-                Products
-              </Link>
-              <Link
-                href="/pricing"
-                className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-lg font-medium text-accent-foreground hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
-              >
-                Subscription
-              </Link>
-              <Link
-                href="/self-service"
-                className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-lg font-medium text-accent-foreground hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
-              >
-                Self-service
-              </Link>
-              <Link
-                href="/services"
-                className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-lg font-medium text-accent-foreground hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100"
-              >
-                Services
-              </Link>
-            </div>
-          </div>
-          <div className="hidden xl:flex lg:shrink-0 items-center gap-1">
-            <Button
-              size="sm"
-              onClick={openBookingModal}
-              className="bg-blue-900 hover:bg-blue-800 text-white font-semibold px-6 rounded-md transition-all duration-200 shadow-md hover:shadow-lg uppercase tracking-wide"
-            >
-              Book Online
-            </Button>
+    <>
+      {showSignOutLoader(signingOut, !!user) && <LoadingDots />}
+      <header className="sticky top-0 z-50 bg-night text-on-night shadow-[0_8px_24px_-16px_oklch(0.2_0.07_262/0.8)]">
+        <div className="mx-auto flex h-16 max-w-7xl items-center gap-6 px-4 sm:px-6 lg:px-8">
+          <Link href="/" className={cn("flex shrink-0 items-center gap-2 rounded-lg", FOCUS_ON_NIGHT)}>
+            <Image src="/thelaunchpad.png" alt="The Launch Pad" width={40} height={40} className="size-10 object-contain" priority />
+            <span aria-hidden className="hidden text-sm font-black tracking-tight xl:inline">
+              THE LAUNCH PAD
+            </span>
+          </Link>
+
+          <nav aria-label="Main" className="hidden lg:block">
+            <ul className="flex items-center gap-1">
+              {PRIMARY_LINKS.map((link) => {
+                const active = isNavActive(pathname, link.href);
+                return (
+                  <li key={link.href}>
+                    <Link
+                      href={link.href}
+                      aria-current={active ? "page" : undefined}
+                      className={cn(PILL, pillState(active), FOCUS_ON_NIGHT)}
+                    >
+                      {link.name}
+                    </Link>
+                  </li>
+                );
+              })}
+              <li>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button type="button" className={cn(PILL, pillState(moreActive), FOCUS_ON_NIGHT)}>
+                      More <ChevronDown aria-hidden className="size-4" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-80 p-1.5">
+                    {MORE_LINKS.map((link) => (
+                      <DropdownMenuItem key={link.href} asChild className="flex-col items-start gap-0.5 px-3 py-2.5">
+                        <Link href={link.href} aria-current={isNavActive(pathname, link.href) ? "page" : undefined}>
+                          <span className="text-sm font-semibold text-ink">{link.name}</span>
+                          <span className="text-sm text-ink-muted">{link.description}</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </li>
+            </ul>
+          </nav>
+
+          <div className="ml-auto flex items-center gap-2">
             {cartCount > 0 && (
-              <Link href="/products/cart" aria-label={`Cart, ${cartCount} items`}>
-                <Button size="sm" variant="ghost" className="relative">
-                  <ShoppingBasket className="w-5 h-5" />
-                  <Badge className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-900 px-1 text-xs text-white">
-                    {cartCount}
-                  </Badge>
-                </Button>
+              <Link
+                href="/products/cart"
+                aria-label={`Cart, ${cartCount} ${cartCount === 1 ? "item" : "items"}`}
+                className={cn("relative hidden size-10 items-center justify-center rounded-lg hover:bg-white/10 lg:inline-flex", FOCUS_ON_NIGHT)}
+              >
+                <ShoppingBasket aria-hidden className="size-5" />
+                <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-flame px-1 text-xs font-black text-on-flame">
+                  {cartCount}
+                </span>
               </Link>
             )}
-            <Link href="/login">
-              <Button
-                size="sm"
-                variant="ghost"
-                className="hover:text-blue-800 font-semibold transition-all duration-200 uppercase tracking-wide"
-              >
-                <User className="w-4 h-4" />
-                <span className="hidden md:inline ml-2 font-medium text-lg">
-                  Login
-                </span>
-              </Button>
-            </Link>
-            {/* <ThemeToggle /> */}
-          </div>
-          <div className="-mr-2 flex items-center xl:hidden gap-1">
-            {/* <Button
-              size="lg"
-              onClick={openBookingModal}
-              className="bg-blue-900 hover:bg-blue-800 text-white font-semibold px-6 rounded-md transition-all duration-200 shadow-md hover:shadow-lg uppercase tracking-wide"
-            >
-              Book Online
-            </Button> */}
+
             <button
-              className="p-2"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            >
-              <span className="sr-only">Open main menu</span>
-              {isMobileMenuOpen ? (
-                <X className="h-8 w-8" />
-              ) : (
-                <Menu className="h-8 w-8" />
+              type="button"
+              onClick={openBookingModal}
+              className={cn(
+                "hidden min-h-10 items-center gap-2 rounded-lg border border-white/25 px-4 text-sm font-bold text-on-night transition-colors hover:bg-white/10 motion-reduce:transition-none lg:inline-flex",
+                FOCUS_ON_NIGHT
               )}
+            >
+              <CalendarPlus aria-hidden className="size-4" /> Book
             </button>
 
-            {/* <ThemeToggle /> */}
+            {/* Nothing while sign-in loads, so there is no flash of "Sign in". */}
+            {!isLoading && !user && (
+              <Link
+                href="/login"
+                className={cn("hidden min-h-10 items-center rounded-lg px-3 text-sm font-semibold text-on-night-muted hover:bg-white/10 hover:text-on-night lg:inline-flex", FOCUS_ON_NIGHT)}
+              >
+                Sign in
+              </Link>
+            )}
+            {user && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label={`Account menu for ${name}`}
+                    className={cn("hidden rounded-full lg:inline-flex", FOCUS_ON_NIGHT)}
+                  >
+                    <AccountAvatar src={userProfile?.avatar_url} initial={initial} />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64">
+                  <DropdownMenuLabel className="font-normal">
+                    <span className="block truncate font-semibold text-ink">{userProfile?.full_name || "Your account"}</span>
+                    {userProfile?.email && <span className="block truncate text-xs text-ink-muted">{userProfile.email}</span>}
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuGroup>
+                    {ACCOUNT_LINKS.map((link) => (
+                      <DropdownMenuItem key={link.href} asChild>
+                        <Link href={link.href}>{link.name}</Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuGroup>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={handleSignOut}>
+                    <LogOut aria-hidden className="size-4" /> Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className={cn("inline-flex size-11 items-center justify-center rounded-lg border border-white/25 hover:bg-white/10 lg:hidden", FOCUS_ON_NIGHT)}
+            >
+              <span className="sr-only">Open main menu</span>
+              <Menu aria-hidden className="size-6" />
+            </button>
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Mobile menu */}
       {isMounted && (
@@ -429,6 +393,6 @@ export function UserNavbar() {
           </SheetContent>
         </Sheet>
       )}
-    </nav>
+    </>
   );
 }
