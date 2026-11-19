@@ -27,7 +27,8 @@ interface SubscriptionCartProps {
   planId?: string | null;
   billingCycle?: Billing | null;
   auto?: boolean;
-  onRequireAuth?: () => void;
+  /** Guests: save these plates and open sign-in (the page owns storage). */
+  onRequireAuth?: (plates: string[]) => void;
 }
 
 interface Vehicle {
@@ -316,23 +317,7 @@ export default function SubscriptionCart({
 
   const handleCheckoutClick = async () => {
     if (!user) {
-      const cartData = {
-        vehicles: vehicles.map((v) => ({
-          license_plate: v.license_plate,
-        })),
-        isAuthorized,
-        planId,
-        billingCycle,
-        autoCheckout: true,
-      };
-
-      localStorage.setItem("pendingSubscriptionCart", JSON.stringify(cartData));
-      localStorage.setItem(
-        "pendingSubscriptionIntent",
-        JSON.stringify({ planId, billing: billingCycle }),
-      );
-
-      onRequireAuth?.();
+      onRequireAuth?.(vehicles.map((v) => v.license_plate));
       return;
     }
     await startCheckout();

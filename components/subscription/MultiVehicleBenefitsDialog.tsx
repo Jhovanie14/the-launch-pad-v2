@@ -1,13 +1,10 @@
 "use client";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Car, CheckCircle2, Tag, Wallet, Zap } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { MAX_VEHICLES_PER_SUBSCRIPTION } from "@/lib/pricing/flockPricing";
+import BookingSheet from "@/components/booking/ui/BookingSheet";
+import { GHOST_BUTTON } from "@/components/booking/ui/focus";
 
 interface MultiVehicleBenefitsDialogProps {
   isOpen: boolean;
@@ -62,6 +59,7 @@ function buildBenefits(discountPercent: number) {
   ];
 }
 
+/** Information only: one quiet "Close", no flame button. */
 export default function MultiVehicleBenefitsDialog({
   isOpen,
   onClose,
@@ -71,41 +69,34 @@ export default function MultiVehicleBenefitsDialog({
   const benefits = buildBenefits(familyDiscountPercent);
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
-        <DialogHeader className="space-y-3">
-          <DialogTitle className="text-xl tracking-tight">
-            Multi-vehicle benefits
-          </DialogTitle>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            {hasDiscount
-              ? `Add vehicles to your plan and every one after the first comes in at ${familyDiscountPercent}% off.`
-              : "Add vehicles to your plan and manage the whole flock on one bill."}
-          </p>
-        </DialogHeader>
-
-        <ul className="mt-2 divide-y divide-border">
-          {benefits.map((benefit) => {
-            const Icon = benefit.icon;
-            return (
-              <li key={benefit.title} className="flex gap-3.5 py-4 first:pt-1">
-                <Icon
-                  className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground"
-                  aria-hidden="true"
-                />
-                <div className="space-y-1">
-                  <p className="text-sm font-medium leading-none">
-                    {benefit.title}
-                  </p>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {benefit.description}
-                  </p>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      </DialogContent>
-    </Dialog>
+    <BookingSheet
+      open={isOpen}
+      onOpenChange={(open) => !open && onClose()}
+      title="Multi-vehicle benefits"
+      description={
+        hasDiscount
+          ? `Add vehicles to your plan and every one after the first comes in at ${familyDiscountPercent}% off.`
+          : "Add vehicles to your plan and manage the whole flock on one bill."
+      }
+      footer={
+        <button type="button" onClick={onClose} className={cn(GHOST_BUTTON, "w-full ring-1 ring-line")}>
+          Close
+        </button>
+      }
+    >
+      <ul className="divide-y divide-line-soft">
+        {benefits.map(({ icon: Icon, title, description }) => (
+          <li key={title} className="flex gap-3 py-3 first:pt-0">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-canvas ring-1 ring-line">
+              <Icon className="size-4 text-brand-blue" aria-hidden />
+            </span>
+            <div>
+              <p className="text-base font-semibold">{title}</p>
+              <p className="mt-0.5 text-sm leading-relaxed text-ink-muted">{description}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </BookingSheet>
   );
 }
