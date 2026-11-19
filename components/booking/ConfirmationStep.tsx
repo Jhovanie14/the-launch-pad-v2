@@ -2,36 +2,25 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  ArrowLeft,
-  CheckCircle2,
-  Crown,
-  Loader2,
-  PackageCheck,
-} from "lucide-react";
+import { Info, Loader2, Star } from "lucide-react";
 import SubscriptionUpsellDialog from "@/components/subscription-upsell-dialog";
 import { useBookingFlow, GuestInfo } from "@/hooks/useBookingFlow";
 import type { BookingAuthContext } from "@/hooks/useBookingAuthContext";
 import type { BookingInitialData } from "@/lib/booking/loadBookingStep";
-import BookingSummary from "./BookingSummary";
-import PaymentChoice from "./PaymentChoice";
 import { HOLIDAY_SALE_ACTIVE, HOLIDAY_SALE_DISCOUNT } from "@/lib/booking/holidaySale";
-import { planCoversCategory } from "@/lib/booking/pricingDisplay";
+import { applySale, planCoversCategory } from "@/lib/booking/pricingDisplay";
+import { cn } from "@/lib/utils";
+import BookingTicket from "./BookingTicket";
+import PaymentChoice from "./PaymentChoice";
+import BookingSheet from "./ui/BookingSheet";
+import StepLayout from "./ui/StepLayout";
+import StepProgress from "./ui/StepProgress";
+import { FLAME_BUTTON, FOCUS_ON_LIGHT, GHOST_BUTTON, RING_BUTTON, SURFACE } from "./ui/focus";
+
+const money = (n: number) => `$${n.toFixed(2)}`;
+const FIELD =
+  "h-11 w-full rounded-lg bg-paper px-3 text-base text-ink ring-1 ring-line placeholder:text-ink-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue";
 
 const validateGuestInfo = (info: GuestInfo) => {
   const errors: Record<string, string> = {};
@@ -47,6 +36,15 @@ const validateGuestInfo = (info: GuestInfo) => {
 
   return errors;
 };
+
+function Notice({ children }: { children: React.ReactNode }) {
+  return (
+    <p className={cn(SURFACE, "flex items-start gap-3 p-4 text-base")}>
+      <Star className="mt-0.5 size-5 shrink-0 text-svc-member-mark" aria-hidden />
+      <span>{children}</span>
+    </p>
+  );
+}
 
 export default function ConfirmationStep({
   ctx,
@@ -152,173 +150,150 @@ export default function ConfirmationStep({
       ? "Quick Service"
       : "Express Detail";
 
+  const saleSavings = Math.max(0, pricing.originalTotal - pricing.saleTotal);
+  const promoSavings = Math.max(0, pricing.saleTotal - pricing.finalTotal);
+  const salePercent = Math.round(HOLIDAY_SALE_DISCOUNT * 100);
+
+  const buttonLabel = isSubmitting
+    ? "Redirecting..."
+    : !ready
+      ? "Loading your booking..."
+      : isFreeForSubscriber
+        ? "Confirm booking"
+        : "Proceed to payment";
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-gray-600 hover:text-gray-900"
-              onClick={() => router.back()}
+    <>
+      <StepLayout
+        above={ctx.variant === "dashboard" ? <StepProgress current={3} tone="canvas" className="mb-5" /> : undefined}
+        back={{ label: "Change date or time", onClick: () => router.back() }}
+        title="Check and confirm"
+        action={{
+          summaryTitle: !ready ? "Your booking" : isFreeForSubscriber ? "Free with your membership" : money(pricing.finalTotal),
+          summaryDetail: !ready
+            ? undefined
+            : isFreeForSubscriber
+              ? "No payment needed"
+              : ctx.isAuthenticated
+                ? "Pay by card or cash"
+                : "Pay by card",
+          button: (
+            <button
+              type="button"
+              onClick={handleConfirmBooking}
+              disabled={isSubmitting || !ready}
+              className={FLAME_BUTTON}
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
-            </Button>
-            <h1 className="text-xl font-semibold text-gray-900">
-              Confirm Your Booking
-            </h1>
-            <div className="w-16" /> {/* Spacer for center alignment */}
-          </div>
-        </div>
-      </div>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="space-y-6">
-            <BookingSummary
-              licensePlate={selection.licensePlate}
-              vehicleInfo={vehicleInfo}
-              service={service}
-              addOns={addOns}
-              date={selection.date}
-              time={selection.time}
-              duration={duration}
-              pricing={pricing}
-              promoApplied={!!appliedPromo}
-            />
+              {(isSubmitting || !ready) && <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden />}
+              {buttonLabel}
+            </button>
+          ),
+        }}
+      >
+        <BookingTicket
+          date={selection.date}
+          time={selection.time}
+          service={service}
+          addOns={addOns}
+          duration={duration}
+          plate={selection.licensePlate}
+          vehicleInfo={vehicleInfo}
+        />
 
-            {/* ============================================
-                HOLIDAY SALE: START - Remove this badge when sale ends
-                ============================================ */}
-            {HOLIDAY_SALE_ACTIVE && (
-              <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg p-3">
-                <div className="bg-linear-to-r from-red-500 to-red-600 text-white px-3 py-1 text-xs font-bold rounded-full">
-                  SALE
-                </div>
-                <p className="text-sm text-red-700 font-semibold">
-                  {Math.round(HOLIDAY_SALE_DISCOUNT * 100)}% OFF Applied! Save $
-                  {pricing.savings.toFixed(2)}
-                </p>
+        {/* Subscription status: today's three cases, unchanged in meaning. */}
+        {pricing.isServiceFree ? (
+          <Notice>
+            Your {subscribedLabel} membership covers this service.
+            {addOns.length > 0 ? " You only pay for the extras." : ""}
+          </Notice>
+        ) : ctx.subscription && isVehicleSubscribed ? (
+          <Notice>
+            Your {subscribedLabel} membership doesn&apos;t cover {serviceCategoryLabel} services, so this one is paid.
+          </Notice>
+        ) : ctx.subscription && !isVehicleSubscribed ? (
+          <Notice>This car isn&apos;t on your membership, so standard prices apply.</Notice>
+        ) : null}
+
+        <section aria-labelledby="price-title" className={cn(SURFACE, "p-4 sm:p-5")}>
+          <h2 id="price-title" className="sr-only">
+            Price
+          </h2>
+          <dl className="space-y-2 text-base">
+            {service && (
+              <div className="flex justify-between gap-3">
+                <dt>{service.name}</dt>
+                <dd className="text-right">
+                  {pricing.isServiceFree ? (
+                    <>
+                      <span className="mr-2 text-sm text-ink-muted line-through">{money(Number(service.price))}</span>
+                      <span className="font-semibold text-svc-member-mark">Free</span>
+                    </>
+                  ) : (
+                    money(Number(service.price))
+                  )}
+                </dd>
               </div>
             )}
-            {/* ============================================
-                HOLIDAY SALE: END
-                ============================================ */}
-
-            {/* Subscription status banners */}
-            {pricing.isServiceFree ? (
-              <div className="flex items-center gap-1">
-                <Crown className="w-4 h-4 text-yellow-500" />
-                <p className="text-sm text-green-600">
-                  You're subscribed to {subscribedLabel} — this service is
-                  free! You only pay for add-ons.
-                </p>
+            {addOns.map((a) => (
+              <div key={a.id} className="flex justify-between gap-3">
+                <dt>{a.name}</dt>
+                <dd>{money(Number(a.price))}</dd>
               </div>
-            ) : ctx.subscription && isVehicleSubscribed ? (
-              <div className="flex items-center gap-1">
-                <Crown className="w-4 h-4 text-yellow-500" />
-                <p className="text-sm text-orange-600">
-                  You're subscribed to {subscribedLabel} — this{" "}
-                  {serviceCategoryLabel} service requires payment.
-                </p>
+            ))}
+            {HOLIDAY_SALE_ACTIVE && saleSavings > 0.004 && (
+              <div className="flex justify-between gap-3 text-ink-muted">
+                <dt>Holiday sale ({salePercent}% off)</dt>
+                <dd>−{money(saleSavings)}</dd>
               </div>
-            ) : ctx.subscription && !isVehicleSubscribed ? (
-              <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                <Crown className="w-4 h-4 text-amber-500 shrink-0" />
-                <p className="text-sm text-amber-700">
-                  This vehicle is not part of your subscription — standard
-                  pricing applies.
-                </p>
-              </div>
-            ) : null}
-
-            {appliedPromo && (
-              <p className="text-green-600 text-sm mt-2">
-                Promo applied:{" "}
-                {appliedPromo.type === "flat"
-                  ? `$${appliedPromo.value.toFixed(2)} off`
-                  : `${appliedPromo.value}% off`}{" "}
-                — New Total: ${pricing.finalTotal.toFixed(2)}
-              </p>
             )}
-            {isFreeForSubscriber && (
-              <p className="text-sm text-gray-500 mt-1">
-                Promo codes are not applicable — your wash is free under your
-                subscription.
-              </p>
-            )}
-            <div className="w-full md:flex space-y-3 md:space-y-0 items-center md:justify-between">
-              {/* Promo code */}
-              <div className="flex justify-between items-center gap-1">
-                <Label className="text-accent-foreground" id="promoCode">
-                  Promo Code:
-                </Label>
-                <div className="flex space-x-2">
-                  <Input
-                    id="promoCode"
-                    type="text"
-                    placeholder="Enter promo code"
-                    className="w-48"
-                    value={promoCode}
-                    onChange={(e) => setPromoCode(e.target.value)}
-                  />
-                  <Button
-                    variant="outline"
-                    className="border-blue-900"
-                    disabled={!promoCode || isFreeForSubscriber}
-                    onClick={() => applyPromoCode()}
-                  >
-                    Apply
-                  </Button>
-                </div>
+            {appliedPromo && promoSavings > 0.004 && (
+              <div className="flex justify-between gap-3 text-ink-muted">
+                <dt>
+                  {promoCode.trim().toUpperCase()} (
+                  {appliedPromo.type === "flat" ? `${money(appliedPromo.value)} off` : `${appliedPromo.value}% off`})
+                </dt>
+                <dd>−{money(promoSavings)}</dd>
               </div>
-
-              {/* Action Buttons */}
-              <Button
-                onClick={handleConfirmBooking}
-                disabled={isSubmitting || !ready}
-                className="bg-blue-900 hover:bg-blue-800 px-8 py-3"
-              >
-                {(isSubmitting || !ready) && <Loader2 />}
-                {isSubmitting
-                  ? "Redirecting..."
-                  : !ready
-                    ? "Loading your booking..."
-                    : isFreeForSubscriber
-                      ? "Confirm Booking"
-                      : "Proceed to Payment"}
-              </Button>
+            )}
+            <div className="flex justify-between gap-3 border-t border-line-soft pt-3 text-lg font-black tracking-[-0.02em]">
+              <dt>Total</dt>
+              <dd>{money(pricing.finalTotal)}</dd>
             </div>
+          </dl>
+
+          <div className="mt-4">
+            <label htmlFor="promoCode" className="text-sm font-semibold">
+              Promo code
+            </label>
+            <div className="mt-2 flex gap-2">
+              <input
+                id="promoCode"
+                type="text"
+                placeholder="Enter promo code"
+                autoComplete="off"
+                value={promoCode}
+                disabled={isFreeForSubscriber}
+                onChange={(e) => setPromoCode(e.target.value)}
+                className={cn(FIELD, "flex-1 disabled:bg-canvas disabled:text-ink-subtle")}
+              />
+              <button
+                type="button"
+                className={RING_BUTTON}
+                disabled={!promoCode || isFreeForSubscriber}
+                onClick={() => applyPromoCode()}
+              >
+                {appliedPromo ? "Applied" : "Apply"}
+              </button>
+            </div>
+            {isFreeForSubscriber && (
+              <p className="mt-2 flex items-start gap-2 text-sm text-ink-muted">
+                <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
+                Promo codes don&apos;t apply: your wash is free with your membership.
+              </p>
+            )}
           </div>
-          <div className="space-y-4">
-            <Card>
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg font-semibold text-foreground">
-                  Booking Progress
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex items-center text-muted-foreground space-x-3">
-                  <CheckCircle2 className="w-5 h-5 text-primary" />
-                  <span className="text-sm">Service Package Selected</span>
-                </div>
-                <div className="ml-2 h-8 w-px bg-gray-300" />
-                <div className="flex items-center text-muted-foreground space-x-3">
-                  <CheckCircle2 className="w-5 h-5 text-primary" />
-                  <span className="text-sm">Date and Time</span>
-                </div>
-                <div className="ml-2 h-8 w-px bg-gray-300" />
-                <div className="flex items-center text-primary space-x-3">
-                  <PackageCheck className="w-5 h-5" />
-                  <span className="text-sm">Confirmation</span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
+        </section>
+      </StepLayout>
 
       <PaymentChoice
         open={showPaymentModal}
@@ -333,108 +308,99 @@ export default function ConfirmationStep({
         <SubscriptionUpsellDialog
           open={showUpsell}
           bookingTotal={pricing.finalTotal}
+          serviceCategory={service?.category ?? null}
+          servicePrice={service ? applySale(Number(service.price)) : 0}
           onDismiss={handleUpsellDismiss}
           onSubscribe={handleUpsellSubscribe}
         />
       )}
 
-      <AlertDialog open={showGuestModal} onOpenChange={setShowGuestModal}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Enter Your Info</AlertDialogTitle>
-            <AlertDialogDescription>
-              Please provide your information to proceed as a guest.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <Label htmlFor="guest-name">Name</Label>
-              <Input
-                id="guest-name"
-                type="text"
-                placeholder="Enter your name"
-                value={guestInfo.name}
-                onChange={(e) =>
-                  setGuestInfo({ ...guestInfo, name: e.target.value })
-                }
-              />
-              {guestErrors.name && (
-                <p className="text-red-500 text-sm mt-1">{guestErrors.name}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="guest-email">Email</Label>
-              <Input
-                id="guest-email"
-                type="email"
-                placeholder="Enter your email"
-                value={guestInfo.email}
-                onChange={(e) =>
-                  setGuestInfo({ ...guestInfo, email: e.target.value })
-                }
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                We need your email to send booking confirmation.
+      <BookingSheet
+        open={showGuestModal}
+        onOpenChange={setShowGuestModal}
+        title="Your details"
+        description="We send your booking confirmation to this email."
+        footer={
+          <>
+            <button type="button" onClick={submitGuest} className={cn(FLAME_BUTTON, "w-full")}>
+              Continue to payment
+            </button>
+            <button type="button" onClick={() => setShowGuestModal(false)} className={cn(GHOST_BUTTON, "w-full")}>
+              Cancel
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="guest-name" className="text-sm font-semibold">
+              Name
+            </label>
+            <input
+              id="guest-name"
+              type="text"
+              autoComplete="name"
+              value={guestInfo.name}
+              aria-invalid={!!guestErrors.name}
+              aria-describedby={guestErrors.name ? "guest-name-error" : undefined}
+              onChange={(e) => setGuestInfo({ ...guestInfo, name: e.target.value })}
+              className={cn(FIELD, "mt-2")}
+            />
+            {guestErrors.name && (
+              <p id="guest-name-error" className="mt-1 text-sm text-destructive">
+                {guestErrors.name}
               </p>
-              {guestErrors.email && (
-                <p className="text-red-500 text-sm mt-1">{guestErrors.email}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="guest-phone">Phone (optional)</Label>
-              <Input
-                id="guest-phone"
-                type="tel"
-                placeholder="Enter your phone number"
-                value={guestInfo.phone}
-                onChange={(e) =>
-                  setGuestInfo({ ...guestInfo, phone: e.target.value })
-                }
-              />
-              {guestErrors.phone && (
-                <p className="text-red-500 text-sm mt-1">{guestErrors.phone}</p>
-              )}
-            </div>
-
-            <div className="flex items-start gap-2">
-              <Checkbox
-                id="guest-marketing"
-                checked={guestInfo.marketingOptIn}
-                onCheckedChange={(checked) =>
-                  setGuestInfo({ ...guestInfo, marketingOptIn: checked === true })
-                }
-                className="mt-0.5"
-              />
-              <Label
-                htmlFor="guest-marketing"
-                className="text-sm font-normal text-muted-foreground leading-snug"
-              >
-                Email me product news and offers. You can unsubscribe at any
-                time.
-              </Label>
-            </div>
+            )}
           </div>
 
-          <AlertDialogFooter>
-            <AlertDialogCancel className="px-4 py-2 rounded">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction asChild>
-              <Button
-                className="bg-blue-900 hover:bg-blue-800 px-4 py-2 rounded text-white"
-                onClick={(e) => {
-                  e.preventDefault();
-                  submitGuest();
-                }}
-              >
-                Continue to Payment
-              </Button>
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+          <div>
+            <label htmlFor="guest-email" className="text-sm font-semibold">
+              Email
+            </label>
+            <input
+              id="guest-email"
+              type="email"
+              autoComplete="email"
+              value={guestInfo.email}
+              aria-invalid={!!guestErrors.email}
+              aria-describedby={guestErrors.email ? "guest-email-error" : undefined}
+              onChange={(e) => setGuestInfo({ ...guestInfo, email: e.target.value })}
+              className={cn(FIELD, "mt-2")}
+            />
+            {guestErrors.email && (
+              <p id="guest-email-error" className="mt-1 text-sm text-destructive">
+                {guestErrors.email}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="guest-phone" className="text-sm font-semibold">
+              Phone <span className="font-normal text-ink-muted">(optional)</span>
+            </label>
+            <input
+              id="guest-phone"
+              type="tel"
+              autoComplete="tel"
+              value={guestInfo.phone}
+              onChange={(e) => setGuestInfo({ ...guestInfo, phone: e.target.value })}
+              className={cn(FIELD, "mt-2")}
+            />
+          </div>
+
+          <div className="flex items-start gap-3">
+            <Checkbox
+              id="guest-marketing"
+              checked={guestInfo.marketingOptIn}
+              onCheckedChange={(checked) => setGuestInfo({ ...guestInfo, marketingOptIn: checked === true })}
+              className={cn("mt-0.5 size-5", FOCUS_ON_LIGHT)}
+            />
+            <label htmlFor="guest-marketing" className="text-sm leading-snug text-ink-muted">
+              Email me product news and offers. You can unsubscribe at any time.
+            </label>
+          </div>
+        </div>
+      </BookingSheet>
+    </>
   );
 }

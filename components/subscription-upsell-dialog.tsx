@@ -1,33 +1,35 @@
 "use client";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Check, Crown, Sparkles, X, Zap } from "lucide-react";
+import { Check } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { usePricingPlans } from "@/hooks/usePricingPlans";
+import { membershipPitch } from "@/lib/booking/membershipPitch";
+import BookingSheet, { BookingSheetTitle } from "@/components/booking/ui/BookingSheet";
+import { FLAME_BUTTON, GHOST_BUTTON } from "@/components/booking/ui/focus";
 
 interface SubscriptionUpsellDialogProps {
   open: boolean;
   bookingTotal: number;
+  /** The booked service, so the break-even line is only shown when the plan covers it. */
+  serviceCategory: string | null;
+  /** The service's price per visit as shown (sale applied, extras excluded). */
+  servicePrice: number;
   onDismiss: () => void;
   onSubscribe: (planId: string) => void;
 }
 
-const FEATURES = [
-  "Unlimited express detail visits every month",
-  "Interior vacuum & shampoo",
-  "Premium wash, wax & tire shine",
-  "Window cleaning & dashboard shine",
-  "Priority scheduling — no waiting",
-  "15% off all paid add-ons",
-];
+const money = (n: number) => `$${n.toFixed(2)}`;
 
+/**
+ * Offered to guests before they pay. It reads like the member pass and lists
+ * the plan's own features from the database, so it never promises something
+ * the plan doesn't include.
+ */
 export default function SubscriptionUpsellDialog({
   open,
   bookingTotal,
+  serviceCategory,
+  servicePrice,
   onDismiss,
   onSubscribe,
 }: SubscriptionUpsellDialogProps) {
@@ -35,121 +37,70 @@ export default function SubscriptionUpsellDialog({
 
   const expressDetailPlan =
     plans.find((p) => p.name.toLowerCase().includes("express")) ??
-    plans.sort((a, b) => a.monthly_price - b.monthly_price)[0];
+    [...plans].sort((a, b) => a.monthly_price - b.monthly_price)[0];
 
-  const monthlyPrice = expressDetailPlan?.monthly_price ?? 0;
-  const visitsToBreakEven =
-    monthlyPrice > 0 && bookingTotal > 0
-      ? Math.ceil(monthlyPrice / bookingTotal)
-      : null;
+  const { priceLabel, breakEvenVisits: visitsToBreakEven } = membershipPitch({
+    planName: expressDetailPlan?.name ?? null,
+    monthlyPrice: expressDetailPlan?.monthly_price ?? 0,
+    serviceCategory,
+    servicePrice,
+  });
+  const features = expressDetailPlan?.features ?? [];
+  const kind = expressDetailPlan?.name.toLowerCase().includes("express") ? "Express membership" : "Membership";
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onDismiss()}>
-      <DialogContent className="max-w-sm p-0 overflow-hidden rounded-3xl border-0 shadow-2xl gap-0 [&>button]:hidden">
-
-        {/* Dismiss */}
-        <button
-          onClick={onDismiss}
-          aria-label="Close"
-          className="absolute top-4 right-4 z-20 w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
-        >
-          <X className="w-4 h-4" />
-        </button>
-
-        {/* ── Hero ── */}
-        <div className="relative bg-blue-950 px-6 pt-8 pb-16 overflow-hidden">
-          {/* Decorative glows */}
-          <div className="absolute -top-10 -right-10 w-48 h-48 bg-yellow-400/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-8 -left-8 w-40 h-40 bg-blue-500/20 rounded-full blur-2xl pointer-events-none" />
-
-          {/* Badge */}
-          <div className="inline-flex items-center gap-1.5 bg-yellow-400/15 border border-yellow-400/30 rounded-full px-3 py-1 mb-5">
-            <Sparkles className="w-3.5 h-3.5 text-yellow-400" />
-            <span className="text-yellow-400 text-xs font-semibold tracking-wide uppercase">
-              Exclusive Member Offer
-            </span>
-          </div>
-
-          <DialogTitle className="text-2xl font-extrabold text-white leading-snug mb-3">
-            Stop paying every visit.{" "}
-            <span className="text-yellow-400">Go unlimited.</span>
-          </DialogTitle>
-
-          <p className="text-blue-300 text-sm leading-relaxed">
-            You&apos;re paying{" "}
-            <span className="text-white font-semibold">
-              ${bookingTotal.toFixed(2)}
-            </span>{" "}
-            each time.
-            {visitsToBreakEven !== null && (
-              <>
-                {" "}
-                A membership covers itself after just{" "}
-                <span className="text-yellow-400 font-semibold">
-                  {visitsToBreakEven} visit{visitsToBreakEven > 1 ? "s" : ""}
-                </span>
-                .
-              </>
-            )}
-          </p>
+    <BookingSheet
+      open={open}
+      onOpenChange={(o) => !o && onDismiss()}
+      title="Stop paying every visit"
+      description={expressDetailPlan && priceLabel ? `${expressDetailPlan.name} plan, ${priceLabel} a month.` : "Membership plans"}
+      header={
+        <div className="bg-night px-5 pb-6 pr-14 pt-5 text-on-night sm:px-6 sm:pt-6">
+          <p className="text-sm font-semibold text-svc-member">{kind}</p>
+          <BookingSheetTitle className="mt-1 text-3xl">Stop paying every visit</BookingSheetTitle>
+          {priceLabel ? (
+            <p className="mt-4 flex flex-wrap items-baseline gap-x-2">
+              <span className="text-4xl font-black tracking-[-0.03em]">{priceLabel}</span>
+              <span className="text-base text-on-night-muted">a month, {expressDetailPlan?.name} plan</span>
+            </p>
+          ) : (
+            <p className="mt-4 h-10 w-40 rounded-lg bg-dusk/90 motion-safe:animate-pulse" aria-hidden />
+          )}
+          {bookingTotal > 0 && (
+            <p className="mt-2 text-base leading-relaxed text-on-night-muted">
+              This booking is <span className="font-semibold text-on-night">{money(bookingTotal)}</span>.
+              {visitsToBreakEven !== null &&
+                ` ${visitsToBreakEven === 1 ? "One visit" : `${visitsToBreakEven} visits`} a month and the plan has paid for itself.`}
+            </p>
+          )}
         </div>
-
-        {/* ── Price pill (overlapping) ── */}
-        <div className="flex justify-center -mt-7 relative z-10 mb-1">
-          <div className="bg-white rounded-2xl shadow-xl px-6 py-3 flex items-end gap-1">
-            {monthlyPrice > 0 ? (
-              <>
-                <span className="text-4xl font-black text-blue-950 leading-none">
-                  ${monthlyPrice}
-                </span>
-                <span className="text-gray-400 text-sm mb-1 font-medium">
-                  / month
-                </span>
-              </>
-            ) : (
-              <span className="text-gray-400 text-sm animate-pulse">Loading…</span>
-            )}
-          </div>
-        </div>
-
-        {/* ── Features ── */}
-        <div className="px-6 pt-4 pb-2">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-            Everything included
-          </p>
-          <ul className="grid grid-cols-1 gap-2">
-            {FEATURES.map((f) => (
-              <li key={f} className="flex items-start gap-2.5">
-                <span className="mt-0.5 shrink-0 w-4 h-4 rounded-full bg-green-500/15 flex items-center justify-center">
-                  <Check className="w-2.5 h-2.5 text-green-500" strokeWidth={3} />
-                </span>
-                <span className="text-sm text-gray-700 leading-snug">{f}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* ── CTAs ── */}
-        <div className="px-6 pt-5 pb-6 space-y-3">
-          <Button
-            className="w-full h-13 rounded-xl bg-blue-950 hover:bg-blue-900 text-white font-bold text-base shadow-lg shadow-blue-950/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
-            onClick={() => expressDetailPlan && onSubscribe(expressDetailPlan.id)}
-            disabled={!expressDetailPlan}
-          >
-            <Crown className="w-4 h-4 mr-2 text-yellow-400 shrink-0" />
-            Subscribe &amp; Save — ${monthlyPrice}/mo
-            <Zap className="w-4 h-4 ml-2 text-yellow-400 shrink-0" />
-          </Button>
-
+      }
+      footer={
+        <>
           <button
-            onClick={onDismiss}
-            className="w-full text-xs text-gray-400 hover:text-gray-500 transition-colors py-1 leading-relaxed"
+            type="button"
+            className={cn(FLAME_BUTTON, "w-full")}
+            onClick={() => expressDetailPlan && onSubscribe(expressDetailPlan.id)}
+            disabled={!expressDetailPlan || !priceLabel}
           >
-            No thanks — I&apos;ll keep paying ${bookingTotal.toFixed(2)} per visit
+            {priceLabel ? `Become a member, ${priceLabel} a month` : "Become a member"}
           </button>
-        </div>
-
-      </DialogContent>
-    </Dialog>
+          <button type="button" onClick={onDismiss} className={cn(GHOST_BUTTON, "h-auto min-h-11 w-full text-center")}>
+            No thanks, continue to pay {money(bookingTotal)}
+          </button>
+        </>
+      }
+    >
+      {features.length > 0 && (
+        <ul className="space-y-2">
+          {features.map((f) => (
+            <li key={f} className="flex items-start gap-2.5 text-base">
+              <Check className="mt-1 size-4 shrink-0 text-brand-blue" aria-hidden />
+              <span>{f}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </BookingSheet>
   );
 }
