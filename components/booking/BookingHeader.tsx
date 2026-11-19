@@ -7,15 +7,17 @@ import { cn } from "@/lib/utils";
 import StepProgress from "./ui/StepProgress";
 import { FOCUS_ON_NIGHT } from "./ui/focus";
 
-function stepFor(pathname: string): 1 | 2 | 3 {
+/** The booking step for this page, or null off the booking steps (e.g. the membership cart). */
+function stepFor(pathname: string): 1 | 2 | 3 | null {
   if (pathname.startsWith("/confirmation")) return 3;
   if (pathname.startsWith("/datetime")) return 2;
-  return 1;
+  if (pathname.startsWith("/service")) return 1;
+  return null;
 }
 
-/** The guest booking frame's header: the bay at night, with the steps under it. */
+/** The guest booking frame's header: the bay at night, with the steps under it on the booking steps. */
 export default function BookingHeader() {
-  const pathname = usePathname() ?? "/service";
+  const step = stepFor(usePathname() ?? "");
   return (
     <header className="sticky top-0 z-50 bg-night text-on-night shadow-[0_8px_24px_-16px_oklch(0.2_0.07_262/0.8)]">
       <div className="mx-auto max-w-7xl px-4 pb-3 pt-3 sm:px-6 lg:px-8">
@@ -36,7 +38,7 @@ export default function BookingHeader() {
             Back to site
           </Link>
         </div>
-        <StepProgress current={stepFor(pathname)} tone="night" className="mt-3" />
+        {step && <StepProgress current={step} tone="night" className="mt-3" />}
       </div>
     </header>
   );
