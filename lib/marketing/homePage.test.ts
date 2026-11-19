@@ -11,11 +11,19 @@ describe("home page copy", () => {
     ]);
   });
 
-  it("three reviews, one per service line", () => {
-    expect(HOME_REVIEWS.map((r) => r.author)).toEqual(["Ahmed S.", "Maria G.", "Jason T."]);
-    expect(HOME_REVIEWS[0].text).toMatch(/self-wash/);
-    expect(HOME_REVIEWS[1].text).toMatch(/express detailing/);
-    expect(HOME_REVIEWS[2].text).toMatch(/membership/);
-    for (const r of HOME_REVIEWS) expect(["Google", "Yelp"]).toContain(r.source);
+  // PRODUCT.md: testimonials must never be fabricated. These are quoted word
+  // for word from the Google review screenshots in public/reviews/.
+  it("reviews are the real Google reviews from the screenshots", () => {
+    expect(HOME_REVIEWS.map((r) => [r.author, r.source])).toEqual([
+      ["Arsalan K.", "Google"],
+      ["Vilma C.", "Google"],
+      ["El guero T.", "Google"],
+    ]);
+    expect(HOME_REVIEWS[1].text).toBe(
+      "Easily the best car wash I've went to! Armando was so friendly and explained everything in detail. His great service alone is a key factor in this becoming the ONLY car wash I'll be coming to in Houston!",
+    );
+    expect(HOME_REVIEWS[2].text).toBe(
+      "It's a great place, always clean and nice and I like how it's kept and I go every week.",
+    );
   });
 });

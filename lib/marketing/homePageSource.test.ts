@@ -7,8 +7,12 @@ const root = process.cwd();
 const PAGE = join(root, "app/(user)/(home)/page.tsx");
 const HOME_DIR = join(root, "components/home");
 
+// Every file that holds home page copy, including the copy module and the
+// shared service tiles shown in the hero.
+const COPY_FILES = [join(root, "lib/marketing/homePage.ts"), join(root, "components/services/ServiceTileGrid.tsx")];
+
 function homeSources(): { file: string; text: string }[] {
-  const files = [PAGE];
+  const files = [PAGE, ...COPY_FILES];
   if (existsSync(HOME_DIR)) {
     for (const f of readdirSync(HOME_DIR)) if (f.endsWith(".tsx")) files.push(join(HOME_DIR, f));
   }
@@ -17,9 +21,9 @@ function homeSources(): { file: string; text: string }[] {
 
 describe("home page source", () => {
   it("no unverified claims", () => {
-    const banned = ["4.9", "500+", "4.4", "Best price", "guarantee"];
+    const banned = ["4.9", "500+", "4.4", "best price", "guarantee"];
     const hits = homeSources().flatMap(({ file, text }) =>
-      banned.filter((b) => text.includes(b)).map((b) => `${file}: ${b}`),
+      banned.filter((b) => text.toLowerCase().includes(b)).map((b) => `${file}: ${b}`),
     );
     expect(hits).toEqual([]);
   });
@@ -34,5 +38,12 @@ describe("home page source", () => {
   it("the page is a server component", () => {
     expect(readFileSync(PAGE, "utf8")).not.toMatch(/^\s*["']use client["']/);
     expect(existsSync(HOME_DIR)).toBe(true);
+  });
+});
+
+describe("home claims guard", () => {
+  it("covers the copy module and the shared tiles", () => {
+    const scanned = homeSources().map((s) => s.file);
+    for (const f of COPY_FILES) expect(scanned).toContain(f);
   });
 });

@@ -27,10 +27,7 @@ export function CustomerReviews() {
                 </p>
                 <blockquote className="mt-4 flex-1 leading-relaxed">{review.text}</blockquote>
                 <figcaption className="mt-6 flex items-end justify-between gap-4 text-sm">
-                  <span>
-                    <span className="block font-bold">{review.author}</span>
-                    <span className="text-on-night-subtle">{review.vehicle}</span>
-                  </span>
+                  <span className="font-bold">{review.author}</span>
                   <span className="shrink-0 text-on-night-subtle">{review.source} review</span>
                 </figcaption>
               </figure>

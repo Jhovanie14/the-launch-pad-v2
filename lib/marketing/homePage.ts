@@ -1,5 +1,5 @@
-// The home page's approved copy. Facts only: no ratings or "best price"
-// claims until they are verified against a real source (PRODUCT.md).
+// The home page's approved copy. Facts only: no rating counts or price
+// superlatives until they are verified against a real source (PRODUCT.md).
 
 export const HOME_REASONS: { title: string; detail: string }[] = [
   { title: "Open around the clock", detail: "Self-service bays, 24/7" },
@@ -11,28 +11,28 @@ export const HOME_REASONS: { title: string; detail: string }[] = [
 export interface HomeReview {
   text: string;
   author: string;
-  vehicle: string;
-  source: "Google" | "Yelp";
+  source: "Google";
 }
 
-/** One review for each service line: self-service, detailing, membership. */
+/**
+ * Real Google reviews, quoted word for word from the screenshots in
+ * public/reviews/ (image10, image11, image12). Testimonials must never be
+ * invented (PRODUCT.md); add more only from a real, checkable review.
+ */
 export const HOME_REVIEWS: HomeReview[] = [
   {
-    text: "Best self-wash in Houston. Equipment is strong and bays are super clean.",
-    author: "Ahmed S.",
-    vehicle: "BMW 3 Series",
+    text: "Amazing car wash experience! I literally pulled up and they got My Tahoe cleaned inside out in about 40 minutes for a great price! Very attentive to detail and I love how they have a Free Air for your tires! I love that there's a food truck there every evening who serves up some amazing authentic Indian food. Very well lit up in the evenings.",
+    author: "Arsalan K.",
     source: "Google",
   },
   {
-    text: "The express detailing service is amazing! My car looked brand new after they finished.",
-    author: "Maria G.",
-    vehicle: "Honda CR-V",
-    source: "Yelp",
+    text: "Easily the best car wash I've went to! Armando was so friendly and explained everything in detail. His great service alone is a key factor in this becoming the ONLY car wash I'll be coming to in Houston!",
+    author: "Vilma C.",
+    source: "Google",
   },
   {
-    text: "I've tried every car wash in the area and this is by far the best. The membership is worth every penny.",
-    author: "Jason T.",
-    vehicle: "Regular Customer",
+    text: "It's a great place, always clean and nice and I like how it's kept and I go every week.",
+    author: "El guero T.",
     source: "Google",
   },
 ];
