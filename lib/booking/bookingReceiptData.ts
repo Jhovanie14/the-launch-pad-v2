@@ -6,10 +6,11 @@ import { HOLIDAY_SALE_ACTIVE, HOLIDAY_SALE_DISCOUNT } from "@/lib/booking/holida
 import { buildReceipt, type Receipt } from "./bookingReceipt";
 
 const BOOKING_COLUMNS =
-  "id, service_package_name, service_package_price, appointment_date, appointment_time, total_duration, total_price, payment_method, vehicle_id";
+  "id, service_package_id, service_package_name, service_package_price, appointment_date, appointment_time, total_duration, total_price, payment_method, vehicle_id";
 
 interface BookingRow {
   id: string;
+  service_package_id: string | null;
   service_package_name: string | null;
   service_package_price: number | null;
   appointment_date: string;
@@ -47,6 +48,13 @@ async function addOnsByIds(db: SupabaseClient, ids: string[]) {
   return (data ?? []).map((a: { name: string; price: number }) => ({ name: a.name, price: Number(a.price) }));
 }
 
+/** The service’s list price (bookings store the charged price: sale applied, 0 when free). */
+async function listPrice(db: SupabaseClient, serviceId: string | null | undefined, fallback: number) {
+  if (!serviceId) return fallback;
+  const { data } = await db.from("service_packages").select("price").eq("id", serviceId).maybeSingle();
+  return data ? Number(data.price) : fallback;
+}
+
 async function readBooking(db: SupabaseClient, id: string): Promise<BookingRow | null> {
   const { data } = await db.from("bookings").select(BOOKING_COLUMNS).eq("id", id).maybeSingle();
   return (data as BookingRow | null) ?? null;
@@ -78,11 +86,17 @@ export async function loadBookingReceipt(params: { session_id?: string; booking_
     const totalPaid = (session.amount_total ?? 0) / 100;
 
     if (booking) {
-      const [extras, car] = await Promise.all([addOnsForBooking(db, booking.id), vehicleFor(db, booking.vehicle_id)]);
+      const charged = booking.service_package_price;
+      const [extras, car, list] = await Promise.all([
+        addOnsForBooking(db, booking.id),
+        vehicleFor(db, booking.vehicle_id),
+        listPrice(db, booking.service_package_id, Number(charged ?? 0)),
+      ]);
       return buildReceipt({
         paymentMethod: "card",
         serviceName: booking.service_package_name,
-        servicePrice: Number(booking.service_package_price ?? 0),
+        serviceListPrice: list,
+        serviceChargedPrice: charged === null || charged === undefined ? 0 : Number(charged),
         extras,
         totalPaid,
         date: booking.appointment_date,
@@ -96,11 +110,17 @@ export async function loadBookingReceipt(params: { session_id?: string; booking_
     }
 
     const ids = String(meta?.aids ?? "").split(",").filter(Boolean);
-    const [extras, car] = await Promise.all([addOnsByIds(db, ids), vehicleFor(db, meta?.vid ?? null)]);
+    const metaCharged = Number(meta?.spp ?? 0);
+    const [extras, car, list] = await Promise.all([
+      addOnsByIds(db, ids),
+      vehicleFor(db, meta?.vid ?? null),
+      listPrice(db, meta?.spid ?? null, metaCharged),
+    ]);
     return buildReceipt({
       paymentMethod: "card",
       serviceName: meta?.spn ?? null,
-      servicePrice: Number(meta?.spp ?? 0),
+      serviceListPrice: list,
+      serviceChargedPrice: metaCharged,
       extras,
       totalPaid,
       date: meta?.ad ?? null,
@@ -116,12 +136,18 @@ export async function loadBookingReceipt(params: { session_id?: string; booking_
   if (params.booking_id) {
     const booking = await readBooking(db, params.booking_id);
     if (!booking) throw new Error("Booking not found");
-    const [extras, car] = await Promise.all([addOnsForBooking(db, booking.id), vehicleFor(db, booking.vehicle_id)]);
+    const charged = booking.service_package_price;
+    const [extras, car, list] = await Promise.all([
+      addOnsForBooking(db, booking.id),
+      vehicleFor(db, booking.vehicle_id),
+      listPrice(db, booking.service_package_id, Number(charged ?? 0)),
+    ]);
     const method = booking.payment_method;
     return buildReceipt({
       paymentMethod: method === "cash" ? "cash" : method === "card" ? "card" : "subscription",
       serviceName: booking.service_package_name,
-      servicePrice: Number(booking.service_package_price ?? 0),
+      serviceListPrice: list,
+      serviceChargedPrice: charged === null || charged === undefined ? null : Number(charged),
       extras,
       totalPaid: Number(booking.total_price ?? 0),
       date: booking.appointment_date,

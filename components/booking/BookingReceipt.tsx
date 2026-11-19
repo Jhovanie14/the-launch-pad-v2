@@ -61,12 +61,12 @@ export default function BookingReceipt({
               <dd className="tabular-nums">{money(e.price)}</dd>
             </div>
           ))}
-          {receipt.discount && (
-            <div className="flex justify-between gap-4 py-2.5 text-ink-muted">
-              <dt>{receipt.discount.label}</dt>
-              <dd className="tabular-nums">−{money(receipt.discount.amount)}</dd>
+          {receipt.discounts.map((d) => (
+            <div key={d.label} className="flex justify-between gap-4 py-2.5 text-ink-muted">
+              <dt>{d.label}</dt>
+              <dd className="tabular-nums">−{money(d.amount)}</dd>
             </div>
-          )}
+          ))}
           <div className="flex items-baseline justify-between gap-4 pt-3 text-lg font-black tracking-[-0.02em]">
             <dt>{receipt.kind === "card" ? "Total paid" : "Total"}</dt>
             <dd className="tabular-nums">{money(receipt.total)}</dd>

@@ -12,7 +12,8 @@ export interface Receipt {
   /** List price of the service. */
   servicePrice: number;
   extras: { name: string; price: number }[];
-  discount: { label: string; amount: number } | null;
+  /** Holiday sale first, then any promo, so the lines add up to the total. */
+  discounts: { label: string; amount: number }[];
   /** What was charged (card: Stripe's amount_total; otherwise the booking's total_price). */
   total: number;
   plate: string | null;
@@ -21,7 +22,8 @@ export interface Receipt {
   paidWith: string;
 }
 
-const round2 = (n: number) => Math.round(n * 100) / 100;
+/** Same rounding as booking (computeBookingAmount): toFixed(2). */
+const round2 = (n: number) => Number(n.toFixed(2));
 
 /** "Sat, Nov 21" for a "YYYY-MM-DD" calendar date (read in UTC), or null. */
 export function formatDay(date: string | null): string | null {
@@ -41,14 +43,18 @@ export function formatTime(time: string | null): string | null {
 }
 
 /**
- * Everything a "you're booked" page shows. The total is always what was
- * charged, never the list subtotal; any gap shows as a discount row so the
- * lines add up.
+ * Everything a "you're booked" page shows. Lines show list prices; the
+ * holiday sale is rebuilt the way booking applies it (the service on its own,
+ * the extras together, each rounded), and anything else between that and the
+ * charge is a promo "Discount" row. The total is always what was charged.
  */
 export function buildReceipt(input: {
   paymentMethod: "card" | "cash" | "subscription" | null;
   serviceName: string | null;
-  servicePrice: number;
+  /** service_packages.price */
+  serviceListPrice: number;
+  /** bookings.service_package_price: sale applied, 0 when a membership covered it. */
+  serviceChargedPrice: number | null;
   extras: { name: string; price: number }[];
   totalPaid: number;
   date: string | null;
@@ -63,21 +69,25 @@ export function buildReceipt(input: {
 }): Receipt {
   const kind: Receipt["kind"] =
     input.paymentMethod === "subscription" ? "membership" : input.paymentMethod === "cash" ? "cash" : "card";
-  const serviceFree = kind === "membership";
-  const servicePrice = Number(input.servicePrice) || 0;
+  const serviceFree =
+    kind === "membership" || (input.serviceChargedPrice !== null && Number(input.serviceChargedPrice) === 0);
+  const servicePrice = Number(input.serviceListPrice) || 0;
   const extras = input.extras.map((e) => ({ name: e.name, price: Number(e.price) || 0 }));
   const total = round2(Number(input.totalPaid) || 0);
 
-  const listTotal = round2((serviceFree ? 0 : servicePrice) + extras.reduce((s, e) => s + e.price, 0));
-  const gap = round2(listTotal - total);
-  let discount: Receipt["discount"] = null;
-  if (gap >= 0.01) {
-    const sale = input.saleActive && Number((listTotal * (1 - input.saleDiscount)).toFixed(2)) === total;
-    discount = {
-      label: sale ? `Holiday sale (${Math.round(input.saleDiscount * 100)}% off)` : "Discount",
-      amount: gap,
-    };
+  const extrasTotal = extras.reduce((sum, e) => sum + e.price, 0);
+  const listTotal = round2((serviceFree ? 0 : servicePrice) + extrasTotal);
+  const onSale = (n: number) => round2(n * (1 - input.saleDiscount));
+  const saleTotal = input.saleActive
+    ? round2((serviceFree ? 0 : onSale(servicePrice)) + onSale(extrasTotal))
+    : listTotal;
+  const discounts: Receipt["discounts"] = [];
+  const saleAmount = round2(listTotal - saleTotal);
+  if (saleAmount >= 0.01) {
+    discounts.push({ label: `Holiday sale (${Math.round(input.saleDiscount * 100)}% off)`, amount: saleAmount });
   }
+  const promoAmount = round2(saleTotal - total);
+  if (promoAmount >= 0.01) discounts.push({ label: "Discount", amount: promoAmount });
 
   const duration = Number(input.durationMin);
   return {
@@ -90,7 +100,7 @@ export function buildReceipt(input: {
     serviceFree,
     servicePrice,
     extras,
-    discount,
+    discounts,
     total,
     plate: input.plate?.trim() || null,
     vehicle: input.vehicle?.trim() || null,
@@ -98,4 +108,11 @@ export function buildReceipt(input: {
     paidWith:
       kind === "membership" ? "Free with your membership" : kind === "cash" ? "Pay cash at your visit" : "Paid by card",
   };
+}
+
+/** The page's one flame button: the next step depends on whether the customer has an account. */
+export function successActionFor(signedIn: boolean): { href: string; label: string } {
+  return signedIn
+    ? { href: "/dashboard/bookings", label: "See your bookings" }
+    : { href: "/signup", label: "Create a free account" };
 }
