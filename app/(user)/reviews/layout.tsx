@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 import { openGraph, twitter } from "@/lib/seo/openGraph";
 
-// This page is a client component, which cannot export metadata. The layout
-// carries it instead, so the route gets its own title, description, canonical
-// and social card rather than inheriting the homepage's.
+// The route's own title, description, canonical and social card. No rating
+// numbers: only claims that are verified against a real source (PRODUCT.md).
 const TITLE = "Customer Reviews";
 const DESCRIPTION =
-  "What Houston drivers say about The Launch Pad - 4.9 out of 5 from more than 500 reviews of our wash bays, express detailing and memberships.";
+  "Real Google reviews from Houston drivers about The Launch Pad's 24/7 self-service bays, express detailing and memberships.";
 
 export const metadata: Metadata = {
   title: TITLE,
