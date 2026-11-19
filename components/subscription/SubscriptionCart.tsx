@@ -10,7 +10,13 @@ import { createClient } from "@/utils/supabase/client";
 import { cn } from "@/lib/utils";
 import { MAX_VEHICLES_PER_SUBSCRIPTION } from "@/lib/pricing/flockPricing";
 import { FIRST_SUBSCRIPTION_PROMO } from "@/lib/pricing/firstSubscriptionPromo";
-import { formatCents, membershipCartQuote } from "@/lib/subscriptions/membershipCartQuote";
+import {
+  agreementKey,
+  formatCents,
+  membershipCartQuote,
+  offerState,
+  savingLabel,
+} from "@/lib/subscriptions/membershipCartQuote";
 import { PENDING_CART_KEY, restorePendingCart } from "@/lib/subscriptions/pendingCart";
 import { LicensePlate } from "@/components/dashboard-home/license-plate";
 import StepLayout from "@/components/booking/ui/StepLayout";
@@ -76,7 +82,8 @@ export default function SubscriptionCart({
   const [errors, setErrors] = useState<Record<number, string>>({});
   const [termsOpen, setTermsOpen] = useState(false);
   const [benefitsOpen, setBenefitsOpen] = useState(false);
-  const [hadMembership, setHadMembership] = useState(false);
+  // This account's membership history; decides the first-membership offer.
+  const [history, setHistory] = useState<"unknown" | "none" | "had" | "error">("unknown");
 
   // After sign-in: put the plates back, but never the agreement and never a
   // checkout by itself. The price may have changed now that we know the
@@ -116,23 +123,33 @@ export default function SubscriptionCart({
   // The offer is for a first membership only (the server enforces this);
   // hide it from someone who has had one before so the cart matches Stripe.
   useEffect(() => {
+    setHistory("unknown");
     if (!user?.id) return;
     let active = true;
     supabase
       .from("user_subscription")
       .select("id", { count: "exact", head: true })
       .eq("user_id", user.id)
-      .then(({ count }) => {
-        if (active) setHadMembership((count ?? 0) > 0);
+      .then(({ count, error }) => {
+        if (!active) return;
+        setHistory(error ? "error" : (count ?? 0) > 0 ? "had" : "none");
       });
     return () => {
       active = false;
     };
   }, [user?.id, supabase]);
 
+  const offer = offerState({ signedIn: !!user, history });
   const quote = plan
-    ? membershipCartQuote({ plan, billing: billingCycle, carCount: plates.length, offerEligible: !hadMembership })
+    ? membershipCartQuote({ plan, billing: billingCycle, carCount: plates.length, offerEligible: offer.offerEligible })
     : null;
+
+  // The tick agrees to specific amounts: when they change (history loaded,
+  // car count changed), it must be given again.
+  const termsKey = quote ? agreementKey(quote) : "";
+  useEffect(() => {
+    setIsAuthorized(false);
+  }, [termsKey]);
 
   const setCarCount = (count: number) => {
     setPlates((prev) => Array.from({ length: count }, (_, i) => prev[i] ?? ""));
@@ -217,7 +234,7 @@ export default function SubscriptionCart({
     );
   }
 
-  const { period, periodShort } = quote;
+  const { period } = quote;
   const features = Array.isArray(plan.features) ? plan.features : [];
   const showAsGuest = !authLoading && !user;
 
@@ -239,7 +256,7 @@ export default function SubscriptionCart({
             <button
               type="button"
               onClick={handleCheckoutClick}
-              disabled={loadingCheckout || authLoading}
+              disabled={loadingCheckout || authLoading || (!!user && !offer.settled)}
               className={FLAME_BUTTON}
             >
               {loadingCheckout ? (
@@ -309,7 +326,12 @@ export default function SubscriptionCart({
           </p>
 
           <fieldset className="mt-4">
-            <legend className="text-sm font-semibold">How many cars?</legend>
+            <legend className="text-sm font-semibold">
+              How many cars?
+              {quote.extraCarSavingCents > 0 && (
+                <span className="font-normal text-ink-muted"> Savings shown per {period}.</span>
+              )}
+            </legend>
             <div className="mt-2 grid grid-cols-5 gap-2">
               {Array.from({ length: MAX_VEHICLES_PER_SUBSCRIPTION }, (_, i) => i + 1).map((n) => {
                 const chosen = plates.length === n;
@@ -330,8 +352,7 @@ export default function SubscriptionCart({
                     <span className="text-lg font-black leading-none">{n}</span>
                     {saving > 0 && (
                       <span className={cn("mt-1 text-xs font-semibold leading-tight", chosen ? "text-on-night-muted" : "text-ink-muted")}>
-                        save {formatCents(saving)}
-                        {periodShort}
+                        save {savingLabel(saving)}
                       </span>
                     )}
                   </button>

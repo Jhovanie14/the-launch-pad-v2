@@ -76,3 +76,28 @@ export function membershipCartQuote(input: {
 }
 
 export const formatCents = (cents: number): string => `$${(cents / 100).toFixed(2)}`;
+
+/** A saving in whole dollars ("$907", "$1,235"), short enough for the car buttons. */
+export const savingLabel = (cents: number): string =>
+  `$${Math.round(cents / 100).toLocaleString("en-US")}`;
+
+/**
+ * May the cart show the first-membership offer, and is the price settled
+ * enough to check out? A signed-in customer's history decides it, so until it
+ * is known there is no offer and no checkout (a returning member must never
+ * agree to the discounted price). A failed lookup shows the full price.
+ * Guests are shown the offer; the server decides after sign-in.
+ */
+export function offerState(input: {
+  signedIn: boolean;
+  history: "unknown" | "none" | "had" | "error";
+}): { offerEligible: boolean; settled: boolean } {
+  if (!input.signedIn) return { offerEligible: true, settled: true };
+  if (input.history === "unknown") return { offerEligible: false, settled: false };
+  return { offerEligible: input.history === "none", settled: true };
+}
+
+/** Changes whenever the amounts in the agreement change, so the tick must be given again. */
+export function agreementKey(q: CartQuote): string {
+  return [q.hasOffer, q.firstCents, q.renewalCents, q.period].join("|");
+}

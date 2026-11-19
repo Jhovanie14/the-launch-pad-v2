@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatCents, membershipCartQuote } from "./membershipCartQuote";
+import { agreementKey, formatCents, membershipCartQuote, offerState, savingLabel } from "./membershipCartQuote";
 
 const express = { name: "Express Detail", is_commercial: false, monthly_price: 59.99, yearly_price: 647.89 };
 
@@ -67,5 +67,30 @@ describe("membershipCartQuote", () => {
   it("formatCents", () => {
     expect(formatCents(9298)).toBe("$92.98");
     expect(formatCents(600)).toBe("$6.00");
+  });
+
+  it("offerState: a signed-in customer gets no offer and no checkout until their history is known", () => {
+    expect(offerState({ signedIn: true, history: "unknown" })).toEqual({ offerEligible: false, settled: false });
+    expect(offerState({ signedIn: true, history: "none" })).toEqual({ offerEligible: true, settled: true });
+    expect(offerState({ signedIn: true, history: "had" })).toEqual({ offerEligible: false, settled: true });
+    expect(offerState({ signedIn: true, history: "error" })).toEqual({ offerEligible: false, settled: true });
+  });
+
+  it("offerState: guests are shown the offer (the server decides after sign-in)", () => {
+    expect(offerState({ signedIn: false, history: "unknown" })).toEqual({ offerEligible: true, settled: true });
+  });
+
+  it("agreementKey changes whenever the amounts agreed to change", () => {
+    const base = { plan: express, billing: "monthly" as const, carCount: 2, offerEligible: true };
+    const k = agreementKey(membershipCartQuote(base));
+    expect(agreementKey(membershipCartQuote({ ...base, offerEligible: false }))).not.toBe(k);
+    expect(agreementKey(membershipCartQuote({ ...base, carCount: 3 }))).not.toBe(k);
+    expect(agreementKey(membershipCartQuote({ ...base }))).toBe(k);
+  });
+
+  it("savingLabel is whole dollars with separators, so it fits the car buttons", () => {
+    expect(savingLabel(90704)).toBe("$907");
+    expect(savingLabel(2100)).toBe("$21");
+    expect(savingLabel(123456)).toBe("$1,235");
   });
 });
