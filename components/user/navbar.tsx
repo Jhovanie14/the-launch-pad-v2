@@ -4,9 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
-import { Sheet, SheetHeader, SheetTitle, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,22 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  BellPlus,
-  CalendarPlus,
-  ChevronDown,
-  CircleQuestionMark,
-  Home,
-  LogOut,
-  NotebookPen,
-  Phone,
-  User,
-  Users,
-  Menu,
-  ShowerHead,
-  Car,
-  ShoppingBasket,
-} from "lucide-react";
+import { CalendarPlus, ChevronDown, LogIn, LogOut, Menu, Phone, ShoppingBasket } from "lucide-react";
 import LoadingDots from "@/components/loading";
 import { useAuth } from "@/context/auth-context";
 import { useBooking } from "@/context/bookingContext";
@@ -39,29 +22,10 @@ import { useProductCart } from "@/context/product-cart-context";
 import { isNavActive, showSignOutLoader } from "@/lib/navigation/isNavActive";
 import { cn } from "@/lib/utils";
 import { AccountAvatar } from "@/components/user/AccountAvatar";
+import { SheetLink } from "@/components/user/SheetLink";
+import { ACCOUNT_LINKS, MORE_LINKS, PRIMARY_LINKS, publicPhoneMenu } from "@/lib/navigation/publicPhoneMenu";
 
 const FOCUS_ON_NIGHT = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-flame";
-
-const PRIMARY_LINKS = [
-  { name: "Services", href: "/services" },
-  { name: "Membership", href: "/pricing" },
-  { name: "Self-service", href: "/self-service" },
-  { name: "Products", href: "/products" },
-];
-
-const MORE_LINKS = [
-  { name: "About us", href: "/about", description: "Who we are and the wash on S Main St" },
-  { name: "FAQ", href: "/faq", description: "Answers about bays, booking and memberships" },
-  { name: "Blog", href: "/blog", description: "Car care tips and news from The Launch Pad" },
-  { name: "Contact", href: "/contact", description: "Call, email or send us a message" },
-];
-
-const ACCOUNT_LINKS = [
-  { name: "Dashboard", href: "/dashboard" },
-  { name: "Bookings", href: "/dashboard/bookings" },
-  { name: "Billing", href: "/dashboard/billing" },
-  { name: "Profile and settings", href: "/dashboard/settings" },
-];
 
 const PILL = "inline-flex min-h-10 items-center gap-1 rounded-lg px-3 text-sm font-semibold transition-colors motion-reduce:transition-none";
 const pillState = (active: boolean) =>
@@ -69,8 +33,8 @@ const pillState = (active: boolean) =>
 
 /**
  * The public pages' bar: the dashboard bar's sibling (navy, logo, quiet
- * links, a quiet "Book"), and it knows who is signed in. The phone menu
- * (the sheet below) is redesigned separately.
+ * links, a quiet "Book"), and it knows who is signed in. Below 1024px the
+ * menu button opens the navy phone menu, the dashboard menu's sibling.
  */
 export function UserNavbar() {
   const { openBookingModal } = useBooking();
@@ -78,7 +42,6 @@ export function UserNavbar() {
   const { user, userProfile, isLoading, signOut } = useAuth();
   const pathname = usePathname() ?? "";
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isAboutDropdownOpen, setIsAboutDropdownOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
@@ -90,6 +53,13 @@ export function UserNavbar() {
   const name = userProfile?.full_name || userProfile?.email || "Your account";
   const initial = (userProfile?.full_name || userProfile?.email || "?").charAt(0).toUpperCase();
   const moreActive = MORE_LINKS.some((l) => isNavActive(pathname, l.href));
+  const menu = publicPhoneMenu({ signedIn: !!user, cartCount });
+  const closeMenu = () => setIsMobileMenuOpen(false);
+
+  function book() {
+    closeMenu();
+    openBookingModal();
+  }
 
   async function handleSignOut() {
     setSigningOut(true);
@@ -219,7 +189,8 @@ export function UserNavbar() {
 
             <button
               type="button"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              onClick={() => setIsMobileMenuOpen(true)}
+              aria-expanded={isMobileMenuOpen}
               className={cn("inline-flex size-11 items-center justify-center rounded-lg border border-white/25 hover:bg-white/10 lg:hidden", FOCUS_ON_NIGHT)}
             >
               <span className="sr-only">Open main menu</span>
@@ -229,167 +200,91 @@ export function UserNavbar() {
         </div>
       </header>
 
-      {/* Mobile menu */}
+      {/* Phone menu: the dashboard menu's navy sibling. */}
       {isMounted && (
         <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-          {/* --- Sheet Content (Mobile Menu) --- */}
-          <SheetContent side="right" className="w-[300px] p-4">
-            <SheetHeader>
-              <SheetTitle className="flex items-center text-xl font-semibold gap-3">
-                <Image width={50} height={50} alt="the-launch-pad-logo" src={"/thelaunchpad.png"} /> The Launch Pad
-              </SheetTitle>
-              {/* <SheetDescription>Navigate through the website</SheetDescription> */}
-            </SheetHeader>
+          <SheetContent
+            side="right"
+            className="w-[85vw] max-w-sm gap-0 border-l-0 bg-night p-0 text-on-night [&>button]:text-on-night [&>button]:opacity-100"
+          >
+            <div className="flex items-center gap-3 border-b border-white/10 p-5 pr-12">
+              {user ? (
+                <>
+                  <AccountAvatar src={userProfile?.avatar_url} initial={initial} />
+                  <div className="min-w-0">
+                    <SheetTitle className="truncate text-base font-bold text-on-night">
+                      {userProfile?.full_name || "Your account"}
+                    </SheetTitle>
+                    <SheetDescription className="truncate text-sm text-on-night-subtle">
+                      {userProfile?.email ?? "Signed in"}
+                    </SheetDescription>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Image src="/thelaunchpad.png" alt="" width={36} height={36} className="size-9 object-contain" />
+                  <SheetTitle className="text-base font-bold text-on-night">The Launch Pad</SheetTitle>
+                  <SheetDescription className="sr-only">Site menu</SheetDescription>
+                </>
+              )}
+            </div>
 
-            <div className="flex flex-col space-y-4">
-              <Link
-                href="/login"
-                className="flex items-center space-x-2 text-lg py-2 border-b font-medium hover:text-gray-700 dark:hover:text-gray-100"
-                onClick={() => setIsMobileMenuOpen(false)}
+            <nav aria-label="Main" className="flex-1 overflow-y-auto p-3">
+              <button
+                type="button"
+                onClick={book}
+                className={cn(
+                  "mb-3 flex min-h-12 w-full items-center gap-2 rounded-lg bg-flame px-4 font-bold text-on-flame hover:bg-flame-bright",
+                  FOCUS_ON_NIGHT,
+                )}
               >
-                <User className="w-4 h-4" />
-                <span>Login</span>
-              </Link>
+                <CalendarPlus aria-hidden className="size-5" /> Book a detail
+              </button>
+              <ul className="space-y-1">
+                {menu.primary.map((link) => (
+                  <SheetLink key={link.href} {...link} active={isNavActive(pathname, link.href)} onNavigate={closeMenu} />
+                ))}
+              </ul>
+              <h2 className="mt-5 mb-1 px-4 text-xs font-semibold text-on-night-subtle">More</h2>
+              <ul className="space-y-1">
+                {menu.more.map((link) => (
+                  <SheetLink key={link.href} {...link} active={isNavActive(pathname, link.href)} onNavigate={closeMenu} />
+                ))}
+              </ul>
+              {menu.account.length > 0 && (
+                <>
+                  <h2 className="mt-5 mb-1 px-4 text-xs font-semibold text-on-night-subtle">Account</h2>
+                  <ul className="space-y-1">
+                    {menu.account.map((link) => (
+                      <SheetLink key={link.href} {...link} active={isNavActive(pathname, link.href)} onNavigate={closeMenu} />
+                    ))}
+                  </ul>
+                </>
+              )}
+            </nav>
 
-              <Link
-                href="/"
-                className="flex items-center space-x-2 text-lg font-medium hover:text-gray-700 dark:hover:text-gray-100"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <Home className="w-4 h-4" />
-                <span>Home</span>
-              </Link>
-
-              <Link
-                href="/pricing"
-                className="flex items-center space-x-2 text-lg font-medium hover:text-gray-700 dark:hover:text-gray-100"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <BellPlus className="w-4 h-4" />
-                <span>Subscription</span>
-              </Link>
-
-              <Link
-                href="/self-service"
-                className="flex items-center space-x-2 text-lg font-medium hover:text-gray-700 dark:hover:text-gray-100"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <ShowerHead className="w-4 h-4" />
-                <span>Self-service</span>
-              </Link>
-
-              <Link
-                href="/services"
-                className="flex items-center space-x-2 text-lg font-medium hover:text-gray-700 dark:hover:text-gray-100"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <Car className="w-4 h-4" />
-                <span>Services</span>
-              </Link>
-
-              <Link
-                href="/products"
-                className="flex items-center space-x-2 text-lg font-medium hover:text-gray-700 dark:hover:text-gray-100"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <ShoppingBasket className="w-4 h-4" />
-                <span>Products</span>
-              </Link>
-
-              {/* --- ABOUT DROPDOWN --- */}
-              <div className="pt-2 border-t">
+            <div className="space-y-1 border-t border-white/10 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+              {user && (
                 <button
-                  className="flex items-center justify-between w-full py-2 text-lg font-medium hover:text-gray-700 dark:hover:text-gray-100"
-                  onClick={() => setIsAboutDropdownOpen(!isAboutDropdownOpen)}
+                  type="button"
+                  onClick={() => {
+                    closeMenu();
+                    handleSignOut();
+                  }}
+                  className={cn("flex min-h-12 w-full items-center gap-2 rounded-lg px-4 font-semibold text-on-night-muted hover:bg-white/10 hover:text-on-night", FOCUS_ON_NIGHT)}
                 >
-                  <span>About Launch Pad</span>
-                  <ChevronDown
-                    className={`w-4 h-4 transition-transform ${isAboutDropdownOpen ? "rotate-180" : ""
-                      }`}
-                  />
+                  <LogOut aria-hidden className="size-5" /> Sign out
                 </button>
-
-                <div
-                  className={`ml-4 overflow-hidden space-y-2 transition-all ${isAboutDropdownOpen ? "max-h-screen mt-2" : "max-h-0"
-                    }`}
-                >
-                  <Link
-                    href="/blog"
-                    className="flex items-center space-x-2 py-2 text-lg hover:text-gray-700 dark:hover:text-gray-100"
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      setIsAboutDropdownOpen(false);
-                    }}
-                  >
-                    <NotebookPen className="w-4 h-4" />
-                    <span>Blog</span>
-                  </Link>
-
-                  <Link
-                    href="/contact"
-                    className="flex items-center space-x-2 py-2 text-lg hover:text-gray-700 dark:hover:text-gray-100"
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      setIsAboutDropdownOpen(false);
-                    }}
-                  >
-                    <Phone className="w-4 h-4" />
-                    <span>Contact</span>
-                  </Link>
-
-                  <Link
-                    href="/about"
-                    className="flex items-center space-x-2 py-2 text-lg hover:text-gray-700 dark:hover:text-gray-100"
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      setIsAboutDropdownOpen(false);
-                    }}
-                  >
-                    <Users className="w-4 h-4" />
-                    <span>About Us</span>
-                  </Link>
-
-                  <Link
-                    href="/faq"
-                    className="flex items-center space-x-2 py-2 text-lg hover:text-gray-700 dark:hover:text-gray-100"
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      setIsAboutDropdownOpen(false);
-                    }}
-                  >
-                    <CircleQuestionMark className="w-4 h-4" />
-                    <span>FAQ</span>
-                  </Link>
-                </div>
-              </div>
-
-              {/* --- BOOKING BUTTON --- */}
-              <Button
-                size="sm"
-                onClick={() => {
-                  openBookingModal();
-                  setIsMobileMenuOpen(false);
-                }}
-                className="bg-blue-900 hover:bg-blue-800 text-white font-semibold px-6 rounded-md shadow-md hover:shadow-lg uppercase tracking-wide"
-              >
-                Book Online
-              </Button>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <a href="tel:8322198320" className="flex items-center space-x-4 text-blue-400 hover:text-blue-300 font-semibold underline underline-offset-4 transition-colors active:scale-95">
-                    <Phone className="w-5 h-5" />
-                    <span className="font-medium group-hover:underline transition-colors hover:text-blue-900">
-                      Tap to Call: (832) 219-8320
-                    </span>
-                  </a>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Click here to call immediately!</p>
-                </TooltipContent>
-              </Tooltip>
-             
-          </div>
+              )}
+              {!isLoading && !user && (
+                <Link href="/login" onClick={closeMenu} className={cn("flex min-h-12 w-full items-center gap-2 rounded-lg px-4 font-semibold text-on-night-muted hover:bg-white/10 hover:text-on-night", FOCUS_ON_NIGHT)}>
+                  <LogIn aria-hidden className="size-5" /> Sign in
+                </Link>
+              )}
+              <a href="tel:+18322198320" className={cn("flex min-h-12 w-full items-center gap-2 rounded-lg px-4 font-semibold text-on-night-muted hover:bg-white/10 hover:text-on-night", FOCUS_ON_NIGHT)}>
+                <Phone aria-hidden className="size-5" /> Call (832) 219-8320
+              </a>
+            </div>
           </SheetContent>
         </Sheet>
       )}
