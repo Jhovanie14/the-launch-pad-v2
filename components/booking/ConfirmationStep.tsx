@@ -12,6 +12,7 @@ import { HOLIDAY_SALE_ACTIVE, HOLIDAY_SALE_DISCOUNT } from "@/lib/booking/holida
 import { applySale, planCoversCategory } from "@/lib/booking/pricingDisplay";
 import { cn } from "@/lib/utils";
 import BookingTicket from "./BookingTicket";
+import { formatDay, formatTime } from "@/lib/booking/bookingReceipt";
 import PaymentChoice from "./PaymentChoice";
 import BookingSheet from "./ui/BookingSheet";
 import StepLayout from "./ui/StepLayout";
@@ -191,13 +192,15 @@ export default function ConfirmationStep({
         }}
       >
         <BookingTicket
-          date={selection.date}
-          time={selection.time}
-          service={service}
-          addOns={addOns}
-          duration={duration}
-          plate={selection.licensePlate}
-          vehicleInfo={vehicleInfo}
+          day={formatDay(selection.date)}
+          time={formatTime(selection.time)}
+          serviceName={service?.name ?? null}
+          extras={addOns.map((a) => a.name)}
+          durationMin={duration || null}
+          plate={vehicleInfo?.license_plate || selection.licensePlate || null}
+          vehicle={
+            vehicleInfo ? [vehicleInfo.year, vehicleInfo.make, vehicleInfo.model].filter(Boolean).join(" ") || null : null
+          }
         />
 
         {/* Subscription status: today's three cases, unchanged in meaning. */}

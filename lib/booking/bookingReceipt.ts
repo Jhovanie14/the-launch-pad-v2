@@ -23,7 +23,8 @@ export interface Receipt {
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
-function formatDay(date: string | null): string | null {
+/** "Sat, Nov 21" for a "YYYY-MM-DD" calendar date (read in UTC), or null. */
+export function formatDay(date: string | null): string | null {
   const day = String(date ?? "").slice(0, 10);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return null;
   const d = new Date(`${day}T00:00:00Z`);
@@ -31,7 +32,8 @@ function formatDay(date: string | null): string | null {
   return d.toLocaleDateString("en-US", { timeZone: "UTC", weekday: "short", month: "short", day: "numeric" });
 }
 
-function formatTime(time: string | null): string | null {
+/** "10:30 AM" for "10:30", or null. */
+export function formatTime(time: string | null): string | null {
   const m = /^(\d{1,2}):(\d{2})/.exec(String(time ?? ""));
   if (!m) return null;
   const hours = Number(m[1]);
