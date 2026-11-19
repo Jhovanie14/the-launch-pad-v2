@@ -7,6 +7,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { CalendarPlus, LogOut, Menu } from "lucide-react";
 import { AccountAvatar } from "@/components/user/AccountAvatar";
+import { NIGHT_SHEET_CONTENT, SheetLink } from "@/components/user/SheetLink";
 import { useAuth } from "@/context/auth-context";
 import { useBooking } from "@/context/bookingContext";
 import {
@@ -169,11 +170,8 @@ export function AuthNavbar() {
                   <Menu aria-hidden className="size-6" />
                 </button>
               </SheetTrigger>
-              <SheetContent
-                side="right"
-                className="w-[85vw] max-w-sm gap-0 border-l-0 bg-night p-0 text-on-night [&>button]:text-on-night [&>button]:opacity-100"
-              >
-                <div className="flex items-center gap-3 border-b border-white/10 p-5 pr-12">
+              <SheetContent side="right" className={NIGHT_SHEET_CONTENT}>
+                <div className="flex items-center gap-3 border-b border-white/10 p-5 pr-16">
                   <AccountAvatar src={userProfile?.avatar_url} initial={initial} />
                   <div className="min-w-0">
                     <SheetTitle className="truncate text-base font-bold text-on-night">
@@ -229,33 +227,3 @@ export function AuthNavbar() {
     </>
   );
 }
-
-function SheetLink({
-  name,
-  href,
-  active,
-  onNavigate,
-}: {
-  name: string;
-  href: string;
-  active: boolean;
-  onNavigate: () => void;
-}) {
-  return (
-    <li>
-      <Link
-        href={href}
-        onClick={onNavigate}
-        aria-current={active ? "page" : undefined}
-        className={cn(
-          "flex min-h-12 items-center rounded-lg px-4 font-semibold transition-colors",
-          active ? "bg-white/12 text-on-night" : "text-on-night-muted hover:bg-white/8 hover:text-on-night",
-          FOCUS_ON_NIGHT,
-        )}
-      >
-        {name}
-      </Link>
-    </li>
-  );
-}
-
