@@ -1,8 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-
-// Signed-in visitors are sent to their dashboard from these.
-const PUBLIC_ROUTES = ["/", "/login", "/signup", "/about", "/blog", "/contact", "/faq"];
+import { SIGNED_OUT_ONLY_ROUTES, signedInRedirect } from "@/lib/auth/signedInRedirect";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -43,7 +41,7 @@ export async function updateSession(request: NextRequest) {
   // other request (the booking steps, server actions, API calls) used to pay
   // for a second database round trip here that nothing used.
   const routeNeedsRole =
-    PUBLIC_ROUTES.includes(pathname) ||
+    SIGNED_OUT_ONLY_ROUTES.includes(pathname) ||
     pathname.startsWith("/admin") ||
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/profile") ||
@@ -64,18 +62,11 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
-  if (PUBLIC_ROUTES.includes(pathname)) {
-    if (user) {
-      // Authenticated user should be redirected away from public routes
-      return NextResponse.redirect(
-        new URL(
-          userRole === "admin" ? "/admin/dashboard" : "/dashboard",
-          request.url
-        )
-      );
-    }
-    // Unauthenticated user can access public route
-    return supabaseResponse;
+  // Signed-in visitors browse the public site freely; only login and signup
+  // send them to their dashboard.
+  if (SIGNED_OUT_ONLY_ROUTES.includes(pathname)) {
+    const target = user ? signedInRedirect(pathname, userRole) : null;
+    return target ? NextResponse.redirect(new URL(target, request.url)) : supabaseResponse;
   }
 
   // Define route patterns
@@ -94,15 +85,9 @@ export async function updateSession(request: NextRequest) {
       // Admin accessing user routes
       if (isUserRoute)
         return NextResponse.redirect(new URL("/admin/dashboard", request.url));
-      // Admin accessing login/signup
-      if (pathname === "/login" || pathname === "/signup" || pathname === "/")
-        return NextResponse.redirect(new URL("/admin/dashboard", request.url));
     } else {
       // Regular user accessing admin routes
       if (isAdminRoute)
-        return NextResponse.redirect(new URL("/dashboard", request.url));
-      // Regular user accessing login/signup
-      if (pathname === "/login" || pathname === "/signup" || pathname === "/")
         return NextResponse.redirect(new URL("/dashboard", request.url));
     }
   }
