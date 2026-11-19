@@ -1,5 +1,6 @@
 "use client";
 
+import { isNavActive } from "@/lib/navigation/isNavActive";
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -45,9 +46,7 @@ const ACCOUNT_LINKS = [
 
 const FOCUS_ON_NIGHT = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-flame";
 
-function isActive(pathname: string, href: string) {
-  return href === "/dashboard" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
-}
+const isActive = isNavActive;
 
 /**
  * The customer area's bar: navy from the logo, the logo itself, the five
