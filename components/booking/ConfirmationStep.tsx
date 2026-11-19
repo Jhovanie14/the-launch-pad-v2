@@ -9,7 +9,7 @@ import { useBookingFlow, GuestInfo } from "@/hooks/useBookingFlow";
 import type { BookingAuthContext } from "@/hooks/useBookingAuthContext";
 import type { BookingInitialData } from "@/lib/booking/loadBookingStep";
 import { HOLIDAY_SALE_ACTIVE, HOLIDAY_SALE_DISCOUNT } from "@/lib/booking/holidaySale";
-import { planCoversCategory } from "@/lib/booking/pricingDisplay";
+import { applySale, planCoversCategory } from "@/lib/booking/pricingDisplay";
 import { cn } from "@/lib/utils";
 import BookingTicket from "./BookingTicket";
 import PaymentChoice from "./PaymentChoice";
@@ -308,6 +308,8 @@ export default function ConfirmationStep({
         <SubscriptionUpsellDialog
           open={showUpsell}
           bookingTotal={pricing.finalTotal}
+          serviceCategory={service?.category ?? null}
+          servicePrice={service ? applySale(Number(service.price)) : 0}
           onDismiss={handleUpsellDismiss}
           onSubscribe={handleUpsellSubscribe}
         />

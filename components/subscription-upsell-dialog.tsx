@@ -3,12 +3,17 @@
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePricingPlans } from "@/hooks/usePricingPlans";
+import { membershipPitch } from "@/lib/booking/membershipPitch";
 import BookingSheet, { BookingSheetTitle } from "@/components/booking/ui/BookingSheet";
 import { FLAME_BUTTON, GHOST_BUTTON } from "@/components/booking/ui/focus";
 
 interface SubscriptionUpsellDialogProps {
   open: boolean;
   bookingTotal: number;
+  /** The booked service, so the break-even line is only shown when the plan covers it. */
+  serviceCategory: string | null;
+  /** The service's price per visit as shown (sale applied, extras excluded). */
+  servicePrice: number;
   onDismiss: () => void;
   onSubscribe: (planId: string) => void;
 }
@@ -23,6 +28,8 @@ const money = (n: number) => `$${n.toFixed(2)}`;
 export default function SubscriptionUpsellDialog({
   open,
   bookingTotal,
+  serviceCategory,
+  servicePrice,
   onDismiss,
   onSubscribe,
 }: SubscriptionUpsellDialogProps) {
@@ -32,9 +39,12 @@ export default function SubscriptionUpsellDialog({
     plans.find((p) => p.name.toLowerCase().includes("express")) ??
     [...plans].sort((a, b) => a.monthly_price - b.monthly_price)[0];
 
-  const monthlyPrice = expressDetailPlan?.monthly_price ?? 0;
-  const visitsToBreakEven =
-    monthlyPrice > 0 && bookingTotal > 0 ? Math.ceil(monthlyPrice / bookingTotal) : null;
+  const { priceLabel, breakEvenVisits: visitsToBreakEven } = membershipPitch({
+    planName: expressDetailPlan?.name ?? null,
+    monthlyPrice: expressDetailPlan?.monthly_price ?? 0,
+    serviceCategory,
+    servicePrice,
+  });
   const features = expressDetailPlan?.features ?? [];
   const kind = expressDetailPlan?.name.toLowerCase().includes("express") ? "Express membership" : "Membership";
 
@@ -43,14 +53,14 @@ export default function SubscriptionUpsellDialog({
       open={open}
       onOpenChange={(o) => !o && onDismiss()}
       title="Stop paying every visit"
-      description={expressDetailPlan ? `${expressDetailPlan.name} plan, ${money(monthlyPrice)} a month.` : undefined}
+      description={expressDetailPlan && priceLabel ? `${expressDetailPlan.name} plan, ${priceLabel} a month.` : "Membership plans"}
       header={
         <div className="bg-night px-5 pb-6 pr-14 pt-5 text-on-night sm:px-6 sm:pt-6">
           <p className="text-sm font-semibold text-svc-member">{kind}</p>
           <BookingSheetTitle className="mt-1 text-3xl">Stop paying every visit</BookingSheetTitle>
-          {monthlyPrice > 0 ? (
+          {priceLabel ? (
             <p className="mt-4 flex flex-wrap items-baseline gap-x-2">
-              <span className="text-4xl font-black tracking-[-0.03em]">{money(monthlyPrice)}</span>
+              <span className="text-4xl font-black tracking-[-0.03em]">{priceLabel}</span>
               <span className="text-base text-on-night-muted">a month, {expressDetailPlan?.name} plan</span>
             </p>
           ) : (
@@ -71,9 +81,9 @@ export default function SubscriptionUpsellDialog({
             type="button"
             className={cn(FLAME_BUTTON, "w-full")}
             onClick={() => expressDetailPlan && onSubscribe(expressDetailPlan.id)}
-            disabled={!expressDetailPlan}
+            disabled={!expressDetailPlan || !priceLabel}
           >
-            Become a member, {money(monthlyPrice)} a month
+            {priceLabel ? `Become a member, ${priceLabel} a month` : "Become a member"}
           </button>
           <button type="button" onClick={onDismiss} className={cn(GHOST_BUTTON, "h-auto min-h-11 w-full text-center")}>
             No thanks, continue to pay {money(bookingTotal)}
