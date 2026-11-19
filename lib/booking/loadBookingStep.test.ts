@@ -35,6 +35,7 @@ function deps(overrides: Partial<Parameters<typeof loadBookingStep>[0]> = {}) {
     user: member,
     getSubscription: vi.fn(async () => plan),
     getVehicle: vi.fn(async () => car),
+    getWelcomeOffer: vi.fn(async () => ({ code: "WELCOME10", percent: 10 })),
     ...overrides,
   } as Parameters<typeof loadBookingStep>[0];
 }
@@ -52,6 +53,39 @@ describe("loadBookingStep", () => {
     expect(data.selectionKey).toBe(bookingSelectionKey(selection));
     expect(data.user).toEqual(member);
     expect(data.subscription).toBe(plan);
+  });
+
+  it("guest on the service step gets the welcome offer", async () => {
+    const args = deps({ step: "service", user: null });
+    const data = await loadBookingStep(args);
+    expect(data.welcomeOffer).toEqual({ code: "WELCOME10", percent: 10 });
+  });
+
+  it("signed-in customer: no welcome offer lookup", async () => {
+    const args = deps({ step: "service" });
+    const data = await loadBookingStep(args);
+    expect(args.getWelcomeOffer).not.toHaveBeenCalled();
+    expect(data.welcomeOffer).toBeNull();
+  });
+
+  it("guest on confirmation: no welcome offer lookup", async () => {
+    const args = deps({ step: "confirmation", user: null });
+    const data = await loadBookingStep(args);
+    expect(args.getWelcomeOffer).not.toHaveBeenCalled();
+    expect(data.welcomeOffer).toBeNull();
+  });
+
+  it("welcome offer lookup fails → null, page still loads", async () => {
+    const args = deps({
+      step: "service",
+      user: null,
+      getWelcomeOffer: vi.fn(async () => {
+        throw new Error("db down");
+      }),
+    });
+    const data = await loadBookingStep(args);
+    expect(data.welcomeOffer).toBeNull();
+    expect(data.catalog?.services.length).toBe(2);
   });
 
   it("datetime step: no catalog and no car lookup", async () => {

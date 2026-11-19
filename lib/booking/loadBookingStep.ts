@@ -3,6 +3,7 @@ import type { Subscription } from "@/types";
 import type { AddOnRow, ServicePackageRow } from "@/types/db";
 import { bookingSelectionKey, type BookingSelection, type BookingStep } from "./bookingParams";
 import type { VehicleDisplay } from "./vehicleDisplay";
+import type { WelcomeOffer } from "./welcomeOffer";
 
 export interface BookingUser {
   id: string;
@@ -23,6 +24,8 @@ export interface BookingInitialData {
   addOns: AddOnRow[];
   /** Confirmation step only, otherwise null. */
   vehicleInfo: VehicleDisplay | null;
+  /** The promo the guest account pop-up may advertise. Service step, guests only; otherwise null. */
+  welcomeOffer: WelcomeOffer | null;
 }
 
 /**
@@ -44,6 +47,7 @@ export async function loadBookingStep(args: {
     userId: string | null,
     sel: { licensePlate: string; vehicleId: string }
   ) => Promise<VehicleDisplay | null>;
+  getWelcomeOffer: () => Promise<WelcomeOffer | null>;
 }): Promise<BookingInitialData> {
   const { step, selection, db, user } = args;
   const { serviceId, addOnIds, licensePlate, vehicleId } = selection;
@@ -52,7 +56,7 @@ export async function loadBookingStep(args: {
   // browser, as before this page loaded on the server.
   const userUnknown = user === undefined;
 
-  const [catalog, chosen, subscription, vehicleInfo] = await Promise.all([
+  const [catalog, chosen, subscription, vehicleInfo, welcomeOffer] = await Promise.all([
     step === "service" ? loadCatalog(db) : Promise.resolve(null),
     userUnknown ? Promise.resolve(null) : loadSelection(db, serviceId, addOnIds),
     userUnknown
@@ -69,6 +73,13 @@ export async function loadBookingStep(args: {
           return null;
         })
       : Promise.resolve(null),
+    // Only a real guest sees the account pop-up.
+    step === "service" && user === null
+      ? args.getWelcomeOffer().catch((err) => {
+          console.error("Booking: welcome offer lookup failed", err);
+          return null;
+        })
+      : Promise.resolve(null),
   ]);
 
   return {
@@ -79,6 +90,7 @@ export async function loadBookingStep(args: {
     service: chosen?.service ?? null,
     addOns: chosen?.addOns ?? [],
     vehicleInfo,
+    welcomeOffer,
   };
 }
 

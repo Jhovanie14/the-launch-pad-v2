@@ -5,6 +5,7 @@ import { getActiveSubscription } from "@/lib/services/subscriptionService";
 import { parseBookingSelection, searchParamsFromRecord, type BookingStep } from "./bookingParams";
 import { loadBookingStep, type BookingInitialData } from "./loadBookingStep";
 import { describeVehicle } from "./vehicleDisplay";
+import { loadWelcomeOffer } from "./welcomeOffer";
 
 /**
  * Server only (reads the request's cookies). Everything a booking step page
@@ -38,5 +39,6 @@ export async function getBookingStepData(
       : null,
     getSubscription: (userId) => getActiveSubscription(db, userId),
     getVehicle: (userId, sel) => describeVehicle(createAdminClient(), userId, sel),
+    getWelcomeOffer: () => loadWelcomeOffer(createAdminClient()),
   });
 }
