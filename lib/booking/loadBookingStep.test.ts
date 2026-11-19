@@ -97,6 +97,16 @@ describe("loadBookingStep", () => {
     expect(data.service?.id).toBe("s1");
   });
 
+  it("sign-in check failed (user unknown) → the browser loads sign-in, membership and the selection", async () => {
+    const args = deps({ step: "confirmation", user: undefined });
+    const data = await loadBookingStep(args);
+    expect(args.getSubscription).not.toHaveBeenCalled();
+    expect(args.getVehicle).not.toHaveBeenCalled();
+    expect(data.user).toBeNull();
+    expect(data.subscription).toBeUndefined();
+    expect(data.selectionKey).toBeNull();
+  });
+
   it("unknown add-on ids are dropped and an unknown service is null", async () => {
     const odd = { ...selection, serviceId: "nope", addOnIds: ["a1", "nope"] };
     const data = await loadBookingStep(deps({ step: "datetime", selection: odd }));

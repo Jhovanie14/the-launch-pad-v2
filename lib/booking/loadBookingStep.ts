@@ -37,7 +37,8 @@ export async function loadBookingStep(args: {
   selection: BookingSelection;
   /** The request's own client: RLS applies. */
   db: SupabaseClient;
-  user: BookingUser | null;
+  /** null = signed out; undefined = the sign-in check failed, so who it is is unknown. */
+  user: BookingUser | null | undefined;
   getSubscription: (userId: string) => Promise<Subscription | null>;
   getVehicle: (
     userId: string | null,
@@ -46,17 +47,23 @@ export async function loadBookingStep(args: {
 }): Promise<BookingInitialData> {
   const { step, selection, db, user } = args;
   const { serviceId, addOnIds, licensePlate, vehicleId } = selection;
+  // Sign-in check failed: a member must not be treated as a guest. Leave
+  // sign-in, membership and the selection (which includes their car) to the
+  // browser, as before this page loaded on the server.
+  const userUnknown = user === undefined;
 
   const [catalog, chosen, subscription, vehicleInfo] = await Promise.all([
     step === "service" ? loadCatalog(db) : Promise.resolve(null),
-    loadSelection(db, serviceId, addOnIds),
-    user
+    userUnknown ? Promise.resolve(null) : loadSelection(db, serviceId, addOnIds),
+    userUnknown
+      ? Promise.resolve(undefined)
+      : user
       ? args.getSubscription(user.id).catch((err) => {
           console.error("Booking: membership lookup failed", err);
           return undefined;
         })
       : Promise.resolve(null),
-    step === "confirmation" && (licensePlate || vehicleId)
+    step === "confirmation" && !userUnknown && (licensePlate || vehicleId)
       ? args.getVehicle(user?.id ?? null, { licensePlate, vehicleId }).catch((err) => {
           console.error("Booking: car lookup failed", err);
           return null;
@@ -66,7 +73,7 @@ export async function loadBookingStep(args: {
 
   return {
     selectionKey: chosen ? bookingSelectionKey(selection) : null,
-    user,
+    user: user ?? null,
     subscription,
     catalog,
     service: chosen?.service ?? null,

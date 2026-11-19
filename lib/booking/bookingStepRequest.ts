@@ -1,3 +1,4 @@
+import { isAuthSessionMissingError } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { getActiveSubscription } from "@/lib/services/subscriptionService";
@@ -16,13 +17,19 @@ export async function getBookingStepData(
   const db = await createClient();
   const {
     data: { user },
+    error,
   } = await db.auth.getUser();
+  // "Not signed in" is a normal answer; any other error (Auth down or slow)
+  // means we don't know who this is, and the browser must check instead.
+  const signInUnknown = !!error && !isAuthSessionMissingError(error);
 
   return loadBookingStep({
     step,
     selection: parseBookingSelection(searchParamsFromRecord(searchParams)),
     db,
-    user: user
+    user: signInUnknown
+      ? undefined
+      : user
       ? {
           id: user.id,
           email: user.email ?? null,
