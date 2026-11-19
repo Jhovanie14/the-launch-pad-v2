@@ -384,7 +384,9 @@ Logo navy and white, one flame-yellow signal, and one logo colour per service; n
 
 **Marketing hero.** Full-bleed at `min-h-svh` with a photograph (`/self-service.png`) under a dark scrim gradient (70% → 65% → 90%). Content is capped at 80rem with 20px / 32px gutters and 96px / 128px top padding. The service picker becomes three columns from 768px with 16px gaps.
 
-**Breakpoints in use:** 640px (type steps, padding), 768px (navbar links, avatar menu and hero grid), 1024px (side column versus dock), 1280px (navbar wordmark, marketing navbar collapse).
+**Booking flow.** The three steps (`components/booking/`) are shared by two frames. Guests book in `app/(booking-flow)/` (`/service`, `/datetime`, `/confirmation`): `.lp-theme` on Canvas under the navy Booking Header, with no marketing navbar or footer. Signed-in customers book at `/dashboard/booking/*` inside the dashboard shell, with Step Progress on Canvas above the page title. Every step uses `StepLayout`: a back link, a Headline title, the content column, and the action panel (a fixed Night bar at the bottom below 1024px; a sticky white surface in the 320px side column from 1024px). Content has 128px of bottom padding on phones so it clears the bar.
+
+**Breakpoints in use:** 640px (type steps, padding, booking sheet becomes a centred card), 768px (navbar links, avatar menu and hero grid), 1024px (side column versus dock or booking bar), 1280px (navbar wordmark, marketing navbar collapse).
 
 ## Elevation & Depth
 
@@ -448,6 +450,18 @@ The single most time-sensitive item, shown as a Dusk surface. It covers four cas
 ### Visits List
 A white surface titled "Your visits". Rows are separated by Line Soft dividers. Each row starts with its service icon in a 32px Canvas circle with a Line ring (Sparkles in Detailing Mark for a detail, Droplets in Sky Mark for a bay visit, a neutral Ink Subtle ShoppingBag for a product order), with the service named for screen readers, then a tabular date and a semibold Ink title with an Ink Muted detail line. Detail rows carry row actions. Every link and button on white uses the Brand Blue focus outline.
 
+### Booking Header and Step Progress
+The guest booking frame's header (`BookingHeader`) is a sticky Night bar with Bar shade: the logo and wordmark (link home), a quiet "Back to site" (white/20 ring, white/10 hover), and under it the Step Progress. Step Progress (`ui/StepProgress`) is an ordered list of three 5px bars with labels "1 Service", "2 Date and time", "3 Confirm": Flame for reached steps, white/20 (on Night) or Line (on Canvas) for the rest, the current label in white or Ink with `aria-current="step"`.
+
+### Action Panel
+Each step's single flame button lives in the action panel with a two-line summary (bold title, muted detail): the chosen package, then the chosen time, then the total. On phones it is a Night bar fixed to the bottom with the safe-area inset; from 1024px it is a sticky white 16px surface (Line ring) in the side column. It owns the One Flame Rule for the step.
+
+### Booking Sheet
+Every booking pop-up (`ui/BookingSheet`): extras, plate entry, the package suggestion, payment choice, guest details, the free-account offer and the membership offer. Below 640px it slides up from the bottom (white, 16px top corners, grab handle, safe-area inset); from 640px it is a centred white card (16px, max 28rem, Line ring). Night at 60% behind it, a 44px close button, Radix focus trap and Escape, no entrance under reduced motion. Its footer holds one flame button and a quiet one. The membership offer replaces the white title block with a Night top in the Member Pass style (kind line in Membership Red Soft, plan price in Display) and lists the plan's own `features` from the database.
+
+### Booking Ticket
+Step 3 shows the booking as a Night surface: date and time in Display on their own lines (`whitespace-nowrap`), the service name in Flame, extras and duration in On Night Muted, then a white/10 divider and "Your car" with the License Plate (and year, make, model when known). Prices sit on a white card below it: list prices, a "Holiday sale" row and a promo row as negatives, and the total in 900.
+
 ### Inputs / Fields
 The home has no fields of its own. Inside `.lp-theme`, shadcn inputs and the review dialog pick up Line borders, navy text and a Brand Blue ring. New fields in this world should keep that (44px height, Line ring, Brand Blue focus) rather than invent a style.
 
@@ -488,7 +502,7 @@ Every email (transactional, membership, orders, admin broadcasts and the Supabas
 - **Don't** offer the same action twice on one screen (the desktop home has no action rail because the navbar has "Book").
 
 ### Divergences (as built, not yet unified)
-- **Inner customer pages** (bookings, billing, orders, pricing, settings, self-service log) sit in the new navbar and `.lp-theme`, so their shadcn controls are navy, but their own markup still carries gray and blue-900 classes.
+- **Inner customer pages** (bookings, billing, orders, pricing, settings, self-service log) sit in the new navbar and `.lp-theme`, so their shadcn controls are navy, but their own markup still carries gray and blue-900 classes. The booking steps and their pop-ups are on the tokens (2026-11-19); the booking success pages are not yet.
 - **The marketing hero** (`components/user/hero.tsx`) is not on the tokens. It still draws the old world with raw slate-950/900, amber-400 CTA (slate-950 text, amber-500 glow), violet for membership and a fourth hue (emerald-400) on perk checks. Its service cards carry eyebrow labels ("DIY", "Most Popular", "Best Value"). New work follows the tokens and bans, not this instance.
 - **The marketing home below the hero** (`app/(user)/(home)/page.tsx`) returns to white with blue-900 headings, blue-700 checks and links, and shadcn cards. It also shows the unverified "4.9/5 From 500+ Reviews" badge, which PRODUCT.md says must not be amplified. The marketing navbar (`components/user/navbar.tsx`) is the older style ("Premium Car Care" tagline in blue-600, blue-900 "Book Online").
 - **The product store** (`/products`) is its own scoped world. The `.storefront` class swaps shadcn tokens for near-black with Storefront Gold as `--primary`, and headlines use Anton (`.font-display`, loaded only in `app/(user)/products/layout.tsx`, weight 400, tracking 0.01em, never for body or UI labels).
