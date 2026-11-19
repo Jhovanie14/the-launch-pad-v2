@@ -1,7 +1,7 @@
 # Booking flow redesign (design)
 
 Date: 2026-11-19. Status: decided with the user in a mockup session; pending their approval of this document.
-Mockups: `.superpowers/brainstorm/1032-1795096322/content/` (`service-step-v2.html`, `steps-2-3.html`, `popups.html`), git-ignored scratch.
+Mockups: shown to the user in a browser session on 2026-11-19 (step 1 layouts, steps 2 and 3, the pop-ups) and deleted after approval; the decisions below record what was picked.
 
 ## Intent
 
