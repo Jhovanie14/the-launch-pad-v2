@@ -1,277 +1,178 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { AlertCircle, Check, CloudRain, Loader2, Lock, Star } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Check, Car, ChevronRight, Loader2, Tag } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { createClient } from "@/utils/supabase/client";
-import TermsModal from "../terms-modal";
+import { cn } from "@/lib/utils";
+import { MAX_VEHICLES_PER_SUBSCRIPTION } from "@/lib/pricing/flockPricing";
 import { FIRST_SUBSCRIPTION_PROMO } from "@/lib/pricing/firstSubscriptionPromo";
-import MultiVehicleBenefitsDialog from "./MultiVehicleBenefitsDialog";
 import {
-  MAX_VEHICLES_PER_SUBSCRIPTION,
-  flockDiscountPercent,
-  flockVehiclePrice,
-  flockVehicleSavings,
-  hasFlockDiscount,
-} from "@/lib/pricing/flockPricing";
+  agreementKey,
+  formatCents,
+  membershipCartQuote,
+  offerState,
+  savingLabel,
+} from "@/lib/subscriptions/membershipCartQuote";
+import { PENDING_CART_KEY, restorePendingCart } from "@/lib/subscriptions/pendingCart";
+import { LicensePlate } from "@/components/dashboard-home/license-plate";
+import StepLayout from "@/components/booking/ui/StepLayout";
+import { FLAME_BUTTON, FOCUS_ON_LIGHT, FOCUS_ON_NIGHT, SURFACE } from "@/components/booking/ui/focus";
+import TermsModal from "../terms-modal";
+import MultiVehicleBenefitsDialog from "./MultiVehicleBenefitsDialog";
 
 type Billing = "monthly" | "yearly";
 
 interface SubscriptionCartProps {
   planId?: string | null;
   billingCycle?: Billing | null;
-  auto?: boolean;
-  onRequireAuth?: () => void;
+  /** Guests: save these plates and open sign-in (the page owns storage). */
+  onRequireAuth?: (plates: string[]) => void;
 }
 
-interface Vehicle {
-  license_plate: string;
+interface Plan {
+  id: string;
+  name: string;
+  description?: string | null;
+  is_commercial?: boolean | null;
+  monthly_price: number | string;
+  yearly_price: number | string;
+  features?: string[] | null;
+}
+
+const FIELD =
+  "h-11 w-full rounded-lg bg-paper px-3 text-base font-semibold uppercase tracking-wider text-ink ring-1 ring-line placeholder:font-normal placeholder:normal-case placeholder:tracking-normal placeholder:text-ink-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue";
+
+const WEATHER_NOTICE =
+  "The Launch Pad Wash reserves the right to temporarily suspend or limit services at its sole discretion due to inclement weather conditions, including but not limited to rain, flooding, or adverse weather forecasts. Subscription fees are non-refundable for weather-related service interruptions; however, affected members retain full access to their membership benefits upon resumption of normal operations. The Launch Pad Wash shall not be liable for any inconvenience, loss, or damages arising from weather-related closures or service suspensions.";
+
+function membershipKind(plan: Plan, isCommercial: boolean): string {
+  const name = plan.name.toLowerCase();
+  if (isCommercial) return "Commercial membership";
+  if (name.includes("express")) return "Express membership";
+  if (name.includes("quick")) return "Quick service membership";
+  return "Membership";
 }
 
 export default function SubscriptionCart({
   planId: planIdProp,
   billingCycle: billingProp,
-  auto = false,
   onRequireAuth,
 }: SubscriptionCartProps) {
   const searchParams = useSearchParams();
   const supabase = createClient();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
+  const isGuestPage = !!onRequireAuth;
 
-  const planId = useMemo(
-    () => planIdProp ?? searchParams.get("plan"),
-    [planIdProp, searchParams],
-  );
-  const billingCycle = useMemo(
-    () =>
-      (billingProp ?? (searchParams.get("billing") as Billing)) || "monthly",
-    [billingProp, searchParams],
+  const planId = useMemo(() => planIdProp ?? searchParams.get("plan"), [planIdProp, searchParams]);
+  const billingCycle: Billing = useMemo(
+    () => (billingProp ?? (searchParams.get("billing") as Billing)) || "monthly",
+    [billingProp, searchParams]
   );
 
-  const [plan, setPlan] = useState<{
-    id: string;
-    name: string;
-    is_commercial?: boolean | null;
-    monthly_price: number | string;
-    yearly_price: number | string;
-    features?: string[];
-    stripe_price_id_monthly?: string;
-    stripe_price_id_yearly?: string;
-  } | null>(null);
+  const [plan, setPlan] = useState<Plan | null>(null);
   const [loadingPlan, setLoadingPlan] = useState(true);
   const [loadingCheckout, setLoadingCheckout] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [error, setError] = useState("");
-  const [vehicleCount, setVehicleCount] = useState(1);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([{ license_plate: "" }]);
-  const [errors, setErrors] = useState<
-    Record<number, { licensePlate?: string }>
-  >({});
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isBenefitsOpen, setIsBenefitsOpen] = useState(false);
+  const [plates, setPlates] = useState<string[]>([""]);
+  const [errors, setErrors] = useState<Record<number, string>>({});
+  const [termsOpen, setTermsOpen] = useState(false);
+  const [benefitsOpen, setBenefitsOpen] = useState(false);
+  // This account's membership history; decides the first-membership offer.
+  const [history, setHistory] = useState<"unknown" | "none" | "had" | "error">("unknown");
 
+  // After sign-in: put the plates back, but never the agreement and never a
+  // checkout by itself. The price may have changed now that we know the
+  // account (the first-membership offer), so the customer agrees again.
   useEffect(() => {
-    const savedCart = localStorage.getItem("pendingSubscriptionCart");
-    if (savedCart && user) {
-      try {
-        const cartData = JSON.parse(savedCart);
-
-        if (cartData.vehicles && cartData.vehicles.length > 0) {
-          setVehicles(cartData.vehicles);
-          setVehicleCount(cartData.vehicles.length);
-        }
-
-        if (cartData.isAuthorized) {
-          setIsAuthorized(true);
-        }
-
-        localStorage.removeItem("pendingSubscriptionCart");
-
-        if (cartData.autoCheckout) {
-          setTimeout(() => {
-            startCheckout();
-          }, 500);
-        }
-      } catch (error) {
-        console.error("Error restoring cart:", error);
-      }
+    if (!user) return;
+    try {
+      const restored = restorePendingCart(localStorage.getItem(PENDING_CART_KEY));
+      localStorage.removeItem(PENDING_CART_KEY);
+      if (restored && restored.plates.length > 0) setPlates(restored.plates);
+    } catch {
+      // Storage blocked: the customer types the plates again.
     }
   }, [user]);
 
-  // Promo display only. The server decides whether the offer applies (first
-  // membership only) and creates the discount; nothing here is sent to it.
-  const PROMO_CONFIG = {
-    enabled: FIRST_SUBSCRIPTION_PROMO.enabled,
-    isSubscriptionPercent: FIRST_SUBSCRIPTION_PROMO.percent,
-  };
-
   useEffect(() => {
-    if (!planId) return;
+    if (!planId) {
+      setLoadingPlan(false);
+      return;
+    }
     let active = true;
     setLoadingPlan(true);
-
     (async () => {
       try {
-        const { data, error } = await supabase
-          .from("subscription_plans")
-          .select("*")
-          .eq("id", planId)
-          .single();
-
+        const { data, error } = await supabase.from("subscription_plans").select("*").eq("id", planId).maybeSingle();
         if (!active) return;
-        if (!error) setPlan(data);
+        setPlan(!error && data ? (data as Plan) : null);
       } finally {
         if (active) setLoadingPlan(false);
       }
     })();
-
     return () => {
       active = false;
     };
   }, [planId, supabase]);
 
-  // Handle vehicle count change
-  const handleVehicleCountChange = (count: number) => {
-    setVehicleCount(count);
-    setVehicles((prev) => {
-      const newVehicles = Array(count)
-        .fill(null)
-        .map((_, i) => prev[i] || { license_plate: "" });
-      return newVehicles;
-    });
-    setErrors({});
-  };
-
-  // Update vehicle license plate
-  const updateVehicle = (index: number, licensePlate: string) => {
-    setVehicles((prev) => {
-      const updated = [...prev];
-      updated[index] = { license_plate: licensePlate };
-      return updated;
-    });
-    // Clear error for this field
-    setErrors((prev) => {
-      const updated = { ...prev };
-      if (updated[index]) {
-        delete updated[index].licensePlate;
-      }
-      return updated;
-    });
-  };
-
-  // Validate vehicles
-  const validate = () => {
-    const newErrors: Record<number, { licensePlate?: string }> = {};
-    let isValid = true;
-
-    vehicles.forEach((vehicle, index) => {
-      if (!vehicle.license_plate || vehicle.license_plate.trim() === "") {
-        newErrors[index] = { licensePlate: "License plate is required" };
-        isValid = false;
-      }
-    });
-
-    setErrors(newErrors);
-    return isValid;
-  };
-
   // The offer is for a first membership only (the server enforces this);
   // hide it from someone who has had one before so the cart matches Stripe.
-  const [hadMembership, setHadMembership] = useState(false);
   useEffect(() => {
+    setHistory("unknown");
     if (!user?.id) return;
     let active = true;
     supabase
       .from("user_subscription")
       .select("id", { count: "exact", head: true })
       .eq("user_id", user.id)
-      .then(({ count }) => {
-        if (active) setHadMembership((count ?? 0) > 0);
+      .then(({ count, error }) => {
+        if (!active) return;
+        setHistory(error ? "error" : (count ?? 0) > 0 ? "had" : "none");
       });
     return () => {
       active = false;
     };
   }, [user?.id, supabase]);
 
-  const promoDiscountPercent =
-    PROMO_CONFIG.enabled && !hadMembership ? PROMO_CONFIG.isSubscriptionPercent : 0;
+  const offer = offerState({ signedIn: !!user, history });
+  const quote = plan
+    ? membershipCartQuote({ plan, billing: billingCycle, carCount: plates.length, offerEligible: offer.offerEligible })
+    : null;
 
-  // Commercial plans bill every vehicle at the plan rate — no family discount.
-  const planHasFlockDiscount = hasFlockDiscount(plan);
-  const planFlockDiscountPercent = flockDiscountPercent(plan);
+  // The tick agrees to specific amounts: when they change (history loaded,
+  // car count changed), it must be given again.
+  const termsKey = quote ? agreementKey(quote) : "";
+  useEffect(() => {
+    setIsAuthorized(false);
+  }, [termsKey]);
 
-  // Calculate base price
-  const basePrice = useMemo(() => {
-    const price =
-      billingCycle === "monthly" ? plan?.monthly_price : plan?.yearly_price;
-    const originalPrice = price ? Number(price) : 0;
+  const setCarCount = (count: number) => {
+    setPlates((prev) => Array.from({ length: count }, (_, i) => prev[i] ?? ""));
+    setErrors({});
+  };
 
-    const estimatedDiscount = originalPrice * (promoDiscountPercent / 100);
-    const estimatedDiscountedPrice = originalPrice - estimatedDiscount;
-
-    return {
-      original: originalPrice,
-      estimatedDiscounted: estimatedDiscountedPrice,
-      estimatedSavings: estimatedDiscount,
-    };
-  }, [plan, billingCycle, promoDiscountPercent]);
-
-  // Calculate pricing for each vehicle
-  const vehiclePricing = useMemo(() => {
-    return vehicles.map((v, index) => {
-      const isFirstVehicle = index === 0;
-      const vehicleBase = basePrice.original;
-
-      const price = isFirstVehicle
-        ? vehicleBase
-        : flockVehiclePrice(vehicleBase, plan);
-      const flockDiscount = isFirstVehicle
-        ? 0
-        : flockVehicleSavings(vehicleBase, plan);
-
-      // Promo discount only applies to the primary vehicle
-      const estimatedPrice = isFirstVehicle
-        ? price * (1 - promoDiscountPercent / 100)
-        : price;
-      const promoSavings = isFirstVehicle
-        ? price * (promoDiscountPercent / 100)
-        : 0;
-
-      return {
-        fullBasePrice: vehicleBase,
-        originalPrice: price,
-        estimatedPrice,
-        promoSavings,
-        flockDiscount,
-        isDiscounted: !isFirstVehicle && hasFlockDiscount(plan),
-      };
+  const updatePlate = (index: number, value: string) => {
+    setPlates((prev) => prev.map((p, i) => (i === index ? value.toUpperCase() : p)));
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next[index];
+      return next;
     });
-  }, [vehicles, basePrice, promoDiscountPercent, plan]);
+  };
 
-  // Calculate totals
-  const totalOriginalPrice = useMemo(() => {
-    return vehiclePricing.reduce((sum, item) => sum + item.originalPrice, 0);
-  }, [vehiclePricing]);
-
-  const totalEstimatedPrice = useMemo(() => {
-    return vehiclePricing.reduce((sum, item) => sum + item.estimatedPrice, 0);
-  }, [vehiclePricing]);
-
-  const totalPromoSavings = useMemo(() => {
-    return vehiclePricing.reduce((sum, item) => sum + item.promoSavings, 0);
-  }, [vehiclePricing]);
-
-  const totalFlockSavings = useMemo(() => {
-    return vehiclePricing
-      .filter((v) => v.isDiscounted)
-      .reduce((sum, v) => sum + v.flockDiscount, 0);
-  }, [vehiclePricing]);
+  const validate = () => {
+    const next: Record<number, string> = {};
+    plates.forEach((p, i) => {
+      if (!p.trim()) next[i] = "License plate is required";
+    });
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  };
 
   const startCheckout = async () => {
     try {
@@ -284,560 +185,342 @@ export default function SubscriptionCart({
         setError("Please fill in all required vehicle information.");
         return;
       }
-
       setLoadingCheckout(true);
-
-      const vehiclesPayload = vehicles.map((vehicle) => ({
-        license_plate: vehicle.license_plate,
-      }));
-
       const res = await fetch("/api/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           planId,
           billingCycle,
-          vehicles: vehiclesPayload,
+          vehicles: plates.map((license_plate) => ({ license_plate })),
         }),
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Checkout session failed");
-
       if (data.url) window.location.href = data.url;
     } catch (err) {
       console.error("Checkout error:", err);
-      const errorMessage =
-        err instanceof Error ? err.message : "Something went wrong.";
-      setError(errorMessage);
+      setError(err instanceof Error ? err.message : "Something went wrong.");
       setLoadingCheckout(false);
     }
   };
 
-  const handleCheckoutClick = async () => {
+  const handleCheckoutClick = () => {
     if (!user) {
-      const cartData = {
-        vehicles: vehicles.map((v) => ({
-          license_plate: v.license_plate,
-        })),
-        isAuthorized,
-        planId,
-        billingCycle,
-        autoCheckout: true,
-      };
-
-      localStorage.setItem("pendingSubscriptionCart", JSON.stringify(cartData));
-      localStorage.setItem(
-        "pendingSubscriptionIntent",
-        JSON.stringify({ planId, billing: billingCycle }),
-      );
-
-      onRequireAuth?.();
+      onRequireAuth?.(plates);
       return;
     }
-    await startCheckout();
+    void startCheckout();
   };
 
-  useEffect(() => {
-    if (!auto) return;
-    if (!user) return;
-    if (!planId || !billingCycle) return;
-    setIsAuthorized(true);
-    startCheckout();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [auto, user, planId, billingCycle]);
+  const backHref = isGuestPage ? "/pricing" : "/dashboard/pricing";
+
+  if (loadingPlan) return <CartSkeleton />;
+
+  if (!plan || !quote) {
+    return (
+      <div role="alert" className="rounded-2xl bg-night p-5 text-on-night ring-1 ring-paper/10 sm:p-7">
+        <p className="text-xl font-black tracking-[-0.025em]">We couldn&apos;t find that plan.</p>
+        <Link
+          href={backHref}
+          className={cn(
+            "mt-4 inline-flex h-11 items-center rounded-lg px-4 font-semibold ring-1 ring-paper/20 hover:bg-paper/10",
+            FOCUS_ON_NIGHT
+          )}
+        >
+          Back to plans
+        </Link>
+      </div>
+    );
+  }
+
+  const { period } = quote;
+  const features = Array.isArray(plan.features) ? plan.features : [];
+  const showAsGuest = !authLoading && !user;
+
+  const agreement = quote.hasOffer
+    ? `I authorize The Launch Pad to charge ${formatCents(quote.firstCents)} for the first ${period}, then ${formatCents(quote.renewalCents)} every ${period} until I cancel.`
+    : `I authorize The Launch Pad to charge ${formatCents(quote.renewalCents)} every ${period} until I cancel.`;
 
   return (
-    <div className="grid lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
-      <div className="space-y-6">
-        {/* Primary Vehicle Card */}
-        <Card className="border-2 border-blue-200">
-          <CardHeader className="pb-2">
-            <div className="flex items-center gap-2">
-              <div className="bg-blue-900 rounded-full p-1.5">
-                <Car className="h-4 w-4 text-white" />
-              </div>
-              <CardTitle>
-                Vehicle 1
-                <span className="ml-2 text-sm font-normal text-muted-foreground">
-                  (Primary)
-                </span>
-              </CardTitle>
-            </div>
-            <p className="text-sm text-muted-foreground mt-1">
-              Enter the license plate for the vehicle you want to subscribe
-              with.
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="vehicle-0" className="text-base font-semibold">
-                License Plate
-              </Label>
-              <Input
-                id="vehicle-0"
-                placeholder="e.g. ABC 1234"
-                value={vehicles[0]?.license_plate || ""}
-                onChange={(e) => updateVehicle(0, e.target.value.toUpperCase())}
-                className="text-lg font-mono uppercase tracking-widest h-12 border-blue-300 focus:ring-blue-500"
-              />
-              {errors[0]?.licensePlate ? (
-                <p className="text-red-500 text-sm">{errors[0].licensePlate}</p>
+    <>
+      <StepLayout
+        back={{ label: "Back to plans", href: backHref }}
+        title={`Join the ${plan.name} plan`}
+        action={{
+          summaryTitle: quote.hasOffer
+            ? `${formatCents(quote.firstCents)} first ${period}`
+            : `${formatCents(quote.renewalCents)} a ${period}`,
+          summaryDetail: quote.hasOffer ? `then ${formatCents(quote.renewalCents)} a ${period}` : undefined,
+          button: (
+            <button
+              type="button"
+              onClick={handleCheckoutClick}
+              disabled={loadingCheckout || authLoading || (!!user && !offer.settled)}
+              className={FLAME_BUTTON}
+            >
+              {loadingCheckout ? (
+                <>
+                  <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden />
+                  Opening secure checkout…
+                </>
+              ) : showAsGuest ? (
+                "Sign in to continue"
               ) : (
-                <p className="text-xs text-muted-foreground">
-                  Type your plate exactly as it appears on your vehicle.
-                </p>
+                <>
+                  <Lock className="size-4" aria-hidden />
+                  Continue to payment
+                </>
               )}
-            </div>
-          </CardContent>
-        </Card>
+            </button>
+          ),
+        }}
+      >
+        <p className="-mt-2 max-w-prose text-base leading-relaxed text-ink-muted">
+          Add your cars, agree to the billing, then pay on Stripe&apos;s secure checkout.
+        </p>
 
-        {/* Family Vehicles Card */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-start justify-between">
-              <CardTitle className="text-2xl">How many vehicles?</CardTitle>
-              <button
-                onClick={() => setIsBenefitsOpen(true)}
-                className="flex items-center gap-1 text-sm text-green-600 font-medium hover:text-green-700 hover:underline transition-colors"
-              >
-                Multi-Vehicle Benefits
-                <ChevronRight className="h-3.5 w-3.5" />
-              </button>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {planHasFlockDiscount ? (
-                <>
-                  Select how many total vehicles to include. Each extra vehicle
-                  saves you{" "}
-                  <span className="font-semibold text-green-600">
-                    {planFlockDiscountPercent}% every month
-                  </span>
-                  .
-                </>
-              ) : (
-                <>
-                  Select how many total vehicles to include. Commercial plans
-                  bill every vehicle at the same rate — no family discount
-                  applies.
-                </>
-              )}
+        {/* The plan, as a pass */}
+        <section aria-labelledby="mc-plan" className="rounded-2xl bg-night p-5 text-on-night ring-1 ring-paper/10 sm:p-7">
+          <p className="text-sm font-semibold text-svc-member">{membershipKind(plan, quote.isCommercial)}</p>
+          <div className="mt-1 flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+            <h2 id="mc-plan" className="text-3xl font-black tracking-[-0.025em] text-balance sm:text-4xl">
+              {plan.name}
+            </h2>
+            <p className="whitespace-nowrap">
+              <span className="text-3xl font-black tracking-[-0.025em] tabular-nums">{formatCents(quote.cars[0].cents)}</span>
+              <span className="text-base font-semibold text-on-night-muted"> / {period}</span>
             </p>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Vehicle Count Selector */}
-            <div className="grid grid-cols-5 gap-2">
-              {Array.from(
-                { length: MAX_VEHICLES_PER_SUBSCRIPTION },
-                (_, i) => i + 1
-              ).map((totalVehicles) => {
-                const isSelected = vehicleCount === totalVehicles;
-                const extraVehicles = totalVehicles - 1;
-                const totalSavings =
-                  flockVehicleSavings(basePrice.original, plan) * extraVehicles;
+          </div>
+          {features.length > 0 && (
+            <>
+              <h3 className="mt-6 text-sm font-semibold text-on-night-muted">What&apos;s included</h3>
+              <ul className="mt-2 grid gap-x-6 gap-y-2 sm:grid-cols-2">
+                {features.map((f, i) => (
+                  <li key={i} className="flex items-start gap-2.5 text-sm">
+                    <Check className="mt-0.5 size-4 shrink-0 text-svc-member" aria-hidden />
+                    <span>{f}</span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </section>
+
+        {/* Cars */}
+        <section aria-labelledby="mc-cars" className={cn(SURFACE, "p-5 sm:p-7")}>
+          <h2 id="mc-cars" className="text-xl font-black tracking-[-0.025em]">
+            Your cars
+          </h2>
+          <p className="mt-1 text-sm text-ink-muted">
+            {quote.discountPercent > 0
+              ? `Each extra car is ${quote.discountPercent}% off.`
+              : "Commercial plans bill every vehicle at the plan rate."}{" "}
+            <button
+              type="button"
+              onClick={() => setBenefitsOpen(true)}
+              className={cn("rounded font-semibold text-brand-blue underline-offset-2 hover:underline", FOCUS_ON_LIGHT)}
+            >
+              How it works
+            </button>
+          </p>
+
+          <fieldset className="mt-4">
+            <legend className="text-sm font-semibold">
+              How many cars?
+              {quote.extraCarSavingCents > 0 && (
+                <span className="font-normal text-ink-muted"> Savings shown per {period}.</span>
+              )}
+            </legend>
+            <div className="mt-2 grid grid-cols-5 gap-2">
+              {Array.from({ length: MAX_VEHICLES_PER_SUBSCRIPTION }, (_, i) => i + 1).map((n) => {
+                const chosen = plates.length === n;
+                const saving = quote.extraCarSavingCents * (n - 1);
                 return (
                   <button
-                    key={totalVehicles}
-                    onClick={() => handleVehicleCountChange(totalVehicles)}
-                    className={`relative flex flex-col items-center py-3 px-2 rounded-xl border-2 text-center transition-all ${
-                      isSelected
-                        ? "bg-green-600 text-white border-green-600 shadow-md"
-                        : "bg-white text-gray-700 border-gray-200 hover:border-green-400"
-                    }`}
+                    key={n}
+                    type="button"
+                    aria-pressed={chosen}
+                    aria-label={`${n} ${n === 1 ? "car" : "cars"}`}
+                    onClick={() => setCarCount(n)}
+                    className={cn(
+                      "flex min-h-12 flex-col items-center justify-center rounded-lg px-1 py-1.5 transition-colors motion-reduce:transition-none",
+                      chosen ? "bg-night text-on-night" : "bg-paper ring-1 ring-inset ring-line hover:bg-line-soft",
+                      FOCUS_ON_LIGHT
+                    )}
                   >
-                    <span className="text-2xl font-bold">{totalVehicles}</span>
-                    <span
-                      className={`text-xs mt-0.5 font-medium ${isSelected ? "text-green-100" : "text-gray-400"}`}
-                    >
-                      {totalVehicles === 1 ? "vehicle" : "vehicles"}
-                    </span>
-                    {totalSavings > 0 && (
-                      <span
-                        className={`text-xs mt-1.5 font-semibold px-1.5 py-0.5 rounded-full ${
-                          isSelected
-                            ? "bg-green-500 text-white"
-                            : "bg-green-50 text-green-700"
-                        }`}
-                      >
-                        save ${totalSavings.toFixed(0)}/mo
+                    <span className="text-lg font-black leading-none">{n}</span>
+                    {saving > 0 && (
+                      <span className={cn("mt-1 text-xs font-semibold leading-tight", chosen ? "text-on-night-muted" : "text-ink-muted")}>
+                        save {savingLabel(saving)}
                       </span>
                     )}
                   </button>
                 );
               })}
             </div>
+          </fieldset>
 
-            {/* Family Vehicle License Plate Inputs (vehicles 2-5) */}
-            {vehicleCount > 1 && (
-              <div className="space-y-4">
-                {vehicles.slice(1).map((vehicle, index) => {
-                  const actualIndex = index + 1;
-                  return (
-                    <div key={actualIndex} className="space-y-2">
-                      <Label
-                        htmlFor={`vehicle-${actualIndex}`}
-                        className="text-base font-semibold"
-                      >
-                        Vehicle {actualIndex + 1}: License Plate
-                        {planHasFlockDiscount && (
-                          <span className="ml-2 text-sm font-normal text-green-600">
-                            ({planFlockDiscountPercent}% Family Discount)
-                          </span>
-                        )}
-                      </Label>
-                      <Input
-                        id={`vehicle-${actualIndex}`}
-                        placeholder="e.g. ABC 1234"
-                        value={vehicle.license_plate}
-                        onChange={(e) =>
-                          updateVehicle(
-                            actualIndex,
-                            e.target.value.toUpperCase(),
-                          )
-                        }
-                        className="text-lg font-mono uppercase tracking-widest h-12"
-                      />
-                      {errors[actualIndex]?.licensePlate ? (
-                        <p className="text-red-500 text-sm">
-                          {errors[actualIndex].licensePlate}
-                        </p>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">
-                          Type your plate exactly as it appears on your vehicle.
-                        </p>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-        {/* Commercial Vehicle Disclaimer — hide on commercial plans */}
-        {!plan?.name?.toLowerCase().includes("commercial") && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-900">
-            <p className="font-semibold mb-1">
-              ⚠️ Commercial Vehicles Excluded
-            </p>
-            <p className="text-xs leading-relaxed">
-              This subscription plan is for personal passenger vehicles only.
-              The following vehicle types are{" "}
-              <span className="font-semibold">not eligible</span> for this plan
-              and require a separate commercial vehicle subscription:
-            </p>
-            <ul className="mt-2 text-xs space-y-0.5 list-disc list-inside text-amber-800">
-              <li>Tow trucks</li>
-              <li>Trucks with 8 ft or 9 ft beds</li>
-              <li>Sprinter vans &amp; cargo vans</li>
-              <li>Other commercial or oversized vehicles</li>
-            </ul>
-            <p className="text-xs mt-2 text-amber-700">
-              If you operate a commercial vehicle, please contact us or ask
-              about our commercial vehicle plan.
-            </p>
-          </div>
-        )}
-      </div>
-
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Subscription Summary</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Plan</p>
-                <p className="font-medium">{plan?.name ?? "—"}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-muted-foreground capitalize">
-                  {billingCycle}
-                </p>
-              </div>
-            </div>
-
-            {/* Promo Code Applied Banner */}
-            {PROMO_CONFIG.enabled &&
-              promoDiscountPercent > 0 && (
-                <div className="bg-linear-to-r from-red-50 to-orange-50 border-2 border-red-300 rounded-lg p-4 mb-4">
-                  <div className="flex items-start gap-3">
-                    <div className="bg-red-600 rounded-full p-2 shrink-0">
-                      <Tag className="h-4 w-4 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-base font-bold text-red-900 mb-1">
-                        🎉 Promo Code Auto-Applied!
-                      </p>
-                      <p className="text-sm font-semibold text-red-800">
-                        {promoDiscountPercent}% OFF your first month of
-                        subscription. After the first month, your subscription
-                        will renew at the regular price.
-                      </p>
-                      <p className="text-xs text-red-700 mt-1">
-                        Discount applied automatically at checkout via Stripe
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-            <div className="space-y-3 mb-6 pb-6 border-b border-border">
-              {/* Vehicle Breakdown */}
-              <div className="space-y-2">
-                <h4 className="font-semibold text-sm mb-2">Vehicles</h4>
-                {vehicles.map((vehicle, index) => {
-                  const pricing = vehiclePricing[index];
-
-                  return (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between text-sm py-2 border-b border-border/50 last:border-0"
-                    >
-                      <div className="flex-1">
-                        <p className="font-medium">
-                          Vehicle {index + 1}
-                          {index === 0 && (
-                            <span className="ml-1 text-xs text-muted-foreground">
-                              (Primary)
-                            </span>
-                          )}
-                        </p>
-
-                        <div className="flex flex-col gap-0.5 mt-1">
-                          {pricing.isDiscounted && (
-                            <p className="text-xs text-green-600">
-                              Family: {planFlockDiscountPercent}% off (-$
-                              {pricing.flockDiscount.toFixed(2)})
-                            </p>
-                          )}
-                          {PROMO_CONFIG.enabled && pricing.promoSavings > 0 && (
-                            <p className="text-xs text-red-600 font-semibold">
-                              Promo: {promoDiscountPercent}% off (-$
-                              {pricing.promoSavings.toFixed(2)})
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        {/* Show strikethrough only when there's a real discount to display */}
-                        {(pricing.isDiscounted ||
-                          (PROMO_CONFIG.enabled && pricing.promoSavings > 0)) && (
-                          <p className="text-xs text-muted-foreground line-through">
-                            ${pricing.fullBasePrice.toFixed(2)}
-                          </p>
-                        )}
-                        <p
-                          className={`font-semibold ${
-                            pricing.isDiscounted
-                              ? "text-green-700"
-                              : PROMO_CONFIG.enabled && pricing.promoSavings > 0
-                                ? "text-red-600"
-                                : ""
-                          }`}
-                        >
-                          ${pricing.estimatedPrice.toFixed(2)}
-                          <span className="text-xs text-muted-foreground ml-1">
-                            {billingCycle === "monthly" ? "/mo" : "/yr"}
-                          </span>
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Total Savings Summary */}
-              {(totalFlockSavings > 0 || totalPromoSavings > 0) && (
-                <div className="bg-green-50 rounded-lg p-3 space-y-1">
-                  <p className="text-xs font-semibold text-green-900">
-                    💰 Your Estimated Savings:
-                  </p>
-                  {totalFlockSavings > 0 && (
-                    <p className="text-xs text-green-700">
-                      • Family Discount: ${totalFlockSavings.toFixed(2)}
-                    </p>
+          <div className="mt-5 space-y-4">
+            {plates.map((plate, i) => (
+              <div key={i}>
+                <label htmlFor={`mc-plate-${i}`} className="flex items-center justify-between gap-3 text-sm font-semibold">
+                  <span>Car {i + 1}</span>
+                  {i === 0 ? (
+                    <span className="flex items-center gap-1 font-normal text-ink-muted">
+                      <Star className="size-4 fill-flame text-flame" aria-hidden />
+                      Primary
+                    </span>
+                  ) : (
+                    quote.discountPercent > 0 && (
+                      <span className="font-normal text-ink-muted">{quote.discountPercent}% off</span>
+                    )
                   )}
-                  {totalPromoSavings > 0 && (
-                    <p className="text-xs text-green-700">
-                      • Promo Discount: ${totalPromoSavings.toFixed(2)}
-                    </p>
-                  )}
-                  <p className="text-xs font-bold text-green-900 pt-1 border-t border-green-200">
-                    Total Estimated Savings: $
-                    {(totalPromoSavings + totalFlockSavings).toFixed(2)}
-                    <span className="text-muted-foreground ml-1">
-                      {billingCycle === "monthly" ? "/month" : "/year"}
-                    </span>
+                </label>
+                <input
+                  id={`mc-plate-${i}`}
+                  autoComplete="off"
+                  autoCapitalize="characters"
+                  spellCheck={false}
+                  placeholder="For example, ABC 1234"
+                  value={plate}
+                  onChange={(e) => updatePlate(i, e.target.value)}
+                  aria-invalid={!!errors[i]}
+                  aria-describedby={errors[i] ? `mc-plate-${i}-error` : undefined}
+                  className={cn(FIELD, "mt-2")}
+                />
+                {errors[i] && (
+                  <p id={`mc-plate-${i}-error`} className="mt-1 flex items-center gap-1.5 text-sm font-medium text-destructive">
+                    <AlertCircle className="size-4 shrink-0" aria-hidden />
+                    {errors[i]}
                   </p>
-                </div>
-              )}
-
-              {/* Total Price */}
-              <div className="flex items-center justify-between pt-3 border-t border-border">
-                <div>
-                  <span className="text-sm text-muted-foreground block">
-                    {PROMO_CONFIG.enabled ? "Estimated Total" : "Total"}
-                  </span>
-                  <span className="text-2xl font-bold text-amber-400">
-                    $
-                    {PROMO_CONFIG.enabled
-                      ? totalEstimatedPrice.toFixed(2)
-                      : totalOriginalPrice.toFixed(2)}
-                  </span>
-                  <span className="text-sm text-muted-foreground ml-1">
-                    {billingCycle === "monthly" ? "/month" : "/year"}
-                  </span>
-                </div>
-                {PROMO_CONFIG.enabled && (
-                  <div className="text-right">
-                    <span className="text-xs text-muted-foreground block">
-                      Was
-                    </span>
-                    <span className="text-lg text-muted-foreground line-through">
-                      ${totalOriginalPrice.toFixed(2)}
-                    </span>
-                  </div>
                 )}
               </div>
-            </div>
+            ))}
+          </div>
+        </section>
 
-            {/* Billing Cycle Info */}
-            <div className="bg-muted/50 rounded-lg p-4 mb-6">
-              {PROMO_CONFIG.enabled ? (
-                <>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    <span className="font-semibold text-foreground">
-                      Estimated: ${totalEstimatedPrice.toFixed(2)}
-                    </span>{" "}
-                    will be billed{" "}
-                    <span className="font-semibold">
-                      {billingCycle === "monthly" ? "monthly" : "annually"}
-                    </span>{" "}
-                    after promo discount is applied at checkout.
-                  </p>
-                  <p className="text-xs text-red-600 font-semibold">
-                    ⚠️ Final price will be calculated by Stripe at checkout with
-                    the promo code applied.
-                  </p>
-                  {(totalPromoSavings > 0 || totalFlockSavings > 0) && (
-                    <p className="text-xs text-green-600 mt-2 font-semibold">
-                      ✨ Estimated total savings: $
-                      {(totalPromoSavings + totalFlockSavings).toFixed(2)}/
-                      {billingCycle === "monthly" ? "month" : "year"}!
-                    </p>
-                  )}
-                </>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  <span className="font-semibold text-foreground">
-                    ${totalOriginalPrice.toFixed(2)}
-                  </span>{" "}
-                  will be billed{" "}
-                  <span className="font-semibold">
-                    {billingCycle === "monthly" ? "monthly" : "annually"}
-                  </span>{" "}
-                  on the same date each billing cycle.
-                </p>
-              )}
-            </div>
+        {!quote.isCommercial && (
+          <p className="text-sm leading-relaxed text-ink-muted">
+            <span className="font-semibold text-ink">Personal vehicles only.</span> Tow trucks, trucks with 8 or 9 ft beds,
+            sprinter and cargo vans, and other commercial or oversized vehicles need the commercial plan.
+          </p>
+        )}
 
-            {plan?.features?.length ? (
-              <div className="space-y-4 mb-6 pb-6 border-b border-border">
-                <h3 className="text-lg font-semibold text-foreground mb-4">
-                  What's Included
-                </h3>
-                <div className="space-y-3">
-                  {plan.features.map((feature, i) => (
-                    <div key={i} className="flex items-start gap-3">
-                      <div className="w-5 h-5 rounded-full bg-green-600 flex items-center justify-center shrink-0 mt-0.5">
-                        <Check className="w-3 h-3 text-white" />
-                      </div>
-                      <p className="font-medium text-foreground">{feature}</p>
-                    </div>
-                  ))}
-                </div>
+        {/* Summary and agreement */}
+        <section aria-labelledby="mc-summary" className={cn(SURFACE, "p-5 sm:p-7")}>
+          <h2 id="mc-summary" className="text-xl font-black tracking-[-0.025em]">
+            Summary
+          </h2>
+          <dl className="mt-3 divide-y divide-line-soft text-base">
+            {quote.cars.map((car, i) => (
+              <div key={i} className="flex items-center justify-between gap-3 py-2.5">
+                <dt className="flex min-w-0 flex-wrap items-center gap-2">
+                  {plates[i]?.trim() ? <LicensePlate plate={plates[i].trim()} /> : <span>Car {i + 1}</span>}
+                  <span className="text-sm text-ink-muted">
+                    {car.primary ? "Primary" : quote.discountPercent > 0 ? `${quote.discountPercent}% off` : "Plan rate"}
+                  </span>
+                </dt>
+                <dd className="tabular-nums">{formatCents(car.cents)}</dd>
               </div>
-            ) : null}
-
-            <div className="flex mb-6">
-              <Checkbox
-                className="mr-3 w-5 h-5 border-2 border-black rounded-md"
-                id="authorized"
-                checked={isAuthorized}
-                onCheckedChange={(checked) => {
-                  setIsAuthorized(!!checked);
-                  if (checked) setError("");
-                }}
-              />
-              <p className="text-xs text-accent-foreground leading-relaxed">
-                I authorized The Launch Pad to automatically charge the selected
-                payment method{" "}
-                <span className="font-semibold">
-                  $
-                  {PROMO_CONFIG.enabled
-                    ? totalOriginalPrice.toFixed(2)
-                    : totalOriginalPrice.toFixed(2)}
-                  {billingCycle === "monthly" ? "/month" : "/year"}
-                </span>{" "}
-                after my first month which is discounted to{" "}
-                <span className="font-semibold">
-                  $
-                  {PROMO_CONFIG.enabled
-                    ? totalEstimatedPrice.toFixed(2)
-                    : totalOriginalPrice.toFixed(2)}
-                  {billingCycle === "monthly" ? "/month" : "/year"}
-                </span>{" "}
-                Billing will occur on the same subscription date each month
-                until I cancel or terminate my membership{" "}
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(true)}
-                  className="text-blue-900 hover:underline"
-                >
-                  Terms of Service Agreement
-                </button>
-                , including the disclaimer of warranties, limitation of
-                liability, and arbitration agreement.
-              </p>
+            ))}
+            {quote.hasOffer && (
+              <div className="flex items-center justify-between gap-3 py-2.5 text-ink-muted">
+                <dt>First-membership offer, {quote.offerPercent}% off car 1</dt>
+                <dd className="tabular-nums">−{formatCents(quote.offerCents)}</dd>
+              </div>
+            )}
+            <div className="flex items-baseline justify-between gap-3 pt-3 text-lg font-black tracking-[-0.02em]">
+              <dt>{quote.hasOffer ? `First ${period}` : `Every ${period}`}</dt>
+              <dd className="tabular-nums">{formatCents(quote.hasOffer ? quote.firstCents : quote.renewalCents)}</dd>
             </div>
+          </dl>
+          <p className="mt-1 text-right text-sm text-ink-muted">
+            {quote.hasOffer
+              ? `then ${formatCents(quote.renewalCents)} a ${period} until you cancel`
+              : `${formatCents(quote.renewalCents)} a ${period} until you cancel`}
+          </p>
+          {quote.hasOffer && !user && FIRST_SUBSCRIPTION_PROMO.enabled && (
+            <p className="mt-2 text-sm text-ink-muted">
+              The offer is for a first membership. If your account has had one before, the cart updates after you sign in.
+            </p>
+          )}
 
-            {/* Weather & Closure Disclaimer */}
-            <div className="bg-sky-50 border border-sky-200 rounded-lg p-3 mb-4 text-xs text-sky-800 leading-relaxed">
-              <p className="font-semibold mb-1">⛅ Weather & Operational Closure Notice</p>
-              <p>
-                The Launch Pad Wash reserves the right to temporarily suspend or limit services at its sole discretion due to inclement weather conditions, including but not limited to rain, flooding, or adverse weather forecasts. Subscription fees are non-refundable for weather-related service interruptions; however, affected members retain full access to their membership benefits upon resumption of normal operations. The Launch Pad Wash shall not be liable for any inconvenience, loss, or damages arising from weather-related closures or service suspensions.
-              </p>
-            </div>
+          <div className="mt-5 flex items-start gap-3">
+            <Checkbox
+              id="mc-authorize"
+              checked={isAuthorized}
+              onCheckedChange={(checked) => {
+                setIsAuthorized(!!checked);
+                if (checked) setError("");
+              }}
+              className="mt-0.5 size-5"
+            />
+            <p className="text-sm leading-relaxed">
+              <label htmlFor="mc-authorize" className="cursor-pointer">
+                {agreement} I agree to the
+              </label>{" "}
+              <button
+                type="button"
+                onClick={() => setTermsOpen(true)}
+                className={cn("rounded font-semibold text-brand-blue underline underline-offset-4 hover:text-ink", FOCUS_ON_LIGHT)}
+              >
+                Terms of Service
+              </button>
+              , including the disclaimer of warranties, limitation of liability, and arbitration agreement.
+            </p>
+          </div>
 
-            {error && <p className="text-red-600 text-sm mb-2">{error}</p>}
+          <div className="mt-4 rounded-lg bg-canvas p-3 text-xs leading-relaxed text-ink-muted ring-1 ring-line">
+            <p className="flex items-center gap-1.5 font-semibold text-ink">
+              <CloudRain className="size-4 text-ink-subtle" aria-hidden />
+              Weather and closure notice
+            </p>
+            <p className="mt-1">{WEATHER_NOTICE}</p>
+          </div>
 
-            <Button
-              className="w-full bg-blue-900 hover:bg-blue-700"
-              onClick={handleCheckoutClick}
-              disabled={loadingCheckout || loadingPlan || !planId}
-            >
-              {loadingCheckout ? "Redirecting..." : "Checkout"}
-              {loadingCheckout && (
-                <Loader2 className="ml-2 w-4 h-4 animate-spin" />
-              )}
-            </Button>
-          </CardContent>
-        </Card>
-        <TermsModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          onAccept={() => {
-            setIsAuthorized(true);
-            setError("");
-          }}
-        />
+          {error && (
+            <p role="alert" className="mt-4 flex items-start gap-2 rounded-lg bg-destructive/10 p-3 text-sm font-medium text-destructive">
+              <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
+              {error}
+            </p>
+          )}
 
-        <MultiVehicleBenefitsDialog
-          isOpen={isBenefitsOpen}
-          onClose={() => setIsBenefitsOpen(false)}
-          familyDiscountPercent={planFlockDiscountPercent}
-        />
+          <p className="mt-4 text-xs leading-relaxed text-ink-muted">
+            {showAsGuest
+              ? "Checkout needs an account. Your plates are kept while you sign in."
+              : "You pay on Stripe, then come back to your confirmation. You can cancel anytime from Billing in your account."}
+          </p>
+        </section>
+      </StepLayout>
+
+      <TermsModal
+        isOpen={termsOpen}
+        onClose={() => setTermsOpen(false)}
+        onAccept={() => {
+          setIsAuthorized(true);
+          setError("");
+        }}
+      />
+      <MultiVehicleBenefitsDialog
+        isOpen={benefitsOpen}
+        onClose={() => setBenefitsOpen(false)}
+        familyDiscountPercent={quote.discountPercent}
+      />
+    </>
+  );
+}
+
+function CartSkeleton() {
+  return (
+    <div aria-busy="true" aria-label="Loading the membership plan" className="space-y-5">
+      <div className="h-9 w-72 max-w-full rounded bg-line motion-safe:animate-pulse" />
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-6">
+        <div className="space-y-4">
+          <div className="h-56 rounded-2xl bg-dusk/90 motion-safe:animate-pulse" />
+          <div className="h-64 rounded-2xl bg-line motion-safe:animate-pulse" />
+        </div>
+        <div className="mt-4 hidden h-40 rounded-2xl bg-line motion-safe:animate-pulse lg:mt-0 lg:block" />
       </div>
     </div>
   );
