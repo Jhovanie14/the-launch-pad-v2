@@ -36,7 +36,7 @@ import LoadingDots from "@/components/loading";
 import { useAuth } from "@/context/auth-context";
 import { useBooking } from "@/context/bookingContext";
 import { useProductCart } from "@/context/product-cart-context";
-import { isNavActive } from "@/lib/navigation/isNavActive";
+import { isNavActive, showSignOutLoader } from "@/lib/navigation/isNavActive";
 import { cn } from "@/lib/utils";
 import { AccountAvatar } from "@/components/user/AccountAvatar";
 
@@ -93,12 +93,17 @@ export function UserNavbar() {
 
   async function handleSignOut() {
     setSigningOut(true);
-    await signOut();
+    try {
+      await signOut();
+    } finally {
+      // The bar stays mounted on public pages: never leave the loader up.
+      setSigningOut(false);
+    }
   }
 
   return (
     <>
-      {signingOut && <LoadingDots />}
+      {showSignOutLoader(signingOut, !!user) && <LoadingDots />}
       <header className="sticky top-0 z-50 bg-night text-on-night shadow-[0_8px_24px_-16px_oklch(0.2_0.07_262/0.8)]">
         <div className="mx-auto flex h-16 max-w-7xl items-center gap-6 px-4 sm:px-6 lg:px-8">
           <Link href="/" className={cn("flex shrink-0 items-center gap-2 rounded-lg", FOCUS_ON_NIGHT)}>

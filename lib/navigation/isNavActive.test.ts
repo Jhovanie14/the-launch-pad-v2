@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isNavActive } from "./isNavActive";
+import { isNavActive, showSignOutLoader } from "./isNavActive";
 
 describe("isNavActive", () => {
   it('"/" only matches itself', () => {
@@ -20,5 +20,13 @@ describe("isNavActive", () => {
 
   it("/blog matches a post", () => {
     expect(isNavActive("/blog/some-post", "/blog")).toBe(true);
+  });
+});
+
+describe("showSignOutLoader", () => {
+  it("shows only while signing out and still signed in", () => {
+    expect(showSignOutLoader(true, true)).toBe(true);
+    expect(showSignOutLoader(true, false)).toBe(false);
+    expect(showSignOutLoader(false, true)).toBe(false);
   });
 });
