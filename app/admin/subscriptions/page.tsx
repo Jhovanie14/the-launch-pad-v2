@@ -1,4 +1,3 @@
-import { getUserProfile } from "@/auth/actions";
 import SubscriptionView from "./subscription-view";
 
 export default async function SubscriptionPage() {

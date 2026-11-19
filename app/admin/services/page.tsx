@@ -1,4 +1,3 @@
-import { AdminSidebar } from "@/components/admin/sidebar";
 import { getUserProfile } from "@/auth/actions";
 import ServicesView from "./services-view";
 import type { Metadata } from "next";

@@ -1,8 +1,5 @@
 import Link from "next/link";
 import {
-  Instagram,
-  Facebook,
-  Twitter,
   MapPin,
   Phone,
   Mail,

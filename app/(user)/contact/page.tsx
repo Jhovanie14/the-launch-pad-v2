@@ -1,10 +1,6 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
 import { Mail, Phone, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { HelpForm } from "@/components/user/help-form";

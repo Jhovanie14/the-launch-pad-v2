@@ -25,7 +25,6 @@ import {
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import LoadingDots from "@/components/loading";
 
 type AddOns = {
   id: string;

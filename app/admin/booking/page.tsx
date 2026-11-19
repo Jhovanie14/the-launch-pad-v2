@@ -1,5 +1,3 @@
-import { AdminSidebar } from "@/components/admin/sidebar";
-import { getUserProfile } from "@/auth/actions";
 import BookingsView from "./booking-view";
 
 export default async function ServicesPage() {

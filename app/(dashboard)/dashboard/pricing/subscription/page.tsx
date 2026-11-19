@@ -2,7 +2,6 @@
 "use client";
 import { Suspense } from "react";
 import SubscriptionCart from "@/components/subscription/SubscriptionCart";
-import LoadingDots from "@/components/loading";
 import { Loader2 } from "lucide-react";
 
 function SubscriptionCartPage() {

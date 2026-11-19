@@ -1,6 +1,5 @@
 "use client";
 
-import { Play } from "lucide-react";
 import { useState } from "react";
 
 export function VideoSection() {

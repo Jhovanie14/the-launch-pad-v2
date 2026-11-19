@@ -14,7 +14,6 @@ import { createClient } from "@/utils/supabase/client";
 import {
   Car,
   CheckCircle,
-  Clock,
   User,
   Mail,
   Phone,
