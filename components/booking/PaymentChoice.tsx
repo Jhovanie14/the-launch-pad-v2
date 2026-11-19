@@ -1,16 +1,9 @@
 "use client";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Banknote, CreditCard } from "lucide-react";
+import { cn } from "@/lib/utils";
+import BookingSheet from "./ui/BookingSheet";
+import { FLAME_BUTTON, GHOST_BUTTON } from "./ui/focus";
 
 interface PaymentChoiceProps {
   open: boolean;
@@ -22,99 +15,67 @@ interface PaymentChoiceProps {
   onConfirm: () => void;
 }
 
-export default function PaymentChoice({
-  open,
-  onOpenChange,
-  allowCash,
-  value,
-  onChange,
-  onConfirm,
-}: PaymentChoiceProps) {
+const OPTIONS = [
+  { value: "card" as const, label: "Pay by card", detail: "Secure checkout now", icon: CreditCard },
+  { value: "cash" as const, label: "Pay cash", detail: "Pay when you arrive", icon: Banknote },
+];
+
+export default function PaymentChoice({ open, onOpenChange, allowCash, value, onChange, onConfirm }: PaymentChoiceProps) {
+  const options = allowCash ? OPTIONS : OPTIONS.filter((o) => o.value === "card");
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Choose Payment Method</AlertDialogTitle>
-          <AlertDialogDescription>
-            Please select how you’d like to pay for your booking.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <div
-          className={`grid ${allowCash ? "grid-cols-2" : "grid-cols-1"} gap-4 mt-4`}
-        >
-          {/* Pay with Card */}
-          <label
-            className={`flex items-center justify-center gap-1 p-2 border rounded-2xl cursor-pointer transition-all ${
-              value === "card"
-                ? "border-blue-600 bg-blue-50 shadow-sm"
-                : "border-gray-200 hover:border-gray-400"
-            }`}
-          >
-            <input
-              type="radio"
-              name="payment"
-              value="card"
-              checked={value === "card"}
-              onChange={() => onChange("card")}
-              className="hidden"
-            />
-            <CreditCard
-              className={`w-6 h-6 ${
-                value === "card" ? "text-blue-600" : "text-gray-500"
-              }`}
-            />
-            <span
-              className={`text-sm font-medium ${
-                value === "card" ? "text-blue-700" : "text-gray-700"
-              }`}
-            >
-              Pay with Card
-            </span>
-          </label>
-
-          {/* Pay with Cash */}
-          {allowCash && (
-            <label
-              className={`flex items-center justify-center gap-1 p-2 border rounded-2xl cursor-pointer transition-all ${
-                value === "cash"
-                  ? "border-green-600 bg-green-50 shadow-sm"
-                  : "border-gray-200 hover:border-gray-400"
-              }`}
-            >
-              <input
-                type="radio"
-                name="payment"
-                value="cash"
-                checked={value === "cash"}
-                onChange={() => onChange("cash")}
-                className="hidden"
-              />
-              <Banknote
-                className={`w-6 h-6 ${
-                  value === "cash" ? "text-green-600" : "text-gray-500"
-                }`}
-              />
-              <span
-                className={`text-sm font-medium ${
-                  value === "cash" ? "text-green-700" : "text-gray-700"
-                }`}
+    <BookingSheet
+      open={open}
+      onOpenChange={onOpenChange}
+      title="How would you like to pay?"
+      footer={
+        <>
+          <button type="button" onClick={onConfirm} className={cn(FLAME_BUTTON, "w-full")}>
+            Continue
+          </button>
+          <button type="button" onClick={() => onOpenChange(false)} className={cn(GHOST_BUTTON, "w-full")}>
+            Cancel
+          </button>
+        </>
+      }
+    >
+      <fieldset>
+        <legend className="sr-only">Payment method</legend>
+        <div className="grid gap-2">
+          {options.map(({ value: v, label, detail, icon: Icon }) => {
+            const checked = value === v;
+            return (
+              <label
+                key={v}
+                className={cn(
+                  "flex min-h-14 cursor-pointer items-center gap-3 rounded-xl bg-paper px-4 py-3 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-brand-blue",
+                  checked ? "ring-2 ring-night" : "ring-1 ring-line hover:ring-ink-subtle"
+                )}
               >
-                Pay with Cash
-              </span>
-            </label>
-          )}
+                <input
+                  type="radio"
+                  name="payment"
+                  value={v}
+                  checked={checked}
+                  onChange={() => onChange(v)}
+                  className="sr-only"
+                />
+                <Icon className={cn("size-6 shrink-0", checked ? "text-ink" : "text-ink-subtle")} aria-hidden />
+                <span className="flex-1">
+                  <span className="block text-base font-semibold">{label}</span>
+                  <span className="block text-sm text-ink-muted">{detail}</span>
+                </span>
+                <span
+                  aria-hidden
+                  className={cn(
+                    "size-5 shrink-0 rounded-full",
+                    checked ? "border-[6px] border-night bg-paper" : "ring-2 ring-inset ring-line"
+                  )}
+                />
+              </label>
+            );
+          })}
         </div>
-
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            className="bg-blue-900 hover:bg-blue-800"
-            onClick={onConfirm}
-          >
-            Confirm
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+      </fieldset>
+    </BookingSheet>
   );
 }
