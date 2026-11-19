@@ -15,7 +15,7 @@ export async function getServicesPageData(): Promise<ServicesPageModel> {
       .select("id, name, duration, price, features, category")
       .eq("is_active", true)
       .order("created_at", { ascending: true }),
-    db.from("subscription_plans").select("name, monthly_price, is_commercial"),
+    db.from("subscription_plans").select("name, monthly_price, is_commercial, is_active"),
   ]);
   if (services.error) console.error("Services page: service lookup failed", services.error);
   if (plans.error) console.error("Services page: plan lookup failed", plans.error);

@@ -75,4 +75,18 @@ describe("buildServicesPage", () => {
     const m = build({ services: [svc("a", "A", 10, 10, "quick service", null)] });
     expect(m.categories[0].items[0].features).toEqual([]);
   });
+
+  it("sale rounding matches what booking charges ($29.50 → $28.02)", () => {
+    const m = build({ services: [svc("h", "Half", 29.5, 10, "quick service"), svc("g", "Other", 49.5, 10, "quick service")] });
+    expect(m.categories[0].items.map((i) => i.salePrice)).toEqual([28.02, 47.02]);
+  });
+
+  it("a retired plan is never the membership From", () => {
+    const m = build({ plans: [{ name: "Old Cheap", monthly_price: 19.99, is_commercial: false, is_active: false }, ...plans] });
+    expect(m.membershipFrom).toEqual({ price: 39.99, planName: "Quick Service" });
+  });
+
+  it("category slugs are valid ids (no spaces)", () => {
+    expect(build().categories.map((c) => c.slug)).toEqual(["quick-service", "express-detail"]);
+  });
 });

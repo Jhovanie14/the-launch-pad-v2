@@ -12,6 +12,8 @@ export interface MenuItem {
 
 export interface MenuCategory {
   key: string;
+  /** A valid HTML id fragment for the category ("quick-service"). */
+  slug: string;
   label: string;
   minDuration: number;
   maxDuration: number;
@@ -45,12 +47,14 @@ export function buildServicesPage(input: {
     features: string[] | null;
     category: string | null;
   }[];
-  plans: { name: string; monthly_price: number | string; is_commercial: boolean | null }[];
+  plans: { name: string; monthly_price: number | string; is_commercial: boolean | null; is_active?: boolean | null }[];
   saleActive: boolean;
   saleDiscount: number;
 }): ServicesPageModel {
   const { saleActive, saleDiscount } = input;
-  const onSale = (price: number) => Math.round(price * (1 - saleDiscount) * 100) / 100;
+  // Same rounding booking charges with (applyHolidaySale, then toFixed(2) in
+  // computeBookingAmount), so a page price never differs from the charge by a cent.
+  const onSale = (price: number) => Number((price * (1 - saleDiscount)).toFixed(2));
 
   const byKey = new Map<string, MenuItem[]>();
   const firstSeen: string[] = [];
@@ -80,6 +84,7 @@ export function buildServicesPage(input: {
     const durations = items.map((i) => i.duration);
     return {
       key,
+      slug: key.replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "other",
       label: sentenceCase(key),
       minDuration: Math.min(...durations),
       maxDuration: Math.max(...durations),
@@ -89,7 +94,7 @@ export function buildServicesPage(input: {
 
   const shown = categories.flatMap((c) => c.items).map((i) => i.salePrice ?? i.price);
   const personalPlans = input.plans
-    .filter((p) => !isCommercialPlan(p))
+    .filter((p) => p.is_active !== false && !isCommercialPlan(p))
     .map((p) => ({ price: Number(p.monthly_price), planName: p.name }))
     .filter((p) => p.price > 0)
     .sort((a, b) => a.price - b.price);

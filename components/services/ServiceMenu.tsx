@@ -31,9 +31,9 @@ export default function ServiceMenu({ model }: { model: ServicesPageModel }) {
       ) : (
         <div className="space-y-12">
           {model.categories.map((category) => (
-            <section key={category.key} aria-labelledby={`cat-${category.key}`}>
+            <section key={category.key} aria-labelledby={`cat-${category.slug}`}>
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                <h2 id={`cat-${category.key}`} className="text-2xl font-black tracking-[-0.025em] sm:text-3xl">
+                <h2 id={`cat-${category.slug}`} className="text-2xl font-black tracking-[-0.025em] sm:text-3xl">
                   {category.label}
                 </h2>
                 <span className="text-base text-ink-muted">{durationRange(category)}</span>
@@ -71,8 +71,8 @@ export default function ServiceMenu({ model }: { model: ServicesPageModel }) {
                           </s>
                         )}
                       </p>
-                      <Link href={`/service?service=${item.id}`} className={RING_BUTTON} aria-label={`Book ${item.name}`}>
-                        Book this
+                      <Link href={`/service?service=${item.id}`} className={RING_BUTTON}>
+                        Book this<span className="sr-only">: {item.name}</span>
                       </Link>
                     </div>
                   </li>
