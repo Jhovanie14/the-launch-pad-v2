@@ -23,6 +23,8 @@ export function fakeDb(tables: Record<string, Row[]>) {
     const chain = {
       order: (c: string) => ((orderBy = c), chain),
       range: (from: number, to: number) => ((slice = [from, to]), chain),
+      limit: (n: number) => ((slice = [0, n - 1]), chain),
+      maybeSingle: async () => ({ data: rows()[0] ?? null, error: null }),
       select: () => chain,
       eq: (c: string, v: unknown) => (preds.push((r) => r[c] === v), chain),
       neq: (c: string, v: unknown) => (preds.push((r) => r[c] !== v), chain),
