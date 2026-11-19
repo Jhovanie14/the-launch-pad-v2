@@ -2,6 +2,7 @@
 
 import { useAuth } from "@/context/auth-context";
 import { useSubscription } from "@/hooks/useSubscription";
+import type { BookingInitialData } from "@/lib/booking/loadBookingStep";
 import type { Subscription } from "@/types";
 
 export type BookingVariant = "guest" | "dashboard";
@@ -25,15 +26,40 @@ export interface BookingAuthContext {
   successPath: "/success" | "/dashboard/bookings/success";
 }
 
-// Both route shells call this. For real guests, useAuth/useSubscription
-// no-op to null — which yields the spec's "empty/false" guest context. A
-// logged-in user visiting the guest URLs gets real auth state, preserving the
-// old guest tree's logged-in handling. (The saved-vehicles list used to load
-// here on every step — five queries — and no booking step read it.)
-export function useBookingAuthContext(variant: BookingVariant): BookingAuthContext {
+// Both route shells call this. When the step page loaded sign-in and the
+// membership on the server (`initial`), those are used from the first render
+// and nothing is fetched again. If the server could not load the membership,
+// it falls back to the browser: useAuth/useSubscription, which no-op to null
+// for real guests. A logged-in user visiting the guest URLs gets real auth
+// state either way. If the customer signs out in another tab, the server's
+// values stay for that page; createBooking and the checkout route re-check
+// the session on submit.
+export function useBookingAuthContext(
+  variant: BookingVariant,
+  initial?: BookingInitialData
+): BookingAuthContext {
+  const fromServer = initial !== undefined && initial.subscription !== undefined;
   const { user, isLoading: authLoading } = useAuth();
-  const { subscription, loading: subscriptionLoading } = useSubscription();
+  const { subscription, loading: subscriptionLoading } = useSubscription({ skip: fromServer });
   const dashboard = variant === "dashboard";
+  const paths = {
+    stepBasePath: dashboard ? ("/dashboard/booking" as const) : ("" as const),
+    successPath: dashboard ? ("/dashboard/bookings/success" as const) : ("/success" as const),
+  };
+
+  if (fromServer) {
+    return {
+      variant,
+      isAuthenticated: !!initial.user,
+      userId: initial.user?.id ?? null,
+      userEmail: initial.user?.email ?? null,
+      userFullName: initial.user?.fullName ?? null,
+      subscription: initial.subscription ?? null,
+      ready: true,
+      ...paths,
+    };
+  }
+
   return {
     variant,
     isAuthenticated: !!user,
@@ -42,7 +68,6 @@ export function useBookingAuthContext(variant: BookingVariant): BookingAuthConte
     userFullName: (user?.user_metadata?.full_name as string | undefined) ?? null,
     subscription,
     ready: !authLoading && !subscriptionLoading,
-    stepBasePath: dashboard ? "/dashboard/booking" : "",
-    successPath: dashboard ? "/dashboard/bookings/success" : "/success",
+    ...paths,
   };
 }

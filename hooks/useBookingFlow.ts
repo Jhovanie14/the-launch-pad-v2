@@ -8,9 +8,11 @@ import { checkPromoCode, createBooking } from "@/app/(dashboard)/dashboard/booki
 import { getVehicleDisplay, VehicleDisplay } from "@/app/actions/vehicle";
 import {
   BookingSelection,
+  bookingSelectionKey,
   buildBookingSearch,
   parseBookingSelection,
 } from "@/lib/booking/bookingParams";
+import type { BookingInitialData } from "@/lib/booking/loadBookingStep";
 import { validateAppointment } from "@/lib/booking/appointment";
 import {
   AppliedPromo,
@@ -22,7 +24,8 @@ import type { BookingAuthContext } from "@/hooks/useBookingAuthContext";
 import type { ServicePackage } from "@/lib/data/services";
 import type { AddOnRow, ServicePackageRow } from "@/types/db";
 
-export type BookingStep = "service" | "datetime" | "confirmation";
+import type { BookingStep } from "@/lib/booking/bookingParams";
+export type { BookingStep } from "@/lib/booking/bookingParams";
 
 export interface GuestInfo {
   name: string;
@@ -36,7 +39,16 @@ export interface GuestInfo {
 // URL; this hook resolves it against the DB, exposes display pricing, and owns
 // the submit() branches. The server re-validates price and payment rules on
 // every path regardless of what the client sends.
-export function useBookingFlow(ctx: BookingAuthContext, step: BookingStep) {
+//
+// `initial` is what the step page loaded on the server. While the URL still
+// matches what it loaded (fromServer), it is used as is and nothing is
+// fetched. If the URL moves on without a server render, or the server could
+// not load something, the browser fetches it as before.
+export function useBookingFlow(
+  ctx: BookingAuthContext,
+  step: BookingStep,
+  initial?: BookingInitialData
+) {
   const supabase = createClient();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -46,18 +58,30 @@ export function useBookingFlow(ctx: BookingAuthContext, step: BookingStep) {
     [searchParams]
   );
 
-  const [loading, setLoading] = useState(true);
+  const fromServer =
+    !!initial &&
+    initial.selectionKey !== null &&
+    initial.selectionKey === bookingSelectionKey(selection);
+  const serverCatalog = step === "service" ? initial?.catalog ?? null : null;
+
+  const [loading, setLoading] = useState(
+    !(fromServer && (step !== "service" || serverCatalog))
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submittingRef = useRef(false);
 
   // Catalogs (service step only)
-  const [services, setServices] = useState<ServicePackageRow[]>([]);
-  const [allAddOns, setAllAddOns] = useState<AddOnRow[]>([]);
+  const [services, setServices] = useState<ServicePackageRow[]>(serverCatalog?.services ?? []);
+  const [allAddOns, setAllAddOns] = useState<AddOnRow[]>(serverCatalog?.addOns ?? []);
 
   // Selected entities (resolved from URL params on every step)
-  const [service, setService] = useState<ServicePackageRow | null>(null);
-  const [addOns, setAddOns] = useState<AddOnRow[]>([]);
-  const [vehicleInfo, setVehicleInfo] = useState<VehicleDisplay | null>(null);
+  const [service, setService] = useState<ServicePackageRow | null>(
+    fromServer ? initial!.service : null
+  );
+  const [addOns, setAddOns] = useState<AddOnRow[]>(fromServer ? initial!.addOns : []);
+  const [vehicleInfo, setVehicleInfo] = useState<VehicleDisplay | null>(
+    fromServer ? initial!.vehicleInfo : null
+  );
 
   // Promo (display-side; the server re-validates on submit)
   const [promoCode, setPromoCode] = useState("");
@@ -66,6 +90,12 @@ export function useBookingFlow(ctx: BookingAuthContext, step: BookingStep) {
   // --- Catalog fetch (service step) ---
   useEffect(() => {
     if (step !== "service") return;
+    if (serverCatalog) {
+      setServices(serverCatalog.services);
+      setAllAddOns(serverCatalog.addOns);
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
     (async () => {
       setLoading(true);
@@ -92,11 +122,17 @@ export function useBookingFlow(ctx: BookingAuthContext, step: BookingStep) {
     return () => {
       cancelled = true;
     };
-  }, [step, supabase]);
+  }, [step, supabase, serverCatalog]);
 
   // --- Selected service + add-ons (all steps; resolves URL params) ---
   const addOnIdsKey = selection.addOnIds.join(",");
   useEffect(() => {
+    if (fromServer) {
+      setService(initial!.service);
+      setAddOns(initial!.addOns);
+      if (step !== "service") setLoading(false);
+      return;
+    }
     let cancelled = false;
     (async () => {
       // Both at once: these used to run one after the other on every step.
@@ -117,15 +153,19 @@ export function useBookingFlow(ctx: BookingAuthContext, step: BookingStep) {
     return () => {
       cancelled = true;
     };
-  }, [selection.serviceId, addOnIdsKey, step, supabase]);
+  }, [selection.serviceId, addOnIdsKey, step, supabase, fromServer, initial]);
 
   // --- Vehicle display info (confirmation step) ---
   useEffect(() => {
     if (step !== "confirmation") return;
+    if (fromServer) {
+      setVehicleInfo(initial!.vehicleInfo);
+      return;
+    }
     const { licensePlate, vehicleId } = selection;
     if (!licensePlate && !vehicleId) return;
     getVehicleDisplay({ licensePlate, vehicleId }).then(setVehicleInfo);
-  }, [step, selection.licensePlate, selection.vehicleId]);
+  }, [step, selection.licensePlate, selection.vehicleId, fromServer, initial]);
 
   // --- Is the selected vehicle on the active subscription? The membership
   // (already loaded, with its cars) answers it; no extra query. Same plate

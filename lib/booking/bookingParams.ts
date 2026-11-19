@@ -2,6 +2,8 @@
 // confirmation pass params). These pure helpers are the only place that
 // reads/writes that contract.
 
+export type BookingStep = "service" | "datetime" | "confirmation";
+
 export interface BookingSelection {
   licensePlate: string;
   vehicleId: string;
@@ -34,4 +36,24 @@ export function buildBookingSearch(sel: BookingSelection): string {
   if (sel.date) params.set("date", sel.date);
   if (sel.time) params.set("time", sel.time);
   return params.toString();
+}
+
+/** A server page's searchParams as URLSearchParams (first value of a repeated key). */
+export function searchParamsFromRecord(
+  record: Record<string, string | string[] | undefined>
+): URLSearchParams {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(record)) {
+    const first = Array.isArray(value) ? value[0] : value;
+    if (first !== undefined) params.set(key, first);
+  }
+  return params;
+}
+
+/**
+ * What the server loads for a selection: the car, the service and the add-ons.
+ * Date and time are left out; they need no lookup.
+ */
+export function bookingSelectionKey(sel: BookingSelection): string {
+  return buildBookingSearch({ ...sel, date: null, time: null });
 }

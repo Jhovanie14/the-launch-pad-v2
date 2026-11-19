@@ -18,6 +18,7 @@ import {
 import LoadingDots from "@/components/loading";
 import { useBookingFlow } from "@/hooks/useBookingFlow";
 import type { BookingAuthContext } from "@/hooks/useBookingAuthContext";
+import type { BookingInitialData } from "@/lib/booking/loadBookingStep";
 import type { ServicePackageRow } from "@/types/db";
 import VehiclePicker from "./VehiclePicker";
 import AddOnList from "./AddOnList";
@@ -27,7 +28,13 @@ import {
 } from "@/lib/booking/holidaySale";
 import { isServiceFreeForDisplay } from "@/lib/booking/pricingDisplay";
 
-export default function ServiceStep({ ctx }: { ctx: BookingAuthContext }) {
+export default function ServiceStep({
+  ctx,
+  initial,
+}: {
+  ctx: BookingAuthContext;
+  initial?: BookingInitialData;
+}) {
   const router = useRouter();
   const {
     selection,
@@ -37,7 +44,7 @@ export default function ServiceStep({ ctx }: { ctx: BookingAuthContext }) {
     isVehicleSubscribed,
     planName,
     goToDateTime,
-  } = useBookingFlow(ctx, "service");
+  } = useBookingFlow(ctx, "service", initial);
 
   const [navigating, setNavigating] = useState(false);
   const [addOnOpen, setAddOnOpen] = useState(false);

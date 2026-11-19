@@ -1,19 +1,12 @@
-"use client";
+import BookingStepShell from "@/components/booking/BookingStepShell";
+import { getBookingStepData } from "@/lib/booking/bookingStepRequest";
 
-import { Suspense } from "react";
-import LoadingDots from "@/components/loading";
-import ServiceStep from "@/components/booking/ServiceStep";
-import { useBookingAuthContext } from "@/hooks/useBookingAuthContext";
-
-function DashboardServicePage() {
-  const ctx = useBookingAuthContext("dashboard");
-  return <ServiceStep ctx={ctx} />;
-}
-
-export default function Page() {
-  return (
-    <Suspense fallback={<LoadingDots />}>
-      <DashboardServicePage />
-    </Suspense>
-  );
+// Loads the step on the server, so it opens with its content already there.
+export default async function DashboardServicePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const initial = await getBookingStepData("service", await searchParams);
+  return <BookingStepShell variant="dashboard" step="service" initial={initial} />;
 }

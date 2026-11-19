@@ -1,19 +1,12 @@
-"use client";
+import BookingStepShell from "@/components/booking/BookingStepShell";
+import { getBookingStepData } from "@/lib/booking/bookingStepRequest";
 
-import { Suspense } from "react";
-import LoadingDots from "@/components/loading";
-import ConfirmationStep from "@/components/booking/ConfirmationStep";
-import { useBookingAuthContext } from "@/hooks/useBookingAuthContext";
-
-function GuestConfirmationPage() {
-  const ctx = useBookingAuthContext("guest");
-  return <ConfirmationStep ctx={ctx} />;
-}
-
-export default function Page() {
-  return (
-    <Suspense fallback={<LoadingDots />}>
-      <GuestConfirmationPage />
-    </Suspense>
-  );
+// Loads the step on the server, so it opens with its content already there.
+export default async function GuestConfirmationPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const initial = await getBookingStepData("confirmation", await searchParams);
+  return <BookingStepShell variant="guest" step="confirmation" initial={initial} />;
 }

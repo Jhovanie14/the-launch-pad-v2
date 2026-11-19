@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DayPicker } from "react-day-picker";
@@ -16,15 +16,32 @@ import { useRouter } from "next/navigation";
 import LoadingDots from "@/components/loading";
 import { useBookingFlow } from "@/hooks/useBookingFlow";
 import type { BookingAuthContext } from "@/hooks/useBookingAuthContext";
+import type { BookingInitialData } from "@/lib/booking/loadBookingStep";
 import { DETAILING_CLOSED_WEEKDAYS } from "@/lib/booking/detailingDays";
 import { BOOKING_TIME_SLOTS, isSlotPast } from "@/lib/booking/appointment";
+
+const noSubscribe = () => () => {};
 
 // The same slots the server accepts (lib/booking/appointment.ts).
 const timeSlots: string[] = [...BOOKING_TIME_SLOTS];
 
-export default function DateTimeStep({ ctx }: { ctx: BookingAuthContext }) {
+export default function DateTimeStep({
+  ctx,
+  initial,
+}: {
+  ctx: BookingAuthContext;
+  initial?: BookingInitialData;
+}) {
   const router = useRouter();
-  const { duration, goToConfirmation } = useBookingFlow(ctx, "datetime");
+  const { duration, goToConfirmation } = useBookingFlow(ctx, "datetime", initial);
+  // The calendar works out "today" from the clock. The server runs in UTC, so
+  // from 6 pm Houston time it would draw tomorrow as today (and on a month's
+  // last evening, the wrong month). Draw the calendar in the browser only.
+  const inBrowser = useSyncExternalStore(
+    noSubscribe,
+    () => true,
+    () => false
+  );
 
   const [navigating, setNavigating] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>();
@@ -149,6 +166,9 @@ export default function DateTimeStep({ ctx }: { ctx: BookingAuthContext }) {
               </CardHeader>
               <CardContent>
                 <div className="flex justify-center">
+                  {!inBrowser ? (
+                    <div className="h-[22rem]" aria-hidden="true" />
+                  ) : (
                   <DayPicker
                     mode="single"
                     selected={selectedDate}
@@ -175,6 +195,7 @@ export default function DateTimeStep({ ctx }: { ctx: BookingAuthContext }) {
                       )
                     }
                   />
+                  )}
                 </div>
               </CardContent>
             </Card>
