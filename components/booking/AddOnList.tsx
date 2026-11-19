@@ -1,13 +1,11 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { AddOnRow, ServicePackageRow } from "@/types/db";
-import {
-  HOLIDAY_SALE_ACTIVE,
-  HOLIDAY_SALE_DISCOUNT,
-} from "@/lib/booking/holidaySale";
+import { HOLIDAY_SALE_ACTIVE } from "@/lib/booking/holidaySale";
 import { applySale } from "@/lib/booking/pricingDisplay";
+import BookingSheet from "./ui/BookingSheet";
+import { FLAME_BUTTON, GHOST_BUTTON } from "./ui/focus";
 
 interface AddOnListProps {
   open: boolean;
@@ -23,6 +21,8 @@ interface AddOnListProps {
   onNext: () => void;
 }
 
+const money = (n: number) => `$${n.toFixed(2)}`;
+
 export default function AddOnList({
   open,
   onClose,
@@ -35,14 +35,11 @@ export default function AddOnList({
   onSkip,
   onNext,
 }: AddOnListProps) {
-  if (!open) return null;
-
   // Hide add-ons already included as features of the selected service
   const visibleAddOns = addOns.filter((a) => {
     const serviceFeatures = service.features ?? [];
     return !serviceFeatures.some(
-      (feature) =>
-        feature.toLowerCase().trim() === (a.name ?? "").toLowerCase().trim()
+      (feature) => feature.toLowerCase().trim() === (a.name ?? "").toLowerCase().trim()
     );
   });
 
@@ -52,107 +49,67 @@ export default function AddOnList({
   }, 0);
   const originalTotal = Number(service.price) + addOnsOriginal;
   const finalTotal = applySale(serviceDisplayPrice) + applySale(addOnsOriginal);
+  const free = isServiceFree && addOnsOriginal === 0;
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 className="text-2xl font-semibold text-gray-900">Add-ons</h2>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            <X className="w-5 h-5" />
-          </Button>
-        </div>
-
-        <div className="overflow-y-auto max-h-96">
-          <div className="divide-y divide-gray-100">
-            {visibleAddOns.map((a) => {
-              const isSelected = selectedIds.includes(a.id);
-              return (
-                <label
-                  key={a.id}
-                  className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 cursor-pointer"
-                >
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-center space-x-3">
-                      <h4 className="text-2xl font-medium text-black">
-                        {a.name}
-                      </h4>
-                      <p className="text-sm font-semibold text-yellow-500">
-                        {a.duration} (min)
-                      </p>
-                    </div>
-                    <p className="font-light text-black text-sm">
-                      {a.description}
-                    </p>
-
-                    <p className="text-xl font-semibold text-gray-700">
-                      ${a.price.toFixed(2)}
-                    </p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    onChange={() => onToggle(a.id)}
-                    className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                </label>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="border-t border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="font-semibold text-gray-900">{service.name}</h4>
-              {isServiceFree && addOnsOriginal === 0 ? (
-                <div className="flex flex-col">
-                  <p className="text-xl font-bold text-green-600">FREE</p>
-                  <span className="text-xs text-gray-500 line-through">
-                    ${originalTotal.toFixed(2)}
-                  </span>
-                </div>
-              ) : HOLIDAY_SALE_ACTIVE ? (
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500 line-through">
-                      ${originalTotal.toFixed(2)}
-                    </span>
-                    <span className="text-xs text-red-600 font-semibold bg-red-50 px-2 py-0.5 rounded">
-                      {Math.round(HOLIDAY_SALE_DISCOUNT * 100)}% OFF
-                    </span>
-                  </div>
-                  <p className="text-xl font-bold text-red-600">
-                    ${finalTotal.toFixed(2)}
-                  </p>
-                </div>
-              ) : (
-                <p className="text-xl font-bold text-gray-900">
-                  ${finalTotal.toFixed(2)}
-                </p>
+    <BookingSheet
+      open={open}
+      onOpenChange={(o) => !o && onClose()}
+      title="Add extras"
+      description={`Optional. Anything you'd like on top of ${service.name}.`}
+      footer={
+        <>
+          <div className="flex items-baseline justify-between gap-3 pb-2">
+            <span className="text-sm font-semibold text-ink-muted">{service.name}</span>
+            <span className="text-right">
+              {!free && HOLIDAY_SALE_ACTIVE && originalTotal !== finalTotal && (
+                <span className="mr-2 text-sm text-ink-muted line-through">{money(originalTotal)}</span>
               )}
-            </div>
-            {selectedIds.length === 0 ? (
-              <Button variant="outline" onClick={onSkip} size="lg">
-                Skip
-              </Button>
-            ) : (
-              <Button
-                onClick={onNext}
-                size="lg"
-                className="bg-blue-900 hover:bg-blue-800"
-              >
-                Next
-              </Button>
-            )}
+              <span className="text-lg font-black tracking-[-0.02em]">{free ? "Free" : money(finalTotal)}</span>
+            </span>
           </div>
-        </div>
-      </div>
-    </div>
+          {selectedIds.length === 0 ? (
+            <button type="button" onClick={onSkip} className={cn(FLAME_BUTTON, "w-full")}>
+              Continue without extras
+            </button>
+          ) : (
+            <>
+              <button type="button" onClick={onNext} className={cn(FLAME_BUTTON, "w-full")}>
+                Continue
+              </button>
+              <button type="button" onClick={onSkip} className={cn(GHOST_BUTTON, "w-full")}>
+                Skip extras
+              </button>
+            </>
+          )}
+        </>
+      }
+    >
+      <ul className="divide-y divide-line-soft">
+        {visibleAddOns.map((a) => {
+          const isSelected = selectedIds.includes(a.id);
+          return (
+            <li key={a.id}>
+              <label className="flex min-h-14 cursor-pointer items-center gap-3 py-3">
+                <span className="min-w-0 flex-1">
+                  <span className="block text-base font-semibold">{a.name}</span>
+                  <span className="block text-sm text-ink-muted">
+                    {a.duration ? `${a.duration} min` : "No extra time"}
+                    {a.description ? ` · ${a.description}` : ""}
+                  </span>
+                </span>
+                <span className="shrink-0 text-base font-bold">{money(Number(a.price))}</span>
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onChange={() => onToggle(a.id)}
+                  className="size-6 shrink-0 cursor-pointer rounded accent-night focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue"
+                />
+              </label>
+            </li>
+          );
+        })}
+      </ul>
+    </BookingSheet>
   );
 }
