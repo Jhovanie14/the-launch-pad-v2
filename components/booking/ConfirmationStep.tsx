@@ -27,6 +27,7 @@ import {
 import SubscriptionUpsellDialog from "@/components/subscription-upsell-dialog";
 import { useBookingFlow, GuestInfo } from "@/hooks/useBookingFlow";
 import type { BookingAuthContext } from "@/hooks/useBookingAuthContext";
+import type { BookingInitialData } from "@/lib/booking/loadBookingStep";
 import BookingSummary from "./BookingSummary";
 import PaymentChoice from "./PaymentChoice";
 import { HOLIDAY_SALE_ACTIVE, HOLIDAY_SALE_DISCOUNT } from "@/lib/booking/holidaySale";
@@ -47,7 +48,13 @@ const validateGuestInfo = (info: GuestInfo) => {
   return errors;
 };
 
-export default function ConfirmationStep({ ctx }: { ctx: BookingAuthContext }) {
+export default function ConfirmationStep({
+  ctx,
+  initial,
+}: {
+  ctx: BookingAuthContext;
+  initial?: BookingInitialData;
+}) {
   const router = useRouter();
   const {
     selection,
@@ -65,7 +72,7 @@ export default function ConfirmationStep({ ctx }: { ctx: BookingAuthContext }) {
     isSubmitting,
     submit,
     ready,
-  } = useBookingFlow(ctx, "confirmation");
+  } = useBookingFlow(ctx, "confirmation", initial);
 
   const [paymentMethod, setPaymentMethod] = useState<"card" | "cash">("card");
   const [showPaymentModal, setShowPaymentModal] = useState(false);

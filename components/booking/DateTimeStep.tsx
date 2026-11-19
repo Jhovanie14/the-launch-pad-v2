@@ -16,15 +16,22 @@ import { useRouter } from "next/navigation";
 import LoadingDots from "@/components/loading";
 import { useBookingFlow } from "@/hooks/useBookingFlow";
 import type { BookingAuthContext } from "@/hooks/useBookingAuthContext";
+import type { BookingInitialData } from "@/lib/booking/loadBookingStep";
 import { DETAILING_CLOSED_WEEKDAYS } from "@/lib/booking/detailingDays";
 import { BOOKING_TIME_SLOTS, isSlotPast } from "@/lib/booking/appointment";
 
 // The same slots the server accepts (lib/booking/appointment.ts).
 const timeSlots: string[] = [...BOOKING_TIME_SLOTS];
 
-export default function DateTimeStep({ ctx }: { ctx: BookingAuthContext }) {
+export default function DateTimeStep({
+  ctx,
+  initial,
+}: {
+  ctx: BookingAuthContext;
+  initial?: BookingInitialData;
+}) {
   const router = useRouter();
-  const { duration, goToConfirmation } = useBookingFlow(ctx, "datetime");
+  const { duration, goToConfirmation } = useBookingFlow(ctx, "datetime", initial);
 
   const [navigating, setNavigating] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>();
