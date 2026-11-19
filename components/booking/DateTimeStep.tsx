@@ -1,17 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useSyncExternalStore } from "react";
 import { DayPicker } from "react-day-picker";
-import "react-day-picker/style.css";
-import {
-  ArrowLeft,
-  Calendar,
-  CheckCircle2,
-  Clock,
-  PackageCheck,
-} from "lucide-react";
 import { useRouter } from "next/navigation";
 import LoadingDots from "@/components/loading";
 import { useBookingFlow } from "@/hooks/useBookingFlow";
@@ -19,11 +9,52 @@ import type { BookingAuthContext } from "@/hooks/useBookingAuthContext";
 import type { BookingInitialData } from "@/lib/booking/loadBookingStep";
 import { DETAILING_CLOSED_WEEKDAYS } from "@/lib/booking/detailingDays";
 import { BOOKING_TIME_SLOTS, isSlotPast } from "@/lib/booking/appointment";
+import { cn } from "@/lib/utils";
+import StepLayout from "./ui/StepLayout";
+import StepProgress from "./ui/StepProgress";
+import { FLAME_BUTTON, FOCUS_ON_LIGHT, SURFACE } from "./ui/focus";
 
 const noSubscribe = () => () => {};
 
 // The same slots the server accepts (lib/booking/appointment.ts).
 const timeSlots: string[] = [...BOOKING_TIME_SLOTS];
+
+const formatTime = (time: string) => {
+  const [hours, minutes] = time.split(":").map(Number);
+  const period = hours >= 12 ? "PM" : "AM";
+  return `${hours % 12 || 12}:${minutes.toString().padStart(2, "0")} ${period}`;
+};
+
+const formatLocaleDate = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+
+// react-day-picker v9 class names, on the brand tokens (no rdp stylesheet).
+const CALENDAR_CLASSES = {
+  root: "w-full",
+  months: "relative",
+  month: "w-full",
+  month_caption: "flex h-10 items-center",
+  caption_label: "text-lg font-black tracking-[-0.02em]",
+  nav: "absolute right-0 top-0 flex gap-1",
+  button_previous: cn("inline-flex size-10 items-center justify-center rounded-lg hover:bg-line-soft disabled:opacity-40", FOCUS_ON_LIGHT),
+  button_next: cn("inline-flex size-10 items-center justify-center rounded-lg hover:bg-line-soft disabled:opacity-40", FOCUS_ON_LIGHT),
+  chevron: "size-5 fill-ink",
+  month_grid: "mt-2 w-full border-collapse",
+  weekdays: "",
+  weekday: "pb-1 text-xs font-semibold text-ink-subtle",
+  week: "",
+  day: "p-0.5 text-center",
+  day_button: cn(
+    "mx-auto flex size-10 items-center justify-center rounded-lg text-base font-semibold tabular-nums transition-colors hover:bg-line-soft motion-reduce:transition-none",
+    FOCUS_ON_LIGHT
+  ),
+  selected: "[&>button]:bg-night [&>button]:text-on-night [&>button]:hover:bg-night",
+  today: "[&>button]:ring-1 [&>button]:ring-inset [&>button]:ring-line",
+  disabled:
+    "[&>button]:cursor-not-allowed [&>button]:font-normal [&>button]:text-ink-subtle/50 [&>button]:line-through [&>button]:hover:bg-transparent",
+  outside: "invisible",
+  hidden: "invisible",
+};
 
 export default function DateTimeStep({
   ctx,
@@ -33,288 +64,109 @@ export default function DateTimeStep({
   initial?: BookingInitialData;
 }) {
   const router = useRouter();
-  const { duration, goToConfirmation } = useBookingFlow(ctx, "datetime", initial);
+  const { service, pricing, duration, goToConfirmation } = useBookingFlow(ctx, "datetime", initial);
   // The calendar works out "today" from the clock. The server runs in UTC, so
   // from 6 pm Houston time it would draw tomorrow as today (and on a month's
   // last evening, the wrong month). Draw the calendar in the browser only.
-  const inBrowser = useSyncExternalStore(
-    noSubscribe,
-    () => true,
-    () => false
-  );
+  const inBrowser = useSyncExternalStore(noSubscribe, () => true, () => false);
 
   const [navigating, setNavigating] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
-
-  const bottomRef = useRef<HTMLDivElement | null>(null);
-  const summaryRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (selectedDate && bottomRef.current) {
-      setTimeout(() => {
-        bottomRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-      }, 100);
-    }
-  }, [selectedDate]);
-
-  useEffect(() => {
-    if (selectedTime && summaryRef.current) {
-      // Only scroll on mobile/tablet screens
-      if (window.innerWidth < 1024) {
-        setTimeout(() => {
-          summaryRef.current?.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-          });
-        }, 100);
-      }
-    }
-  }, [selectedTime]);
-
-  useEffect(() => {
-    if (selectedDate) {
-      setAvailableSlots(timeSlots);
-    }
-  }, [selectedDate]);
-
-  const handleSelectTime = (time: string) => {
-    setSelectedTime(time);
-  };
-
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
-
-  const formatTime = (time: string) => {
-    const [hours, minutes] = time.split(":").map(Number);
-    const period = hours >= 12 ? "PM" : "AM";
-    const formattedHours = hours % 12 || 12;
-    return `${formattedHours}:${minutes.toString().padStart(2, "0")} ${period}`;
-  };
-
-  const formatLocaleDate = (date: Date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  };
 
   // A slot that has started is greyed out, judged by the shop's clock in
   // Houston rather than the visitor's device (same rule the server applies).
-  const isPastTime = (time: string) =>
-    !!selectedDate && isSlotPast(formatLocaleDate(selectedDate), time);
+  const isPastTime = (time: string) => !!selectedDate && isSlotPast(formatLocaleDate(selectedDate), time);
 
   const handleContinue = () => {
     if (!selectedDate || !selectedTime) return;
     setNavigating(true);
-    goToConfirmation({
-      date: formatLocaleDate(selectedDate),
-      time: selectedTime,
-    });
+    goToConfirmation({ date: formatLocaleDate(selectedDate), time: selectedTime });
   };
 
   if (navigating) {
     return <LoadingDots />;
   }
 
+  const priceText = pricing.isServiceFree && pricing.finalTotal === 0 ? "Free with your membership" : `$${pricing.saleTotal.toFixed(2)}`;
+  const summaryTitle =
+    selectedDate && selectedTime
+      ? `${selectedDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })} · ${formatTime(selectedTime)}`
+      : "Pick a day and time";
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="bg-card border-b border-border">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground hover:text-foreground"
-              onClick={() => router.back()}
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
-            </Button>
-            <div className="text-center">
-              <h1 className="text-2xl font-semibold text-foreground font-sans">
-                Select Date & Time
-              </h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                Choose your preferred appointment slot
-              </p>
-            </div>
-            <div className="w-16" /> {/* Spacer for centering */}
-          </div>
-        </div>
-      </div>
+    <StepLayout
+      above={ctx.variant === "dashboard" ? <StepProgress current={2} tone="canvas" className="mb-5" /> : undefined}
+      back={{
+        label: service ? `${service.name} · ${duration} min` : "Back",
+        onClick: () => router.back(),
+      }}
+      title="Pick a day and time"
+      action={{
+        summaryTitle,
+        summaryDetail: service ? `${service.name} · ${priceText}` : undefined,
+        button: (
+          <button type="button" disabled={!selectedDate || !selectedTime} onClick={handleContinue} className={FLAME_BUTTON}>
+            Continue
+          </button>
+        ),
+      }}
+    >
+      <p className="text-base text-ink-muted">Express detailing is open Thursday to Sunday.</p>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
-            <Card className="border-border shadow-sm">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-xl font-semibold text-foreground flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-primary" />
-                  Select Your Date
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex justify-center">
-                  {!inBrowser ? (
-                    <div className="h-[22rem]" aria-hidden="true" />
-                  ) : (
-                  <DayPicker
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={setSelectedDate}
-                    disabled={[
-                      { before: new Date() },
-                      { dayOfWeek: [...DETAILING_CLOSED_WEEKDAYS] },
-                    ]}
-                    className="rdp-custom"
-                    footer={
-                      selectedDate ? (
-                        <div className="text-center mt-4 p-3 bg-muted rounded-lg">
-                          <span className="text-sm font-medium text-foreground">
-                            Selected: {selectedDate.toLocaleDateString()}
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="text-center mt-4 p-3 text-muted-foreground">
-                          <span className="text-sm">Please select a date</span>
-                          <p className="text-xs mt-1">
-                            Detailing is available Thursday – Sunday
-                          </p>
-                        </div>
-                      )
-                    }
-                  />
+      <section aria-label="Day" className={cn(SURFACE, "p-4 sm:p-5")}>
+        {!inBrowser ? (
+          <div className="h-[22rem]" aria-hidden="true" />
+        ) : (
+          <DayPicker
+            mode="single"
+            selected={selectedDate}
+            onSelect={(d) => {
+              setSelectedDate(d);
+              setSelectedTime(null);
+            }}
+            disabled={[{ before: new Date() }, { dayOfWeek: [...DETAILING_CLOSED_WEEKDAYS] }]}
+            classNames={CALENDAR_CLASSES}
+          />
+        )}
+      </section>
+
+      <section aria-labelledby="slots-title" className={cn(SURFACE, "p-4 sm:p-5")}>
+        <h2 id="slots-title" className="text-base font-bold">
+          {selectedDate
+            ? selectedDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })
+            : "Times"}
+        </h2>
+        {selectedDate ? (
+          <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
+            {timeSlots.map((time) => {
+              const isDisabled = isPastTime(time);
+              const isSelected = selectedTime === time;
+              return (
+                <button
+                  key={time}
+                  type="button"
+                  aria-pressed={isSelected}
+                  disabled={isDisabled}
+                  onClick={() => setSelectedTime(time)}
+                  className={cn(
+                    "h-11 rounded-lg text-sm font-semibold tabular-nums transition-colors motion-reduce:transition-none",
+                    isSelected
+                      ? "bg-night text-on-night"
+                      : "bg-paper ring-1 ring-inset ring-line hover:bg-line-soft",
+                    "disabled:cursor-not-allowed disabled:bg-paper disabled:text-ink-subtle/50 disabled:line-through disabled:hover:bg-paper",
+                    FOCUS_ON_LIGHT
                   )}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card ref={bottomRef} className="border-border shadow-sm">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-xl font-semibold text-foreground flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-primary" />
-                  Available Time Slots
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {selectedDate ? (
-                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                    {availableSlots.map((time) => {
-                      const isDisabled = isPastTime(time);
-                      const isSelected = selectedTime === time;
-                      return (
-                        <Button
-                          key={time}
-                          onClick={() => !isDisabled && handleSelectTime(time)}
-                          variant={isSelected ? "default" : "outline"}
-                          size="sm"
-                          disabled={isDisabled}
-                          className={`h-12 font-medium transition-all duration-200 ${
-                            isSelected
-                              ? "bg-blue-900 hover:bg-blue-900/90 text-primary-foreground shadow-md scale-105 scale-text"
-                              : isDisabled
-                                ? "opacity-40 cursor-not-allowed"
-                                : "hover:bg-blue-900 hover:text-primary-foreground hover:border-primary/50"
-                          }`}
-                        >
-                          {formatTime(time)}
-                        </Button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <Clock className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p className="text-lg font-medium">Select a date first</p>
-                    <p className="text-sm">
-                      Available time slots will appear here
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                >
+                  {formatTime(time)}
+                </button>
+              );
+            })}
           </div>
-
-          <div ref={summaryRef} className="space-y-6">
-            {/* Progress Indicator */}
-            <Card className="border-border shadow-sm">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg font-semibold text-foreground">
-                  Booking Progress
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-3 text-muted-foreground">
-                  <CheckCircle2 className="w-5 h-5 text-primary" />
-                  <span className="text-sm">Service Package Selected</span>
-                </div>
-                <div className="ml-2 h-6 w-px bg-border" />
-                <div className="flex items-center gap-3 text-primary font-medium">
-                  <Calendar className="w-5 h-5" />
-                  <span className="text-sm">Date and Time</span>
-                </div>
-                <div className="ml-2 h-6 w-px bg-border" />
-                <div className="flex items-center gap-3 text-muted-foreground">
-                  <PackageCheck className="w-5 h-5" />
-                  <span className="text-sm">Confirmation & Payment</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Appointment Summary */}
-            {selectedDate && selectedTime && (
-              <Card className="border-primary/20 bg-primary/5 shadow-sm">
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-primary" />
-                    Selected Appointment
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex flex-col">
-                    <div>
-                      <div className="font-semibold text-foreground text-sm">
-                        {formatDate(selectedDate)}
-                      </div>
-                      <div className="text-primary font-medium text-sm">
-                        {selectedTime}
-                      </div>
-                    </div>
-                    <div className="">
-                      <div className="font-semibold text-foreground text-lg">
-                        {duration} min
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        Service time
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Continue Button */}
-            <Button
-              disabled={!selectedDate || !selectedTime}
-              className="w-full h-12 text-base font-semibold bg-blue-900 hover:bg-blue-900/90 text-primary-foreground shadow-md"
-              onClick={handleContinue}
-            >
-              Continue to Confirmation
-            </Button>
-          </div>
-        </div>
-      </div>
-    </div>
+        ) : (
+          <p className="mt-2 text-base text-ink-muted">Pick a day first, and the times appear here.</p>
+        )}
+      </section>
+    </StepLayout>
   );
 }
