@@ -6,7 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { CalendarPlus, LogOut, Menu } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AccountAvatar } from "@/components/user/AccountAvatar";
 import { useAuth } from "@/context/auth-context";
 import { useBooking } from "@/context/bookingContext";
 import {
@@ -259,11 +259,3 @@ function SheetLink({
   );
 }
 
-function AccountAvatar({ src, initial }: { src?: string | null; initial: string }) {
-  return (
-    <Avatar className="size-9 ring-2 ring-white/25">
-      {src && <AvatarImage src={src} alt="" />}
-      <AvatarFallback className="bg-dusk font-bold text-on-night">{initial}</AvatarFallback>
-    </Avatar>
-  );
-}
