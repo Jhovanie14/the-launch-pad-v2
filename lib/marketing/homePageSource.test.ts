@@ -35,6 +35,16 @@ describe("home page source", () => {
     expect(hits).toEqual([]);
   });
 
+  it("services section sits between the hero and why", () => {
+    const page = readFileSync(PAGE, "utf8");
+    const hero = page.indexOf("<HomeHero");
+    const services = page.indexOf("<HomeServices");
+    const why = page.indexOf("<WhyLaunchPad");
+    expect(hero).toBeGreaterThan(-1);
+    expect(services).toBeGreaterThan(hero);
+    expect(why).toBeGreaterThan(services);
+  });
+
   it("the page is a server component", () => {
     expect(readFileSync(PAGE, "utf8")).not.toMatch(/^\s*["']use client["']/);
     expect(existsSync(HOME_DIR)).toBe(true);

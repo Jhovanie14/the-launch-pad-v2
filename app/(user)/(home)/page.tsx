@@ -1,5 +1,6 @@
 import HoursChangeDialog from "@/components/hours-change-dialog";
 import { HomeHero } from "@/components/home/HomeHero";
+import { HomeServices } from "@/components/home/HomeServices";
 import { WhyLaunchPad } from "@/components/home/WhyLaunchPad";
 import { CustomerReviews } from "@/components/home/CustomerReviews";
 import { getServicesPageData } from "@/lib/marketing/servicesPageData";
@@ -15,6 +16,7 @@ export default async function Home() {
       {/* The hours notice: informational, so it shows to every visitor. */}
       <HoursChangeDialog surface="landing" />
       <HomeHero model={model} />
+      <HomeServices />
       <WhyLaunchPad />
       <CustomerReviews />
     </main>
