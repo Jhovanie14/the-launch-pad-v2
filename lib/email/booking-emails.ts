@@ -19,11 +19,12 @@ import {
   text,
 } from "./layout";
 
+import { GOOGLE_REVIEW_URL } from "@/lib/marketing/reviews";
+
 const C = EMAIL_COLORS;
 
 export const DIRECTIONS_URL =
   "https://www.google.com/maps/dir/?api=1&destination=10410+S+Main+St,+Houston,+TX+77025";
-const GOOGLE_REVIEW_URL = "https://g.page/r/CZw2a77VbVUUEBM/review";
 const TIP_URL = "https://buy.stripe.com/bJeaEW32W1WD4tHeq9cwg01";
 const CONTACT_EMAIL = "info@thelaunchpadwash.com";
 
