@@ -27,7 +27,7 @@ export const HOME_SERVICES: HomeService[] = [
     name: "Self-service bays",
     lede: "Wash it your way, any time of the day or night.",
     facts: ["Open 24/7", "High-pressure wash and foam brush", "Spot-free rinse and vacuums", "Pay with coins or tap to pay"],
-    photo: { src: "/self-service-wash-1.jpg", alt: "A freshly washed black car in one of our self-service bays" },
+    photo: { src: "/self-service-bay.jpg", alt: "A freshly washed black car in one of our self-service bays" },
     link: { href: "/self-service", label: "How the bays work" },
   },
   {

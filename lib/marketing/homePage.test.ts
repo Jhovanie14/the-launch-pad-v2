@@ -9,6 +9,8 @@ const NOT_THE_SHOP = [
   "/professional-express-car-detailing.png",
   "/express-detailing-subscription.png",
   "/self-service-wash-2.jpg",
+  // The original shows a stranger's readable plate; self-service-bay.jpg is the blurred copy.
+  "/self-service-wash-1.jpg",
 ];
 
 describe("home services", () => {
@@ -41,7 +43,7 @@ describe("home services", () => {
   it("services use only the real shop photos", () => {
     const srcs = HOME_SERVICES.map((s) => s.photo.src);
     expect(srcs).toEqual([
-      "/self-service-wash-1.jpg",
+      "/self-service-bay.jpg",
       "/professional-express-car-detailing-2.png",
       "/express-detailing-subscription-1.jpg",
     ]);
@@ -52,12 +54,16 @@ describe("home services", () => {
     for (const s of HOME_SERVICES) expect(s.photo.alt.length).toBeGreaterThan(10);
   });
 
-  it("detailing hours match the footer", () => {
+  it("detailing hours match the footer, days and times", () => {
+    const DAY: Record<string, string> = {
+      Mon: "Monday", Tue: "Tuesday", Wed: "Wednesday", Thu: "Thursday", Fri: "Friday", Sat: "Saturday", Sun: "Sunday",
+    };
+    // Footer: "Detailing: Thu–Sun, 9:30 AM–6:30 PM" → "Thursday to Sunday, 9:30 AM–6:30 PM"
+    const footer = SHOP.hours.find((h) => h.startsWith("Detailing: "))!;
+    const [days, time] = footer.slice("Detailing: ".length).split(", ");
+    const [from, to] = days.split("–");
     const detail = HOME_SERVICES.find((s) => s.key === "detail")!;
-    const hours = detail.facts.find((f) => f.includes("AM–"))!;
-    const time = hours.slice(hours.indexOf(", ") + 2);
-    expect(time).toBe("9:30 AM–6:30 PM");
-    expect(SHOP.hours.some((h) => h.startsWith("Detailing") && h.endsWith(time))).toBe(true);
+    expect(detail.facts[0]).toBe(`${DAY[from]} to ${DAY[to]}, ${time}`);
   });
 });
 
