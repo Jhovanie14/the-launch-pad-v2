@@ -10,7 +10,6 @@ const BANNED = ["ready_for_pickup", "orderStatusLabel", "nextActionFor", "produc
 
 // Screens rebuilt later in this plan; each task removes its file from here.
 const NOT_YET_REBUILT = new Set<string>([
-  "app/(user)/products/success/page.tsx", // Task 11
   "app/(dashboard)/dashboard/orders/page.tsx", // Task 13
   "app/admin/orders/orders-view.tsx", // Task 14
   "lib/products/orderStatus.ts", // deleted in Task 14, with its last importer

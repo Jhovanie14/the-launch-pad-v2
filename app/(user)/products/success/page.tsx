@@ -1,136 +1,100 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CheckCircle, Package, Truck } from "lucide-react";
 import { stripe } from "@/lib/stripe/stripe";
-import { createAdminClient } from "@/utils/supabase/admin";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { orderStatusLabel } from "@/lib/products/orderStatus";
+import { createClient } from "@/utils/supabase/server";
+import { cn } from "@/lib/utils";
+import { FLAME_BUTTON, GHOST_BUTTON } from "@/components/booking/ui/focus";
+import { PickupPass, type PassOrder } from "@/components/products/PickupPass";
+import { CancelReservationButton } from "@/components/products/CancelReservationButton";
+import { customerCanCancel } from "@/lib/products/orderFlow";
+import { getPickupSettings } from "@/lib/products/storeSettings";
 import ClearCart from "./clear-cart";
 import TrackPurchase from "./track-purchase";
+import ConfirmingPayment from "./ConfirmingPayment";
 
 interface ProductSuccessPageProps {
-  searchParams: Promise<{ session_id?: string }>;
+  searchParams: Promise<{ session_id?: string; order?: string }>;
 }
 
-export default async function ProductSuccessPage({
-  searchParams,
-}: ProductSuccessPageProps) {
-  const { session_id } = await searchParams;
-  if (!session_id) return redirect("/products");
+type OrderRow = Omit<PassOrder, "items"> & {
+  product_order_items: PassOrder["items"];
+};
 
-  const session = await stripe.checkout.sessions.retrieve(session_id);
-  if (session.status === "open") return redirect("/products/cart");
-  if (session.metadata?.payment_type !== "product_order") {
-    return redirect("/products");
+/**
+ * After checkout: a card payment returns here with ?session_id=, a reservation
+ * with ?order=. Either way the order is read as the signed-in customer, so RLS
+ * only ever shows them their own order.
+ */
+export default async function ProductSuccessPage({ searchParams }: ProductSuccessPageProps) {
+  const { session_id, order: orderParam } = await searchParams;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return redirect("/dashboard/orders");
+
+  let orderId = orderParam ?? null;
+  if (!orderId && session_id) {
+    const session = await stripe.checkout.sessions.retrieve(session_id).catch(() => null);
+    if (!session || session.metadata?.payment_type !== "product_order") return redirect("/dashboard/orders");
+    if (session.status === "open") return redirect("/products/cart");
+    orderId = session.metadata.order_id ?? null;
   }
+  if (!orderId) return redirect("/products");
 
-  const orderId = session.metadata.order_id;
-  const supabase = createAdminClient();
-
-  // Give the webhook a few seconds to flip pending -> paid.
-  let order: {
-    id: string;
-    status: string;
-    fulfillment_method: string;
-    subtotal: number;
-    delivery_fee: number;
-    total: number;
-  } | null = null;
-  const timeout = Date.now() + 10000;
-  while (Date.now() < timeout) {
-    const { data } = await supabase
+  const [{ data }, settings] = await Promise.all([
+    supabase
       .from("product_orders")
-      .select("id, status, fulfillment_method, subtotal, delivery_fee, total")
+      .select(
+        "id, total, payment_method, payment_status, fulfilment_status, fulfillment_method, hold_until, product_order_items (name, quantity, unit_price)",
+      )
       .eq("id", orderId)
-      .maybeSingle();
-    if (data && data.status !== "pending") {
-      order = data;
-      break;
-    }
-    if (data && !order) order = data; // keep the pending row as fallback
-    await new Promise((res) => setTimeout(res, 1000));
-  }
+      .maybeSingle(),
+    getPickupSettings(supabase),
+  ]);
+  if (!data) return redirect("/dashboard/orders");
 
-  const { data: items } = await supabase
-    .from("product_order_items")
-    .select("id, name, unit_price, quantity")
-    .eq("order_id", orderId);
-
-  const isDelivery = order?.fulfillment_method === "delivery";
+  const row = data as unknown as OrderRow;
+  const order: PassOrder = { ...row, items: row.product_order_items ?? [] };
+  const ref = order.id.slice(0, 8).toUpperCase();
+  const waitingForCard =
+    order.payment_method === "card" && order.payment_status === "unpaid" && order.fulfilment_status === "placed";
 
   return (
-    <main className="container mx-auto flex-1 px-4 py-16">
+    <main className="lp-theme flex-1 bg-canvas px-4 py-10 text-ink sm:py-16">
       <ClearCart />
-      {order && (
-        <TrackPurchase
-          orderId={order.id}
-          total={order.total}
-          items={items ?? []}
-        />
+      {order.payment_method === "card" && order.payment_status === "paid" && (
+        <TrackPurchase orderId={order.id} total={order.total} items={order.items} />
       )}
-      <div className="mx-auto max-w-xl space-y-6 text-center">
-        <CheckCircle className="mx-auto h-16 w-16 text-green-600" />
-        <h1 className="text-3xl font-bold">Thanks for your order!</h1>
-        <p className="text-muted-foreground">
-          {order && order.status === "pending"
-            ? "Your payment is being confirmed — you'll get an email receipt shortly."
-            : "Payment confirmed. A confirmation email is on its way."}
-        </p>
 
-        <Card className="text-left">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              {isDelivery ? (
-                <>
-                  <Truck className="h-5 w-5" /> Delivery
-                </>
-              ) : (
-                <>
-                  <Package className="h-5 w-5" /> Pickup at 10410 S Main St,
-                  Houston, TX 77025
-                </>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {(items ?? []).map((item) => (
-              <div key={item.id} className="flex justify-between text-sm">
-                <span>
-                  {item.name}{" "}
-                  <span className="text-muted-foreground">×{item.quantity}</span>
-                </span>
-                <span>${(item.unit_price * item.quantity).toFixed(2)}</span>
-              </div>
-            ))}
-            {order && (
-              <>
-                {order.delivery_fee > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Delivery fee</span>
-                    <span>${order.delivery_fee.toFixed(2)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between border-t pt-2 font-bold">
-                  <span>Total</span>
-                  <span>${order.total.toFixed(2)}</span>
-                </div>
-                <p className="pt-2 text-xs text-muted-foreground">
-                  Status: {orderStatusLabel(order.status)} · Order ID: {order.id}
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
+      <div className="mx-auto max-w-xl">
+        <h1 className="text-3xl font-black tracking-tight text-balance">
+          {waitingForCard
+            ? "Almost there"
+            : order.payment_method === "at_store"
+              ? "Reserved for pickup"
+              : "You're all set"}
+        </h1>
 
-        <div className="flex justify-center gap-3">
-          <Link href="/dashboard/orders">
-            <Button>
-              View my orders
-            </Button>
+        <div className="mt-6">
+          {waitingForCard ? (
+            <ConfirmingPayment />
+          ) : (
+            <PickupPass
+              order={order}
+              pickupHours={settings.pickupHours}
+              action={customerCanCancel(order) ? <CancelReservationButton orderId={order.id} orderRef={ref} /> : undefined}
+            />
+          )}
+        </div>
+
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link href="/dashboard/orders" className={FLAME_BUTTON}>
+            Track my orders
           </Link>
-          <Link href="/products">
-            <Button variant="outline">Keep shopping</Button>
+          <Link href="/products" className={cn(GHOST_BUTTON)}>
+            Keep shopping
           </Link>
         </div>
       </div>
