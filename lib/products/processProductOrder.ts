@@ -29,17 +29,24 @@ export async function processProductOrderCompleted(
   const orderId = session.metadata?.order_id;
   if (!orderId) return null;
 
-  const { data: order } = await db
+  // A database error throws, so the webhook releases its claim and Stripe
+  // retries; every step below is safe to run twice.
+  const { data: order, error: readError } = await db
     .from("product_orders")
     .select("*")
     .eq("id", orderId)
     .maybeSingle();
+  if (readError) throw new Error(`[product-order] could not read order ${orderId}: ${readError.message}`);
   if (!order) {
     console.error("[product-order] completed event for unknown order:", orderId);
     return null;
   }
-  // Duplicate-delivery guard on top of the processed_stripe_events claim.
-  if (order.payment_status === "paid") return null;
+  // Duplicate-delivery guard on top of the processed_stripe_events claim. A
+  // retry after the stock step failed finishes it without a second email.
+  if (order.payment_status === "paid") {
+    if (!order.stock_taken) await takeStock(db, orderId);
+    return null;
+  }
 
   const paymentIntent =
     typeof session.payment_intent === "string"
@@ -61,7 +68,8 @@ export async function processProductOrderCompleted(
     // Not expected (staff can't cancel a card order), but never silent: the
     // Closed tab shows it as paid so staff can refund.
     console.error("[product-order] payment for an order that is not waiting:", orderId, order.fulfilment_status);
-    await db.from("product_orders").update(paid).eq("id", orderId);
+    const { error } = await db.from("product_orders").update(paid).eq("id", orderId);
+    if (error) throw new Error(`[product-order] could not record payment for ${orderId}: ${error.message}`);
     return null;
   }
 
@@ -74,16 +82,15 @@ export async function processProductOrderCompleted(
     phone: session.customer_details?.phone ?? order.phone ?? null,
     delivery_address: shipping,
   };
-  await db
+  const { error: updateError } = await db
     .from("product_orders")
     .update(updates)
     .eq("id", orderId)
     .eq("payment_status", "unpaid")
     .eq("fulfilment_status", "placed");
+  if (updateError) throw new Error(`[product-order] could not mark ${orderId} paid: ${updateError.message}`);
 
-  if (!order.stock_taken) {
-    await db.rpc("take_product_order_stock", { p_order_id: orderId });
-  }
+  if (!order.stock_taken) await takeStock(db, orderId);
 
   const { data: items } = await db
     .from("product_order_items")
@@ -101,7 +108,7 @@ export async function processProductOrderExpired(
 ): Promise<void> {
   const orderId = session.metadata?.order_id;
   if (!orderId) return;
-  const { data } = await db
+  const { data, error } = await db
     .from("product_orders")
     .update({ fulfilment_status: "cancelled", updated_at: now.toISOString() })
     .eq("id", orderId)
@@ -109,7 +116,15 @@ export async function processProductOrderExpired(
     .eq("payment_status", "unpaid")
     .eq("fulfilment_status", "placed")
     .select("id");
+  if (error) throw new Error(`[product-order] could not cancel expired ${orderId}: ${error.message}`);
   if (data && data.length > 0) {
-    await db.rpc("release_product_order_stock", { p_order_id: orderId });
+    const { error: rpcError } = await db.rpc("release_product_order_stock", { p_order_id: orderId });
+    if (rpcError) throw new Error(`[product-order] could not release stock for ${orderId}: ${rpcError.message}`);
   }
+}
+
+/** Legacy orders only: take the stock of an order placed before held stock. */
+async function takeStock(db: SupabaseClient, orderId: string): Promise<void> {
+  const { error } = await db.rpc("take_product_order_stock", { p_order_id: orderId });
+  if (error) throw new Error(`[product-order] could not take stock for ${orderId}: ${error.message}`);
 }

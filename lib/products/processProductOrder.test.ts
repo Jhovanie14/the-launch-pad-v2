@@ -23,7 +23,7 @@ const ORDER = {
 
 const ITEMS = [{ id: "i1", order_id: "order-1", product_id: "p1", name: "Tire Shine Pro", unit_price: 19.99, quantity: 2 }];
 
-function fakeDb(opts: { order?: any; items?: any[]; updateMatches?: boolean }) {
+function fakeDb(opts: { order?: any; items?: any[]; updateMatches?: boolean; readError?: boolean; updateError?: boolean; rpcError?: boolean }) {
   const state = {
     updates: [] as { values: any; filters: Record<string, unknown> }[],
     rpc: [] as { fn: string; args: any }[],
@@ -33,7 +33,10 @@ function fakeDb(opts: { order?: any; items?: any[]; updateMatches?: boolean }) {
       if (table === "product_orders") {
         return {
           select: () => ({
-            eq: () => ({ maybeSingle: async () => ({ data: opts.order ?? null, error: null }) }),
+            eq: () => ({
+              maybeSingle: async () =>
+                opts.readError ? { data: null, error: { message: "read failed" } } : { data: opts.order ?? null, error: null },
+            }),
           }),
           update: (values: any) => {
             const rec = { values, filters: {} as Record<string, unknown> };
@@ -44,8 +47,8 @@ function fakeDb(opts: { order?: any; items?: any[]; updateMatches?: boolean }) {
                 rec.filters[col] = val;
                 return chain;
               },
-              select: async () => ({ data: matched, error: null }),
-              then: (resolve: any) => resolve({ data: matched, error: null }),
+              select: async () => (opts.updateError ? { data: null, error: { message: "update failed" } } : { data: matched, error: null }),
+              then: (resolve: any) => resolve(opts.updateError ? { data: null, error: { message: "update failed" } } : { data: matched, error: null }),
             };
             return chain;
           },
@@ -58,7 +61,7 @@ function fakeDb(opts: { order?: any; items?: any[]; updateMatches?: boolean }) {
     },
     async rpc(fn: string, args: any) {
       state.rpc.push({ fn, args });
-      return { data: null, error: null };
+      return opts.rpcError ? { data: null, error: { message: "rpc failed" } } : { data: null, error: null };
     },
   } as any;
   return { db, state };
@@ -118,7 +121,32 @@ describe("processProductOrderCompleted", () => {
   });
 });
 
+describe("processProductOrderCompleted: database failures throw so Stripe retries", () => {
+  it("throws when the order can't be read", async () => {
+    const { db } = fakeDb({ order: ORDER, readError: true });
+    await expect(processProductOrderCompleted(db, SESSION as any, NOW)).rejects.toThrow();
+  });
+  it("throws when the paid update fails, before any email could go out", async () => {
+    const { db } = fakeDb({ order: ORDER, items: ITEMS, updateError: true });
+    await expect(processProductOrderCompleted(db, SESSION as any, NOW)).rejects.toThrow();
+  });
+  it("throws when a legacy order's stock can't be taken", async () => {
+    const { db } = fakeDb({ order: { ...ORDER, stock_taken: false }, items: ITEMS, rpcError: true });
+    await expect(processProductOrderCompleted(db, SESSION as any, NOW)).rejects.toThrow();
+  });
+  it("a retry after the stock step failed takes the stock without a second email", async () => {
+    const { db, state } = fakeDb({ order: { ...ORDER, payment_status: "paid", stock_taken: false } });
+    expect(await processProductOrderCompleted(db, SESSION as any, NOW)).toBeNull();
+    expect(state.rpc).toEqual([{ fn: "take_product_order_stock", args: { p_order_id: "order-1" } }]);
+  });
+});
+
 describe("processProductOrderExpired", () => {
+  it("throws when the cancel update fails", async () => {
+    const { db } = fakeDb({ order: ORDER, updateError: true });
+    await expect(processProductOrderExpired(db, SESSION as any, NOW)).rejects.toThrow();
+  });
+
   it("cancels a waiting card order and returns its stock", async () => {
     const { db, state } = fakeDb({ order: ORDER });
     await processProductOrderExpired(db, SESSION as any, NOW);

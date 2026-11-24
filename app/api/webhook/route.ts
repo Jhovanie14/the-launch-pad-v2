@@ -169,13 +169,13 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event) {
 }
 
 // Product store: mark the waiting card order paid (stock was held at checkout), email the customer.
-// Errors are swallowed like the sibling handlers so a failed side effect
-// doesn't release the idempotency claim and re-run money logic.
+// A database failure throws to the route, which releases the idempotency
+// claim so Stripe retries (the order step is safe to run twice). The email
+// is a side effect: its errors are swallowed so they can't cause a retry.
 async function processProductOrder(session: Stripe.Checkout.Session) {
+  const result = await processProductOrderCompleted(supabase, session);
+  if (!result) return;
   try {
-    const result = await processProductOrderCompleted(supabase, session);
-    if (!result) return;
-
     const { data: profile } = await supabase
       .from("profiles")
       .select("email, full_name")
@@ -200,7 +200,7 @@ async function processProductOrder(session: Stripe.Checkout.Session) {
     });
     console.log("Product order confirmation email sent");
   } catch (error) {
-    console.error("Error processing product order:", error);
+    console.error("Product order confirmation email failed:", error);
   }
 }
 
