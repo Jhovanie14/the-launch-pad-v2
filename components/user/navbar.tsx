@@ -56,7 +56,7 @@ export function UserNavbar() {
   const name = userProfile?.full_name || userProfile?.email || "Your account";
   const initial = (userProfile?.full_name || userProfile?.email || "?").charAt(0).toUpperCase();
   const moreActive = MORE_LINKS.some((l) => isNavActive(pathname, l.href));
-  const menu = publicPhoneMenu({ signedIn: !!user, cartCount });
+  const menu = publicPhoneMenu({ signedIn: !!user });
   const closeMenu = () => setIsMobileMenuOpen(false);
 
   function book() {
@@ -130,7 +130,7 @@ export function UserNavbar() {
               <Link
                 href="/products/cart"
                 aria-label={`Cart, ${cartCount} ${cartCount === 1 ? "item" : "items"}`}
-                className={cn("relative hidden size-10 items-center justify-center rounded-lg hover:bg-white/10 lg:inline-flex", FOCUS_ON_NIGHT)}
+                className={cn("relative inline-flex size-11 items-center justify-center rounded-lg hover:bg-white/10 lg:size-10", FOCUS_ON_NIGHT)}
               >
                 <ShoppingBasket aria-hidden className="size-5" />
                 <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-flame px-1 text-xs font-black text-on-flame">

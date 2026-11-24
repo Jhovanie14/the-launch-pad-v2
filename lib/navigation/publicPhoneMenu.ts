@@ -29,13 +29,13 @@ export const ACCOUNT_LINKS: MenuLink[] = [
   { name: "Profile and settings", href: "/dashboard/settings" },
 ];
 
-export function publicPhoneMenu({ signedIn, cartCount }: { signedIn: boolean; cartCount: number }): {
+/** The phone menu's link groups. The cart is not here: it's an icon in the bar. */
+export function publicPhoneMenu({ signedIn }: { signedIn: boolean }): {
   primary: MenuLink[];
   more: MenuLink[];
   account: MenuLink[];
 } {
   const primary: MenuLink[] = [{ name: "Home", href: "/" }, ...PRIMARY_LINKS];
-  if (cartCount > 0) primary.push({ name: `Cart (${cartCount})`, href: "/products/cart" });
   return {
     primary,
     more: MORE_LINKS.map(({ name, href }) => ({ name, href })),
@@ -43,11 +43,7 @@ export function publicPhoneMenu({ signedIn, cartCount }: { signedIn: boolean; ca
   };
 }
 
-/**
- * Is this phone menu row the current page? Like isNavActive, except the cart
- * row owns /products/cart, so Products is not marked current there too.
- */
+/** Is this phone menu row the current page (or a page inside its section)? */
 export function phoneMenuCurrent(pathname: string, href: string): boolean {
-  if (href === "/products" && isNavActive(pathname, "/products/cart")) return false;
   return isNavActive(pathname, href);
 }
