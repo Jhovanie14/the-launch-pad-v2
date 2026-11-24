@@ -7,8 +7,9 @@ export function productTitle(p: { name: string; display_name?: string | null }):
   return p.display_name?.trim() || p.name;
 }
 
-// Pictographs plus the joiners and variation selectors that build them.
-const EMOJI = /[\p{Extended_Pictographic}\u{FE0E}\u{FE0F}\u{200D}\u{20E3}]/gu;
+// Pictographs, skin tones, flags, and the joiners and variation selectors that
+// build them. ©, ® and ™ are pictographic too, but they are brand marks: kept.
+const EMOJI = /(?![\u{00A9}\u{00AE}\u{2122}])[\p{Extended_Pictographic}\p{Emoji_Modifier}\p{Regional_Indicator}\u{FE0E}\u{FE0F}\u{200D}\u{20E3}]/gu;
 // "Size: 15.75 × 15.75 inches" — a short label, then a short value.
 const SPEC_LINE = /^([A-Za-z][A-Za-z &/]{0,23}):\s*(.+)$/;
 const MAX_SPEC_VALUE = 60;

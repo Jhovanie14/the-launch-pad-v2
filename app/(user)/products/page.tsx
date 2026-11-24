@@ -52,7 +52,7 @@ export default async function ProductsPage() {
           products={gridProducts}
           featured={featured}
           id={CATALOG_ANCHOR}
-          heading={featured.length > 0 ? "Everything else" : "The range"}
+          heading="The range"
         />
       )}
 

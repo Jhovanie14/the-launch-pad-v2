@@ -61,7 +61,7 @@ export function ProductCard({ product }: { product: ProductRow }) {
         </h3>
         {meta && <p className="mt-1 hidden text-sm text-ink-muted sm:block">{meta}</p>}
         {/* mt-auto pins price and button to the card's foot, so they line up across a row. */}
-        <div className="mt-auto flex items-center justify-between gap-2 pt-3">
+        <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-3">
           <PriceTag product={product} />
           <AddToCartButton product={product} />
         </div>

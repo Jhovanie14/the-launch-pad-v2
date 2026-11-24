@@ -142,3 +142,24 @@ describe("visual pass on the preview", () => {
     expect(read("app/(user)/products/page.tsx")).toContain('headline: "Pro Series car care"');
   });
 });
+
+describe("review fixes", () => {
+  it("the range is always called The range, even with featured products", () => {
+    expect(read("app/(user)/products/page.tsx")).not.toContain("Everything else");
+  });
+  it("featured products still show when nothing else does", () => {
+    expect(read("components/products/product-catalog.tsx")).toMatch(/visible\.length === 0 && featured\.length === 0/);
+  });
+  it("featured cards fill a whole row on desktop, so no holes", () => {
+    expect(read("components/products/product-catalog.tsx")).toContain("col-span-2 lg:col-span-3");
+  });
+  it("the film frame only shows when there is something to show", () => {
+    const s = read("components/products/storefront-hero.tsx");
+    expect(s).toContain("useReducedMotion");
+    expect(s).toMatch(/showFilm\s*=/);
+    expect(s).toMatch(/\{showFilm && \(/);
+  });
+  it("a card's price row wraps rather than squeezing the add button", () => {
+    expect(read("components/products/product-card.tsx")).toMatch(/mt-auto flex flex-wrap items-center justify-between/);
+  });
+});

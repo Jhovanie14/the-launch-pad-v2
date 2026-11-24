@@ -189,7 +189,7 @@ export function ProductCatalog({
           )}
         </div>
 
-        {visible.length === 0 ? (
+        {visible.length === 0 && featured.length === 0 ? (
           <div className={cn(SURFACE, "mt-6 p-6")}>
             <p className="text-ink-muted">Nothing matches those filters.</p>
             {activeFilters > 0 && (
@@ -201,7 +201,7 @@ export function ProductCatalog({
         ) : (
           <ul className="mt-6 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3">
             {featured.map((product) => (
-              <li key={product.id} className="col-span-2">
+              <li key={product.id} className="col-span-2 lg:col-span-3">
                 <FeaturedProduct product={product} />
               </li>
             ))}

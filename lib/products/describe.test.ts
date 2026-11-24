@@ -56,6 +56,15 @@ describe("parseDescription", () => {
   });
 });
 
+describe("emoji are left out, brand marks kept", () => {
+  it("drops skin-tone modifiers and flags", () => {
+    expect(parseDescription("👍🏽 Great shine\n🇺🇸 Made in USA").about).toEqual(["Great shine", "Made in USA"]);
+  });
+  it("keeps ©, ® and ™", () => {
+    expect(parseDescription("Gold Class® Wax™ ©2024").about).toEqual(["Gold Class® Wax™ ©2024"]);
+  });
+});
+
 describe("cardMeta", () => {
   it("is the weight and size, when the description has them", () => {
     expect(cardMeta(UTILITY)).toBe("300GSM · 15.75 × 15.75 inches");

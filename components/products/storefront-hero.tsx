@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowDown } from "lucide-react";
+import { useReducedMotion } from "motion/react";
 import { FLAME_BUTTON } from "@/components/booking/ui/focus";
 import { cn } from "@/lib/utils";
 import { ProductVideo } from "./product-video";
@@ -34,12 +35,22 @@ export function StorefrontHero({
   holdDays,
   targetId,
 }: StorefrontHeroProps) {
+  // The film frame needs something in it: the clip (unless motion is reduced)
+  // or a poster. Without either, the copy takes the whole width.
+  const reduceMotion = useReducedMotion();
+  const showFilm = Boolean(posterUrl) || (Boolean(videoUrl) && !reduceMotion);
+
   function scrollToRange(e: React.MouseEvent<HTMLAnchorElement>) {
     const target = document.getElementById(targetId);
     if (!target) return; // the plain anchor still works
     e.preventDefault();
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    target.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    const reduce = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    target.scrollIntoView({
+      behavior: reduce ? "auto" : "smooth",
+      block: "start",
+    });
     const heading = target.querySelector<HTMLElement>("h2");
     heading?.focus({ preventScroll: true });
     history.replaceState(null, "", `#${targetId}`);
@@ -53,13 +64,24 @@ export function StorefrontHero({
 
   return (
     <section className="bg-canvas text-ink">
-      <div className="mx-auto grid max-w-7xl items-center gap-8 px-4 pt-10 pb-6 sm:px-6 sm:pt-14 lg:grid-cols-[1fr_1.1fr] lg:gap-12 lg:pb-10">
+      <div
+        className={cn(
+          "mx-auto grid max-w-7xl items-center gap-8 px-4 pt-10 pb-6 sm:px-6 sm:pt-14 lg:gap-12 lg:pb-10",
+          showFilm && "lg:grid-cols-[1fr_1.1fr]",
+        )}
+      >
         <div>
           <h1 className="text-5xl leading-[0.95] font-black tracking-[-0.035em] text-balance lg:text-6xl">
             {headline}
           </h1>
-          <p className="mt-5 max-w-md text-lg leading-relaxed text-ink-muted">{subcopy}</p>
-          <a href={`#${targetId}`} onClick={scrollToRange} className={cn(FLAME_BUTTON, "mt-7")}>
+          <p className="mt-5 max-w-md text-lg leading-relaxed text-ink-muted">
+            {subcopy}
+          </p>
+          <a
+            href={`#${targetId}`}
+            onClick={scrollToRange}
+            className={cn(FLAME_BUTTON, "mt-7")}
+          >
             {ctaLabel}
             <ArrowDown aria-hidden className="size-4" />
           </a>
@@ -73,16 +95,18 @@ export function StorefrontHero({
           </ul>
         </div>
 
-        <div className="overflow-hidden rounded-2xl bg-night shadow-[0_18px_40px_-24px_rgb(8_20_52/0.9)] ring-1 ring-white/10">
-          <ProductVideo
-            src={videoUrl}
-            poster={posterUrl}
-            alt=""
-            priority
-            sizes="(min-width: 1024px) 55vw, 100vw"
-            className="aspect-[16/10] w-full bg-night"
-          />
-        </div>
+        {showFilm && (
+          <div className="overflow-hidden rounded-2xl bg-night shadow-[0_18px_40px_-24px_rgb(8_20_52/0.9)] ring-1 ring-white/10">
+            <ProductVideo
+              src={videoUrl}
+              poster={posterUrl}
+              alt=""
+              priority
+              sizes="(min-width: 1024px) 55vw, 100vw"
+              className="aspect-[16/10] w-full bg-night"
+            />
+          </div>
+        )}
       </div>
     </section>
   );
