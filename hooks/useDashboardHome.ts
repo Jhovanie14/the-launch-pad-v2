@@ -44,9 +44,9 @@ export function useDashboardHome() {
           .limit(10),
         supabase
           .from("product_orders")
-          .select("id, status, fulfillment_method, total, created_at")
+          .select("id, fulfilment_status, payment_method, payment_status, fulfillment_method, total, created_at")
           .eq("user_id", user.id)
-          .not("status", "in", "(pending,cancelled)")
+          .neq("fulfilment_status", "cancelled")
           .order("created_at", { ascending: false })
           .limit(10),
         supabase.from("reviews").select("booking_id").eq("user_id", user.id),
@@ -55,7 +55,12 @@ export function useDashboardHome() {
       if (firstError) throw firstError;
       setBookings((b.data ?? []) as unknown as HomeBooking[]);
       setLogs((l.data ?? []) as unknown as HomeUsageLog[]);
-      setOrders((o.data ?? []) as HomeOrder[]);
+      // A card checkout still waiting at Stripe is not an order yet.
+      setOrders(
+        ((o.data ?? []) as (HomeOrder & { payment_method: string; payment_status: string })[]).filter(
+          (x) => !(x.payment_method === "card" && x.payment_status === "unpaid" && x.fulfilment_status === "placed"),
+        ),
+      );
       // Reviews are a nicety: if they fail to load, just don't ask for one.
       setReviewedIds(
         r.error ? new Set(((b.data ?? []) as { id: string }[]).map((x) => x.id)) : new Set((r.data ?? []).map((x) => x.booking_id as string)),
