@@ -8,12 +8,6 @@ import { describe, expect, it } from "vitest";
 const root = process.cwd();
 const BANNED = ["ready_for_pickup", "orderStatusLabel", "nextActionFor", "products/orderStatus"];
 
-// Screens rebuilt later in this plan; each task removes its file from here.
-const NOT_YET_REBUILT = new Set<string>([
-  "app/admin/orders/orders-view.tsx", // Task 14
-  "lib/products/orderStatus.ts", // deleted in Task 14, with its last importer
-]);
-
 function sources(dir: string): string[] {
   const out: string[] = [];
   for (const f of readdirSync(dir)) {
@@ -29,7 +23,6 @@ describe("order status readers", () => {
     const hits = ["app", "lib", "hooks", "components"]
       .flatMap((d) => sources(join(root, d)))
       .map((p) => relative(root, p).replace(/\\/g, "/"))
-      .filter((p) => !NOT_YET_REBUILT.has(p))
       .flatMap((p) => {
         const text = readFileSync(join(root, p), "utf8");
         return BANNED.filter((b) => text.includes(b)).map((b) => `${p}: ${b}`);

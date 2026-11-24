@@ -16,8 +16,10 @@ import {
   adminNav,
   badgeLabel,
   isSuperAdmin,
+  type AdminBadge,
   type AdminNavItem,
 } from "@/lib/navigation/admin";
+import { needsActionCount, type FlowOrder } from "@/lib/products/orderFlow";
 import { AuthUser } from "@/types";
 import LoadingDots from "../loading";
 
@@ -38,6 +40,7 @@ export function AdminSidebar({ user, open, onClose }: AdminSidebarProps) {
   const { signOut } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [ordersCount, setOrdersCount] = useState<number>(0);
 
   const handleSignOut = async () => {
     setIsLoggingOut(true); // full-screen loader until the redirect lands
@@ -79,11 +82,36 @@ export function AdminSidebar({ user, open, onClose }: AdminSidebarProps) {
     };
   }, []);
 
+  // Store orders that need staff: to pack, or a reservation whose hold ends
+  // within a day (lib/products/orderFlow.ts). Kept live like Messages.
+  useEffect(() => {
+    const supabase = createClient();
+
+    const fetchOrders = async () => {
+      const { data, error } = await supabase
+        .from("product_orders")
+        .select("payment_method, payment_status, fulfilment_status, fulfillment_method, hold_until, total")
+        .in("fulfilment_status", ["placed", "ready"]);
+      if (!error && data) setOrdersCount(needsActionCount(data as FlowOrder[], new Date()));
+    };
+
+    fetchOrders();
+
+    const channel = supabase
+      .channel("product-orders-badge")
+      .on("postgres_changes", { event: "*", schema: "public", table: "product_orders" }, () => fetchOrders())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   // The role comes with the profile the admin layout loads, so super-admin
   // links never flash in or out after the page renders.
   const sections = adminNav(user?.user_type);
   const current = activeHref(pathname);
-  const counts = { messages: unreadCount };
+  const counts: Record<AdminBadge, number> = { messages: unreadCount, orders: ordersCount };
 
   const link = (item: AdminNavItem) => (
     <li key={item.href}>
@@ -91,6 +119,7 @@ export function AdminSidebar({ user, open, onClose }: AdminSidebarProps) {
         item={item}
         current={current === item.href}
         badge={item.badge ? badgeLabel(counts[item.badge]) : null}
+        badgeSr={item.badge === "orders" ? " need action" : " unread"}
         onNavigate={onClose}
       />
     </li>
@@ -213,11 +242,13 @@ function NavLink({
   item,
   current,
   badge,
+  badgeSr,
   onNavigate,
 }: {
   item: AdminNavItem;
   current: boolean;
   badge: string | null;
+  badgeSr: string;
   onNavigate: () => void;
 }) {
   const Icon = item.icon;
@@ -239,7 +270,7 @@ function NavLink({
       {badge && (
         <span className="ml-auto grid h-5 min-w-5 place-items-center rounded-full bg-flame px-1.5 text-xs font-bold text-on-flame">
           {badge}
-          <span className="sr-only"> unread</span>
+          <span className="sr-only">{badgeSr}</span>
         </span>
       )}
     </Link>

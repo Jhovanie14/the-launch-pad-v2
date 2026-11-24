@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { createClient } from "@/utils/supabase/client";
 import { toast } from "sonner";
+import { Loader2, Phone, Search } from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,339 +14,615 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import { FOCUS_ON_LIGHT, RING_BUTTON, SURFACE } from "@/components/booking/ui/focus";
+import { BUSINESS_TIME_ZONE } from "@/lib/dashboard/home";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Loader2, Package, Truck } from "lucide-react";
-import { nextActionFor, orderStatusLabel } from "@/lib/products/orderStatus";
+  PAID_VIA_LABEL,
+  customerStatus,
+  houstonDateLabel,
+  isUnpaidReservation,
+  staffActionsFor,
+  staffQueue,
+  type FlowOrder,
+  type PaidVia,
+  type StaffAction,
+} from "@/lib/products/orderFlow";
+import { DEFAULT_HOLD_DAYS, getPickupSettings } from "@/lib/products/storeSettings";
+import { matchesOrderSearch } from "@/lib/admin/orderSearch";
 import type { ProductOrderItemRow, ProductOrderRow } from "@/types/db";
 
-type OrderWithItems = ProductOrderRow & {
-  product_order_items: ProductOrderItemRow[];
-};
-type CustomerInfo = { email: string | null; full_name: string | null };
+type OrderWithItems = ProductOrderRow & { product_order_items: ProductOrderItemRow[] };
+type Customer = { email: string | null; full_name: string | null };
+type Tab = "to_pack" | "ready" | "unpaid" | "completed" | "closed";
 
-const NEEDS_ACTION = ["paid", "ready_for_pickup", "out_for_delivery"];
-/** Orders load a page at a time, filtered in the database, not all at once. */
+const TABS: { key: Tab; label: string }[] = [
+  { key: "to_pack", label: "To pack" },
+  { key: "ready", label: "Ready" },
+  { key: "unpaid", label: "Unpaid" },
+  { key: "completed", label: "Completed" },
+  { key: "closed", label: "Closed" },
+];
+const COUNTED: Tab[] = ["to_pack", "ready", "unpaid"];
+/** Orders load a page at a time, filtered in the database. */
 const PAGE_SIZE = 25;
+const SEARCH_LIMIT = 200;
+const COUNTER_METHODS: PaidVia[] = ["cash", "card_reader", "counter_qr"];
 
-const STATUS_STYLES: Record<string, string> = {
-  paid: "bg-blue-100 text-blue-800",
-  ready_for_pickup: "bg-green-100 text-green-800",
-  out_for_delivery: "bg-amber-100 text-amber-800",
-  completed: "bg-gray-100 text-gray-800",
-  refunded: "bg-red-100 text-red-800",
-};
+const PRIMARY = cn(
+  "inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-night px-4 text-sm font-bold text-on-night transition-colors hover:bg-dusk disabled:opacity-60 motion-reduce:transition-none",
+  FOCUS_ON_LIGHT,
+);
+const QUIET = cn(
+  "inline-flex h-11 items-center rounded-lg px-3 text-sm font-semibold text-ink-muted transition-colors hover:bg-line-soft hover:text-ink motion-reduce:transition-none",
+  FOCUS_ON_LIGHT,
+);
 
-/** delivery_address is the Stripe shipping_details JSON. */
-function formatAddress(raw: unknown): string | null {
-  const details = raw as {
-    name?: string;
-    address?: {
-      line1?: string;
-      line2?: string | null;
-      city?: string;
-      state?: string;
-      postal_code?: string;
-    };
-  } | null;
-  if (!details?.address) return null;
-  const a = details.address;
-  const parts = [
-    details.name,
-    a.line1,
-    a.line2,
-    [a.city, a.state, a.postal_code].filter(Boolean).join(" "),
-  ].filter(Boolean);
-  return parts.join(", ");
+const money = (n: number) => `$${Number(n).toFixed(2)}`;
+const ref = (o: { id: string }) => o.id.slice(0, 8).toUpperCase();
+const flow = (o: OrderWithItems) => o as unknown as FlowOrder;
+
+/** Narrow a product_orders query to one tab, in the database. */
+function forTab(query: any, tab: Tab) {
+  switch (tab) {
+    case "to_pack":
+      return query.eq("fulfilment_status", "placed").or("payment_status.eq.paid,payment_method.eq.at_store");
+    case "ready":
+      return query.in("fulfilment_status", ["ready", "out_for_delivery"]);
+    case "unpaid":
+      return query.eq("payment_method", "at_store").eq("payment_status", "unpaid").in("fulfilment_status", ["placed", "ready"]);
+    case "completed":
+      return query.eq("fulfilment_status", "completed").neq("payment_status", "refunded");
+    case "closed":
+      // Abandoned card checkouts (cancelled and never paid) are left out.
+      return query.or(
+        "fulfilment_status.eq.released,payment_status.eq.refunded,and(fulfilment_status.eq.cancelled,payment_status.eq.paid)",
+      );
+  }
+}
+
+function placedAt(iso: string): string {
+  return new Date(iso).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: BUSINESS_TIME_ZONE,
+  });
 }
 
 export default function OrdersView() {
   const supabase = createClient();
 
+  const [tab, setTab] = useState<Tab | null>(null);
+  const [counts, setCounts] = useState<Partial<Record<Tab, number>>>({});
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
-  const [customers, setCustomers] = useState<Record<string, CustomerInfo>>({});
+  const [customers, setCustomers] = useState<Record<string, Customer>>({});
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState("needs_action");
   const [limit, setLimit] = useState(PAGE_SIZE);
   const [hasMore, setHasMore] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [busyOrderId, setBusyOrderId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [search, setSearch] = useState("");
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [panel, setPanel] = useState<{ id: string; action: "hand_over" | "take_payment" } | null>(null);
+  const [paidVia, setPaidVia] = useState<PaidVia>("cash");
+  const [releaseTarget, setReleaseTarget] = useState<OrderWithItems | null>(null);
   const [refundTarget, setRefundTarget] = useState<OrderWithItems | null>(null);
 
-  const fetchOrders = useCallback(async () => {
-    let query = supabase
-      .from("product_orders")
-      .select("*, product_order_items (*)")
-      .order("created_at", { ascending: false });
-    if (statusFilter === "needs_action") query = query.in("status", NEEDS_ACTION);
-    else if (statusFilter === "all") query = query.not("status", "in", "(pending,cancelled)");
-    else query = query.eq("status", statusFilter);
+  // The search box waits for a pause in typing.
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(query.trim()), 250);
+    return () => clearTimeout(t);
+  }, [query]);
 
-    // One extra row tells us whether there is another page.
-    const { data, error } = await query.range(0, limit);
-    setLoadingMore(false);
-    if (error) {
-      console.error(error);
-      toast.error("Failed to load orders");
-      setLoading(false);
-      return;
+  const fetchCounts = useCallback(async () => {
+    const results = await Promise.all(
+      COUNTED.map((t) => forTab(supabase.from("product_orders").select("id", { count: "exact", head: true }), t)),
+    );
+    const next: Partial<Record<Tab, number>> = {};
+    COUNTED.forEach((t, i) => (next[t] = results[i].count ?? 0));
+    setCounts(next);
+    // Open on the work: To pack, or Ready when nothing needs packing.
+    setTab((current) => current ?? ((next.to_pack ?? 0) > 0 ? "to_pack" : "ready"));
+  }, [supabase]);
+
+  const fetchOrders = useCallback(async () => {
+    if (!tab && !search) return;
+    let rows: OrderWithItems[];
+    if (search) {
+      const { data, error } = await supabase
+        .from("product_orders")
+        .select("*, product_order_items (*)")
+        .order("created_at", { ascending: false })
+        .limit(SEARCH_LIMIT);
+      if (error) {
+        toast.error("Failed to load orders");
+        setLoading(false);
+        return;
+      }
+      rows = ((data as OrderWithItems[]) ?? []).filter((o) => staffQueue(flow(o)) !== "hidden");
+      setHasMore(false);
+    } else {
+      const { data, error } = await forTab(
+        supabase.from("product_orders").select("*, product_order_items (*)").order("created_at", { ascending: false }),
+        tab!,
+      ).range(0, limit); // one extra row tells us whether there is another page
+      if (error) {
+        toast.error("Failed to load orders");
+        setLoading(false);
+        return;
+      }
+      const all = (data as OrderWithItems[]) ?? [];
+      setHasMore(all.length > limit);
+      rows = all.slice(0, limit);
     }
-    const all = (data as OrderWithItems[]) ?? [];
-    setHasMore(all.length > limit);
-    const rows = all.slice(0, limit);
-    setOrders(rows);
 
     const userIds = [...new Set(rows.map((o) => o.user_id))];
+    const map: Record<string, Customer> = {};
     if (userIds.length) {
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, email, full_name")
-        .in("id", userIds);
-      const map: Record<string, CustomerInfo> = {};
-      for (const p of profiles ?? []) {
-        map[p.id] = { email: p.email, full_name: p.full_name };
-      }
-      setCustomers(map);
+      const { data: profiles } = await supabase.from("profiles").select("id, email, full_name").in("id", userIds);
+      for (const p of profiles ?? []) map[p.id] = { email: p.email, full_name: p.full_name };
     }
+    setCustomers(map);
+    setOrders(
+      search ? rows.filter((o) => matchesOrderSearch({ ref: ref(o), phone: o.phone }, map[o.user_id] ?? null, search)) : rows,
+    );
     setLoading(false);
-  }, [supabase, statusFilter, limit]);
+  }, [supabase, tab, limit, search]);
+
+  useEffect(() => {
+    fetchCounts();
+  }, [fetchCounts]);
 
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
 
-  const callApi = async (path: string, body: object, orderId: string) => {
-    setBusyOrderId(orderId);
+  const refresh = () => {
+    fetchCounts();
+    fetchOrders();
+  };
+
+  async function post(path: string, body: object, orderId: string, done: string): Promise<boolean> {
+    setBusyId(orderId);
     try {
       const res = await fetch(path, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        toast.error(data.error || "Action failed");
-        return;
+        toast.error(data.error || "That didn't work");
+        if (res.status === 409) refresh();
+        return false;
       }
-      toast.success("Order updated");
-      fetchOrders();
-    } catch (error) {
-      console.error(error);
-      toast.error("Action failed");
+      toast.success(done);
+      setPanel(null);
+      refresh();
+      return true;
+    } catch {
+      toast.error("That didn't work. Check your connection.");
+      return false;
     } finally {
-      setBusyOrderId(null);
+      setBusyId(null);
     }
-  };
-
-  const filtered = orders;
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-900" />
-      </div>
-    );
   }
 
+  const act = (o: OrderWithItems, action: StaffAction, extra: object = {}) =>
+    post(
+      "/api/admin/product-orders/action",
+      { order_id: o.id, action, ...extra },
+      o.id,
+      {
+        mark_ready: `${ref(o)} is ready. The customer has been emailed.`,
+        hand_over: `${ref(o)} handed over`,
+        take_payment: `${ref(o)} paid and handed over`,
+        release: `${ref(o)} released`,
+      }[action],
+    );
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">Product orders</h1>
-        <Select
-          value={statusFilter}
-          onValueChange={(value) => {
-            setStatusFilter(value);
-            setLimit(PAGE_SIZE);
-            setLoading(true);
-          }}
-        >
-          <SelectTrigger className="w-48">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="needs_action">Needs action</SelectItem>
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="paid">Paid</SelectItem>
-            <SelectItem value="ready_for_pickup">Ready for pickup</SelectItem>
-            <SelectItem value="out_for_delivery">Out for delivery</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="refunded">Refunded</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+    <div className="lp-theme space-y-6 text-ink">
+      <h1 className="text-3xl font-black tracking-tight">Store orders</h1>
 
-      {filtered.length === 0 ? (
-        <p className="py-16 text-center text-muted-foreground">
-          {statusFilter === "needs_action"
-            ? "No orders need action right now."
-            : "No orders match this filter."}
-        </p>
-      ) : (
-        filtered.map((order) => {
-          const customer = customers[order.user_id];
-          const action = nextActionFor(order);
-          const address = formatAddress(order.delivery_address);
-          const busy = busyOrderId === order.id;
-          const canRefund = NEEDS_ACTION.includes(order.status);
-          return (
-            <Card key={order.id}>
-              <CardHeader className="pb-2">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    {order.fulfillment_method === "delivery" ? (
-                      <Truck className="h-4 w-4" />
-                    ) : (
-                      <Package className="h-4 w-4" />
-                    )}
-                    {order.fulfillment_method === "delivery"
-                      ? "Delivery"
-                      : "Pickup"}
-                    <span className="font-normal text-muted-foreground">
-                      · {new Date(order.created_at).toLocaleString()}
-                    </span>
-                  </CardTitle>
-                  <Badge className={STATUS_STYLES[order.status] ?? ""}>
-                    {orderStatusLabel(order.status)}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="text-sm">
-                  <p className="font-medium">
-                    {customer?.full_name ?? "Unknown customer"}
-                  </p>
-                  <p className="text-muted-foreground">
-                    {customer?.email ?? "no email"}
-                    {order.phone ? ` · ${order.phone}` : ""}
-                  </p>
-                  {order.fulfillment_method === "delivery" && (
-                    <p className="mt-1 font-medium text-amber-700">
-                      {address ?? "No address on file"}
-                    </p>
-                  )}
-                </div>
+      <label className="relative block">
+        <span className="sr-only">Search orders</span>
+        <Search aria-hidden className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-ink-subtle" />
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search reference, name or phone"
+          className={cn("h-11 w-full rounded-lg bg-paper pr-3 pl-10 text-base ring-1 ring-line placeholder:text-ink-subtle", FOCUS_ON_LIGHT)}
+        />
+      </label>
 
-                <div className="space-y-1 rounded-md bg-muted/40 p-3">
-                  {order.product_order_items.map((item) => (
-                    <div key={item.id} className="flex justify-between text-sm">
-                      <span>
-                        {item.name}{" "}
-                        <span className="text-muted-foreground">
-                          ×{item.quantity}
-                        </span>
-                      </span>
-                      <span>
-                        ${(item.unit_price * item.quantity).toFixed(2)}
-                      </span>
-                    </div>
-                  ))}
-                  {order.delivery_fee > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Delivery fee</span>
-                      <span>${order.delivery_fee.toFixed(2)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between border-t pt-1 text-sm font-bold">
-                    <span>Total</span>
-                    <span>${order.total.toFixed(2)}</span>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {action && (
-                    <Button
-                      className="bg-blue-900 hover:bg-blue-800"
-                      disabled={busy}
-                      onClick={() =>
-                        callApi(
-                          "/api/admin/product-orders/update-status",
-                          { order_id: order.id, to_status: action.to },
-                          order.id,
-                        )
-                      }
-                    >
-                      {busy ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : null}
-                      {action.label}
-                    </Button>
-                  )}
-                  {canRefund && (
-                    <Button
-                      variant="outline"
-                      disabled={busy}
-                      onClick={() => setRefundTarget(order)}
-                    >
-                      Refund
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })
-      )}
-
-      {hasMore && (
-        <div className="flex justify-center">
-          <Button
-            variant="outline"
-            disabled={loadingMore}
-            onClick={() => {
-              setLoadingMore(true);
-              setLimit((n) => n + PAGE_SIZE);
-            }}
-          >
-            {loadingMore && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Load more orders
-          </Button>
+      {!search && (
+        <div role="tablist" aria-label="Order queues" className="flex flex-wrap gap-2">
+          {TABS.map((t) => {
+            const selected = tab === t.key;
+            const count = counts[t.key];
+            return (
+              <button
+                key={t.key}
+                type="button"
+                role="tab"
+                aria-selected={selected}
+                onClick={() => {
+                  setTab(t.key);
+                  setLimit(PAGE_SIZE);
+                  setPanel(null);
+                  setLoading(true);
+                }}
+                className={cn(
+                  "inline-flex h-11 items-center gap-1.5 rounded-full px-4 text-sm font-semibold transition-colors motion-reduce:transition-none",
+                  selected ? "bg-night text-on-night" : "bg-paper text-ink-muted ring-1 ring-line hover:text-ink",
+                  FOCUS_ON_LIGHT,
+                )}
+              >
+                {t.label}
+                {count !== undefined && <span className={selected ? "text-on-night-muted" : "text-ink-subtle"}>{count}</span>}
+              </button>
+            );
+          })}
         </div>
       )}
 
-      <AlertDialog
-        open={refundTarget !== null}
-        onOpenChange={(open) => {
-          if (!open) setRefundTarget(null);
-        }}
-      >
+      {loading ? (
+        <div className="flex justify-center py-16">
+          <Loader2 aria-label="Loading orders" className="size-8 animate-spin text-ink-subtle motion-reduce:animate-none" />
+        </div>
+      ) : orders.length === 0 ? (
+        <p className={cn(SURFACE, "p-6 text-ink-muted")}>
+          {search ? `No orders match "${search}".` : "Nothing here right now."}
+        </p>
+      ) : (
+        <ul className="space-y-4">
+          {orders.map((o) => (
+            <li key={o.id}>
+              <OrderCard
+                order={o}
+                customer={customers[o.user_id] ?? null}
+                busy={busyId === o.id}
+                panel={panel?.id === o.id ? panel.action : null}
+                paidVia={paidVia}
+                onPaidVia={setPaidVia}
+                onOpenPanel={(action) => {
+                  setPaidVia("cash");
+                  setPanel({ id: o.id, action });
+                }}
+                onClosePanel={() => setPanel(null)}
+                onAction={(action, extra) => act(o, action, extra)}
+                onRelease={() => setReleaseTarget(o)}
+                onRefund={() => setRefundTarget(o)}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {hasMore && !search && (
+        <button type="button" className={RING_BUTTON} onClick={() => setLimit((n) => n + PAGE_SIZE)}>
+          Show more
+        </button>
+      )}
+
+      <PickupSettingsPanel />
+
+      <AlertDialog open={!!releaseTarget} onOpenChange={(open) => !open && setReleaseTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Refund this order?</AlertDialogTitle>
+            <AlertDialogTitle>Release reservation {releaseTarget && ref(releaseTarget)}?</AlertDialogTitle>
             <AlertDialogDescription>
-              This refunds ${refundTarget?.total.toFixed(2)} to the customer
-              through Stripe and marks the order refunded. Stock is not
-              restocked automatically — adjust it on the Products page if the
-              items come back to the shelf.
+              The items go back on the shelf and the customer is emailed. Nothing was charged.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Keep it</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-red-600 hover:bg-red-700"
               onClick={() => {
-                if (refundTarget) {
-                  callApi(
-                    "/api/admin/product-orders/refund",
-                    { order_id: refundTarget.id },
-                    refundTarget.id,
-                  );
-                }
-                setRefundTarget(null);
+                if (releaseTarget) act(releaseTarget, "release");
+                setReleaseTarget(null);
               }}
             >
-              Refund order
+              Release reservation
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={!!refundTarget} onOpenChange={(open) => !open && setRefundTarget(null)}>
+        <AlertDialogContent>
+          {refundTarget && (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  {refundTarget.paid_via === "stripe"
+                    ? `Refund ${money(refundTarget.total)} to the customer's card?`
+                    : `Record a ${money(refundTarget.total)} refund at the store?`}
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {refundTarget.paid_via === "stripe"
+                    ? "Stripe refunds the card now."
+                    : "Hand the money back yourself; this marks the order refunded."}{" "}
+                  {refundTarget.fulfilment_status === "completed"
+                    ? "The items were already handed over, so stock stays as it is."
+                    : "The items go back on the shelf."}{" "}
+                  The customer is emailed.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    const o = refundTarget;
+                    setRefundTarget(null);
+                    post("/api/admin/product-orders/refund", { order_id: o.id }, o.id, `${ref(o)} refunded`);
+                  }}
+                >
+                  Refund
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </>
+          )}
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
+  );
+}
+
+function Tag({ children, tone = "neutral" }: { children: React.ReactNode; tone?: "neutral" | "warn" | "ok" }) {
+  return (
+    <span
+      className={cn(
+        "rounded-full px-2.5 py-1 text-xs font-bold",
+        tone === "warn" && "bg-flame/35 text-ink",
+        tone === "ok" && "bg-night text-on-night",
+        tone === "neutral" && "bg-line-soft text-ink-muted",
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+function OrderCard({
+  order,
+  customer,
+  busy,
+  panel,
+  paidVia,
+  onPaidVia,
+  onOpenPanel,
+  onClosePanel,
+  onAction,
+  onRelease,
+  onRefund,
+}: {
+  order: OrderWithItems;
+  customer: Customer | null;
+  busy: boolean;
+  panel: "hand_over" | "take_payment" | null;
+  paidVia: PaidVia;
+  onPaidVia: (v: PaidVia) => void;
+  onOpenPanel: (action: "hand_over" | "take_payment") => void;
+  onClosePanel: () => void;
+  onAction: (action: StaffAction, extra?: object) => void;
+  onRelease: () => void;
+  onRefund: () => void;
+}) {
+  const f = flow(order);
+  const actions = staffActionsFor(f);
+  const unpaid = isUnpaidReservation(f);
+  const today = houstonDateLabel(new Date().toISOString());
+  const holdLabel = order.hold_until ? houstonDateLabel(order.hold_until) : null;
+  const status = customerStatus(f);
+
+  return (
+    <article aria-labelledby={`order-${order.id}`} className={cn(SURFACE, "p-4 sm:p-5")}>
+      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+        <h2 id={`order-${order.id}`} className="text-3xl leading-none font-black tracking-wide">
+          {ref(order)}
+        </h2>
+        <p className="text-sm text-ink-muted">
+          {customer?.full_name || "Customer"}
+          {customer?.email && <> · {customer.email}</>}
+        </p>
+        {order.phone && (
+          <a href={`tel:${order.phone}`} className={cn("inline-flex items-center gap-1 rounded text-sm font-semibold text-brand-blue", FOCUS_ON_LIGHT)}>
+            <Phone aria-hidden className="size-3.5" />
+            {order.phone}
+          </a>
+        )}
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {unpaid && <Tag tone="warn">Pay at store · {money(order.total)} due</Tag>}
+        {order.payment_status === "paid" && (
+          <Tag tone="ok">{order.paid_via === "stripe" ? "Paid by card" : `Paid · ${PAID_VIA_LABEL[order.paid_via as PaidVia] ?? "Store"}`}</Tag>
+        )}
+        {order.fulfilment_status === "cancelled" && order.payment_status === "paid" ? (
+          <Tag tone="warn">Paid after cancelling: refund</Tag>
+        ) : unpaid && holdLabel && holdLabel === today ? (
+          <Tag tone="warn">Hold ends today</Tag>
+        ) : unpaid && holdLabel ? (
+          <Tag>Ready · held until {holdLabel}</Tag>
+        ) : (
+          <Tag>{status.label}</Tag>
+        )}
+      </div>
+
+      <p className="mt-3 text-sm">
+        {order.product_order_items.map((i) => `${i.name} × ${i.quantity}`).join(" · ")}
+      </p>
+      <p className="mt-1 text-xs text-ink-subtle">
+        Placed {placedAt(order.created_at)} · {money(order.total)}
+      </p>
+
+      {panel === "take_payment" && (
+        <fieldset className="mt-4 rounded-xl bg-canvas p-4 ring-1 ring-line">
+          <legend className="sr-only">Payment method</legend>
+          <p className="mb-2 text-sm font-bold">How did they pay {money(order.total)}?</p>
+          <div className="grid grid-cols-3 gap-2">
+            {COUNTER_METHODS.map((m) => (
+              <label
+                key={m}
+                className="flex h-12 cursor-pointer items-center justify-center rounded-lg bg-paper text-sm font-semibold ring-1 ring-line has-[:checked]:text-brand-blue has-[:checked]:ring-2 has-[:checked]:ring-brand-blue"
+              >
+                <input
+                  type="radio"
+                  name={`paid-via-${order.id}`}
+                  value={m}
+                  checked={paidVia === m}
+                  onChange={() => onPaidVia(m)}
+                  className={cn("sr-only", FOCUS_ON_LIGHT)}
+                />
+                {PAID_VIA_LABEL[m]}
+              </label>
+            ))}
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button type="button" className={PRIMARY} disabled={busy} onClick={() => onAction("take_payment", { paid_via: paidVia })}>
+              {busy && <Loader2 aria-hidden className="size-4 animate-spin" />}
+              Confirm paid &amp; handed over
+            </button>
+            <button type="button" className={QUIET} onClick={onClosePanel}>
+              Cancel
+            </button>
+          </div>
+        </fieldset>
+      )}
+
+      {panel === "hand_over" && (
+        <div className="mt-4 rounded-xl bg-canvas p-4 ring-1 ring-line">
+          <p className="text-sm font-bold">Hand over {ref(order)}? Check the items with the customer.</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button type="button" className={PRIMARY} disabled={busy} onClick={() => onAction("hand_over")}>
+              {busy && <Loader2 aria-hidden className="size-4 animate-spin" />}
+              Confirm handed over
+            </button>
+            <button type="button" className={QUIET} onClick={onClosePanel}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!panel && (actions.length > 0 || order.payment_status === "paid") && (
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          {actions.includes("mark_ready") && (
+            <button type="button" className={PRIMARY} disabled={busy} onClick={() => onAction("mark_ready")}>
+              {busy && <Loader2 aria-hidden className="size-4 animate-spin" />}
+              Mark ready
+            </button>
+          )}
+          {actions.includes("hand_over") && (
+            <button
+              type="button"
+              className={actions[0] === "hand_over" ? PRIMARY : RING_BUTTON}
+              disabled={busy}
+              onClick={() => onOpenPanel("hand_over")}
+            >
+              Hand over
+            </button>
+          )}
+          {actions.includes("take_payment") && (
+            <button
+              type="button"
+              className={actions[0] === "take_payment" ? PRIMARY : RING_BUTTON}
+              disabled={busy}
+              onClick={() => onOpenPanel("take_payment")}
+            >
+              Take payment &amp; hand over
+            </button>
+          )}
+          {actions.includes("release") && (
+            <button type="button" className={QUIET} disabled={busy} onClick={onRelease}>
+              Release
+            </button>
+          )}
+          {order.payment_status === "paid" && (
+            <button type="button" className={QUIET} disabled={busy} onClick={onRefund}>
+              Refund…
+            </button>
+          )}
+        </div>
+      )}
+    </article>
+  );
+}
+
+/** Pickup hours and the unpaid hold: one setting each, shown to customers. */
+function PickupSettingsPanel() {
+  const supabase = createClient();
+  const [hours, setHours] = useState("");
+  const [holdDays, setHoldDays] = useState(String(DEFAULT_HOLD_DAYS));
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    getPickupSettings(supabase).then((s) => {
+      setHours(s.pickupHours ?? "");
+      setHoldDays(String(s.holdDays));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/store-settings/pickup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pickup_hours: hours, hold_days: Number(holdDays) }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Couldn't save the settings");
+      toast.success("Pickup settings saved");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't save the settings");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <details className={cn(SURFACE, "p-4 sm:p-5")}>
+      <summary className={cn("cursor-pointer rounded text-base font-bold", FOCUS_ON_LIGHT)}>Pickup settings</summary>
+      <form onSubmit={save} className="mt-4 space-y-4">
+        <label className="block">
+          <span className="text-sm font-semibold">Pickup hours</span>
+          <span className="block text-sm text-ink-muted">Shown in the cart, on the pickup pass and in emails. Leave empty to hide.</span>
+          <input
+            type="text"
+            value={hours}
+            maxLength={120}
+            onChange={(e) => setHours(e.target.value)}
+            placeholder="For example: Thu–Sun, 9:30 AM–6:30 PM"
+            className={cn("mt-2 h-11 w-full rounded-lg bg-paper px-3 text-base ring-1 ring-line placeholder:text-ink-subtle", FOCUS_ON_LIGHT)}
+          />
+        </label>
+        <label className="block">
+          <span className="text-sm font-semibold">Hold unpaid orders for</span>
+          <span className="mt-2 flex items-center gap-2">
+            <input
+              type="number"
+              min={1}
+              max={14}
+              step={1}
+              value={holdDays}
+              onChange={(e) => setHoldDays(e.target.value)}
+              className={cn("h-11 w-20 rounded-lg bg-paper px-3 text-base ring-1 ring-line", FOCUS_ON_LIGHT)}
+            />
+            <span className="text-sm text-ink-muted">days after they&apos;re marked ready</span>
+          </span>
+        </label>
+        <button type="submit" className={PRIMARY} disabled={saving}>
+          {saving && <Loader2 aria-hidden className="size-4 animate-spin" />}
+          Save pickup settings
+        </button>
+      </form>
+    </details>
   );
 }

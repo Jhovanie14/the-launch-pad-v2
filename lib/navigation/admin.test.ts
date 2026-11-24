@@ -49,6 +49,12 @@ describe("admin nav config", () => {
     ]);
   });
 
+  it("Store orders and Messages carry their badges", () => {
+    const items = allItems();
+    expect(items.find((i) => i.name === "Store orders")?.badge).toBe("orders");
+    expect(items.find((i) => i.name === "Messages")?.badge).toBe("messages");
+  });
+
   it("every icon is distinct", () => {
     expect(new Set(allItems().map((i) => i.icon)).size).toBe(17);
   });

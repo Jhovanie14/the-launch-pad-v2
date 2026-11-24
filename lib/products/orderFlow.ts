@@ -225,3 +225,21 @@ export function staffQueue(o: FlowOrder): StaffQueue {
   if (o.payment_status === "paid" || o.payment_method === "at_store") return "to_pack";
   return "hidden"; // a card order still at Stripe checkout
 }
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * The admin sidebar's Store orders count: orders waiting to be packed, plus
+ * unpaid reservations whose hold ends within the next day.
+ */
+export function needsActionCount(orders: FlowOrder[], now: Date): number {
+  return orders.filter((o) => {
+    if (staffQueue(o) === "to_pack") return true;
+    return (
+      isUnpaidReservation(o) &&
+      o.fulfilment_status === "ready" &&
+      !!o.hold_until &&
+      new Date(o.hold_until).getTime() - now.getTime() <= DAY_MS
+    );
+  }).length;
+}

@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { isNavActive } from "./isNavActive";
 
-export type AdminBadge = "messages";
+export type AdminBadge = "messages" | "orders";
 
 export interface AdminNavItem {
   name: string;
@@ -46,7 +46,7 @@ export const ADMIN_NAV: AdminNavSection[] = [
     label: "Today",
     items: [
       { name: "Bookings", href: "/admin/booking", icon: CalendarDays },
-      { name: "Store orders", href: "/admin/orders", icon: Package },
+      { name: "Store orders", href: "/admin/orders", icon: Package, badge: "orders" },
       { name: "Messages", href: "/admin/contact", icon: MessageCircle, badge: "messages" },
       { name: "Pay & tip QR codes", href: "/admin/qr", icon: QrCode },
     ],

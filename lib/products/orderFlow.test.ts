@@ -7,6 +7,7 @@ import {
   houstonDateLabel,
   isOverdueHold,
   isUnpaidReservation,
+  needsActionCount,
   needsReminder,
   staffActionsFor,
   staffQueue,
@@ -180,5 +181,25 @@ describe("what staff and customers see", () => {
     expect(customerCanCancel(cardPaid())).toBe(false);
     expect(customerCanCancel(order({ payment_method: "card" }))).toBe(false);
     expect(customerCanCancel(order({ fulfilment_status: "released" }))).toBe(false);
+  });
+});
+
+describe("needsActionCount (the sidebar's Store orders badge)", () => {
+  it("counts orders to pack plus reservations whose hold ends within a day", () => {
+    const now = new Date("2026-11-26T15:00:00Z"); // Thu 9 AM Houston
+    expect(
+      needsActionCount(
+        [
+          order(), // reservation to pack
+          cardPaid(), // paid card order to pack
+          order({ payment_method: "card" }), // still at Stripe: not counted
+          order({ fulfilment_status: "ready", hold_until: "2026-11-27T05:59:59.999Z" }), // ends tonight
+          order({ fulfilment_status: "ready", hold_until: "2026-11-30T05:59:59.999Z" }), // days left
+          cardPaid({ fulfilment_status: "ready" }), // waiting, nothing to do
+          cardPaid({ fulfilment_status: "completed" }),
+        ],
+        now,
+      ),
+    ).toBe(3);
   });
 });
