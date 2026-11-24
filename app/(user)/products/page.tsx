@@ -1,4 +1,5 @@
 import { splitCatalog } from "@/lib/products/catalog";
+import { STOREFRONT_CLASS } from "./storefrontFont";
 import { getActiveProducts, getStoreSettings } from "@/lib/products/queries";
 import { StorefrontHero } from "@/components/products/storefront-hero";
 import { FeaturedProduct } from "@/components/products/featured-product";
@@ -30,7 +31,7 @@ export default async function ProductsPage() {
   const gridProducts = featured.length > 0 ? rest : products;
 
   return (
-    <main className="flex-1">
+    <main className={`flex-1 ${STOREFRONT_CLASS}`}>
       <StorefrontHero
         videoUrl={settings?.hero_video_url ?? null}
         posterUrl={settings?.hero_poster_url ?? null}

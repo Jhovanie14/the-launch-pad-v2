@@ -13,6 +13,7 @@ import {
   signoff,
   text,
 } from "./layout";
+import { PAID_VIA_LABEL, type PaidVia } from "@/lib/products/orderFlow";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -103,14 +104,21 @@ type ConfirmationArgs = {
   deliveryFee: number;
   total: number;
   fulfillmentMethod: "pickup" | "delivery";
+  /** store_settings.pickup_hours; null means not set, so no hours line. */
+  pickupHours?: string | null;
 };
+
+/** The "Pickup hours" detail row, only when the owner has set them. */
+function hoursRow(pickupHours: string | null | undefined): [string, string][] {
+  return pickupHours ? [["Pickup hours", text(pickupHours)]] : [];
+}
 
 export function buildProductOrderConfirmationEmail(args: ConfirmationArgs): BuiltEmail {
   const isDelivery = args.fulfillmentMethod === "delivery";
   const ref = orderRef(args.orderId);
   const nextStep = isDelivery
     ? paragraph(`We are preparing your order now and will email you again when it is <strong>out for delivery</strong> to the address you gave at checkout.`)
-    : paragraph(`We are preparing your order now and will email you again when it is <strong>ready for pickup</strong> at ${text(STORE_ADDRESS)}.`);
+    : paragraph(`Paid. We are preparing your order now and will email you again when it is <strong>ready for pickup</strong> at ${text(STORE_ADDRESS)}.`);
   const body = [
     heading("Your order is confirmed"),
     salutation(args.name),
@@ -118,6 +126,7 @@ export function buildProductOrderConfirmationEmail(args: ConfirmationArgs): Buil
     details([
       ["Order", text(ref)],
       ["Fulfillment", isDelivery ? "Local delivery" : "Pickup at the store"],
+      ...(isDelivery ? [] : hoursRow(args.pickupHours)),
     ]),
     orderItemsTable(args),
     nextStep,
@@ -137,15 +146,33 @@ export function buildProductOrderConfirmationEmail(args: ConfirmationArgs): Buil
 
 type StatusArgs = { to: string; name: string; orderId: string };
 
-export function buildProductOrderReadyForPickupEmail(args: StatusArgs): BuiltEmail {
+type ReadyArgs = StatusArgs & {
+  /** Set for an unpaid pay-at-store order: what to pay at the counter. */
+  amountDue?: number | null;
+  /** "Thu, Nov 26": the Houston date the hold lasts through. */
+  holdDate?: string | null;
+  pickupHours?: string | null;
+};
+
+export function buildProductOrderReadyForPickupEmail(args: ReadyArgs): BuiltEmail {
   const ref = orderRef(args.orderId);
+  const due = args.amountDue != null && args.amountDue > 0;
   const body = [
     heading("Your order is ready for pickup"),
     salutation(args.name),
-    paragraph("Your order is packed and ready for you at The Launch Pad."),
+    paragraph(`Your order is packed and ready to collect at The Launch Pad. Show reference <strong>${text(ref)}</strong> at the counter.`),
+    ...(due
+      ? [
+          paragraph(
+            `${money(args.amountDue!)} to pay at the counter (cash, card or QR).` +
+              (args.holdDate ? ` We will hold it until ${text(args.holdDate)}.` : ""),
+          ),
+        ]
+      : []),
     details([
       ["Order", text(ref)],
       ["Pick up at", text(STORE_ADDRESS)],
+      ...hoursRow(args.pickupHours),
     ]),
     button(DIRECTIONS_URL, "Get directions"),
     paragraph(`You can see your order any time in <a href="${ORDERS_URL}">your dashboard</a>.`, { muted: true, small: true }),
@@ -186,12 +213,15 @@ export function buildProductOrderOutForDeliveryEmail(args: StatusArgs): BuiltEma
   };
 }
 
-export function buildProductOrderRefundedEmail(args: StatusArgs & { total: number }): BuiltEmail {
+type RefundArgs = StatusArgs & { total: number; where?: "card" | "store" };
+
+export function buildProductOrderRefundedEmail(args: RefundArgs): BuiltEmail {
   const ref = orderRef(args.orderId);
+  const atStore = args.where === "store";
   const body = [
     heading("Your order has been refunded"),
     salutation(args.name),
-    paragraph("We have refunded your order to the card you paid with."),
+    paragraph(atStore ? "We have refunded your order at the store." : "We have refunded your order to the card you paid with."),
     details(
       [
         ["Order", text(ref)],
@@ -199,7 +229,7 @@ export function buildProductOrderRefundedEmail(args: StatusArgs & { total: numbe
       ],
       { emphasizeLast: true },
     ),
-    paragraph(`Depending on your bank, it can take 5&ndash;10 business days to show on your statement.`),
+    ...(atStore ? [] : [paragraph(`Depending on your bank, it can take 5&ndash;10 business days to show on your statement.`)]),
     paragraph(
       `Should you have any questions about this refund, please call us at <a href="tel:+18322198320">(832) 219-8320</a> or email <a href="mailto:info@thelaunchpadwash.com">info@thelaunchpadwash.com</a>.`,
     ),
@@ -217,11 +247,149 @@ export function buildProductOrderRefundedEmail(args: StatusArgs & { total: numbe
   };
 }
 
+const SHOP_URL = `${SITE_URL}/products`;
+
+type ReservedArgs = StatusArgs & {
+  items: OrderEmailItem[];
+  subtotal: number;
+  total: number;
+  pickupHours: string | null;
+};
+
+/** Pay-at-store order placed: nothing charged yet. */
+export function buildProductOrderReservedEmail(args: ReservedArgs): BuiltEmail {
+  const ref = orderRef(args.orderId);
+  const body = [
+    heading("Your order is reserved"),
+    salutation(args.name),
+    paragraph(`Reserved: pay ${money(args.total)} at the counter when you collect. We will email you when it is ready.`),
+    details([
+      ["Order", text(ref)],
+      ["Pick up at", text(STORE_ADDRESS)],
+      ...hoursRow(args.pickupHours),
+    ]),
+    orderItemsTable({ items: args.items, subtotal: args.subtotal, deliveryFee: 0, total: args.total }),
+    button(ORDERS_URL, "Track your order"),
+    signoff(),
+  ].join("\n");
+  return {
+    subject: `Your Launch Pad order ${ref} is reserved`,
+    html: emailLayout({
+      title: "Your order is reserved",
+      preheader: `Order ${ref}: pay ${money(args.total)} at the counter when you collect.`,
+      body,
+      footerNote: FOOTER_NOTE,
+    }),
+  };
+}
+
+type ReminderArgs = StatusArgs & { total: number; holdDate: string; pickupHours: string | null };
+
+/** The Houston day before an unpaid reservation's hold ends. */
+export function buildProductOrderHoldReminderEmail(args: ReminderArgs): BuiltEmail {
+  const ref = orderRef(args.orderId);
+  const body = [
+    heading("Your order is waiting for you"),
+    salutation(args.name),
+    paragraph(
+      `Your order is held until tomorrow, ${text(args.holdDate)}. Pay ${money(args.total)} at the counter when you collect, and show reference <strong>${text(ref)}</strong>.`,
+    ),
+    details([
+      ["Order", text(ref)],
+      ["Pick up at", text(STORE_ADDRESS)],
+      ...hoursRow(args.pickupHours),
+    ]),
+    button(DIRECTIONS_URL, "Get directions"),
+    paragraph(`Changed your mind? You can cancel the reservation in <a href="${ORDERS_URL}">your orders</a>.`, { muted: true, small: true }),
+    signoff(),
+  ].join("\n");
+  return {
+    subject: `Your Launch Pad order ${ref} is held until tomorrow`,
+    html: emailLayout({
+      title: "Your order is waiting for you",
+      preheader: `Order ${ref} is held until tomorrow, ${args.holdDate}.`,
+      body,
+      footerNote: FOOTER_NOTE,
+    }),
+  };
+}
+
+type ReleasedArgs = StatusArgs & { byCustomer: boolean };
+
+/** Unpaid reservation released (hold ended, staff, or the customer cancelled). */
+export function buildProductOrderReleasedEmail(args: ReleasedArgs): BuiltEmail {
+  const ref = orderRef(args.orderId);
+  const lead = args.byCustomer
+    ? `You cancelled reservation ${text(ref)}. Nothing was charged.`
+    : `We have released your reservation. Nothing was charged.`;
+  const body = [
+    heading(args.byCustomer ? "Your reservation is cancelled" : "Your reservation has been released"),
+    salutation(args.name),
+    paragraph(lead),
+    details([["Order", text(ref)]]),
+    button(SHOP_URL, "Shop products"),
+    signoff(),
+  ].join("\n");
+  return {
+    subject: args.byCustomer ? `Your Launch Pad reservation ${ref} is cancelled` : `Your Launch Pad reservation ${ref} has been released`,
+    html: emailLayout({
+      title: args.byCustomer ? "Your reservation is cancelled" : "Your reservation has been released",
+      preheader: `Order ${ref}. Nothing was charged.`,
+      body,
+      footerNote: FOOTER_NOTE,
+    }),
+  };
+}
+
+type CollectedArgs = StatusArgs & { items: OrderEmailItem[]; total: number; paidVia: PaidVia };
+
+/** Handed over at the counter: a receipt. */
+export function buildProductOrderCollectedEmail(args: CollectedArgs): BuiltEmail {
+  const ref = orderRef(args.orderId);
+  const body = [
+    heading("Thanks for picking up your order"),
+    salutation(args.name),
+    paragraph("Here is your receipt."),
+    details([
+      ["Order", text(ref)],
+      ["Paid by", PAID_VIA_LABEL[args.paidVia] ?? "Card"],
+    ]),
+    orderItemsTable({ items: args.items, subtotal: args.total, deliveryFee: 0, total: args.total }),
+    button(ORDERS_URL, "View your orders"),
+    signoff(),
+  ].join("\n");
+  return {
+    subject: `Your Launch Pad order ${ref}: receipt`,
+    html: emailLayout({
+      title: "Thanks for picking up your order",
+      preheader: `Receipt for order ${ref}, ${money(args.total)}.`,
+      body,
+      footerNote: FOOTER_NOTE,
+    }),
+  };
+}
+
+export async function sendProductOrderReservedEmail(args: ReservedArgs) {
+  await send(args.to, buildProductOrderReservedEmail(args), "order reserved");
+}
+
+export async function sendProductOrderHoldReminderEmail(args: ReminderArgs) {
+  await send(args.to, buildProductOrderHoldReminderEmail(args), "hold reminder");
+}
+
+export async function sendProductOrderReleasedEmail(args: ReleasedArgs) {
+  await send(args.to, buildProductOrderReleasedEmail(args), "reservation released");
+}
+
+export async function sendProductOrderCollectedEmail(args: CollectedArgs) {
+  await send(args.to, buildProductOrderCollectedEmail(args), "order collected");
+}
+
 export async function sendProductOrderConfirmationEmail(args: ConfirmationArgs) {
   await send(args.to, buildProductOrderConfirmationEmail(args), "product order confirmation");
 }
 
-export async function sendProductOrderReadyForPickupEmail(args: StatusArgs) {
+export async function sendProductOrderReadyForPickupEmail(args: ReadyArgs) {
   await send(args.to, buildProductOrderReadyForPickupEmail(args), "ready for pickup");
 }
 
@@ -229,6 +397,6 @@ export async function sendProductOrderOutForDeliveryEmail(args: StatusArgs) {
   await send(args.to, buildProductOrderOutForDeliveryEmail(args), "out for delivery");
 }
 
-export async function sendProductOrderRefundedEmail(args: StatusArgs & { total: number }) {
+export async function sendProductOrderRefundedEmail(args: RefundArgs) {
   await send(args.to, buildProductOrderRefundedEmail(args), "order refunded");
 }

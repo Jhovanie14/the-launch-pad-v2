@@ -567,6 +567,20 @@ export type Database = {
       }
       product_orders: {
         Row: {
+          completed_at: string | null
+          completed_by: string | null
+          fulfilment_status: string
+          hold_until: string | null
+          paid_at: string | null
+          paid_via: string | null
+          payment_method: string
+          payment_status: string
+          ready_at: string | null
+          released_at: string | null
+          reminder_sent_at: string | null
+          stock_released_at: string | null
+          stock_taken: boolean
+          ref: string | null
           created_at: string
           delivery_address: Json | null
           delivery_fee: number
@@ -582,6 +596,19 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          completed_at?: string | null
+          completed_by?: string | null
+          fulfilment_status?: string
+          hold_until?: string | null
+          paid_at?: string | null
+          paid_via?: string | null
+          payment_method?: string
+          payment_status?: string
+          ready_at?: string | null
+          released_at?: string | null
+          reminder_sent_at?: string | null
+          stock_released_at?: string | null
+          stock_taken?: boolean
           created_at?: string
           delivery_address?: Json | null
           delivery_fee?: number
@@ -597,6 +624,19 @@ export type Database = {
           user_id: string
         }
         Update: {
+          completed_at?: string | null
+          completed_by?: string | null
+          fulfilment_status?: string
+          hold_until?: string | null
+          paid_at?: string | null
+          paid_via?: string | null
+          payment_method?: string
+          payment_status?: string
+          ready_at?: string | null
+          released_at?: string | null
+          reminder_sent_at?: string | null
+          stock_released_at?: string | null
+          stock_taken?: boolean
           created_at?: string
           delivery_address?: Json | null
           delivery_fee?: number
@@ -1080,6 +1120,8 @@ export type Database = {
       }
       store_settings: {
         Row: {
+          hold_days: number
+          pickup_hours: string | null
           delivery_fee: number
           hero_cta_label: string | null
           hero_headline: string | null
@@ -1090,6 +1132,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          hold_days?: number
+          pickup_hours?: string | null
           delivery_fee?: number
           hero_cta_label?: string | null
           hero_headline?: string | null
@@ -1100,6 +1144,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          hold_days?: number
+          pickup_hours?: string | null
           delivery_fee?: number
           hero_cta_label?: string | null
           hero_headline?: string | null
@@ -1332,6 +1378,25 @@ export type Database = {
         Returns: undefined
       }
       is_admin: { Args: never; Returns: boolean }
+      place_product_order: {
+        Args: {
+          p_items: Json
+          p_payment_method: string
+          p_phone: string | null
+          p_subtotal: number
+          p_total: number
+          p_user_id: string
+        }
+        Returns: string
+      }
+      release_product_order_stock: {
+        Args: { p_order_id: string }
+        Returns: undefined
+      }
+      take_product_order_stock: {
+        Args: { p_order_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

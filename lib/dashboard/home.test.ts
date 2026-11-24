@@ -40,7 +40,7 @@ const log = (over: Partial<HomeUsageLog>): HomeUsageLog => ({
 
 const order = (over: Partial<HomeOrder>): HomeOrder => ({
   id: "o1",
-  status: "paid",
+  fulfilment_status: "placed",
   fulfillment_method: "pickup",
   total: 24.99,
   created_at: "2026-11-05T12:00:00Z",
@@ -93,7 +93,7 @@ describe("membershipStatusLine", () => {
 
 describe("pickNow", () => {
   it("puts an open self-service check-in first", () => {
-    const now = pickNow({ bookings: [booking({})], logs: [log({})], orders: [order({ status: "ready_for_pickup" })], now: NOW });
+    const now = pickNow({ bookings: [booking({})], logs: [log({})], orders: [order({ fulfilment_status: "ready" })], now: NOW });
     expect(now?.kind).toBe("checked_in");
   });
 
@@ -141,11 +141,11 @@ describe("pickNow", () => {
   });
 
   it("then an order ready for pickup or out for delivery", () => {
-    expect(pickNow({ bookings: [], logs: [], orders: [order({ status: "ready_for_pickup" })], now: NOW })?.kind).toBe(
+    expect(pickNow({ bookings: [], logs: [], orders: [order({ fulfilment_status: "ready" })], now: NOW })?.kind).toBe(
       "order_ready",
     );
     expect(
-      pickNow({ bookings: [], logs: [], orders: [order({ status: "out_for_delivery", fulfillment_method: "delivery" })], now: NOW })
+      pickNow({ bookings: [], logs: [], orders: [order({ fulfilment_status: "out_for_delivery", fulfillment_method: "delivery" })], now: NOW })
         ?.kind,
     ).toBe("order_on_the_way");
   });
@@ -159,7 +159,7 @@ describe("buildPastVisits", () => {
         booking({ id: "d2", status: "confirmed" }),
       ],
       logs: [log({ id: "s1", check_in_time: "2026-11-04T15:00:00Z", check_out_time: "2026-11-04T15:25:00Z", status: "completed" })],
-      orders: [order({ id: "o1", status: "completed", created_at: "2026-10-30T12:00:00Z" }), order({ id: "o2", status: "pending" })],
+      orders: [order({ id: "o1", fulfilment_status: "completed", created_at: "2026-10-30T12:00:00Z" }), order({ id: "o2", fulfilment_status: "placed" })],
     });
     expect(visits.map((v) => v.id)).toEqual(["s1", "d1", "o1"]);
     expect(visits.map((v) => v.kind)).toEqual(["self_service", "detail", "order"]);

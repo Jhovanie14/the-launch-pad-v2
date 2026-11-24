@@ -39,7 +39,8 @@ export interface HomeUsageLog {
 
 export interface HomeOrder {
   id: string;
-  status: string;
+  /** product_orders.fulfilment_status (status is deprecated). */
+  fulfilment_status: string;
   fulfillment_method: "pickup" | "delivery" | string;
   total: number | string;
   created_at: string;
@@ -190,9 +191,9 @@ export function pickNow(input: {
     .sort((a, b) => appointmentSortKey(a).localeCompare(appointmentSortKey(b)));
   if (upcoming[0]) return { kind: "upcoming", booking: upcoming[0] };
 
-  const ready = input.orders.find((o) => o.status === "ready_for_pickup");
+  const ready = input.orders.find((o) => o.fulfilment_status === "ready");
   if (ready) return { kind: "order_ready", order: ready };
-  const onTheWay = input.orders.find((o) => o.status === "out_for_delivery");
+  const onTheWay = input.orders.find((o) => o.fulfilment_status === "out_for_delivery");
   if (onTheWay) return { kind: "order_on_the_way", order: onTheWay };
 
   return null;
@@ -236,7 +237,7 @@ export function buildPastVisits(
     }));
 
   const orders: VisitItem[] = input.orders
-    .filter((o) => o.status === "completed")
+    .filter((o) => o.fulfilment_status === "completed")
     .map((o) => ({
       id: o.id,
       kind: "order" as const,
