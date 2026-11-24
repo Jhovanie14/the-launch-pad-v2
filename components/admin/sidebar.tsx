@@ -1,34 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { AuthUser } from "@/types";
-import {
-  Settings,
-  LogOut,
-  Home,
-  X,
-  Calendar,
-  CreditCard,
-  Car,
-  Truck,
-  Notebook,
-  MessageCircle,
-  HandHelping,
-  QrCode,
-  Mail,
-  UserRound,
-  MessageSquare,
-  ShoppingBasket,
-  Package,
-  Megaphone,
-} from "lucide-react";
-import { useEffect, useState } from "react";
-import { useAuth } from "@/context/auth-context";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { LogOut, X } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { FOCUS_ON_NIGHT } from "@/components/booking/ui/focus";
+import { useAuth } from "@/context/auth-context";
 import { createClient } from "@/utils/supabase/client";
+import { cn } from "@/lib/utils";
+import {
+  ADMIN_NAV_FOOTER,
+  activeHref,
+  adminNav,
+  badgeLabel,
+  isSuperAdmin,
+  type AdminNavItem,
+} from "@/lib/navigation/admin";
+import { AuthUser } from "@/types";
 import LoadingDots from "../loading";
 
 interface AdminSidebarProps {
@@ -38,70 +28,27 @@ interface AdminSidebarProps {
   onClose: () => void;
 }
 
-const navigation = [
-  { name: "Dashboard", href: "/admin/dashboard", icon: Home },
-  { name: "Users", href: "/admin/users", icon: UserRound },
-  { name: "fleet inquiry", href: "/admin/fleet-inquiry", icon: MessageSquare },
-  { name: "fleet payment management", href: "/admin/fleet-payment-management", icon: MessageSquare },
-  { name: "Bookings", href: "/admin/booking", icon: Calendar },
-  { name: "Subscriptions", href: "/admin/subscriptions", icon: CreditCard },
-  { name: "Services", href: "/admin/services", icon: Car },
-  { name: "Add-ons", href: "/admin/addons", icon: Truck },
-  { name: "Products", href: "/admin/products", icon: ShoppingBasket },
-  { name: "Orders", href: "/admin/orders", icon: Package },
-  { name: "Promo codes", href: "/admin/promo", icon: HandHelping },
-  { name: "QR payment/Tip", href: "/admin/qr", icon: QrCode },
-  { name: "Blog", href: "/admin/blog", icon: Notebook },
-  { name: "Contact", href: "/admin/contact", icon: MessageCircle },
-  { name: "Campaigns", href: "/admin/campaigns", icon: Megaphone },
-  { name: "Direct email", href: "/admin/broadcast", icon: Mail },
-  { name: "Settings", href: "/admin/settings", icon: Settings },
-];
-
+/**
+ * The admin sidebar: grouped links from lib/navigation/admin.ts on the 24/7
+ * Bay tokens. The current link is the navbar's white/12 pill, never a side
+ * stripe (DESIGN.md).
+ */
 export function AdminSidebar({ user, open, onClose }: AdminSidebarProps) {
   const pathname = usePathname();
   const { signOut } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [unreadCount, setUnreadCount] = useState<number>(0);
-  const [userType, setUserType] = useState<string>("admin"); // 👈 added
 
   const handleSignOut = async () => {
-    setIsLoggingOut(true); // show full-screen loader
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    await signOut(); // your logout logic
-    // router.push('/login') happens inside signOut or after it
-    // no need to set isLoggingOut(false) because the page will redirect
+    setIsLoggingOut(true); // full-screen loader until the redirect lands
+    try {
+      await signOut();
+    } catch {
+      setIsLoggingOut(false);
+    }
   };
 
-  // ✅ Fetch user_type from profiles
-  useEffect(() => {
-    const supabase = createClient();
-    const fetchUserType = async () => {
-      if (!user?.id) return;
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("user_type")
-        .eq("id", user.id)
-        .single();
-      if (!error && data) {
-        setUserType(data.user_type || "customer");
-      }
-    };
-    fetchUserType();
-  }, [user]);
-
-  const filteredNavigation = navigation.filter((item) => {
-    if (
-      ["Services", "Promo codes", "Add-ons", "Subscriptions"].includes(
-        item.name
-      ) &&
-      userType === "admin"
-    ) {
-      return false;
-    }
-    return true;
-  });
-
+  // New contact messages, kept live for the Messages badge.
   useEffect(() => {
     const supabase = createClient();
 
@@ -132,123 +79,169 @@ export function AdminSidebar({ user, open, onClose }: AdminSidebarProps) {
     };
   }, []);
 
+  // The role comes with the profile the admin layout loads, so super-admin
+  // links never flash in or out after the page renders.
+  const sections = adminNav(user?.user_type);
+  const current = activeHref(pathname);
+  const counts = { messages: unreadCount };
+
+  const link = (item: AdminNavItem) => (
+    <li key={item.href}>
+      <NavLink
+        item={item}
+        current={current === item.href}
+        badge={item.badge ? badgeLabel(counts[item.badge]) : null}
+        onNavigate={onClose}
+      />
+    </li>
+  );
+
   return (
     <>
       {isLoggingOut && <LoadingDots />}
       {/* Overlay for small screens */}
       {open && (
         <div
-          className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+          aria-hidden
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
           onClick={onClose}
         />
       )}
 
       <div
         id="admin-sidebar"
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-sidebar border-r border-sidebar-border transform transition-transform duration-300 ease-in-out
-          ${open ? "translate-x-0" : "-translate-x-full"}
-          lg:translate-x-0 lg:static lg:inset-0 flex flex-col`}
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-white/10 bg-night text-on-night-muted transition-transform duration-300 ease-out motion-reduce:transition-none lg:static lg:translate-x-0",
+          open ? "translate-x-0" : "-translate-x-full"
+        )}
       >
-        {/* Sidebar Header */}
-        <div className="flex items-center justify-between h-32 px-6 border-b border-sidebar-border">
-          <Link href="/">
-            <div className="flex flex-col items-center space-x-3">
-              <Image
-                src="/thelaunchpad.png"
-                alt="The Launch Pad"
-                width={48}
-                height={48}
-                className="h-8 w-8 sm:h-10 sm:w-10 object-contain"
-              />
-              <div className="flex flex-col items-center">
-                <span className="text-xl font-bold text-foreground tracking-tight">
-                  THE LAUNCH PAD
-                </span>
-                <span className="text-xs text-blue-600 font-medium uppercase tracking-wider">
-                  Premium Car Care
-                </span>
-              </div>
-            </div>
+        {/* Header */}
+        <div className="flex h-16 shrink-0 items-center gap-2 border-b border-white/10 px-4">
+          <Link
+            href="/"
+            className={cn("flex min-w-0 items-center gap-2.5 rounded-lg", FOCUS_ON_NIGHT)}
+          >
+            <Image
+              src="/thelaunchpad.png"
+              alt=""
+              width={32}
+              height={32}
+              className="size-8 object-contain"
+            />
+            <span className="flex flex-col leading-tight">
+              <span className="text-base font-black tracking-tight text-on-night">
+                The Launch Pad
+              </span>
+              <span className="text-xs text-on-night-subtle">Admin</span>
+            </span>
           </Link>
 
-          {/* Sits in the drawer header, in normal flow. This used to be
-              `fixed` at the same coordinates as the opener, and only escaped
-              stacking on top of it because the sidebar's transform quietly
-              made itself the containing block for fixed descendants. */}
-          <Button
-            variant="ghost"
-            size="icon"
+          {/* Sits in the drawer header, in normal flow (see AdminShell). */}
+          <button
+            type="button"
             aria-label="Close navigation"
-            className="shrink-0 lg:hidden"
             onClick={onClose}
+            className={cn(
+              "ml-auto grid size-11 shrink-0 place-items-center rounded-lg text-on-night-muted transition-colors hover:bg-white/8 hover:text-on-night motion-reduce:transition-none lg:hidden",
+              FOCUS_ON_NIGHT
+            )}
           >
-            <X className="h-6 w-6" />
-          </Button>
+            <X aria-hidden className="size-6" />
+          </button>
         </div>
 
         {/* Navigation */}
-        <nav className="mt-6 px-3 flex-1 overflow-y-auto">
-          {filteredNavigation.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                onClick={onClose}
-                className={`group flex items-center rounded-md px-2 py-2 text-sm font-medium transition-colors
-                  ${
-                    isActive
-                      ? "bg-blue-900 text-sidebar-primary-foreground"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                  }`}
-              >
-                <div className="relative mr-3 flex items-center justify-center">
-                  <item.icon className="h-5 w-5 flex-shrink-0" />
-                  {item.name === "Contact" && unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white">
-                      {unreadCount > 9 ? "9+" : unreadCount}
-                    </span>
-                  )}
+        <nav aria-label="Admin" className="flex min-h-0 flex-1 flex-col">
+          <div className="flex-1 overflow-y-auto px-3 py-3">
+            {sections.map((section) => {
+              const items = <ul className="space-y-0.5">{section.items.map(link)}</ul>;
+              if (!section.label) return <div key="top">{items}</div>;
+              const id = `admin-nav-${section.label.toLowerCase().replace(/\W+/g, "-")}`;
+              return (
+                <div key={section.label} role="group" aria-labelledby={id} className="mt-5">
+                  <h2 id={id} className="mb-1 px-2.5 text-xs font-semibold text-on-night-subtle">
+                    {section.label}
+                  </h2>
+                  {items}
                 </div>
-                <span className="truncate">{item.name}</span>
-              </Link>
-            );
-          })}
+              );
+            })}
+          </div>
+          <ul className="shrink-0 border-t border-white/10 px-3 py-2">{link(ADMIN_NAV_FOOTER)}</ul>
         </nav>
 
-        {/* User Info */}
+        {/* Account */}
         {user && (
-          <div className="flex-shrink-0 border-t border-gray-400 p-4 flex items-center justify-between">
-            <div className="flex items-center">
-              <Avatar className="h-8 w-8">
-                <AvatarImage
-                  src={user.avatar_url || undefined}
-                  alt={user.full_name || "Admin"}
-                />
-                <AvatarFallback>
-                  {user.full_name?.charAt(0) ||
-                    user.email.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="ml-3">
-                <p className="text-sm font-medium">
-                  {user.full_name || user.email}
-                </p>
-                <p className="text-xs text-gray-400">Administrator</p>
-              </div>
+          <div className="flex shrink-0 items-center gap-3 border-t border-white/10 p-3">
+            <Avatar className="size-9">
+              <AvatarImage
+                src={user.avatar_url || undefined}
+                alt={user.full_name || "Admin"}
+              />
+              <AvatarFallback className="bg-dusk text-sm font-bold text-flame">
+                {user.full_name?.charAt(0) || user.email.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-on-night">
+                {user.full_name || user.email}
+              </p>
+              <p className="text-xs text-on-night-subtle">
+                {isSuperAdmin(user.user_type) ? "Super admin" : "Admin"}
+              </p>
             </div>
-
-            <Button
+            <button
+              type="button"
               onClick={handleSignOut}
-              type="submit"
-              variant="outline"
-              size="sm"
+              disabled={isLoggingOut}
+              className={cn(
+                "inline-flex h-11 shrink-0 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-on-night-muted ring-1 ring-white/25 transition-colors hover:bg-white/10 hover:text-on-night disabled:opacity-60 motion-reduce:transition-none lg:h-10",
+                FOCUS_ON_NIGHT
+              )}
             >
-              <LogOut className="h-4 w-4" />
-            </Button>
+              <LogOut aria-hidden className="size-4" />
+              Sign out
+            </button>
           </div>
         )}
       </div>
     </>
+  );
+}
+
+function NavLink({
+  item,
+  current,
+  badge,
+  onNavigate,
+}: {
+  item: AdminNavItem;
+  current: boolean;
+  badge: string | null;
+  onNavigate: () => void;
+}) {
+  const Icon = item.icon;
+  return (
+    <Link
+      href={item.href}
+      onClick={onNavigate}
+      aria-current={current ? "page" : undefined}
+      className={cn(
+        "flex h-11 items-center gap-3 rounded-lg px-2.5 text-sm transition-colors motion-reduce:transition-none lg:h-10",
+        FOCUS_ON_NIGHT,
+        current
+          ? "bg-white/12 font-semibold text-on-night"
+          : "font-medium text-on-night-muted hover:bg-white/8 hover:text-on-night"
+      )}
+    >
+      <Icon aria-hidden className={cn("size-4.5 shrink-0", current && "text-flame")} />
+      <span className="truncate">{item.name}</span>
+      {badge && (
+        <span className="ml-auto grid h-5 min-w-5 place-items-center rounded-full bg-flame px-1.5 text-xs font-bold text-on-flame">
+          {badge}
+          <span className="sr-only"> unread</span>
+        </span>
+      )}
+    </Link>
   );
 }

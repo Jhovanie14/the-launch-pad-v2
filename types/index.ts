@@ -4,6 +4,8 @@ export interface AuthUser {
   full_name: string | null;
   avatar_url: string | null;
   role?: string | null;
+  /** "super_admin" for super admins; drives the admin nav and page guards. */
+  user_type?: string | null;
   phone?: string;
   created_at: string;
   updated_at: string;
