@@ -8,63 +8,66 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import { cn } from "@/lib/utils";
+import { SURFACE } from "@/components/booking/ui/focus";
+import { ProductVideo } from "./product-video";
+
+const FRAME = "relative aspect-square overflow-hidden rounded-xl bg-paper";
 
 /**
- * Portrait gallery for a product page.
- *
- * A single image renders as a plain still -- a carousel with one slide is just
- * controls that do nothing. Arrows only appear once there is somewhere to go.
+ * The product page's pictures on white: packshots contained (never cropped),
+ * the clip first when there is one. A single picture is a plain still; arrows
+ * only appear once there is somewhere to go.
  */
 export function ProductGallery({
   images,
   alt,
+  video,
 }: {
   images: string[];
   alt: string;
+  video?: { src: string; poster: string | null } | null;
 }) {
-  if (images.length === 0) {
-    return (
-      <div className="flex aspect-[3/4] items-center justify-center border border-border/60 bg-card text-sm text-muted-foreground">
-        No image
-      </div>
-    );
-  }
+  const slides: ({ kind: "video" } | { kind: "image"; src: string; index: number })[] = [
+    ...(video ? [{ kind: "video" as const }] : []),
+    ...images.map((src, index) => ({ kind: "image" as const, src, index })),
+  ];
 
-  if (images.length === 1) {
-    return (
-      <div className="relative aspect-[3/4] overflow-hidden border border-border/60">
+  const render = (slide: (typeof slides)[number], first: boolean) =>
+    slide.kind === "video" ? (
+      <div className={cn(FRAME, "bg-night")}>
+        <ProductVideo src={video!.src} poster={video!.poster} alt={alt} priority={first} sizes="(min-width: 1024px) 45vw, 100vw" className="absolute inset-0 h-full w-full" />
+      </div>
+    ) : (
+      <div className={FRAME}>
         <Image
-          src={images[0]}
-          alt={alt}
+          src={slide.src}
+          alt={slide.index === 0 ? alt : `${alt}, view ${slide.index + 1}`}
           fill
-          priority
+          priority={first}
           sizes="(min-width: 1024px) 45vw, 100vw"
-          className="object-cover"
+          className="object-contain p-4 sm:p-6"
         />
       </div>
     );
-  }
 
   return (
-    <Carousel className="w-full">
-      <CarouselContent>
-        {images.map((src, index) => (
-          <CarouselItem key={src}>
-            <div className="relative aspect-[3/4] overflow-hidden border border-border/60">
-              <Image
-                src={src}
-                alt={index === 0 ? alt : `${alt} — view ${index + 1}`}
-                fill
-                priority={index === 0}
-                sizes="(min-width: 1024px) 45vw, 100vw"
-                className="object-cover"
-              />
-            </div>
-          </CarouselItem>
-        ))}
-      </CarouselContent>
-      <CarouselPrevious className="left-4 rounded-none" />
-      <CarouselNext className="right-4 rounded-none" />
-    </Carousel>
+    <div className={cn(SURFACE, "p-3 sm:p-4")}>
+      {slides.length === 0 ? (
+        <div className={cn(FRAME, "bg-line-soft")} />
+      ) : slides.length === 1 ? (
+        render(slides[0], true)
+      ) : (
+        <Carousel className="w-full" opts={{ loop: false }}>
+          <CarouselContent>
+            {slides.map((slide, i) => (
+              <CarouselItem key={slide.kind === "video" ? "video" : slide.src}>{render(slide, i === 0)}</CarouselItem>
+            ))}
+          </CarouselContent>
+          <CarouselPrevious className="left-3 size-11" />
+          <CarouselNext className="right-3 size-11" />
+        </Carousel>
+      )}
+    </div>
   );
 }

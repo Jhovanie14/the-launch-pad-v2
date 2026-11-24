@@ -68,3 +68,33 @@ describe("product cards and buttons", () => {
     }
   });
 });
+
+describe("product page", () => {
+  const page = () => read("app/(user)/products/[slug]/page.tsx");
+  const buy = () => read("components/products/BuyBox.tsx");
+
+  it("leads with the short title, price and add to cart, then the details", () => {
+    const s = page();
+    for (const bit of ["productTitle(", "parseDescription(", "<BuyBox", "pickup_hours", "About this product", "Specs", "More products"]) {
+      expect(s, bit).toContain(bit);
+    }
+    expect(s).not.toContain("STOREFRONT_CLASS");
+    expect(s).not.toContain("whitespace-pre-line");
+  });
+
+  it("keeps add to cart in reach on phones, and says when it's sold out", () => {
+    const s = buy();
+    expect(s).toMatch(/sticky bottom-0[^"]*lg:hidden|lg:hidden[^"]*sticky bottom-0/);
+    expect(s).toContain("FLAME_BUTTON");
+    expect(s).toContain("Sold out");
+    expect(s).toContain("size-11");
+  });
+
+  it("all on the brand tokens", () => {
+    for (const f of ["app/(user)/products/[slug]/page.tsx", "components/products/BuyBox.tsx", "components/products/product-gallery.tsx"]) {
+      const s = read(f);
+      expect(s.match(OLD_WORLD) ?? [], f).toEqual([]);
+      expect(s.match(RAW_PALETTE) ?? [], f).toEqual([]);
+    }
+  });
+});

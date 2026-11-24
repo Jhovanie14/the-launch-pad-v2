@@ -1,18 +1,19 @@
 import type { Metadata } from "next";
-import { STOREFRONT_CLASS } from "../storefrontFont";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, MapPin, PackageCheck } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowLeft, MapPin } from "lucide-react";
 import { openGraph, twitter } from "@/lib/seo/openGraph";
 import { unitPrice } from "@/lib/products/cart";
 import { toGallery } from "@/lib/products/media";
-import { getActiveProducts, getProductBySlug } from "@/lib/products/queries";
-import { ProductVideo } from "@/components/products/product-video";
+import { parseDescription, productTitle } from "@/lib/products/describe";
+import { getActiveProducts, getProductBySlug, getStoreSettings } from "@/lib/products/queries";
 import { ProductGallery } from "@/components/products/product-gallery";
 import { TrackViewItem } from "@/components/products/track-view-item";
 import { ProductCard } from "@/components/products/product-card";
-import { AddToCartButton, PriceTag } from "@/components/products/product-actions";
+import { PriceTag } from "@/components/products/product-actions";
+import { BuyBox, PhoneBuyBar } from "@/components/products/BuyBox";
+import { cn } from "@/lib/utils";
+import { FOCUS_ON_LIGHT, SURFACE } from "@/components/booking/ui/focus";
 
 export const revalidate = 300;
 
@@ -59,10 +60,13 @@ export default async function ProductDetailPage({ params }: PageProps) {
   const product = await getProductBySlug(slug);
   if (!product) notFound();
 
-  const all = await getActiveProducts();
-  const related = all
-    .filter((p) => p.id !== product.id && p.category === product.category)
-    .slice(0, 4);
+  const [all, settings] = await Promise.all([getActiveProducts(), getStoreSettings()]);
+  // Same category first; other products fill the row when there aren't enough.
+  const others = all.filter((p) => p.id !== product.id);
+  const related = [
+    ...others.filter((p) => p.category === product.category),
+    ...others.filter((p) => p.category !== product.category),
+  ].slice(0, 4);
 
   // The primary image leads the gallery, with the extra shots behind it.
   const images = [
@@ -71,90 +75,91 @@ export default async function ProductDetailPage({ params }: PageProps) {
   ];
 
   const price = unitPrice(product);
+  const title = productTitle(product);
+  const { about, specs } = parseDescription(product.description);
+  const pickupHours = settings?.pickup_hours?.trim() || null;
 
   return (
-    <main className={`flex-1 ${STOREFRONT_CLASS}`}>
+    <main className="lp-theme flex-1 bg-canvas text-ink">
       <TrackViewItem product={product} />
 
-      {/* Portrait clip, centred. Its width is derived from the viewport height
-          so the whole 9:16 frame fits on screen rather than being cropped. */}
-      {product.video_url && (
-        <div className="border-b border-border/60 bg-secondary/30 px-4 py-8 sm:py-10">
-          <ProductVideo
-            src={product.video_url}
-            poster={product.image_url}
-            alt={product.name}
-            priority
-            sizes="40vh"
-            className="mx-auto aspect-[9/16] w-[min(100%,40svh)]"
-          />
-        </div>
-      )}
-
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:py-16">
-        <Button
-          asChild
-          variant="ghost"
-          size="sm"
-          className="mb-8 rounded-none uppercase tracking-widest"
+      <div className="mx-auto max-w-7xl px-4 pt-6 pb-12 sm:px-6 sm:pt-8">
+        <Link
+          href="/products"
+          className={cn("inline-flex h-11 items-center gap-2 rounded-lg px-1 text-sm font-semibold text-ink-muted hover:text-ink", FOCUS_ON_LIGHT)}
         >
-          <Link href="/products">
-            <ArrowLeft className="mr-2 h-4 w-4" /> All products
-          </Link>
-        </Button>
+          <ArrowLeft aria-hidden className="size-4" /> All products
+        </Link>
 
-        <div className="grid gap-12 lg:grid-cols-2 lg:gap-16">
-          <ProductGallery images={images} alt={product.name} />
+        <div className="mt-4 grid items-start gap-6 lg:grid-cols-[1.05fr_1fr] lg:gap-12">
+          <ProductGallery
+            images={images}
+            alt={title}
+            video={product.video_url ? { src: product.video_url, poster: product.image_url } : null}
+          />
 
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-gold">
-              {product.category}
-            </p>
-            <h1 className="mt-4 font-display text-4xl uppercase leading-tight sm:text-5xl">
-              {product.name}
-            </h1>
+            <h1 className="text-3xl leading-[1.05] font-black tracking-tight text-balance sm:text-4xl">{title}</h1>
+            {title !== product.name && <p className="mt-2 text-ink-muted">{product.name}</p>}
+            <p className="mt-2 text-sm text-ink-subtle">{product.category}</p>
 
-            <PriceTag product={product} size="lg" className="mt-6" />
+            <PriceTag product={product} size="lg" className="mt-5" />
+            <BuyBox product={product} title={title} />
 
-            {product.description && (
-              <p className="mt-6 whitespace-pre-line text-muted-foreground">
-                {product.description}
-              </p>
-            )}
-
-            <div className="mt-8 flex flex-wrap items-center gap-4">
-              <AddToCartButton product={product} size="lg" />
-              {product.stock > 0 && product.stock <= 5 && (
-                <span className="text-sm text-gold-soft">
-                  Only {product.stock} left
-                </span>
-              )}
+            <div className={cn(SURFACE, "mt-6 flex gap-3 p-4 text-sm leading-relaxed")}>
+              <MapPin aria-hidden className="mt-0.5 size-5 shrink-0 text-brand-blue" />
+              <div className="text-ink-muted">
+                <p className="font-semibold text-ink">Pick up at 10410 S Main St</p>
+                {pickupHours && <p>Pickup hours: {pickupHours}</p>}
+                <p>Pay by card now or at the counter when you collect. We email you when it&apos;s ready.</p>
+              </div>
             </div>
-
-            <dl className="mt-10 space-y-3 border-t border-border/60 pt-8 text-sm text-muted-foreground">
-              <div className="flex items-center gap-3">
-                <MapPin className="h-4 w-4 shrink-0 text-gold" />
-                <span>Collect at 10410 S Main St, Houston</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <PackageCheck className="h-4 w-4 shrink-0 text-gold" />
-                <span>We email you as soon as it is ready</span>
-              </div>
-            </dl>
           </div>
         </div>
 
+        {(about.length > 0 || specs.length > 0) && (
+          <div className="mt-12 grid gap-8 lg:grid-cols-[1.05fr_1fr] lg:gap-12">
+            {about.length > 0 && (
+              <section aria-labelledby="about-heading">
+                <h2 id="about-heading" className="text-xl font-black tracking-tight">About this product</h2>
+                <div className="mt-3 max-w-prose space-y-3 leading-relaxed text-ink-muted">
+                  {about.map((para, i) => (
+                    <p key={i}>{para}</p>
+                  ))}
+                </div>
+              </section>
+            )}
+            {specs.length > 0 && (
+              <section aria-labelledby="specs-heading">
+                <h2 id="specs-heading" className="text-xl font-black tracking-tight">Specs</h2>
+                <dl className={cn(SURFACE, "mt-3 divide-y divide-line-soft px-4 text-sm")}>
+                  {specs.map((spec) => (
+                    <div key={spec.label} className="flex justify-between gap-4 py-3">
+                      <dt className="text-ink-muted">{spec.label}</dt>
+                      <dd className="text-right font-semibold">{spec.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </section>
+            )}
+          </div>
+        )}
+
         {related.length > 0 && (
-          <section className="mt-24 border-t border-border/60 pt-16">
-            <h2 className="font-display text-3xl uppercase">More in {product.category}</h2>
-            <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {related.map((item, index) => (
-                <ProductCard key={item.id} product={item} index={index} />
+          <section aria-labelledby="more-heading" className="mt-14">
+            <h2 id="more-heading" className="text-xl font-black tracking-tight">More products</h2>
+            <ul className="mt-4 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
+              {related.map((item) => (
+                <li key={item.id}>
+                  <ProductCard product={item} />
+                </li>
               ))}
-            </div>
+            </ul>
           </section>
         )}
       </div>
+
+      <PhoneBuyBar product={product} title={title} />
 
       <script
         type="application/ld+json"
