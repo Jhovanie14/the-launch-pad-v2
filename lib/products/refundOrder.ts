@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type Stripe from "stripe";
 import { ApiError } from "@/lib/http/apiError";
-import { guardedUpdate, orderCustomer, ORDER_CHANGED } from "./staffActions";
+import { guardedUpdate, orderCustomer, ORDER_CHANGED, releaseStock } from "./staffActions";
 
 /**
  * Refund a paid order. Card payments go back through Stripe first (money
@@ -47,7 +47,7 @@ export async function refundOrder(
   }
 
   if (!handedOver) {
-    await db.rpc("release_product_order_stock", { p_order_id: order.id });
+    await releaseStock(db, order.id);
   }
 
   const customer = await orderCustomer(db, order.user_id);

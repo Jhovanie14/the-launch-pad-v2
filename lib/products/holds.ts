@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { houstonDateLabel, isOverdueHold, needsReminder, type FlowOrder } from "./orderFlow";
-import { guardedUpdate, orderCustomer } from "./staffActions";
+import { guardedUpdate, orderCustomer, releaseStock } from "./staffActions";
 
 /**
  * The daily hold job for unpaid pay-at-store orders that are ready: a reminder
@@ -15,7 +15,7 @@ export async function runHoldJob(deps: {
     reminder: (args: { to: string; name: string; orderId: string; total: number; holdDate: string; pickupHours: string | null }) => Promise<void>;
     released: (args: { to: string; name: string; orderId: string; byCustomer: boolean }) => Promise<void>;
   };
-}): Promise<{ reminded: number; released: number }> {
+}): Promise<{ reminded: number; released: number; restocked: number }> {
   const { db, now } = deps;
   const { data } = await db
     .from("product_orders")
@@ -36,7 +36,7 @@ export async function runHoldJob(deps: {
         updated_at: now.toISOString(),
       });
       if (!changed) continue;
-      await db.rpc("release_product_order_stock", { p_order_id: order.id });
+      await releaseStock(db, order.id);
       released++;
       const customer = await orderCustomer(db, order.user_id);
       if (customer) await deps.emails.released({ ...customer, orderId: order.id, byCustomer: false });
@@ -65,5 +65,18 @@ export async function runHoldJob(deps: {
       }
     }
   }
-  return { reminded, released };
+  // Closed orders whose stock return failed earlier (a network blip after the
+  // order had already moved on). The database function only returns it once.
+  let restocked = 0;
+  const { data: stuck } = await db
+    .from("product_orders")
+    .select("id")
+    .eq("stock_taken", true)
+    .is("stock_released_at", null)
+    .in("fulfilment_status", ["released", "cancelled"]);
+  for (const o of stuck ?? []) {
+    if (await releaseStock(db, o.id)) restocked++;
+  }
+
+  return { reminded, released, restocked };
 }

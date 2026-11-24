@@ -3,7 +3,7 @@ import type Stripe from "stripe";
 import { ApiError } from "@/lib/http/apiError";
 import { priceOrder } from "./checkout";
 import type { CartItem } from "./cart";
-import { guardedUpdate } from "./staffActions";
+import { guardedUpdate, releaseStock } from "./staffActions";
 
 /** Stripe's minimum Checkout expiry is 30 minutes; one more for margin. */
 const CHECKOUT_EXPIRY_SECONDS = 31 * 60;
@@ -128,7 +128,7 @@ export async function placeOrder(deps: PlaceOrderDeps, input: PlaceOrderInput): 
     return { url: session.url };
   } catch (err) {
     // The order exists and holds stock; give both back before reporting.
-    await db.rpc("release_product_order_stock", { p_order_id: id });
+    await releaseStock(db, id);
     await db
       .from("product_orders")
       .update({ fulfilment_status: "cancelled", updated_at: deps.now.toISOString() })
@@ -172,6 +172,6 @@ async function releaseAbandonedCheckouts(deps: PlaceOrderDeps, userId: string): 
       fulfilment_status: "cancelled",
       updated_at: deps.now.toISOString(),
     });
-    if (changed) await deps.db.rpc("release_product_order_stock", { p_order_id: order.id });
+    if (changed) await releaseStock(deps.db, order.id);
   }
 }

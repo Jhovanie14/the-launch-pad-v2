@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { refundOrder } from "./refundOrder";
-import { runStaffAction } from "./staffActions";
+import { releaseStock, runStaffAction } from "./staffActions";
 
 const NOW = new Date("2026-11-23T16:00:00Z"); // Mon 10 AM Houston
 const ID = "1a2b3c4d-0000-4000-8000-000000000000";
@@ -160,5 +160,19 @@ describe("refundOrder", () => {
   it("refuses an unpaid order", async () => {
     const { db } = fakeDb(RESERVATION);
     await expect(refundOrder({ db, stripe: stripe() as never, now: NOW, emails: emails() }, ID)).rejects.toMatchObject({ status: 400 });
+  });
+});
+
+describe("releaseStock", () => {
+  it("logs a failed stock return loudly instead of failing silently", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const db = { rpc: async () => ({ data: null, error: { message: "network" } }) } as never;
+    expect(await releaseStock(db, "order-9")).toBe(false);
+    expect(spy).toHaveBeenCalledWith(expect.stringContaining("order-9"), expect.anything());
+    spy.mockRestore();
+  });
+  it("returns true when the stock came back", async () => {
+    const db = { rpc: async () => ({ data: null, error: null }) } as never;
+    expect(await releaseStock(db, "order-9")).toBe(true);
   });
 });

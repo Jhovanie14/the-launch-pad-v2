@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ApiError } from "@/lib/http/apiError";
 import { customerCanCancel, type FlowOrder } from "./orderFlow";
-import { guardedUpdate, orderCustomer, ORDER_CHANGED } from "./staffActions";
+import { guardedUpdate, orderCustomer, ORDER_CHANGED, releaseStock } from "./staffActions";
 
 /**
  * A customer cancels their own unpaid pay-at-store reservation (placed or
@@ -30,7 +30,7 @@ export async function cancelReservation(
   });
   if (!changed) throw new ApiError(ORDER_CHANGED, 409);
 
-  await db.rpc("release_product_order_stock", { p_order_id: order.id });
+  await releaseStock(db, order.id);
 
   const customer = await orderCustomer(db, order.user_id);
   if (customer) await deps.emails.released({ ...customer, orderId: order.id, byCustomer: true });

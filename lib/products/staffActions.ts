@@ -57,6 +57,20 @@ export async function guardedUpdate(
 
 export const ORDER_CHANGED = "This order just changed. Refresh to see it.";
 
+/**
+ * Put an order's stock back on the shelf (the database function only does it
+ * once). A failure is logged loudly rather than thrown: the order has already
+ * moved on, and the daily hold job sweeps up stock that never came back.
+ */
+export async function releaseStock(db: SupabaseClient, orderId: string): Promise<boolean> {
+  const { error } = await db.rpc("release_product_order_stock", { p_order_id: orderId });
+  if (error) {
+    console.error(`[product-order] stock for ${orderId} was not returned; the daily hold job will retry`, error);
+    return false;
+  }
+  return true;
+}
+
 /** A counter action from the admin Store orders screen. */
 export async function runStaffAction(
   deps: {
@@ -83,7 +97,7 @@ export async function runStaffAction(
   if (!changed) throw new ApiError(ORDER_CHANGED, 409);
 
   if (input.action === "release") {
-    await db.rpc("release_product_order_stock", { p_order_id: order.id });
+    await releaseStock(db, order.id);
   }
 
   // Emails log and never throw, so a failed send can't undo the change.
