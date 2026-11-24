@@ -26,6 +26,12 @@ describe("success page", () => {
     expect(s).toContain("PickupPass");
   });
 
+  it("takes its headline from the order's state", () => {
+    const s = read(PAGE);
+    expect(s).toContain("successHeading(order)");
+    expect(s).not.toContain("Reserved for pickup");
+  });
+
   it("only reports a purchase once money was paid by card", () => {
     expect(read(PAGE)).toMatch(/payment_status === "paid"[\s\S]{0,120}<TrackPurchase/);
   });
@@ -50,6 +56,10 @@ describe("pickup pass", () => {
     expect(s).toContain("customerStatus(");
     expect(s).toContain("isUnpaidReservation(");
     expect(s).toContain("to pay at the counter");
+  });
+
+  it("only asks to show the reference while the order is open", () => {
+    expect(read(PASS)).toMatch(/open && \(\s*<p[^>]*>Show this reference at the counter/);
   });
 
   it("only shows hours the owner has set", () => {

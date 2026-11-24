@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { FLAME_BUTTON, GHOST_BUTTON } from "@/components/booking/ui/focus";
 import { PickupPass, type PassOrder } from "@/components/products/PickupPass";
 import { CancelReservationButton } from "@/components/products/CancelReservationButton";
-import { customerCanCancel } from "@/lib/products/orderFlow";
+import { customerCanCancel, successHeading } from "@/lib/products/orderFlow";
 import { getPickupSettings } from "@/lib/products/storeSettings";
 import ClearCart from "./clear-cart";
 import TrackPurchase from "./track-purchase";
@@ -70,11 +70,7 @@ export default async function ProductSuccessPage({ searchParams }: ProductSucces
 
       <div className="mx-auto max-w-xl">
         <h1 className="text-3xl font-black tracking-tight text-balance">
-          {waitingForCard
-            ? "Almost there"
-            : order.payment_method === "at_store"
-              ? "Reserved for pickup"
-              : "You're all set"}
+          {successHeading(order)}
         </h1>
 
         <div className="mt-6">

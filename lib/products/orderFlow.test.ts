@@ -8,6 +8,7 @@ import {
   isOverdueHold,
   isUnpaidReservation,
   needsActionCount,
+  successHeading,
   needsReminder,
   staffActionsFor,
   staffQueue,
@@ -201,5 +202,18 @@ describe("needsActionCount (the sidebar's Store orders badge)", () => {
         now,
       ),
     ).toBe(3);
+  });
+});
+
+describe("successHeading (never states something untrue)", () => {
+  it("names the order's real state", () => {
+    expect(successHeading(order({ payment_method: "card" }))).toBe("Almost there");
+    expect(successHeading(order())).toBe("Reserved for pickup");
+    expect(successHeading(order({ fulfilment_status: "ready" }))).toBe("Reserved for pickup");
+    expect(successHeading(cardPaid())).toBe("You're all set");
+    expect(successHeading(order({ fulfilment_status: "released" }))).toBe("Reservation released");
+    expect(successHeading(order({ payment_method: "card", fulfilment_status: "cancelled" }))).toBe("Order cancelled");
+    expect(successHeading(cardPaid({ payment_status: "refunded", fulfilment_status: "cancelled" }))).toBe("Order refunded");
+    expect(successHeading(cardPaid({ fulfilment_status: "completed" }))).toBe("Picked up");
   });
 });

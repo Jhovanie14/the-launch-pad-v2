@@ -243,3 +243,19 @@ export function needsActionCount(orders: FlowOrder[], now: Date): number {
     );
   }).length;
 }
+
+/** The confirmation page's headline, from the order's real state. */
+export function successHeading(o: FlowOrder): string {
+  if (o.payment_status === "refunded") return "Order refunded";
+  switch (o.fulfilment_status) {
+    case "released":
+      return "Reservation released";
+    case "cancelled":
+      return "Order cancelled";
+    case "completed":
+      return o.fulfillment_method === "delivery" ? "Delivered" : "Picked up";
+    default:
+      if (o.payment_status === "paid") return "You're all set";
+      return o.payment_method === "at_store" ? "Reserved for pickup" : "Almost there";
+  }
+}

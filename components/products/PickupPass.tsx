@@ -65,7 +65,9 @@ export function PickupPass({
         <span className="sr-only">Order reference </span>
         {ref}
       </Heading>
-      <p className="mt-2 text-sm text-on-night-subtle">Show this reference at the counter</p>
+      {open && (
+        <p className="mt-2 text-sm text-on-night-subtle">Show this reference at the counter</p>
+      )}
 
       {open && (
         <div className="mt-5 rounded-xl bg-white/6 p-4 text-sm leading-relaxed text-on-night-muted ring-1 ring-white/10">
