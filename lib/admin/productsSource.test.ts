@@ -84,3 +84,19 @@ describe("products page", () => {
     for (const f of files) expect(read(f).match(RAW_PALETTE) ?? [], f).toEqual([]);
   });
 });
+
+describe("review fixes", () => {
+  it("the drawer's save guards stock like Receive does", () => {
+    const s = read(DRAWER);
+    expect(s).toContain("stockWrite(");
+    expect(s).toContain("Stock just changed");
+  });
+  it("the table layout waits for wide screens, so the name always has room", () => {
+    const s = read(LIST);
+    expect(s).toContain("xl:grid-cols-[");
+    expect(s).not.toMatch(/\bmd:grid-cols-\[3rem/);
+  });
+  it("the receive popover starts fresh each time it opens", () => {
+    expect(read(LIST)).toMatch(/if \(!o\) \{[^}]*setMode\("add"\)[^}]*setRaw\(""\)/);
+  });
+});

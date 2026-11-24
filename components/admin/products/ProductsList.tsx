@@ -218,7 +218,7 @@ function ProductRowView({
   const switchId = `shown-${product.id}`;
 
   return (
-    <div className="grid grid-cols-[3rem_1fr] gap-x-3 gap-y-3 p-3 sm:p-4 md:grid-cols-[3rem_minmax(0,1fr)_9rem_6rem_12rem_9rem_auto] md:items-center">
+    <div className="grid grid-cols-[3rem_1fr] gap-x-3 gap-y-3 p-3 sm:p-4 xl:grid-cols-[3rem_minmax(0,1fr)_8rem_6rem_14rem_8rem_auto] xl:items-center">
       <div className="relative size-12 overflow-hidden rounded-lg bg-line-soft ring-1 ring-line">
         {product.image_url && <Image src={product.image_url} alt="" fill sizes="48px" className="object-cover" />}
       </div>
@@ -229,26 +229,26 @@ function ProductRowView({
         {needs.length > 0 && <p className="text-xs text-ink-muted">Needs: {needs.join(", ")}</p>}
       </div>
 
-      <p className="col-start-2 text-sm text-ink-muted md:col-start-auto">{product.category}</p>
+      <p className="col-start-2 text-sm text-ink-muted xl:col-start-auto">{product.category}</p>
 
-      <p className="col-start-2 text-sm md:col-start-auto">
+      <p className="col-start-2 text-sm xl:col-start-auto">
         <span className="font-bold">{money(unitPrice(product))}</span>
         {product.sale_price !== null && <span className="ml-1.5 text-ink-subtle line-through">{money(product.price)}</span>}
       </p>
 
-      <div className="col-start-2 flex items-center gap-2 md:col-start-auto">
+      <div className="col-start-2 flex items-center gap-2 xl:col-start-auto">
         <span className="min-w-12 text-base font-black">{product.stock}</span>
         {out && <span className="rounded-full bg-line-soft px-2 py-0.5 text-xs font-bold text-ink-muted">Out</span>}
         {low && <span className="rounded-full bg-flame/35 px-2 py-0.5 text-xs font-bold text-ink">Low</span>}
         <ReceiveStock product={product} onDone={onChanged} />
       </div>
 
-      <div className="col-start-2 flex min-h-11 items-center gap-2 md:col-start-auto">
+      <div className="col-start-2 flex min-h-11 items-center gap-2 xl:col-start-auto">
         <Switch id={switchId} checked={product.is_active} onCheckedChange={onShown} aria-label={`Show ${title} in the shop`} />
         <span className="text-sm text-ink-muted">{product.is_active ? "Shown" : "Hidden"}</span>
       </div>
 
-      <div className="col-start-2 flex gap-2 md:col-start-auto md:justify-end">
+      <div className="col-start-2 flex gap-2 xl:col-start-auto xl:justify-end">
         <button type="button" className={SMALL_RING} onClick={onEdit}>Edit</button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -313,6 +313,7 @@ function ReceiveStock({ product, onDone }: { product: ProductRow; onDone: () => 
       onOpenChange={(o) => {
         setOpen(o);
         setError(null);
+        if (!o) { setMode("add"); setRaw(""); }
       }}
     >
       <PopoverTrigger asChild>
@@ -349,7 +350,7 @@ function ReceiveStock({ product, onDone }: { product: ProductRow; onDone: () => 
           </p>
           <button type="submit" className={cn(PRIMARY, "w-full")} disabled={busy}>
             {mode === "add"
-              ? `Add ${parsed.ok ? parsed.value : ""} to stock`.replace("Add  to", "Add to")
+              ? parsed.ok ? `Add ${parsed.value} to stock` : "Add to stock"
               : `Set count to ${parsed.ok ? parsed.value : "…"}`}
           </button>
           <button

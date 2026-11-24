@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EMPTY_FORM, buildProductPayload, formFromProduct, isDirty, type ProductForm } from "./productForm";
+import { EMPTY_FORM, buildProductPayload, formFromProduct, isDirty, stockWrite, type ProductForm } from "./productForm";
 import type { ProductRow } from "@/types/db";
 
 const NOW = new Date("2026-11-24T16:00:00Z");
@@ -113,5 +113,15 @@ describe("formFromProduct and isDirty", () => {
     expect(isDirty({ ...initial, stock: "5" }, initial)).toBe(true);
     expect(isDirty({ ...initial, gallery: ["y.png"] }, initial)).toBe(true);
     expect(isDirty({ ...initial, gallery: [...initial.gallery] }, initial)).toBe(false);
+  });
+});
+
+describe("stockWrite (saving never overwrites a newer count)", () => {
+  const initial = { ...EMPTY_FORM, stock: "5" };
+  it("leaves stock out of the save when it wasn't edited", () => {
+    expect(stockWrite({ ...initial, name: "x" }, initial)).toEqual({ include: false });
+  });
+  it("when edited, writes only if the count is still the one the drawer opened with", () => {
+    expect(stockWrite({ ...initial, stock: "8" }, initial)).toEqual({ include: true, expected: 5 });
   });
 });

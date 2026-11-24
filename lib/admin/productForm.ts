@@ -131,3 +131,13 @@ export function isDirty(f: ProductForm, initial: ProductForm): boolean {
     return a !== b;
   });
 }
+
+/**
+ * How a save treats stock. Unedited, it is left out, so a sale or a delivery
+ * received while the drawer was open is never overwritten. Edited, it is
+ * written only if the count is still the one the drawer opened with.
+ */
+export function stockWrite(f: ProductForm, initial: ProductForm): { include: false } | { include: true; expected: number } {
+  if (f.stock.trim() === initial.stock.trim()) return { include: false };
+  return { include: true, expected: Number(initial.stock) };
+}

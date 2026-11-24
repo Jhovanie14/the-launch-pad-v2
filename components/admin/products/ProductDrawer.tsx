@@ -19,7 +19,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { FOCUS_ON_LIGHT, RING_BUTTON } from "@/components/booking/ui/focus";
-import { EMPTY_FORM, SHORT_NAME_MAX, buildProductPayload, formFromProduct, isDirty, type ProductForm } from "@/lib/admin/productForm";
+import { EMPTY_FORM, SHORT_NAME_MAX, buildProductPayload, formFromProduct, isDirty, stockWrite, type ProductForm } from "@/lib/admin/productForm";
 import { productTitle } from "@/lib/products/describe";
 import { MAX_VIDEO_BYTES, VIDEO_MIME_TYPES, rejectVideo } from "@/lib/products/media";
 import { rejectImage } from "@/lib/products/upload";
@@ -188,10 +188,25 @@ export function ProductDrawer({
     try {
       if (product) {
         // The slug never changes on edit: links and search results point at it.
-        const { error } = await supabase.from("products").update(built.payload).eq("id", product.id);
+        // Stock is only written when edited, and only over the count the
+        // drawer opened with (a sale or a delivery may have changed it).
+        const stock = stockWrite(form, initial);
+        const { stock: _stock, ...withoutStock } = built.payload;
+        void _stock;
+        let query = supabase
+          .from("products")
+          .update(stock.include ? built.payload : withoutStock)
+          .eq("id", product.id);
+        if (stock.include) query = query.eq("stock", stock.expected);
+        const { data, error } = await query.select("id");
         if (error) {
           console.error(error);
           return void toast.error("Failed to update the product");
+        }
+        if (!data || data.length === 0) {
+          toast.error("Stock just changed. Refreshed. Check the count and save again.");
+          onSaved();
+          return;
         }
         toast.success("Product saved");
       } else {
