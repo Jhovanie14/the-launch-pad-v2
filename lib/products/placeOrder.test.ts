@@ -5,7 +5,7 @@ const NOW = new Date("2026-11-24T16:00:00Z");
 const PRODUCT = { id: "p1", name: "Wheel brush", price: 17.84, sale_price: null, stock: 5, is_active: true };
 
 /** Just enough of the Supabase client for placeOrder: reads, updates and rpc. */
-function fakeDb(opts: { openReservation?: { id: string } | null; rpcError?: string } = {}) {
+function fakeDb(opts: { openReservation?: { id: string } | null; rpcError?: string; waitingCard?: any[] } = {}) {
   const calls = { rpc: [] as { fn: string; args: unknown }[], updates: [] as { values: unknown; eq: [string, unknown][] }[] };
   const db = {
     from(table: string) {
@@ -19,10 +19,15 @@ function fakeDb(opts: { openReservation?: { id: string } | null; rpcError?: stri
         in: () => chain,
         limit: () => chain,
         maybeSingle: async () => ({ data: opts.openReservation ?? null, error: null }),
+        then: (resolve: any) => resolve({ data: opts.waitingCard ?? [], error: null }),
         update: (values: unknown) => {
           const rec = { values, eq: [] as [string, unknown][] };
           calls.updates.push(rec);
-          const u: any = { eq: (c: string, v: unknown) => (rec.eq.push([c, v]), u), then: (r: any) => r({ error: null }) };
+          const u: any = {
+            eq: (c: string, v: unknown) => (rec.eq.push([c, v]), u),
+            select: async () => ({ data: [{ id: "x" }], error: null }),
+            then: (r: any) => r({ error: null }),
+          };
           return u;
         },
       };
@@ -41,10 +46,22 @@ function fakeDb(opts: { openReservation?: { id: string } | null; rpcError?: stri
   return { db, calls };
 }
 
-function deps(db: unknown, stripeCreate = vi.fn(async () => ({ id: "cs_1", url: "https://stripe.test/cs_1" }))) {
+function deps(
+  db: unknown,
+  stripeCreate = vi.fn(async () => ({ id: "cs_1", url: "https://stripe.test/cs_1" })),
+  sessionStatus = "open",
+) {
   return {
     db: db as never,
-    stripe: { checkout: { sessions: { create: stripeCreate } } } as never,
+    stripe: {
+      checkout: {
+        sessions: {
+          create: stripeCreate,
+          retrieve: vi.fn(async () => ({ status: sessionStatus })),
+          expire: vi.fn(async () => ({ status: "expired" })),
+        },
+      },
+    } as never,
     siteUrl: "https://site.test",
     now: NOW,
     pickupHours: "Daily 9–6",
@@ -123,5 +140,33 @@ describe("placeOrder: errors", () => {
   it("refuses an unknown payment method", async () => {
     const { db } = fakeDb();
     await expect(placeOrder(deps(db), input("bitcoin"))).rejects.toMatchObject({ status: 400, message: "Choose how to pay" });
+  });
+});
+
+describe("placeOrder: back from Stripe and try again", () => {
+  const waiting = [{ id: "0ld00000-0000-4000-8000-000000000000", stripe_session_id: "cs_old", fulfilment_status: "placed", payment_status: "unpaid" }];
+
+  it("closes the customer's own abandoned card checkout first, returning its stock", async () => {
+    const { db, calls } = fakeDb({ waitingCard: waiting });
+    const d = deps(db);
+    await placeOrder(d, input("card"));
+    const sessions = (d.stripe as any).checkout.sessions;
+    expect(sessions.expire).toHaveBeenCalledWith("cs_old");
+    expect(calls.rpc.map((c) => c.fn)).toEqual(["release_product_order_stock", "place_product_order"]);
+    expect(calls.updates[0]).toMatchObject({ values: { fulfilment_status: "cancelled" } });
+  });
+
+  it("does the same before a pay-at-store reservation", async () => {
+    const { db, calls } = fakeDb({ waitingCard: waiting });
+    await placeOrder(deps(db), input("at_store"));
+    expect(calls.rpc.map((c) => c.fn)).toEqual(["release_product_order_stock", "place_product_order"]);
+  });
+
+  it("leaves a checkout that was actually paid alone", async () => {
+    const { db, calls } = fakeDb({ waitingCard: waiting });
+    const d = deps(db, undefined, "complete");
+    await placeOrder(d, input("card"));
+    expect((d.stripe as any).checkout.sessions.expire).not.toHaveBeenCalled();
+    expect(calls.rpc.map((c) => c.fn)).toEqual(["place_product_order"]);
   });
 });

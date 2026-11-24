@@ -3,6 +3,7 @@ import type Stripe from "stripe";
 import { ApiError } from "@/lib/http/apiError";
 import { priceOrder } from "./checkout";
 import type { CartItem } from "./cart";
+import { guardedUpdate } from "./staffActions";
 
 /** Stripe's minimum Checkout expiry is 30 minutes; one more for margin. */
 const CHECKOUT_EXPIRY_SECONDS = 31 * 60;
@@ -45,6 +46,10 @@ export async function placeOrder(deps: PlaceOrderDeps, input: PlaceOrderInput): 
   const { db } = deps;
   const method = input.paymentMethod;
   if (method !== "card" && method !== "at_store") throw new ApiError("Choose how to pay", 400);
+
+  // Back from Stripe and trying again: the abandoned checkout still holds its
+  // stock, so close it first or its own items look sold out.
+  await releaseAbandonedCheckouts(deps, input.userId);
 
   const priced = await priceOrder(db, input.items, input.fulfillmentMethod);
 
@@ -129,5 +134,44 @@ export async function placeOrder(deps: PlaceOrderDeps, input: PlaceOrderInput): 
       .update({ fulfilment_status: "cancelled", updated_at: deps.now.toISOString() })
       .eq("id", id);
     throw err;
+  }
+}
+
+/**
+ * Close this customer's card checkouts that were never paid: expire the Stripe
+ * session (so it can no longer be paid), cancel the order and return its
+ * stock. A session that was actually paid, or one still being created in
+ * another tab (no session id yet), is left alone.
+ */
+async function releaseAbandonedCheckouts(deps: PlaceOrderDeps, userId: string): Promise<void> {
+  const { data } = await deps.db
+    .from("product_orders")
+    .select("id, stripe_session_id, fulfilment_status, payment_status")
+    .eq("user_id", userId)
+    .eq("payment_method", "card")
+    .eq("payment_status", "unpaid")
+    .eq("fulfilment_status", "placed");
+
+  for (const order of (data ?? []) as {
+    id: string;
+    stripe_session_id: string | null;
+    fulfilment_status: string;
+    payment_status: string;
+  }[]) {
+    if (!order.stripe_session_id) continue;
+    const session = await deps.stripe.checkout.sessions.retrieve(order.stripe_session_id).catch(() => null);
+    if (!session || session.status === "complete") continue;
+    if (session.status === "open") {
+      const expired = await deps.stripe.checkout.sessions
+        .expire(order.stripe_session_id)
+        .then(() => true)
+        .catch(() => false);
+      if (!expired) continue;
+    }
+    const changed = await guardedUpdate(deps.db, order, {
+      fulfilment_status: "cancelled",
+      updated_at: deps.now.toISOString(),
+    });
+    if (changed) await deps.db.rpc("release_product_order_stock", { p_order_id: order.id });
   }
 }
