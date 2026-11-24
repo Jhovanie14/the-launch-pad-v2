@@ -22,4 +22,12 @@ describe("navy phone menu sheets", () => {
       expect(read(file)).toContain("className={NIGHT_SHEET_CONTENT}");
     }
   });
+
+  it("the cart is a 44px icon in the bar on phones, beside the menu button", () => {
+    const nav = read("components/user/navbar.tsx");
+    const link = nav.match(/href="\/products\/cart"[\s\S]*?className=\{cn\("([^"]+)"/);
+    expect(link?.[1]).toBeDefined();
+    expect(link![1]).not.toMatch(/\bhidden\b/);
+    expect(link![1]).toMatch(/\bsize-11\b/);
+  });
 });

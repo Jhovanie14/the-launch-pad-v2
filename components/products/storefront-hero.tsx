@@ -1,8 +1,9 @@
 "use client";
 
-import { motion } from "motion/react";
-import { ChevronDown } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowDown } from "lucide-react";
+import { useReducedMotion } from "motion/react";
+import { FLAME_BUTTON } from "@/components/booking/ui/focus";
+import { cn } from "@/lib/utils";
 import { ProductVideo } from "./product-video";
 
 interface StorefrontHeroProps {
@@ -11,17 +12,19 @@ interface StorefrontHeroProps {
   headline: string;
   subcopy: string;
   ctaLabel: string;
-  /** Anchor the CTA scrolls to. */
+  /** Days an unpaid reservation is held once ready (store settings). */
+  holdDays: number;
+  /** id of the range section the CTA scrolls to; its heading is focused. */
   targetId: string;
 }
 
 /**
- * Opening panel of the storefront: the brand film behind the range's name.
+ * The shop's opening section, on white: headline, copy and the one Flame
+ * action on the left, the brand film in a framed panel on the right.
  *
  * Everything here is editable from admin (store_settings), so a seasonal
- * campaign is a content change rather than a deploy. The copy renders whether
- * or not a film has been uploaded -- an empty hero still reads as a title card
- * over the poster still.
+ * campaign is a content change rather than a deploy. The CTA glides to the
+ * range (a jump for visitors who reduce motion) and moves focus to its heading.
  */
 export function StorefrontHero({
   videoUrl,
@@ -29,72 +32,82 @@ export function StorefrontHero({
   headline,
   subcopy,
   ctaLabel,
+  holdDays,
   targetId,
 }: StorefrontHeroProps) {
+  // The film frame needs something in it: the clip (unless motion is reduced)
+  // or a poster. Without either, the copy takes the whole width.
+  const reduceMotion = useReducedMotion();
+  const showFilm = Boolean(posterUrl) || (Boolean(videoUrl) && !reduceMotion);
+
+  function scrollToRange(e: React.MouseEvent<HTMLAnchorElement>) {
+    const target = document.getElementById(targetId);
+    if (!target) return; // the plain anchor still works
+    e.preventDefault();
+    const reduce = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    target.scrollIntoView({
+      behavior: reduce ? "auto" : "smooth",
+      block: "start",
+    });
+    const heading = target.querySelector<HTMLElement>("h2");
+    heading?.focus({ preventScroll: true });
+    history.replaceState(null, "", `#${targetId}`);
+  }
+
+  const facts = [
+    "Pick up at the shop",
+    "Pay online or at the counter",
+    `Held ${holdDays} ${holdDays === 1 ? "day" : "days"} once it's ready`,
+  ];
+
   return (
-    <section className="relative isolate flex min-h-[85svh] items-end overflow-hidden">
-      <ProductVideo
-        src={videoUrl}
-        poster={posterUrl}
-        alt=""
-        priority
-        sizes="100vw"
-        className="absolute inset-0 h-full w-full"
-      />
-
-      {/* Scrim: the copy has to stay legible over whatever footage is loaded,
-          so the gradient is weighted to the bottom where the type sits. */}
+    <section className="bg-canvas text-ink">
       <div
-        aria-hidden
-        className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-background/20"
-      />
-
-      <div className="relative mx-auto w-full max-w-7xl px-4 pb-20 pt-32 sm:pb-28">
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="max-w-2xl"
-        >
-          <p className="mb-4 text-xs uppercase tracking-[0.3em] text-gold">
-            The Launch Pad · Pro Series
-          </p>
-          <h1 className="font-display text-5xl uppercase leading-[0.95] sm:text-7xl lg:text-8xl">
+        className={cn(
+          "mx-auto grid max-w-7xl items-center gap-8 px-4 pt-10 pb-6 sm:px-6 sm:pt-14 lg:gap-12 lg:pb-10",
+          showFilm && "lg:grid-cols-[1fr_1.1fr]",
+        )}
+      >
+        <div>
+          <h1 className="text-5xl leading-[0.95] font-black tracking-[-0.035em] text-balance lg:text-6xl">
             {headline}
           </h1>
-          <div className="mt-6 h-px w-24 bg-gold" />
-          <p className="mt-6 max-w-lg text-base text-muted-foreground sm:text-lg">
+          <p className="mt-5 max-w-md text-lg leading-relaxed text-ink-muted">
             {subcopy}
           </p>
-          <Button
-            asChild
-            size="lg"
-            className="mt-8 rounded-none px-8 text-sm uppercase tracking-widest"
+          <a
+            href={`#${targetId}`}
+            onClick={scrollToRange}
+            className={cn(FLAME_BUTTON, "mt-7")}
           >
-            <a href={`#${targetId}`}>{ctaLabel}</a>
-          </Button>
-        </motion.div>
-      </div>
+            {ctaLabel}
+            <ArrowDown aria-hidden className="size-4" />
+          </a>
+          <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm text-ink-muted">
+            {facts.map((fact) => (
+              <li key={fact} className="flex items-center gap-2">
+                <span aria-hidden className="size-1.5 rounded-full bg-night" />
+                {fact}
+              </li>
+            ))}
+          </ul>
+        </div>
 
-      <motion.div
-        aria-hidden
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.2, duration: 0.6 }}
-        className="absolute bottom-6 left-1/2 -translate-x-1/2 text-muted-foreground"
-      >
-        {/* A slow eased drift rather than a springy keyframe: that kind of
-            motion reads as playful, which is the opposite of what the rest of
-            this page is doing. The drift sits on the inner element so it
-            cannot fight the centring transform on the parent. */}
-        <motion.span
-          animate={{ y: [0, 8, 0] }}
-          transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
-          className="block"
-        >
-          <ChevronDown className="h-5 w-5" />
-        </motion.span>
-      </motion.div>
+        {showFilm && (
+          <div className="overflow-hidden rounded-2xl bg-night shadow-[0_18px_40px_-24px_rgb(8_20_52/0.9)] ring-1 ring-white/10">
+            <ProductVideo
+              src={videoUrl}
+              poster={posterUrl}
+              alt=""
+              priority
+              sizes="(min-width: 1024px) 55vw, 100vw"
+              className="aspect-[16/10] w-full bg-night"
+            />
+          </div>
+        )}
+      </div>
     </section>
   );
 }

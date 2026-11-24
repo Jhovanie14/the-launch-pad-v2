@@ -7,14 +7,6 @@ const read = (p: string) => readFileSync(join(process.cwd(), p), "utf8");
 const CART = "app/(user)/products/cart/page.tsx";
 const RAW_PALETTE = /\b(?:bg|text|border|ring|fill|stroke)-(?:blue|gray|green|amber|red|slate)-\d/g;
 
-describe("store layout", () => {
-  it("only the catalog keeps the black-and-gold storefront until its redesign", () => {
-    expect(read("app/(user)/products/layout.tsx")).not.toContain("storefront");
-    expect(read("app/(user)/products/page.tsx")).toContain("storefront");
-    expect(read("app/(user)/products/[slug]/page.tsx")).toContain("storefront");
-  });
-});
-
 describe("cart", () => {
   it("asks how to pay, with real radio inputs", () => {
     const s = read(CART);

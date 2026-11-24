@@ -5,7 +5,7 @@ const names = (links: { name: string }[]) => links.map((l) => l.name);
 
 describe("publicPhoneMenu", () => {
   it("signed out: primary, more, no account", () => {
-    const menu = publicPhoneMenu({ signedIn: false, cartCount: 0 });
+    const menu = publicPhoneMenu({ signedIn: false });
     expect(menu.primary).toEqual([
       { name: "Home", href: "/" },
       { name: "Services", href: "/services" },
@@ -23,7 +23,7 @@ describe("publicPhoneMenu", () => {
   });
 
   it("signed in: account group", () => {
-    const menu = publicPhoneMenu({ signedIn: true, cartCount: 0 });
+    const menu = publicPhoneMenu({ signedIn: true });
     expect(menu.account.map((l) => [l.name, l.href])).toEqual([
       ["Dashboard", "/dashboard"],
       ["Bookings", "/dashboard/bookings"],
@@ -32,15 +32,17 @@ describe("publicPhoneMenu", () => {
     ]);
   });
 
-  it("cart row only with items, named with the count", () => {
-    expect(names(publicPhoneMenu({ signedIn: false, cartCount: 0 }).primary)).not.toContain("Cart (0)");
-    const primary = publicPhoneMenu({ signedIn: false, cartCount: 2 }).primary;
-    expect(primary[primary.length - 1]).toEqual({ name: "Cart (2)", href: "/products/cart" });
+  it("has no cart row: the cart is an icon in the bar, next to the menu button", () => {
+    for (const signedIn of [true, false]) {
+      const menu = publicPhoneMenu({ signedIn });
+      const all = [...menu.primary, ...menu.more, ...menu.account];
+      expect(all.some((l) => l.href === "/products/cart")).toBe(false);
+    }
   });
 
   it("no Login anywhere", () => {
     for (const signedIn of [true, false]) {
-      const menu = publicPhoneMenu({ signedIn, cartCount: 1 });
+      const menu = publicPhoneMenu({ signedIn });
       const all = [...menu.primary, ...menu.more, ...menu.account];
       expect(all.some((l) => /log ?in/i.test(l.name) || l.href === "/login")).toBe(false);
     }
@@ -48,9 +50,8 @@ describe("publicPhoneMenu", () => {
 });
 
 describe("phoneMenuCurrent", () => {
-  it("on the cart only the Cart row is current, not Products", () => {
-    expect(phoneMenuCurrent("/products/cart", "/products/cart")).toBe(true);
-    expect(phoneMenuCurrent("/products/cart", "/products")).toBe(false);
+  it("the cart page counts as the shop", () => {
+    expect(phoneMenuCurrent("/products/cart", "/products")).toBe(true);
   });
 
   it("a product page still marks Products current", () => {

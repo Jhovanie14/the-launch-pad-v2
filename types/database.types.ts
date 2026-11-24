@@ -655,6 +655,7 @@ export type Database = {
       }
       products: {
         Row: {
+          display_name: string | null
           category: string
           created_at: string
           description: string | null
@@ -673,6 +674,7 @@ export type Database = {
           video_url: string | null
         }
         Insert: {
+          display_name?: string | null
           category: string
           created_at?: string
           description?: string | null
@@ -691,6 +693,7 @@ export type Database = {
           video_url?: string | null
         }
         Update: {
+          display_name?: string | null
           category?: string
           created_at?: string
           description?: string | null

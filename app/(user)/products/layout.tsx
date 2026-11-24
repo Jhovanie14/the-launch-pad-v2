@@ -17,7 +17,6 @@ export const metadata: Metadata = {
 };
 
 export default function ProductsLayout({ children }: { children: React.ReactNode }) {
-  // The catalog pages apply the black-and-gold theme themselves;
-  // the cart and confirmation are on the 24/7 Bay tokens.
+  // Every shop page is on the 24/7 Bay tokens (each opts into .lp-theme).
   return children;
 }
