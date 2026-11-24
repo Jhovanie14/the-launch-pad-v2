@@ -6,6 +6,7 @@ import {
   sendSubscriptionInvoiceEmail,
 } from "@/lib/email/subscription-emails";
 import { sendProductOrderConfirmationEmail } from "@/lib/email/product-order-emails";
+import { getPickupSettings } from "@/lib/products/storeSettings";
 import {
   processProductOrderCompleted,
   processProductOrderExpired,
@@ -167,7 +168,7 @@ async function handleCheckoutSessionCompleted(event: Stripe.Event) {
   }
 }
 
-// Product store: flip pending -> paid, decrement stock, email the customer.
+// Product store: mark the waiting card order paid (stock was held at checkout), email the customer.
 // Errors are swallowed like the sibling handlers so a failed side effect
 // doesn't release the idempotency claim and re-run money logic.
 async function processProductOrder(session: Stripe.Checkout.Session) {
@@ -195,6 +196,7 @@ async function processProductOrder(session: Stripe.Checkout.Session) {
       deliveryFee: result.order.delivery_fee,
       total: result.order.total,
       fulfillmentMethod: result.order.fulfillment_method as "pickup" | "delivery",
+      pickupHours: (await getPickupSettings(supabase)).pickupHours,
     });
     console.log("Product order confirmation email sent");
   } catch (error) {
