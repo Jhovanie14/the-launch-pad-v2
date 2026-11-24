@@ -5,16 +5,12 @@ import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/context/auth-context";
 import { toast } from "sonner";
-import {
-  AlertCircle,
-  ArrowRight,
-  Check,
-  Package,
-  RotateCcw,
-  ShoppingBag,
-  Truck,
-} from "lucide-react";
+import { AlertCircle, ArrowRight, Check, Package, RotateCcw, ShoppingBag, Truck } from "lucide-react";
 import { BUSINESS_TIME_ZONE } from "@/lib/dashboard/home";
+import { customerCanCancel, customerStatus, type FlowOrder } from "@/lib/products/orderFlow";
+import { getPickupSettings } from "@/lib/products/storeSettings";
+import { PickupPass } from "@/components/products/PickupPass";
+import { CancelReservationButton } from "@/components/products/CancelReservationButton";
 import { cn } from "@/lib/utils";
 import type { ProductOrderItemRow, ProductOrderRow } from "@/types/db";
 
@@ -34,49 +30,40 @@ const PRIMARY_ACTION = cn(
 
 const STORE_ADDRESS = "10410 S Main St";
 
-/** What the order status means to the customer, for pickup or delivery. */
-function describe(order: OrderWithItems): { title: string; line: string } {
-  const delivery = order.fulfillment_method === "delivery";
-  switch (order.status) {
-    case "paid":
-      return delivery
-        ? { title: "Getting your order ready", line: "We'll email you when it's out for delivery." }
-        : { title: "Getting your order ready", line: "We'll email you when it's ready to collect." };
-    case "ready_for_pickup":
-      return { title: "Ready for pickup", line: `Collect it at ${STORE_ADDRESS}.` };
+const ref = (o: OrderWithItems) => o.id.slice(0, 8).toUpperCase();
+const isOpen = (o: OrderWithItems) => o.fulfilment_status === "placed" || o.fulfilment_status === "ready";
+
+/** A card checkout that was never paid (abandoned or expired) is noise to the customer. */
+function isAbandonedCheckout(o: OrderWithItems): boolean {
+  return (
+    o.payment_method === "card" &&
+    o.payment_status === "unpaid" &&
+    (o.fulfilment_status === "placed" || o.fulfilment_status === "cancelled")
+  );
+}
+
+/** One line under a past order's status. */
+function closingLine(o: OrderWithItems): string {
+  if (o.payment_status === "refunded") return "This order was refunded.";
+  switch (o.fulfilment_status) {
+    case "released":
+      return "This reservation was released. Nothing was charged.";
+    case "cancelled":
+      return "This order was cancelled.";
     case "out_for_delivery":
-      return { title: "Out for delivery", line: "It's on its way to you." };
-    case "completed":
-      return delivery
-        ? { title: "Delivered", line: "Thanks for your order." }
-        : { title: "Picked up", line: "Thanks for your order." };
-    case "refunded":
-      return { title: "Refunded", line: "This order was refunded to your original payment method." };
+      return "It's on its way to you.";
     default:
-      return { title: order.status.replace(/_/g, " "), line: "" };
+      return "Thanks for your order.";
   }
 }
 
 /** Three steps a customer recognises; null for orders off the normal path. */
-function stepsFor(order: OrderWithItems): { label: string; done: boolean; current: boolean }[] | null {
-  const delivery = order.fulfillment_method === "delivery";
-  const order_ = ["paid", delivery ? "out_for_delivery" : "ready_for_pickup", "completed"];
-  const at = order_.indexOf(order.status);
-  if (at === -1) return null;
-  const labels = ["Ordered", delivery ? "On the way" : "Ready to collect", delivery ? "Delivered" : "Picked up"];
+function stepsFor(o: OrderWithItems): { label: string; done: boolean; current: boolean }[] | null {
+  const delivery = o.fulfillment_method === "delivery";
+  const at = { placed: 0, ready: 1, out_for_delivery: 1, completed: 2 }[o.fulfilment_status as string];
+  if (at === undefined || o.payment_status === "refunded") return null;
+  const labels = delivery ? ["Placed", "On the way", "Delivered"] : ["Placed", "Ready", "Picked up"];
   return labels.map((label, i) => ({ label, done: i <= at, current: i === at }));
-}
-
-/** delivery_address is the Stripe shipping_details JSON. */
-function formatAddress(raw: unknown): string | null {
-  const details = raw as {
-    address?: { line1?: string; line2?: string | null; city?: string; state?: string; postal_code?: string };
-  } | null;
-  if (!details?.address) return null;
-  const a = details.address;
-  return [a.line1, a.line2, [a.city, a.state, a.postal_code].filter(Boolean).join(" ")]
-    .filter(Boolean)
-    .join(", ");
 }
 
 function orderedOn(iso: string): string {
@@ -92,6 +79,7 @@ export default function OrdersPage() {
   const supabase = createClient();
   const { user, isLoading: authLoading } = useAuth();
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
+  const [pickupHours, setPickupHours] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -101,36 +89,37 @@ export default function OrdersPage() {
       if (!user?.id) return;
       setLoading(true);
       setLoadError(false);
-      const { data, error } = await supabase
-        .from("product_orders")
-        .select("*, product_order_items (*)")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+      const [{ data, error }, settings] = await Promise.all([
+        supabase
+          .from("product_orders")
+          .select("*, product_order_items (*)")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false }),
+        getPickupSettings(supabase),
+      ]);
       if (error) {
         console.error(error);
         toast.error("Couldn't load your orders");
         setLoadError(true);
       }
       setOrders((data as OrderWithItems[]) ?? []);
+      setPickupHours(settings.pickupHours);
       setLoading(false);
     }
     if (!authLoading) fetchOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, authLoading, attempt]);
 
-  // Hide never-paid checkouts; they're noise to the customer.
-  const visible = orders.filter(
-    (o) => o.status !== "pending" && o.status !== "cancelled",
-  );
+  const visible = orders.filter((o) => !isAbandonedCheckout(o));
+  const open = visible.filter(isOpen);
+  const past = visible.filter((o) => !isOpen(o));
 
   return (
     <div>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black tracking-tight text-ink">Your orders</h1>
-          <p className="mt-1 text-ink-muted">
-            Car care products for pickup at {STORE_ADDRESS} or local delivery.
-          </p>
+          <p className="mt-1 text-ink-muted">Car care products for pickup at {STORE_ADDRESS}.</p>
         </div>
         {!loading && !loadError && visible.length > 0 && (
           <Link href="/products" className={ROW_ACTION}>
@@ -164,21 +153,52 @@ export default function OrdersPage() {
             <ShoppingBag aria-hidden className="size-8 text-ink-subtle" />
             <h2 className="mt-3 text-xl font-black tracking-tight text-ink">No orders yet</h2>
             <p className="mt-1 max-w-prose text-sm text-ink-muted">
-              Products you buy from our shop show up here, so you can see when
-              they&apos;re ready to collect or on their way.
+              Products you buy from our shop show up here, so you can see when they&apos;re ready to collect.
             </p>
             <Link href="/products" className={cn(PRIMARY_ACTION, "mt-5")}>
               Shop car care <ArrowRight aria-hidden className="size-4" />
             </Link>
           </div>
         ) : (
-          <ul className="grid gap-6 lg:grid-cols-2">
-            {visible.map((order) => (
-              <li key={order.id}>
-                <OrderCard order={order} />
-              </li>
-            ))}
-          </ul>
+          <div className="space-y-8">
+            {open.length > 0 && (
+              <ul className="grid gap-6 lg:grid-cols-2">
+                {open.map((order) => (
+                  <li key={order.id}>
+                    <PickupPass
+                      order={{ ...(order as unknown as FlowOrder), id: order.id, items: order.product_order_items }}
+                      pickupHours={pickupHours}
+                      action={
+                        customerCanCancel(order as unknown as FlowOrder) ? (
+                          <CancelReservationButton
+                            orderId={order.id}
+                            orderRef={ref(order)}
+                            onCancelled={() => setAttempt((n) => n + 1)}
+                          />
+                        ) : undefined
+                      }
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+            {past.length > 0 && (
+              <section aria-labelledby="past-orders">
+                {open.length > 0 && (
+                  <h2 id="past-orders" className="mb-3 text-lg font-black tracking-tight text-ink">
+                    Past orders
+                  </h2>
+                )}
+                <ul aria-labelledby={open.length > 0 ? "past-orders" : undefined} className="grid gap-6 lg:grid-cols-2">
+                  {past.map((order) => (
+                    <li key={order.id}>
+                      <OrderCard order={order} />
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+          </div>
         )}
       </div>
     </div>
@@ -187,9 +207,8 @@ export default function OrdersPage() {
 
 function OrderCard({ order }: { order: OrderWithItems }) {
   const delivery = order.fulfillment_method === "delivery";
-  const { title, line } = describe(order);
+  const status = customerStatus(order as unknown as FlowOrder);
   const steps = stepsFor(order);
-  const address = delivery ? formatAddress(order.delivery_address) : null;
   const MethodIcon = delivery ? Truck : Package;
 
   return (
@@ -197,10 +216,12 @@ function OrderCard({ order }: { order: OrderWithItems }) {
       aria-labelledby={`order-${order.id}`}
       className="flex h-full flex-col rounded-2xl bg-paper p-5 ring-1 ring-line sm:p-7"
     >
-      <h2 id={`order-${order.id}`} className="text-xl font-black tracking-tight text-ink first-letter:uppercase">
-        {title}
+      <h2 id={`order-${order.id}`} className="text-xl font-black tracking-tight text-ink">
+        Order {ref(order)}
       </h2>
-      {line && <p className="mt-1 text-sm text-ink-muted">{line}</p>}
+      <p className="mt-1 text-sm text-ink-muted">
+        <span className="font-semibold text-ink">{status.label}</span> · {closingLine(order)}
+      </p>
 
       {steps && (
         <ol aria-label="Order progress" className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm">
@@ -208,10 +229,7 @@ function OrderCard({ order }: { order: OrderWithItems }) {
             <li
               key={step.label}
               aria-current={step.current ? "step" : undefined}
-              className={cn(
-                "inline-flex items-center gap-1.5",
-                step.done ? "font-semibold text-ink" : "text-ink-subtle",
-              )}
+              className={cn("inline-flex items-center gap-1.5", step.done ? "font-semibold text-ink" : "text-ink-subtle")}
             >
               <span
                 className={cn(
@@ -232,7 +250,6 @@ function OrderCard({ order }: { order: OrderWithItems }) {
         <MethodIcon aria-hidden className="size-4 shrink-0 text-ink-subtle" />
         <span>
           {delivery ? "Delivery" : `Pickup at ${STORE_ADDRESS}`}
-          {address && <> to {address}</>}
           {" · "}Ordered {orderedOn(order.created_at)}
         </span>
       </p>
@@ -258,10 +275,6 @@ function OrderCard({ order }: { order: OrderWithItems }) {
           <dd className="text-base font-black tabular-nums text-ink">${order.total.toFixed(2)}</dd>
         </div>
       </dl>
-
-      <p className="mt-auto pt-3 text-xs text-ink-subtle">
-        Order {order.id.slice(0, 8).toUpperCase()}
-      </p>
     </article>
   );
 }
