@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { STOREFRONT_CLASS } from "../storefrontFont";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, MapPin, PackageCheck } from "lucide-react";
@@ -72,7 +73,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
   const price = unitPrice(product);
 
   return (
-    <main className="flex-1">
+    <main className={`flex-1 ${STOREFRONT_CLASS}`}>
       <TrackViewItem product={product} />
 
       {/* Portrait clip, centred. Its width is derived from the viewport height
