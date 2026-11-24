@@ -1,5 +1,71 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { HOME_REASONS, HOME_REVIEWS } from "./homePage";
+import { HOME_REASONS, HOME_REVIEWS, HOME_SERVICES } from "./homePage";
+import { SHOP } from "./footer";
+
+// AI-generated or stock images in public/: never shown as the shop.
+const NOT_THE_SHOP = [
+  "/professional-express-car-detailing.png",
+  "/express-detailing-subscription.png",
+  "/self-service-wash-2.jpg",
+  // The original shows a stranger's readable plate; self-service-bay.jpg is the blurred copy.
+  "/self-service-wash-1.jpg",
+];
+
+describe("home services", () => {
+  it("services are the three approved cards", () => {
+    expect(HOME_SERVICES.map(({ key, name, lede, facts, link }) => ({ key, name, lede, facts, link }))).toEqual([
+      {
+        key: "self",
+        name: "Self-service bays",
+        lede: "Wash it your way, any time of the day or night.",
+        facts: ["Open 24/7", "High-pressure wash and foam brush", "Spot-free rinse and vacuums", "Pay with coins or tap to pay"],
+        link: { href: "/self-service", label: "How the bays work" },
+      },
+      {
+        key: "detail",
+        name: "Express detailing",
+        lede: "Our team cleans your car inside and out.",
+        facts: ["Thursday to Sunday, 9:30 AM–6:30 PM", "Book online, by appointment", "Quick service and express detail packages"],
+        link: { href: "/services#menu", label: "See the menu" },
+      },
+      {
+        key: "member",
+        name: "Membership",
+        lede: "Keep your car clean all month for one price.",
+        facts: ["Unlimited washes", "Monthly or yearly plans", "No contract, cancel anytime"],
+        link: { href: "/pricing", label: "See plans" },
+      },
+    ]);
+  });
+
+  it("services use only the real shop photos", () => {
+    const srcs = HOME_SERVICES.map((s) => s.photo.src);
+    expect(srcs).toEqual([
+      "/self-service-bay.jpg",
+      "/professional-express-car-detailing-2.png",
+      "/express-detailing-subscription-1.jpg",
+    ]);
+    for (const src of srcs) {
+      expect(NOT_THE_SHOP).not.toContain(src);
+      expect(existsSync(join(process.cwd(), "public", src))).toBe(true);
+    }
+    for (const s of HOME_SERVICES) expect(s.photo.alt.length).toBeGreaterThan(10);
+  });
+
+  it("detailing hours match the footer, days and times", () => {
+    const DAY: Record<string, string> = {
+      Mon: "Monday", Tue: "Tuesday", Wed: "Wednesday", Thu: "Thursday", Fri: "Friday", Sat: "Saturday", Sun: "Sunday",
+    };
+    // Footer: "Detailing: Thu–Sun, 9:30 AM–6:30 PM" → "Thursday to Sunday, 9:30 AM–6:30 PM"
+    const footer = SHOP.hours.find((h) => h.startsWith("Detailing: "))!;
+    const [days, time] = footer.slice("Detailing: ".length).split(", ");
+    const [from, to] = days.split("–");
+    const detail = HOME_SERVICES.find((s) => s.key === "detail")!;
+    expect(detail.facts[0]).toBe(`${DAY[from]} to ${DAY[to]}, ${time}`);
+  });
+});
 
 describe("home page copy", () => {
   it("reasons are the four approved facts", () => {

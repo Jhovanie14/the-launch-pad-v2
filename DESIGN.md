@@ -382,6 +382,7 @@ Logo navy and white, one flame-yellow signal, and one logo colour per service; n
 **Marketing home (2026-11-20).** A server-rendered page (`app/(user)/(home)/page.tsx`, `components/home/`) whose prices come from the same data as `/services`.
 
 - **Hero:** Night, full-bleed at `min-h-svh`, with the photograph (`/self-service.png`) under a Night scrim (70% → 65% → 90%). Content is capped at 80rem with 20px / 32px gutters and 96px / 128px top padding. It holds "Your car deserves better." in Display Hero, one flame "Book a detail" (opens the booking pop-up) beside a quiet ringed "Self-service bays", three facts (bays 24/7, detailing hours, address), then the shared `ServiceTileGrid` (three Dusk tiles tinted sky / flame / Membership Red Soft, with live prices). There is no entrance animation, eyebrow label or rating.
+- **"Three services, one location":** on Canvas between the hero and "Why", three white Surface cards (one column on phones, three from 768px), each with a real shop photo at 4:3, a service Mark dot, the name, a one-line lede, check-marked facts in Brand Blue, and a quiet ringed 44px link to the service page. There are no prices here (the hero tiles carry them). Copy and photos live in `HOME_SERVICES` (`lib/marketing/homePage.ts`), and a test keeps the AI or stock images in `public/` off the page.
 - **"Why The Launch Pad?":** on Canvas, a photo, the story, and four facts in a divided list (`HOME_REASONS` in `lib/marketing/homePage.ts`).
 - **"What customers say":** on Night, three still Dusk review cards with flame stars.
 
