@@ -42,4 +42,10 @@ describe("admin sidebar source", () => {
     expect(s).toContain('type="button"');
     expect(s).toContain("Sign out");
   });
+
+  it("sign-out is a 44px target on phones (DESIGN.md)", () => {
+    const button = src().match(/onClick=\{handleSignOut\}[\s\S]*?className=\{cn\(\s*"([^"]+)"/);
+    expect(button?.[1]).toMatch(/\bh-11\b/);
+    expect(button?.[1]).toMatch(/\blg:h-10\b/);
+  });
 });

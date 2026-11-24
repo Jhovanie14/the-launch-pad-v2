@@ -20,7 +20,7 @@
 - Never a coloured side stripe.
 - Current link: `bg-white/12`, `text-on-night`, semibold, `text-flame` icon, `aria-current="page"`.
 - Focus: `FOCUS_ON_NIGHT` from `components/booking/ui/focus.ts`.
-- 44px rows in the phone drawer, 40px from `lg`. 44px close button. 40px sign-out button.
+- 44px rows in the phone drawer, 40px from `lg`. 44px close button. 44px sign-out button on phones, 40px from `lg`.
 - CRLF files. No Co-Authored-By trailer. Don't apply migrations (none needed).
 
 ## Review Focus

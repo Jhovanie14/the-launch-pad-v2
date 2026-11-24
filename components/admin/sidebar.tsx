@@ -195,7 +195,7 @@ export function AdminSidebar({ user, open, onClose }: AdminSidebarProps) {
               onClick={handleSignOut}
               disabled={isLoggingOut}
               className={cn(
-                "inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-on-night-muted ring-1 ring-white/25 transition-colors hover:bg-white/10 hover:text-on-night disabled:opacity-60 motion-reduce:transition-none",
+                "inline-flex h-11 shrink-0 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-on-night-muted ring-1 ring-white/25 transition-colors hover:bg-white/10 hover:text-on-night disabled:opacity-60 motion-reduce:transition-none lg:h-10",
                 FOCUS_ON_NIGHT
               )}
             >

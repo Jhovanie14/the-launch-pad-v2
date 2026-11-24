@@ -98,7 +98,7 @@ Each item has `{ name, href, icon, requires?: "super_admin", badge?: "messages" 
 - **Footer:**
   - A 36px avatar, with a `bg-dusk` and `text-flame` fallback.
   - The name, truncated, and the role: "Super admin" or "Admin".
-  - A `type="button"` "Sign out" button with a LogOut icon: 40px, `ring-1 ring-white/25`, `hover:bg-white/10`.
+  - A `type="button"` "Sign out" button with a LogOut icon: 44px on phones and 40px from `lg`, `ring-1 ring-white/25`, `hover:bg-white/10`.
   - The fake 2s delay is removed. The existing `LoadingDots` overlay still shows while signing out.
 - **Phone drawer:** the behaviour stays the same (overlay, slide, `lg` breakpoint), with a `bg-black/50` overlay.
 
