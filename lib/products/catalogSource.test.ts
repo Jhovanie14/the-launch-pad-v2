@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -96,5 +96,37 @@ describe("product page", () => {
       expect(s.match(OLD_WORLD) ?? [], f).toEqual([]);
       expect(s.match(RAW_PALETTE) ?? [], f).toEqual([]);
     }
+  });
+});
+
+describe("the black-and-gold storefront is retired", () => {
+  function sources(dir: string): string[] {
+    const out: string[] = [];
+    for (const f of readdirSync(dir)) {
+      const p = join(dir, f);
+      if (statSync(p).isDirectory()) out.push(...sources(p));
+      else if (/.(ts|tsx)$/.test(f) && !/.test.ts$/.test(f)) out.push(p);
+    }
+    return out;
+  }
+
+  it("nothing uses it", () => {
+    const hits = ["app", "components"]
+      .flatMap((d) => sources(join(process.cwd(), d)))
+      .flatMap((p) => {
+        const text = readFileSync(p, "utf8");
+        return ["STOREFRONT_CLASS", "storefrontFont", "font-display", "text-gold", "Anton("]
+          .filter((b) => text.includes(b))
+          .map((b) => `${p}: ${b}`);
+      });
+    expect(hits).toEqual([]);
+    expect(existsSync(join(process.cwd(), "app/(user)/products/storefrontFont.ts"))).toBe(false);
+  });
+
+  it("its CSS is gone", () => {
+    const css = read("app/globals.css");
+    expect(css).not.toContain(".storefront {");
+    expect(css).not.toContain("--color-gold");
+    expect(css).not.toContain(".font-display");
   });
 });
