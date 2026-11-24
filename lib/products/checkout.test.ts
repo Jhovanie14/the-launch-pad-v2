@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createPendingOrder, priceOrder } from "./checkout";
+import { priceOrder } from "./checkout";
 
 const PRODUCTS = [
   { id: "p1", name: "Tire Shine Pro", price: 29.99, sale_price: 19.99, stock: 10, is_active: true },
@@ -159,49 +159,5 @@ describe("priceOrder totals", () => {
     const priced = await priceOrder(db, [{ productId: "p2", quantity: 1 }], "pickup");
     expect(priced.deliveryFee).toBe(0);
     expect(priced.total).toBe(39.99);
-  });
-});
-
-describe("createPendingOrder", () => {
-  const priced = {
-    items: [{ product_id: "p1", name: "Tire Shine Pro", unit_price: 19.99, quantity: 2 }],
-    subtotal: 39.98,
-    deliveryFee: 0,
-    total: 39.98,
-  };
-
-  it("inserts the order row and item snapshots", async () => {
-    const { db, calls } = fakeDb({ orderId: "order-9" });
-    const result = await createPendingOrder(db, {
-      userId: "user-1",
-      fulfillmentMethod: "pickup",
-      priced,
-    });
-    expect(result).toEqual({ orderId: "order-9" });
-    expect(calls.orderInserts[0]).toMatchObject({
-      user_id: "user-1",
-      status: "pending",
-      fulfillment_method: "pickup",
-      subtotal: 39.98,
-      delivery_fee: 0,
-      total: 39.98,
-    });
-    expect(calls.itemInserts[0]).toEqual([
-      {
-        order_id: "order-9",
-        product_id: "p1",
-        name: "Tire Shine Pro",
-        unit_price: 19.99,
-        quantity: 2,
-      },
-    ]);
-  });
-
-  it("deletes the order row and rethrows when item insert fails", async () => {
-    const { db, calls } = fakeDb({ orderId: "order-9", itemInsertError: true });
-    await expect(
-      createPendingOrder(db, { userId: "user-1", fulfillmentMethod: "pickup", priced }),
-    ).rejects.toBeTruthy();
-    expect(calls.orderDeletes).toEqual(["order-9"]);
   });
 });

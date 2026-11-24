@@ -3,65 +3,50 @@ import { stripe } from "@/lib/stripe/stripe";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { requireUser } from "@/lib/auth/guards";
-import { apiError, ApiError } from "@/lib/http/apiError";
-import { createPendingOrder, priceOrder } from "@/lib/products/checkout";
+import { apiError } from "@/lib/http/apiError";
+import { placeOrder } from "@/lib/products/placeOrder";
+import { getPickupSettings } from "@/lib/products/storeSettings";
+import { sendProductOrderReservedEmail } from "@/lib/email/product-order-emails";
 
+/**
+ * Place a store order: pay now by card (Stripe Checkout) or reserve and pay at
+ * the store. Logic and rules live in lib/products/placeOrder.ts.
+ */
 export async function POST(req: Request) {
   try {
     const supabase = await createClient();
     const user = await requireUser(supabase);
-
     const body = await req.json();
-    const items = body?.items;
-    const fulfillmentMethod = body?.fulfillment_method;
 
-    // Service-role client: order inserts are server-side only (RLS has no
-    // insert policies on product_orders by design).
+    // Service-role client: order inserts and stock changes are server-side
+    // only (RLS has no write policies on product_orders by design).
     const admin = createAdminClient();
+    const [{ data: profile }, settings] = await Promise.all([
+      admin.from("profiles").select("full_name, phone").eq("id", user.id).maybeSingle(),
+      getPickupSettings(admin),
+    ]);
 
-    const priced = await priceOrder(admin, items, fulfillmentMethod);
-    const { orderId } = await createPendingOrder(admin, {
-      userId: user.id,
-      fulfillmentMethod,
-      priced,
-    });
-
-    const line_items = priced.items.map((i) => ({
-      price_data: {
-        currency: "usd",
-        product_data: { name: i.name },
-        unit_amount: Math.round(i.unit_price * 100),
+    const result = await placeOrder(
+      {
+        db: admin,
+        stripe,
+        siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "",
+        now: new Date(),
+        pickupHours: settings.pickupHours,
+        sendReserved: sendProductOrderReservedEmail,
       },
-      quantity: i.quantity,
-    }));
-
-    // No delivery fee line item and no shipping address collection: priceOrder
-    // only accepts pickup while delivery is paused, so both were unreachable.
-    // Restoring delivery means restoring them alongside
-    // OFFERED_FULFILLMENT_METHODS in lib/products/checkout.ts.
-    const session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      payment_method_types: ["card"],
-      line_items,
-      customer_email: user.email ?? undefined,
-      // Staff call or text the customer when the order is ready to collect.
-      phone_number_collection: { enabled: true },
-      success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/products/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/products/cart`,
-      metadata: {
-        payment_type: "product_order",
-        order_id: orderId,
+      {
+        userId: user.id,
+        email: user.email ?? null,
+        name: profile?.full_name ?? null,
+        phone: profile?.phone ?? null,
+        items: body?.items,
+        fulfillmentMethod: body?.fulfillment_method,
+        paymentMethod: body?.payment_method,
       },
-    });
+    );
 
-    if (!session.url) throw new ApiError("Stripe did not return a checkout URL", 500);
-
-    await admin
-      .from("product_orders")
-      .update({ stripe_session_id: session.id })
-      .eq("id", orderId);
-
-    return NextResponse.json({ url: session.url });
+    return NextResponse.json(result);
   } catch (err) {
     return apiError(err);
   }
