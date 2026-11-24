@@ -28,6 +28,9 @@ import {
 } from "@/lib/products/catalog";
 import type { ProductRow } from "@/types/db";
 import { ProductCard } from "./product-card";
+import { FeaturedProduct } from "./featured-product";
+import { cn } from "@/lib/utils";
+import { FOCUS_ON_LIGHT, RING_BUTTON, SURFACE } from "@/components/booking/ui/focus";
 
 /**
  * The browsable half of the storefront.
@@ -38,10 +41,13 @@ import { ProductCard } from "./product-card";
  */
 export function ProductCatalog({
   products,
+  featured = [],
   id,
   heading,
 }: {
   products: ProductRow[];
+  /** Curated products, shown first as wide cards. */
+  featured?: ProductRow[];
   id: string;
   heading: string;
 }) {
@@ -85,34 +91,31 @@ export function ProductCatalog({
   };
 
   return (
-    <section id={id} className="scroll-mt-24 border-t border-border/60 py-16 sm:py-24">
-      <div className="mx-auto max-w-7xl px-4">
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-gold">
-              The range
-            </p>
-            <h2 className="mt-3 font-display text-4xl uppercase sm:text-5xl">
-              {heading}
-            </h2>
-          </div>
+    <section id={id} className="scroll-mt-20 pt-4 pb-16 sm:pb-24">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          {/* Focusable so the hero's "Explore the range" can move focus here. */}
+          <h2 tabIndex={-1} className={cn("rounded text-2xl font-black tracking-tight sm:text-3xl", FOCUS_ON_LIGHT)}>
+            {heading}
+          </h2>
 
           {withControls && (
             <div className="flex w-full items-center gap-2 sm:w-auto">
               <div className="relative flex-1 sm:w-64">
-                <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <SearchIcon aria-hidden className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-subtle" />
                 <Input
                   id="search-products"
+                  aria-label="Search products"
                   placeholder="Search products…"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="rounded-none pl-10"
+                  className="h-11 rounded-lg bg-paper pl-10"
                 />
               </div>
 
               <Popover open={filterOpen} onOpenChange={setFilterOpen}>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="relative rounded-none">
+                  <Button variant="outline" className={cn(RING_BUTTON, "relative")}>
                     <Filter className="mr-2 h-4 w-4" />
                     Filters
                     {activeFilters > 0 && (
@@ -187,26 +190,27 @@ export function ProductCatalog({
         </div>
 
         {visible.length === 0 ? (
-          <div className="py-24 text-center">
-            <p className="text-muted-foreground">
-              Nothing matches those filters.
-            </p>
+          <div className={cn(SURFACE, "mt-6 p-6")}>
+            <p className="text-ink-muted">Nothing matches those filters.</p>
             {activeFilters > 0 && (
-              <Button
-                variant="outline"
-                onClick={clearFilters}
-                className="mt-4 rounded-none"
-              >
+              <button type="button" onClick={clearFilters} className={cn(RING_BUTTON, "mt-4")}>
                 Clear filters
-              </Button>
+              </button>
             )}
           </div>
         ) : (
-          <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {visible.map((product, index) => (
-              <ProductCard key={product.id} product={product} index={index} />
+          <ul className="mt-6 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3">
+            {featured.map((product) => (
+              <li key={product.id} className="col-span-2">
+                <FeaturedProduct product={product} />
+              </li>
             ))}
-          </div>
+            {visible.map((product) => (
+              <li key={product.id}>
+                <ProductCard product={product} />
+              </li>
+            ))}
+          </ul>
         )}
       </div>
     </section>
