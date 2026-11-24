@@ -13,7 +13,7 @@ export const revalidate = 300;
 const CATALOG_ANCHOR = "range";
 
 const FALLBACK_HERO = {
-  headline: "Pro Series Car Care",
+  headline: "Pro Series car care",
   subcopy:
     "Professional-grade detailing products, made for the finish we put on cars every day. Order online and collect at our S Main St store.",
   ctaLabel: "Explore the range",

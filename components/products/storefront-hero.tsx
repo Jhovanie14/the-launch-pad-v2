@@ -80,7 +80,7 @@ export function StorefrontHero({
             alt=""
             priority
             sizes="(min-width: 1024px) 55vw, 100vw"
-            className="aspect-[16/10] w-full"
+            className="aspect-[16/10] w-full bg-night"
           />
         </div>
       </div>

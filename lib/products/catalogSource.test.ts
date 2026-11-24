@@ -130,3 +130,15 @@ describe("the black-and-gold storefront is retired", () => {
     expect(css).not.toContain(".font-display");
   });
 });
+
+describe("visual pass on the preview", () => {
+  it("the film frame stays navy while the film loads", () => {
+    expect(read("components/products/storefront-hero.tsx")).toMatch(/className="[^"]*aspect-\[16\/10\][^"]*bg-night/);
+  });
+  it("long product names get a smaller headline", () => {
+    expect(read("app/(user)/products/[slug]/page.tsx")).toMatch(/title\.length > \d+/);
+  });
+  it("the fallback headline is sentence case", () => {
+    expect(read("app/(user)/products/page.tsx")).toContain('headline: "Pro Series car care"');
+  });
+});

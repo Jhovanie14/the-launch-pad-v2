@@ -99,7 +99,15 @@ export default async function ProductDetailPage({ params }: PageProps) {
           />
 
           <div>
-            <h1 className="text-3xl leading-[1.05] font-black tracking-tight text-balance sm:text-4xl">{title}</h1>
+            <h1
+              className={cn(
+                "leading-[1.05] font-black tracking-tight text-balance",
+                // A full marketplace name (no short display name yet) would fill a phone screen.
+                title.length > 48 ? "text-2xl sm:text-3xl" : "text-3xl sm:text-4xl",
+              )}
+            >
+              {title}
+            </h1>
             {title !== product.name && <p className="mt-2 text-ink-muted">{product.name}</p>}
             <p className="mt-2 text-sm text-ink-subtle">{product.category}</p>
 
