@@ -57,9 +57,20 @@ describe("pickup pass", () => {
     expect(s).toContain("isUnpaidReservation(");
     expect(s).toContain("to pay at the counter");
   });
+  it("names the counter methods the owner takes", () => {
+    expect(read(PASS)).toContain("Cash, card or Zelle.");
+    expect(read(PASS)).not.toContain("or QR");
+  });
 
   it("only asks to show the reference while the order is open", () => {
     expect(read(PASS)).toMatch(/open && \(\s*<p[^>]*>Show this reference at the counter/);
+  });
+
+  it("shows the owner's pickup note when set, wherever the pass is used", () => {
+    expect(read(PASS)).toMatch(/pickupNote\s*&&/);
+    expect(read(PASS)).toContain("pickupNote: string | null");
+    expect(read("app/(user)/products/success/page.tsx")).toContain("pickupNote={settings.pickupNote}");
+    expect(read("app/(dashboard)/dashboard/orders/page.tsx")).toContain("pickupNote={pickupNote}");
   });
 
   it("only shows hours the owner has set", () => {

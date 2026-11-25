@@ -14,6 +14,7 @@ export interface PlaceOrderDeps {
   siteUrl: string;
   now: Date;
   pickupHours: string | null;
+  pickupNote: string | null;
   sendReserved: (args: {
     to: string;
     name: string;
@@ -22,6 +23,7 @@ export interface PlaceOrderDeps {
     subtotal: number;
     total: number;
     pickupHours: string | null;
+    pickupNote: string | null;
   }) => Promise<void>;
 }
 
@@ -96,6 +98,7 @@ export async function placeOrder(deps: PlaceOrderDeps, input: PlaceOrderInput): 
         subtotal: priced.subtotal,
         total: priced.total,
         pickupHours: deps.pickupHours,
+        pickupNote: deps.pickupNote,
       });
     }
     return { url: `/products/success?order=${id}` };

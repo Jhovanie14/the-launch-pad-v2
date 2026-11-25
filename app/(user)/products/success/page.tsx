@@ -80,6 +80,7 @@ export default async function ProductSuccessPage({ searchParams }: ProductSucces
             <PickupPass
               order={order}
               pickupHours={settings.pickupHours}
+              pickupNote={settings.pickupNote}
               action={customerCanCancel(order) ? <CancelReservationButton orderId={order.id} orderRef={ref} /> : undefined}
             />
           )}

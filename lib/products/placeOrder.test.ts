@@ -65,6 +65,7 @@ function deps(
     siteUrl: "https://site.test",
     now: NOW,
     pickupHours: "Daily 9–6",
+    pickupNote: "Ask for Armando",
     sendReserved: vi.fn(async () => {}),
   };
 }
@@ -98,7 +99,7 @@ describe("placeOrder: pay at the store", () => {
       args: { p_user_id: "u1", p_payment_method: "at_store", p_phone: "7135550142", p_total: 17.84 },
     });
     expect(d.sendReserved).toHaveBeenCalledWith(
-      expect.objectContaining({ to: "dee@example.com", total: 17.84, pickupHours: "Daily 9–6" }),
+      expect.objectContaining({ to: "dee@example.com", total: 17.84, pickupHours: "Daily 9–6", pickupNote: "Ask for Armando" }),
     );
     expect(out.url).toBe("/products/success?order=1a2b3c4d-0000-4000-8000-000000000000");
     expect((d.stripe as any).checkout.sessions.create).not.toHaveBeenCalled();

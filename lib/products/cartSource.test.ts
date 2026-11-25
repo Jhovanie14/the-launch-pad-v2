@@ -20,6 +20,12 @@ describe("cart", () => {
   it("explains the hold with the owner's setting", () => {
     expect(read(CART)).toContain("holdDays");
     expect(read(CART)).toMatch(/pickupHours\s*&&/);
+    expect(read(CART)).toMatch(/pickupNote\s*&&/);
+    expect(read(CART)).toContain("setPickupNote(settings.pickupNote)");
+  });
+
+  it("names the counter methods the owner takes", () => {
+    expect(read(CART)).toContain("Cash, card or Zelle when you collect");
   });
 
   it("shows checkout errors next to the button, not only as a toast", () => {

@@ -33,6 +33,7 @@ export async function POST(req: Request) {
         siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "",
         now: new Date(),
         pickupHours: settings.pickupHours,
+        pickupNote: settings.pickupNote,
         sendReserved: sendProductOrderReservedEmail,
       },
       {

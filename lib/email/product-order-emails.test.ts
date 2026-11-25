@@ -126,7 +126,8 @@ describe("pickup emails", () => {
   it("ready for an unpaid reservation shows the amount due and the hold date", () => {
     const { html } = buildProductOrderReadyForPickupEmail({ to: "x@example.com", name: "Dee", orderId, amountDue: 25.2, holdDate: "Thu, Nov 26", pickupHours: "Daily 9–6" });
     expect(html).toContain("Show reference");
-    expect(html).toContain("$25.20 to pay at the counter (cash, card or QR)");
+    expect(html).toContain("$25.20 to pay at the counter (cash, card or Zelle)");
+    expect(html).not.toContain("or QR");
     expect(html).toContain("until Thu, Nov 26");
     expect(html).toContain("Daily 9–6");
   });
@@ -152,5 +153,41 @@ describe("pickup emails", () => {
     const store = buildProductOrderRefundedEmail({ to: "x@example.com", name: "Dee", orderId, total: 10, where: "store" }).html;
     expect(store).toContain("refunded your order at the store");
     expect(store).not.toContain("business days");
+  });
+});
+
+describe("pickup instructions", () => {
+  const id = "1a2b3c4d-0000-4000-8000-000000000000";
+  const NOTE = "Ask for Armando";
+  const items = [{ name: "Wax", quantity: 1, unit_price: 10 }];
+  const pickup = (pickupNote: string | null) => ({
+    confirmation: buildProductOrderConfirmationEmail({ to: "x@example.com", name: "Sam", orderId: id, items, subtotal: 10, deliveryFee: 0, total: 10, fulfillmentMethod: "pickup", pickupHours: "Daily 9–6", pickupNote }).html,
+    ready: buildProductOrderReadyForPickupEmail({ to: "x@example.com", name: "Sam", orderId: id, pickupHours: "Daily 9–6", pickupNote }).html,
+    reserved: buildProductOrderReservedEmail({ to: "x@example.com", name: "Sam", orderId: id, items, subtotal: 10, total: 10, pickupHours: "Daily 9–6", pickupNote }).html,
+    reminder: buildProductOrderHoldReminderEmail({ to: "x@example.com", name: "Sam", orderId: id, total: 10, holdDate: "Thu, Nov 26", pickupHours: "Daily 9–6", pickupNote }).html,
+  });
+
+  it("shows the note under the hours in every pickup email", () => {
+    for (const [name, html] of Object.entries(pickup(NOTE))) {
+      expect(html, name).toContain("When you arrive");
+      expect(html, name).toContain(NOTE);
+      expect(html.indexOf("Daily 9–6"), name).toBeLessThan(html.indexOf(NOTE));
+    }
+  });
+
+  it("shows nothing when the note isn't set", () => {
+    for (const [name, html] of Object.entries(pickup(null))) expect(html, name).not.toContain("When you arrive");
+  });
+
+  it("never shows the note on a delivery order", () => {
+    const { html } = buildProductOrderConfirmationEmail({ to: "x@example.com", name: "Sam", orderId: id, items, subtotal: 10, deliveryFee: 5, total: 15, fulfillmentMethod: "delivery", pickupHours: "Daily 9–6", pickupNote: NOTE });
+    expect(html).not.toContain(NOTE);
+    expect(html).not.toContain("Daily 9–6");
+  });
+
+  it("escapes the note", () => {
+    const { html } = buildProductOrderReadyForPickupEmail({ to: "x@example.com", name: "Sam", orderId: id, pickupHours: null, pickupNote: "<b>Bring ID</b> & receipt" });
+    expect(html).toContain("&lt;b&gt;Bring ID&lt;/b&gt; &amp; receipt");
+    expect(html).not.toContain("<b>Bring ID</b>");
   });
 });

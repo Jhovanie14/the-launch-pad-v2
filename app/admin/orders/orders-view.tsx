@@ -47,7 +47,7 @@ const COUNTED: Tab[] = ["to_pack", "ready", "unpaid"];
 /** Orders load a page at a time, filtered in the database. */
 const PAGE_SIZE = 25;
 const SEARCH_LIMIT = 200;
-const COUNTER_METHODS: PaidVia[] = ["cash", "card_reader", "counter_qr"];
+const COUNTER_METHODS: PaidVia[] = ["cash", "card_reader", "zelle", "counter_qr"];
 
 const PRIMARY = cn(
   "inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-night px-4 text-sm font-bold text-on-night transition-colors hover:bg-dusk disabled:opacity-60 motion-reduce:transition-none",
@@ -464,7 +464,7 @@ function OrderCard({
         <fieldset className="mt-4 rounded-xl bg-canvas p-4 ring-1 ring-line">
           <legend className="sr-only">Payment method</legend>
           <p className="mb-2 text-sm font-bold">How did they pay {money(order.total)}?</p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {COUNTER_METHODS.map((m) => (
               <label
                 key={m}
@@ -553,16 +553,18 @@ function OrderCard({
   );
 }
 
-/** Pickup hours and the unpaid hold: one setting each, shown to customers. */
+/** Pickup hours, pickup note and the unpaid hold: one setting each, shown to customers. */
 function PickupSettingsPanel() {
   const supabase = createClient();
   const [hours, setHours] = useState("");
+  const [note, setNote] = useState("");
   const [holdDays, setHoldDays] = useState(String(DEFAULT_HOLD_DAYS));
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     getPickupSettings(supabase).then((s) => {
       setHours(s.pickupHours ?? "");
+      setNote(s.pickupNote ?? "");
       setHoldDays(String(s.holdDays));
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -575,7 +577,7 @@ function PickupSettingsPanel() {
       const res = await fetch("/api/admin/store-settings/pickup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pickup_hours: hours, hold_days: Number(holdDays) }),
+        body: JSON.stringify({ pickup_hours: hours, pickup_note: note, hold_days: Number(holdDays) }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Couldn't save the settings");
@@ -601,6 +603,18 @@ function PickupSettingsPanel() {
             onChange={(e) => setHours(e.target.value)}
             placeholder="For example: Thu–Sun, 9:30 AM–6:30 PM"
             className={cn("mt-2 h-11 w-full rounded-lg bg-paper px-3 text-base ring-1 ring-line placeholder:text-ink-subtle", FOCUS_ON_LIGHT)}
+          />
+        </label>
+        <label className="block">
+          <span className="text-sm font-semibold">Pickup instructions</span>
+          <span className="block text-sm text-ink-muted">Optional. Shown under the pickup hours.</span>
+          <textarea
+            value={note}
+            maxLength={200}
+            rows={2}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="For example: Ask for Armando at the carwash. Bring your ID and your order email or receipt."
+            className={cn("mt-2 w-full rounded-lg bg-paper px-3 py-2 text-base ring-1 ring-line placeholder:text-ink-subtle", FOCUS_ON_LIGHT)}
           />
         </label>
         <label className="block">

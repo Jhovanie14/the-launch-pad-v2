@@ -23,6 +23,8 @@ describe("admin store orders counter screen", () => {
       "Release reservation",
       "Pickup hours",
       "Hold unpaid orders for",
+      "Pickup instructions",
+      "Optional. Shown under the pickup hours.",
       "Search reference, name or phone",
     ]) {
       expect(s, copy).toContain(copy);
@@ -31,7 +33,18 @@ describe("admin store orders counter screen", () => {
 
   it("names payment methods from the shared labels", () => {
     expect(read()).toContain("PAID_VIA_LABEL[m]");
-    expect(read()).toContain('["cash", "card_reader", "counter_qr"]');
+    expect(read()).toContain('["cash", "card_reader", "zelle", "counter_qr"]');
+  });
+
+  it("fits four payment methods: two by two on phones, four across from sm", () => {
+    expect(read()).toMatch(/grid grid-cols-2 gap-2 sm:grid-cols-4/);
+  });
+
+  it("loads and saves the pickup note with the other settings", () => {
+    const s = read();
+    expect(s).toContain("s.pickupNote");
+    expect(s).toContain("pickup_note: note");
+    expect(s).toContain("maxLength={200}");
   });
 
   it("posts to the new routes only", () => {

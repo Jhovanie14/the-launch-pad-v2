@@ -11,8 +11,17 @@ export async function runHoldJob(deps: {
   db: SupabaseClient;
   now: Date;
   pickupHours: string | null;
+  pickupNote: string | null;
   emails: {
-    reminder: (args: { to: string; name: string; orderId: string; total: number; holdDate: string; pickupHours: string | null }) => Promise<void>;
+    reminder: (args: {
+      to: string;
+      name: string;
+      orderId: string;
+      total: number;
+      holdDate: string;
+      pickupHours: string | null;
+      pickupNote: string | null;
+    }) => Promise<void>;
     released: (args: { to: string; name: string; orderId: string; byCustomer: boolean }) => Promise<void>;
   };
 }): Promise<{ reminded: number; released: number; restocked: number }> {
@@ -61,6 +70,7 @@ export async function runHoldJob(deps: {
           total: order.total,
           holdDate: houstonDateLabel(flow.hold_until),
           pickupHours: deps.pickupHours,
+          pickupNote: deps.pickupNote,
         });
       }
     }

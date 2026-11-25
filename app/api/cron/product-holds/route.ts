@@ -20,11 +20,12 @@ export async function GET(req: Request) {
 
   try {
     const db = createAdminClient();
-    const { pickupHours } = await getPickupSettings(db);
+    const { pickupHours, pickupNote } = await getPickupSettings(db);
     const result = await runHoldJob({
       db,
       now: new Date(),
       pickupHours,
+      pickupNote,
       emails: { reminder: sendProductOrderHoldReminderEmail, released: sendProductOrderReleasedEmail },
     });
     return NextResponse.json(result);

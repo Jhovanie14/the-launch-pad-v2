@@ -106,11 +106,19 @@ type ConfirmationArgs = {
   fulfillmentMethod: "pickup" | "delivery";
   /** store_settings.pickup_hours; null means not set, so no hours line. */
   pickupHours?: string | null;
+  /** store_settings.pickup_note; null means not set, so no note line. */
+  pickupNote?: string | null;
 };
 
-/** The "Pickup hours" detail row, only when the owner has set them. */
-function hoursRow(pickupHours: string | null | undefined): [string, string][] {
-  return pickupHours ? [["Pickup hours", text(pickupHours)]] : [];
+/**
+ * The "Pickup hours" and "When you arrive" detail rows, each only when the
+ * owner has set it. The note goes under the hours.
+ */
+function pickupRows(pickupHours: string | null | undefined, pickupNote: string | null | undefined): [string, string][] {
+  return [
+    ...(pickupHours ? ([["Pickup hours", text(pickupHours)]] as [string, string][]) : []),
+    ...(pickupNote ? ([["When you arrive", text(pickupNote)]] as [string, string][]) : []),
+  ];
 }
 
 export function buildProductOrderConfirmationEmail(args: ConfirmationArgs): BuiltEmail {
@@ -126,7 +134,7 @@ export function buildProductOrderConfirmationEmail(args: ConfirmationArgs): Buil
     details([
       ["Order", text(ref)],
       ["Fulfillment", isDelivery ? "Local delivery" : "Pickup at the store"],
-      ...(isDelivery ? [] : hoursRow(args.pickupHours)),
+      ...(isDelivery ? [] : pickupRows(args.pickupHours, args.pickupNote)),
     ]),
     orderItemsTable(args),
     nextStep,
@@ -152,6 +160,7 @@ type ReadyArgs = StatusArgs & {
   /** "Thu, Nov 26": the Houston date the hold lasts through. */
   holdDate?: string | null;
   pickupHours?: string | null;
+  pickupNote?: string | null;
 };
 
 export function buildProductOrderReadyForPickupEmail(args: ReadyArgs): BuiltEmail {
@@ -164,7 +173,7 @@ export function buildProductOrderReadyForPickupEmail(args: ReadyArgs): BuiltEmai
     ...(due
       ? [
           paragraph(
-            `${money(args.amountDue!)} to pay at the counter (cash, card or QR).` +
+            `${money(args.amountDue!)} to pay at the counter (cash, card or Zelle).` +
               (args.holdDate ? ` We will hold it until ${text(args.holdDate)}.` : ""),
           ),
         ]
@@ -172,7 +181,7 @@ export function buildProductOrderReadyForPickupEmail(args: ReadyArgs): BuiltEmai
     details([
       ["Order", text(ref)],
       ["Pick up at", text(STORE_ADDRESS)],
-      ...hoursRow(args.pickupHours),
+      ...pickupRows(args.pickupHours, args.pickupNote),
     ]),
     button(DIRECTIONS_URL, "Get directions"),
     paragraph(`You can see your order any time in <a href="${ORDERS_URL}">your dashboard</a>.`, { muted: true, small: true }),
@@ -254,6 +263,7 @@ type ReservedArgs = StatusArgs & {
   subtotal: number;
   total: number;
   pickupHours: string | null;
+  pickupNote?: string | null;
 };
 
 /** Pay-at-store order placed: nothing charged yet. */
@@ -266,7 +276,7 @@ export function buildProductOrderReservedEmail(args: ReservedArgs): BuiltEmail {
     details([
       ["Order", text(ref)],
       ["Pick up at", text(STORE_ADDRESS)],
-      ...hoursRow(args.pickupHours),
+      ...pickupRows(args.pickupHours, args.pickupNote),
     ]),
     orderItemsTable({ items: args.items, subtotal: args.subtotal, deliveryFee: 0, total: args.total }),
     button(ORDERS_URL, "Track your order"),
@@ -283,7 +293,7 @@ export function buildProductOrderReservedEmail(args: ReservedArgs): BuiltEmail {
   };
 }
 
-type ReminderArgs = StatusArgs & { total: number; holdDate: string; pickupHours: string | null };
+type ReminderArgs = StatusArgs & { total: number; holdDate: string; pickupHours: string | null; pickupNote?: string | null };
 
 /** The Houston day before an unpaid reservation's hold ends. */
 export function buildProductOrderHoldReminderEmail(args: ReminderArgs): BuiltEmail {
@@ -297,7 +307,7 @@ export function buildProductOrderHoldReminderEmail(args: ReminderArgs): BuiltEma
     details([
       ["Order", text(ref)],
       ["Pick up at", text(STORE_ADDRESS)],
-      ...hoursRow(args.pickupHours),
+      ...pickupRows(args.pickupHours, args.pickupNote),
     ]),
     button(DIRECTIONS_URL, "Get directions"),
     paragraph(`Changed your mind? You can cancel the reservation in <a href="${ORDERS_URL}">your orders</a>.`, { muted: true, small: true }),
