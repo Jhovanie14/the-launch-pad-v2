@@ -230,7 +230,7 @@ export default function ProductCartPage() {
                 [
                   "at_store",
                   "Pay at the store",
-                  `Cash, card or QR when you collect. We hold it ${holdDays} ${holdDays === 1 ? "day" : "days"} after it's ready.`,
+                  `Cash, card or Zelle when you collect. We hold it ${holdDays} ${holdDays === 1 ? "day" : "days"} after it's ready.`,
                 ],
               ] as const
             ).map(([value, title, line]) => (

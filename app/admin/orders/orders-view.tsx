@@ -47,7 +47,7 @@ const COUNTED: Tab[] = ["to_pack", "ready", "unpaid"];
 /** Orders load a page at a time, filtered in the database. */
 const PAGE_SIZE = 25;
 const SEARCH_LIMIT = 200;
-const COUNTER_METHODS: PaidVia[] = ["cash", "card_reader", "counter_qr"];
+const COUNTER_METHODS: PaidVia[] = ["cash", "card_reader", "zelle", "counter_qr"];
 
 const PRIMARY = cn(
   "inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-night px-4 text-sm font-bold text-on-night transition-colors hover:bg-dusk disabled:opacity-60 motion-reduce:transition-none",
@@ -464,7 +464,7 @@ function OrderCard({
         <fieldset className="mt-4 rounded-xl bg-canvas p-4 ring-1 ring-line">
           <legend className="sr-only">Payment method</legend>
           <p className="mb-2 text-sm font-bold">How did they pay {money(order.total)}?</p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {COUNTER_METHODS.map((m) => (
               <label
                 key={m}

@@ -8,7 +8,7 @@ import { ApiError } from "@/lib/http/apiError";
 export type PaymentMethod = "card" | "at_store";
 export type PaymentStatus = "unpaid" | "paid" | "refunded";
 export type FulfilmentStatus = "placed" | "ready" | "completed" | "released" | "cancelled" | "out_for_delivery";
-export type PaidVia = "stripe" | "cash" | "card_reader" | "counter_qr";
+export type PaidVia = "stripe" | "cash" | "card_reader" | "counter_qr" | "zelle";
 export type StaffAction = "mark_ready" | "hand_over" | "take_payment" | "release";
 
 export interface FlowOrder {
@@ -31,9 +31,10 @@ export const PAID_VIA_LABEL: Record<PaidVia, string> = {
   cash: "Cash",
   card_reader: "Card reader",
   counter_qr: "Counter QR",
+  zelle: "Zelle",
 };
 
-const COUNTER_METHODS: PaidVia[] = ["cash", "card_reader", "counter_qr"];
+const COUNTER_METHODS: PaidVia[] = ["cash", "card_reader", "zelle", "counter_qr"];
 
 // ── Houston calendar ───────────────────────────────────────────────────────
 
@@ -162,7 +163,7 @@ export function applyStaffAction(
 
     case "take_payment":
       if (!reservation) refuse("Only an unpaid pay-at-store order can take payment at the counter.");
-      if (!COUNTER_METHODS.includes(ctx.paidVia as PaidVia)) refuse("Choose how they paid: cash, card reader or counter QR.");
+      if (!COUNTER_METHODS.includes(ctx.paidVia as PaidVia)) refuse("Choose how they paid: cash, card reader, Zelle or counter QR.");
       return {
         payment_status: "paid",
         paid_via: ctx.paidVia as PaidVia,

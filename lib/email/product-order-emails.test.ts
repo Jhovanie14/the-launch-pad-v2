@@ -126,7 +126,8 @@ describe("pickup emails", () => {
   it("ready for an unpaid reservation shows the amount due and the hold date", () => {
     const { html } = buildProductOrderReadyForPickupEmail({ to: "x@example.com", name: "Dee", orderId, amountDue: 25.2, holdDate: "Thu, Nov 26", pickupHours: "Daily 9–6" });
     expect(html).toContain("Show reference");
-    expect(html).toContain("$25.20 to pay at the counter (cash, card or QR)");
+    expect(html).toContain("$25.20 to pay at the counter (cash, card or Zelle)");
+    expect(html).not.toContain("or QR");
     expect(html).toContain("until Thu, Nov 26");
     expect(html).toContain("Daily 9–6");
   });

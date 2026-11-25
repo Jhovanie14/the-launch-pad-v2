@@ -22,6 +22,10 @@ describe("cart", () => {
     expect(read(CART)).toMatch(/pickupHours\s*&&/);
   });
 
+  it("names the counter methods the owner takes", () => {
+    expect(read(CART)).toContain("Cash, card or Zelle when you collect");
+  });
+
   it("shows checkout errors next to the button, not only as a toast", () => {
     expect(read(CART)).toContain('role="alert"');
   });

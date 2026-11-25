@@ -164,7 +164,7 @@ export function buildProductOrderReadyForPickupEmail(args: ReadyArgs): BuiltEmai
     ...(due
       ? [
           paragraph(
-            `${money(args.amountDue!)} to pay at the counter (cash, card or QR).` +
+            `${money(args.amountDue!)} to pay at the counter (cash, card or Zelle).` +
               (args.holdDate ? ` We will hold it until ${text(args.holdDate)}.` : ""),
           ),
         ]

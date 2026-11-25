@@ -150,6 +150,15 @@ describe("refundOrder", () => {
     expect(e.refunded).toHaveBeenCalledWith(expect.objectContaining({ where: "store" }));
   });
 
+  it("records a Zelle refund as a store refund, never through Stripe", async () => {
+    const { db } = fakeDb({ ...RESERVATION, payment_status: "paid", paid_via: "zelle", fulfilment_status: "completed" });
+    const s = stripe();
+    const e = emails();
+    await refundOrder({ db, stripe: s as never, now: NOW, emails: e }, ID);
+    expect(s.refunds.create).not.toHaveBeenCalled();
+    expect(e.refunded).toHaveBeenCalledWith(expect.objectContaining({ where: "store" }));
+  });
+
   it("keeps stock out for an order already handed over", async () => {
     const { db, state } = fakeDb({ ...CARD_PAID, fulfilment_status: "completed" });
     await refundOrder({ db, stripe: stripe() as never, now: NOW, emails: emails() }, ID);

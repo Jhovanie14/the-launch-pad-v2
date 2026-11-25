@@ -76,7 +76,7 @@ export function PickupPass({
               <span className="block text-xl font-black text-on-night">
                 {money(order.total)} to pay at the counter
               </span>
-              Cash, card or QR.{" "}
+              Cash, card or Zelle.{" "}
               {order.hold_until
                 ? `Held until ${houstonDateLabel(order.hold_until)}.`
                 : "We'll email you when it's ready."}

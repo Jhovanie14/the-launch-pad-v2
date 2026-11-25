@@ -8,6 +8,7 @@ import {
   isOverdueHold,
   isUnpaidReservation,
   needsActionCount,
+  PAID_VIA_LABEL,
   successHeading,
   needsReminder,
   staffActionsFor,
@@ -105,6 +106,19 @@ describe("applyStaffAction: allowed", () => {
     };
     expect(applyStaffAction(order({ fulfilment_status: "ready" }), "take_payment", { ...ctx, paidVia: "cash" })).toEqual(want);
     expect(applyStaffAction(order(), "take_payment", { ...ctx, paidVia: "cash" })).toEqual(want);
+  });
+  it("take_payment records Zelle", () => {
+    expect(applyStaffAction(order({ fulfilment_status: "ready" }), "take_payment", { ...ctx, paidVia: "zelle" })).toMatchObject({
+      payment_status: "paid",
+      paid_via: "zelle",
+      fulfilment_status: "completed",
+    });
+    expect(PAID_VIA_LABEL.zelle).toBe("Zelle");
+  });
+  it("take_payment without a method names every counter method", () => {
+    expect(() => applyStaffAction(order({ fulfilment_status: "ready" }), "take_payment", ctx)).toThrow(
+      "Choose how they paid: cash, card reader, Zelle or counter QR.",
+    );
   });
   it("release an unpaid reservation", () => {
     expect(applyStaffAction(order({ fulfilment_status: "ready" }), "release", ctx)).toEqual({
