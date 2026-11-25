@@ -44,3 +44,49 @@ describe("cart", () => {
     expect(s).not.toContain("Collection");
   });
 });
+
+describe("cart: ship to me", () => {
+  const FORM = "components/products/ShippingAddressForm.tsx";
+
+  it("asks how to get it, pickup first", () => {
+    const s = read(CART);
+    expect(s).toContain("How do you want to get it?");
+    expect(s).toContain("Pick up at the carwash · Free");
+    expect(s).toContain("Ship to me · USPS");
+    expect(s).toContain("Price based on your address and the weight.");
+    expect(s.indexOf("Pick up at the carwash")).toBeLessThan(s.indexOf("Ship to me"));
+    expect(s).toContain('name="fulfilment"');
+  });
+
+  it("only offers shipping when the store has it switched on", () => {
+    const s = read(CART);
+    expect(s).toContain('fetch("/api/products/shipping-quote")');
+    expect(s).toMatch(/shipAvailable\s*&&/);
+  });
+
+  it("prices shipping on request and sends the shown price to be checked", () => {
+    const s = read(CART);
+    expect(s).toContain("Get shipping price");
+    expect(s).toContain("expected_shipping");
+    expect(s).toContain('fulfillment_method: method');
+    expect(s).toContain("quoteKey(");
+    expect(s).toContain("We couldn't confirm this address");
+    expect(s).toContain("Shipping (USPS Ground Advantage)");
+  });
+
+  it("shipping orders are card only", () => {
+    const s = read(CART);
+    expect(s).toContain("Only for pickup orders.");
+    expect(s).toContain("Pay ${money(total)} by card");
+  });
+
+  it("collects a full US address with autofill hints", () => {
+    const s = read(FORM);
+    for (const hint of ["name", "address-line1", "address-line2", "address-level2", "address-level1", "postal-code", "tel"]) {
+      expect(s, hint).toContain(`autoComplete="${hint}"`);
+    }
+    expect(s).toContain("US_STATES");
+    expect(s).toContain("excludedStates");
+    expect(s.match(RAW_PALETTE) ?? []).toEqual([]);
+  });
+});

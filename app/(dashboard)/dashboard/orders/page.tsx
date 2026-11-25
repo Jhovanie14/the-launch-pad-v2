@@ -10,6 +10,7 @@ import { BUSINESS_TIME_ZONE } from "@/lib/dashboard/home";
 import { customerCanCancel, customerStatus, type FlowOrder } from "@/lib/products/orderFlow";
 import { getPickupSettings } from "@/lib/products/storeSettings";
 import { PickupPass } from "@/components/products/PickupPass";
+import { ShippingPass, type ShippingPassOrder } from "@/components/products/ShippingPass";
 import { CancelReservationButton } from "@/components/products/CancelReservationButton";
 import { cn } from "@/lib/utils";
 import type { ProductOrderItemRow, ProductOrderRow } from "@/types/db";
@@ -167,20 +168,26 @@ export default function OrdersPage() {
               <ul className="grid gap-6 lg:grid-cols-2">
                 {open.map((order) => (
                   <li key={order.id}>
-                    <PickupPass
-                      order={{ ...(order as unknown as FlowOrder), id: order.id, items: order.product_order_items }}
-                      pickupHours={pickupHours}
-                      pickupNote={pickupNote}
-                      action={
-                        customerCanCancel(order as unknown as FlowOrder) ? (
-                          <CancelReservationButton
-                            orderId={order.id}
-                            orderRef={ref(order)}
-                            onCancelled={() => setAttempt((n) => n + 1)}
-                          />
-                        ) : undefined
-                      }
-                    />
+                    {order.fulfillment_method === "delivery" ? (
+                      <ShippingPass
+                        order={{ ...(order as unknown as ShippingPassOrder), id: order.id, items: order.product_order_items }}
+                      />
+                    ) : (
+                      <PickupPass
+                        order={{ ...(order as unknown as FlowOrder), id: order.id, items: order.product_order_items }}
+                        pickupHours={pickupHours}
+                        pickupNote={pickupNote}
+                        action={
+                          customerCanCancel(order as unknown as FlowOrder) ? (
+                            <CancelReservationButton
+                              orderId={order.id}
+                              orderRef={ref(order)}
+                              onCancelled={() => setAttempt((n) => n + 1)}
+                            />
+                          ) : undefined
+                        }
+                      />
+                    )}
                   </li>
                 ))}
               </ul>
