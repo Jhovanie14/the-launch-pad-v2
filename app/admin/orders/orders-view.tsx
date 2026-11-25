@@ -553,16 +553,18 @@ function OrderCard({
   );
 }
 
-/** Pickup hours and the unpaid hold: one setting each, shown to customers. */
+/** Pickup hours, pickup note and the unpaid hold: one setting each, shown to customers. */
 function PickupSettingsPanel() {
   const supabase = createClient();
   const [hours, setHours] = useState("");
+  const [note, setNote] = useState("");
   const [holdDays, setHoldDays] = useState(String(DEFAULT_HOLD_DAYS));
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     getPickupSettings(supabase).then((s) => {
       setHours(s.pickupHours ?? "");
+      setNote(s.pickupNote ?? "");
       setHoldDays(String(s.holdDays));
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -575,7 +577,7 @@ function PickupSettingsPanel() {
       const res = await fetch("/api/admin/store-settings/pickup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pickup_hours: hours, hold_days: Number(holdDays) }),
+        body: JSON.stringify({ pickup_hours: hours, pickup_note: note, hold_days: Number(holdDays) }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Couldn't save the settings");
@@ -601,6 +603,18 @@ function PickupSettingsPanel() {
             onChange={(e) => setHours(e.target.value)}
             placeholder="For example: Thu–Sun, 9:30 AM–6:30 PM"
             className={cn("mt-2 h-11 w-full rounded-lg bg-paper px-3 text-base ring-1 ring-line placeholder:text-ink-subtle", FOCUS_ON_LIGHT)}
+          />
+        </label>
+        <label className="block">
+          <span className="text-sm font-semibold">Pickup instructions</span>
+          <span className="block text-sm text-ink-muted">Optional. Shown under the pickup hours.</span>
+          <textarea
+            value={note}
+            maxLength={200}
+            rows={2}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="For example: Ask for Armando at the carwash. Bring your ID and your order email or receipt."
+            className={cn("mt-2 w-full rounded-lg bg-paper px-3 py-2 text-base ring-1 ring-line placeholder:text-ink-subtle", FOCUS_ON_LIGHT)}
           />
         </label>
         <label className="block">

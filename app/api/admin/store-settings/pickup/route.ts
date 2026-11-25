@@ -6,7 +6,7 @@ import { apiError } from "@/lib/http/apiError";
 import { sanitizePickupSettings } from "@/lib/products/storeSettings";
 
 /**
- * Save the pickup hours and the unpaid-order hold. Only these two columns:
+ * Save the pickup hours, the pickup note and the unpaid-order hold. Only these columns:
  * the storefront hero has its own route, whose sanitiser nulls every hero
  * field missing from the body.
  */
@@ -21,6 +21,7 @@ export async function POST(req: Request) {
       .from("store_settings")
       .update({
         pickup_hours: settings.pickupHours,
+        pickup_note: settings.pickupNote,
         hold_days: settings.holdDays,
         updated_at: new Date().toISOString(),
       })
