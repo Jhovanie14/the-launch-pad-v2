@@ -214,12 +214,14 @@ export default function OrdersView() {
       "/api/admin/product-orders/action",
       { order_id: o.id, action, ...extra },
       o.id,
-      {
+      ({
         mark_ready: `${ref(o)} is ready. The customer has been emailed.`,
         hand_over: `${ref(o)} handed over`,
         take_payment: `${ref(o)} paid and handed over`,
         release: `${ref(o)} released`,
-      }[action],
+        mark_shipped: `${ref(o)} marked shipped. The customer has been emailed.`,
+        mark_delivered: `${ref(o)} marked delivered`,
+      } satisfies Record<StaffAction, string>)[action],
     );
 
   return (

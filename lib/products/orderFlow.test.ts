@@ -5,6 +5,7 @@ import {
   customerStatus,
   holdUntil,
   houstonDateLabel,
+  isShippingOrder,
   isOverdueHold,
   isUnpaidReservation,
   needsActionCount,
@@ -13,6 +14,7 @@ import {
   needsReminder,
   staffActionsFor,
   staffQueue,
+  uspsTrackingUrl,
   type FlowOrder,
 } from "./orderFlow";
 
@@ -33,6 +35,9 @@ function order(over: Partial<FlowOrder> = {}): FlowOrder {
 }
 const cardPaid = (over: Partial<FlowOrder> = {}) =>
   order({ payment_method: "card", payment_status: "paid", ...over });
+/** A paid shipping order waiting for its label. */
+const shipping = (over: Partial<FlowOrder> = {}) => cardPaid({ fulfillment_method: "delivery", ...over });
+const shipped = (over: Partial<FlowOrder> = {}) => shipping({ fulfilment_status: "out_for_delivery", ...over });
 
 describe("holdUntil (Houston calendar days)", () => {
   it("holds through the end of the day, hold_days after the ready date", () => {
@@ -92,8 +97,13 @@ describe("applyStaffAction: allowed", () => {
     expect(applyStaffAction(cardPaid({ fulfilment_status: "ready" }), "hand_over", ctx)).toEqual(want);
     expect(applyStaffAction(cardPaid(), "hand_over", ctx)).toEqual(want);
   });
-  it("hand_over completes a legacy delivery order", () => {
-    expect(applyStaffAction(cardPaid({ fulfilment_status: "out_for_delivery", fulfillment_method: "delivery" }), "hand_over", ctx).fulfilment_status).toBe("completed");
+  it("mark_delivered closes a shipped order (also legacy delivery orders)", () => {
+    expect(applyStaffAction(shipped(), "mark_delivered", ctx)).toEqual({
+      fulfilment_status: "completed",
+      completed_at: NOW.toISOString(),
+      completed_by: "staff-1",
+      delivered_at: NOW.toISOString(),
+    });
   });
   it("take_payment records the method and completes, from ready or placed", () => {
     const want = {
@@ -174,7 +184,9 @@ describe("what staff and customers see", () => {
     expect(label(order({ fulfilment_status: "released" }))).toBe("Released");
     expect(label(order({ payment_method: "card", fulfilment_status: "cancelled" }))).toBe("Cancelled");
     expect(label(cardPaid({ payment_status: "refunded", fulfilment_status: "cancelled" }))).toBe("Refunded");
-    expect(label(cardPaid({ fulfilment_status: "out_for_delivery", fulfillment_method: "delivery" }))).toBe("Out for delivery");
+    expect(label(shipped())).toBe("Shipped");
+    expect(label(shipping())).toBe("Packing");
+    expect(label(shipping({ fulfilment_status: "completed" }))).toBe("Delivered");
   });
 
   it("staff queues", () => {
@@ -182,7 +194,8 @@ describe("what staff and customers see", () => {
     expect(staffQueue(order())).toBe("to_pack");
     expect(staffQueue(cardPaid())).toBe("to_pack");
     expect(staffQueue(order({ fulfilment_status: "ready" }))).toBe("ready");
-    expect(staffQueue(cardPaid({ fulfilment_status: "out_for_delivery" }))).toBe("ready");
+    expect(staffQueue(shipped())).toBe("shipped");
+    expect(staffQueue(shipping())).toBe("to_pack");
     expect(staffQueue(cardPaid({ fulfilment_status: "completed" }))).toBe("completed");
     expect(staffQueue(order({ fulfilment_status: "released" }))).toBe("closed");
     expect(staffQueue(cardPaid({ payment_status: "refunded", fulfilment_status: "cancelled" }))).toBe("closed");
@@ -229,5 +242,59 @@ describe("successHeading (never states something untrue)", () => {
     expect(successHeading(order({ payment_method: "card", fulfilment_status: "cancelled" }))).toBe("Order cancelled");
     expect(successHeading(cardPaid({ payment_status: "refunded", fulfilment_status: "cancelled" }))).toBe("Order refunded");
     expect(successHeading(cardPaid({ fulfilment_status: "completed" }))).toBe("Picked up");
+  });
+});
+
+describe("shipping orders", () => {
+  it("is a shipping order when the fulfilment method is delivery", () => {
+    expect(isShippingOrder(shipping())).toBe(true);
+    expect(isShippingOrder(cardPaid())).toBe(false);
+  });
+
+  it("refuses every pickup action on a shipping order", () => {
+    for (const a of ["mark_ready", "hand_over", "take_payment"] as const) {
+      expect(() => applyStaffAction(shipping(), a, { ...ctx, paidVia: "cash" }), a).toThrow("This is a shipping order.");
+      expect(() => applyStaffAction(shipped(), a, { ...ctx, paidVia: "cash" }), a).toThrow("This is a shipping order.");
+    }
+  });
+
+  it("mark_shipped records the tracking number and moves it to shipped", () => {
+    expect(applyStaffAction(shipping(), "mark_shipped", { ...ctx, trackingNumber: "  9400 1118 99 " })).toEqual({
+      fulfilment_status: "out_for_delivery",
+      shipped_at: NOW.toISOString(),
+      tracking_number: "9400 1118 99",
+      carrier: "USPS",
+      tracking_url: "https://tools.usps.com/go/TrackConfirmAction?tLabels=9400%201118%2099",
+    });
+  });
+
+  it("mark_shipped needs a tracking number, a paid shipping order, and a new order", () => {
+    expect(() => applyStaffAction(shipping(), "mark_shipped", { ...ctx, trackingNumber: "   " })).toThrow("Enter the tracking number.");
+    expect(() => applyStaffAction(shipping(), "mark_shipped", { ...ctx, trackingNumber: "x".repeat(65) })).toThrow();
+    expect(() => applyStaffAction(cardPaid(), "mark_shipped", { ...ctx, trackingNumber: "94" })).toThrow();
+    expect(() => applyStaffAction(shipping({ payment_status: "unpaid" }), "mark_shipped", { ...ctx, trackingNumber: "94" })).toThrow();
+    expect(() => applyStaffAction(shipped(), "mark_shipped", { ...ctx, trackingNumber: "94" })).toThrow();
+  });
+
+  it("mark_delivered only from shipped", () => {
+    expect(() => applyStaffAction(shipping(), "mark_delivered", ctx)).toThrow();
+    expect(() => applyStaffAction(cardPaid({ fulfilment_status: "ready" }), "mark_delivered", ctx)).toThrow();
+  });
+
+  it("staff see Mark shipped, then Mark delivered", () => {
+    expect(staffActionsFor(shipping())).toEqual(["mark_shipped"]);
+    expect(staffActionsFor(shipped())).toEqual(["mark_delivered"]);
+    expect(staffActionsFor(shipping({ fulfilment_status: "completed" }))).toEqual([]);
+    expect(staffActionsFor(shipping({ payment_status: "unpaid" }))).toEqual([]);
+    // Pickup is unchanged.
+    expect(staffActionsFor(cardPaid())).toEqual(["mark_ready", "hand_over"]);
+  });
+
+  it("builds a USPS tracking link", () => {
+    expect(uspsTrackingUrl("9400111899")).toBe("https://tools.usps.com/go/TrackConfirmAction?tLabels=9400111899");
+  });
+
+  it("a paid shipping order waiting for its label needs action", () => {
+    expect(needsActionCount([shipping(), shipped()], NOW)).toBe(1);
   });
 });

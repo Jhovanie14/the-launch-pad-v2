@@ -9,7 +9,7 @@ export type PaymentMethod = "card" | "at_store";
 export type PaymentStatus = "unpaid" | "paid" | "refunded";
 export type FulfilmentStatus = "placed" | "ready" | "completed" | "released" | "cancelled" | "out_for_delivery";
 export type PaidVia = "stripe" | "cash" | "card_reader" | "counter_qr" | "zelle";
-export type StaffAction = "mark_ready" | "hand_over" | "take_payment" | "release";
+export type StaffAction = "mark_ready" | "hand_over" | "take_payment" | "release" | "mark_shipped" | "mark_delivered";
 
 export interface FlowOrder {
   payment_method: PaymentMethod | string;
@@ -129,6 +129,19 @@ export function customerCanCancel(o: FlowOrder): boolean {
   return isUnpaidReservation(o);
 }
 
+// ── Shipping ───────────────────────────────────────────────────────────────
+
+/** A shipping order (USPS via Shippo). The database calls the method "delivery". */
+export function isShippingOrder(o: FlowOrder): boolean {
+  return o.fulfillment_method === "delivery";
+}
+
+export function uspsTrackingUrl(trackingNumber: string): string {
+  return `https://tools.usps.com/go/TrackConfirmAction?tLabels=${encodeURIComponent(trackingNumber)}`;
+}
+
+const MAX_TRACKING_LENGTH = 64;
+
 // ── Staff actions ──────────────────────────────────────────────────────────
 
 const refuse = (message: string): never => {
@@ -138,13 +151,39 @@ const refuse = (message: string): never => {
 export function applyStaffAction(
   o: FlowOrder,
   action: StaffAction,
-  ctx: { now: Date; holdDays: number; staffId: string; paidVia?: PaidVia | string },
+  ctx: { now: Date; holdDays: number; staffId: string; paidVia?: PaidVia | string; trackingNumber?: string },
 ): OrderPatch {
   const now = ctx.now.toISOString();
   const paid = o.payment_status === "paid";
   const reservation = isUnpaidReservation(o);
+  const shipping = isShippingOrder(o);
+
+  // A shipping order never goes through the counter: it ships, then delivers.
+  if (shipping && (action === "mark_ready" || action === "hand_over" || action === "take_payment")) {
+    refuse("This is a shipping order.");
+  }
 
   switch (action) {
+    case "mark_shipped": {
+      if (!shipping) refuse("Only a shipping order can be marked shipped.");
+      if (!paid) refuse("This order hasn't been paid yet.");
+      if (o.fulfilment_status !== "placed") refuse("This order has already shipped or closed.");
+      const tracking = (ctx.trackingNumber ?? "").trim();
+      if (!tracking) refuse("Enter the tracking number.");
+      if (tracking.length > MAX_TRACKING_LENGTH) refuse("That tracking number is too long.");
+      return {
+        fulfilment_status: "out_for_delivery",
+        shipped_at: now,
+        tracking_number: tracking,
+        carrier: "USPS",
+        tracking_url: uspsTrackingUrl(tracking),
+      };
+    }
+
+    case "mark_delivered":
+      if (!shipping || o.fulfilment_status !== "out_for_delivery") refuse("Only a shipped order can be marked delivered.");
+      return { fulfilment_status: "completed", completed_at: now, completed_by: ctx.staffId, delivered_at: now };
+
     case "mark_ready":
       if (o.fulfilment_status !== "placed") refuse("Only a new order can be marked ready.");
       if (!paid && !reservation) refuse("This card order hasn't been paid yet.");
@@ -182,6 +221,12 @@ export function applyStaffAction(
 /** The buttons a staff member sees, main action first. */
 export function staffActionsFor(o: FlowOrder): StaffAction[] {
   const paid = o.payment_status === "paid";
+  if (isShippingOrder(o)) {
+    if (!paid) return [];
+    if (o.fulfilment_status === "placed") return ["mark_shipped"];
+    if (o.fulfilment_status === "out_for_delivery") return ["mark_delivered"];
+    return [];
+  }
   if (isUnpaidReservation(o)) {
     return o.fulfilment_status === "placed" ? ["mark_ready", "take_payment", "release"] : ["take_payment", "release"];
   }
@@ -199,7 +244,7 @@ export function customerStatus(o: FlowOrder): { label: string; tone: "neutral" |
     case "ready":
       return { label: "Ready to collect", tone: "ready" };
     case "out_for_delivery":
-      return { label: "Out for delivery", tone: "neutral" };
+      return { label: "Shipped", tone: "neutral" };
     case "completed":
       return { label: o.fulfillment_method === "delivery" ? "Delivered" : "Picked up", tone: "done" };
     case "released":
@@ -207,14 +252,14 @@ export function customerStatus(o: FlowOrder): { label: string; tone: "neutral" |
     case "cancelled":
       return { label: "Cancelled", tone: "closed" };
     default:
-      if (o.payment_status === "paid") return { label: "Paid", tone: "neutral" };
+      if (o.payment_status === "paid") return { label: isShippingOrder(o) ? "Packing" : "Paid", tone: "neutral" };
       return o.payment_method === "at_store"
         ? { label: "Reserved", tone: "neutral" }
         : { label: "Waiting for payment", tone: "neutral" };
   }
 }
 
-export type StaffQueue = "to_pack" | "ready" | "unpaid" | "completed" | "closed" | "hidden";
+export type StaffQueue = "to_pack" | "shipped" | "ready" | "unpaid" | "completed" | "closed" | "hidden";
 
 /** The admin tab an order belongs to. "unpaid" is a cross-cutting filter (isUnpaidReservation). */
 export function staffQueue(o: FlowOrder): StaffQueue {
@@ -222,7 +267,8 @@ export function staffQueue(o: FlowOrder): StaffQueue {
     return "closed";
   }
   if (o.fulfilment_status === "completed") return "completed";
-  if (o.fulfilment_status === "ready" || o.fulfilment_status === "out_for_delivery") return "ready";
+  if (o.fulfilment_status === "out_for_delivery") return "shipped";
+  if (o.fulfilment_status === "ready") return "ready";
   if (o.payment_status === "paid" || o.payment_method === "at_store") return "to_pack";
   return "hidden"; // a card order still at Stripe checkout
 }
