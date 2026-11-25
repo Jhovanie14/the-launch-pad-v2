@@ -171,3 +171,82 @@ describe("placeOrder: back from Stripe and try again", () => {
     expect(calls.rpc.map((c) => c.fn)).toEqual(["place_product_order"]);
   });
 });
+
+describe("placeOrder: shipping", () => {
+  const ADDRESS = { name: "Dee Jones", street1: "215 Clayton St", street2: "", city: "San Francisco", state: "CA", zip: "94117", phone: "4155550100" };
+  const QUOTE = {
+    amount: 8.08,
+    service: "USPS Ground Advantage",
+    rateId: "r_ga",
+    days: 4,
+    address: { ...ADDRESS, street1: "215 CLAYTON ST", zip: "94117-2214" },
+  };
+  const shipInput = (over: Record<string, unknown> = {}) => ({
+    ...input("card"),
+    fulfillmentMethod: "delivery",
+    address: ADDRESS,
+    expectedShipping: 8.08,
+    ...over,
+  });
+  const withQuote = (db: unknown, stripeCreate?: any) => ({ ...deps(db, stripeCreate), quote: vi.fn(async () => QUOTE) });
+
+  it("stores the server's shipping price and address and adds a Stripe shipping line", async () => {
+    const { db, calls } = fakeDb();
+    const create = vi.fn(async () => ({ id: "cs_1", url: "https://stripe.test/cs_1" }));
+    const d = withQuote(db, create);
+    const out = await placeOrder(d, shipInput());
+    expect(d.quote).toHaveBeenCalledWith([{ productId: "p1", quantity: 1 }], ADDRESS);
+    expect(calls.rpc[0]).toMatchObject({
+      fn: "place_product_order",
+      args: {
+        p_payment_method: "card",
+        p_fulfillment_method: "delivery",
+        p_delivery_fee: 8.08,
+        p_subtotal: 17.84,
+        p_total: 25.92,
+        p_delivery_address: QUOTE.address,
+        p_shipping_service: "USPS Ground Advantage",
+        p_shipping_rate_id: "r_ga",
+      },
+    });
+    const lines = (create.mock.calls[0] as any[])[0].line_items;
+    expect(lines.at(-1)).toEqual({
+      price_data: { currency: "usd", product_data: { name: "Shipping (USPS Ground Advantage)" }, unit_amount: 808 },
+      quantity: 1,
+    });
+    expect(out.url).toBe("https://stripe.test/cs_1");
+  });
+
+  it("stops when the price changed since the cart showed it", async () => {
+    const { db, calls } = fakeDb();
+    await expect(placeOrder(withQuote(db), shipInput({ expectedShipping: 8 }))).rejects.toMatchObject({
+      status: 409,
+      message: "Shipping price changed to $8.08. Check and pay again.",
+      details: { amount: 8.08 },
+    });
+    expect(calls.rpc).toEqual([]);
+  });
+
+  it("is card only", async () => {
+    const { db, calls } = fakeDb();
+    await expect(placeOrder(withQuote(db), shipInput({ paymentMethod: "at_store" }))).rejects.toMatchObject({
+      status: 400,
+      message: "Only for pickup orders.",
+    });
+    expect(calls.rpc).toEqual([]);
+  });
+
+  it("needs an address, and shipping to be set up", async () => {
+    const { db } = fakeDb();
+    await expect(placeOrder(withQuote(db), shipInput({ address: undefined }))).rejects.toMatchObject({ status: 400 });
+    await expect(placeOrder(deps(db), shipInput())).rejects.toMatchObject({ status: 503, message: "Shipping is not available right now" });
+  });
+
+  it("keeps pickup on the original order call", async () => {
+    const { db, calls } = fakeDb();
+    await placeOrder(withQuote(db), input("card"));
+    expect(Object.keys(calls.rpc[0].args as object).sort()).toEqual(
+      ["p_items", "p_payment_method", "p_phone", "p_subtotal", "p_total", "p_user_id"].sort(),
+    );
+  });
+});

@@ -7,10 +7,14 @@ import { apiError } from "@/lib/http/apiError";
 import { placeOrder } from "@/lib/products/placeOrder";
 import { getPickupSettings } from "@/lib/products/storeSettings";
 import { sendProductOrderReservedEmail } from "@/lib/email/product-order-emails";
+import { quoteShipping } from "@/lib/shipping/quote";
+import { shippoConfigured, shippoFromEnv } from "@/lib/shipping/shippo";
 
 /**
  * Place a store order: pay now by card (Stripe Checkout) or reserve and pay at
- * the store. Logic and rules live in lib/products/placeOrder.ts.
+ * the store, or ship with USPS (card only; the shipping price is quoted again
+ * here, never taken from the browser). Logic and rules live in
+ * lib/products/placeOrder.ts.
  */
 export async function POST(req: Request) {
   try {
@@ -35,6 +39,10 @@ export async function POST(req: Request) {
         pickupHours: settings.pickupHours,
         pickupNote: settings.pickupNote,
         sendReserved: sendProductOrderReservedEmail,
+        quote:
+          body?.fulfillment_method === "delivery" && shippoConfigured()
+            ? (cart, address) => quoteShipping({ shippo: shippoFromEnv(), db: admin }, cart, address)
+            : undefined,
       },
       {
         userId: user.id,
@@ -44,6 +52,8 @@ export async function POST(req: Request) {
         items: body?.items,
         fulfillmentMethod: body?.fulfillment_method,
         paymentMethod: body?.payment_method,
+        address: body?.address,
+        expectedShipping: body?.expected_shipping,
       },
     );
 

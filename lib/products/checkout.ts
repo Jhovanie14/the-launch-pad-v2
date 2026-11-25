@@ -5,15 +5,11 @@ import { round2, unitPrice, type CartItem } from "./cart";
 export type FulfillmentMethod = "pickup" | "delivery";
 
 /**
- * Fulfillment methods a NEW order may choose.
- *
- * Delivery is paused until a third-party courier is integrated. This list
- * governs new checkouts only: the database still accepts 'delivery', and past
- * delivery orders keep their fee, their address, and every render and webhook
- * path they had before. Restoring delivery is this list plus the choice in the
- * cart UI — the pricing and fulfillment code below never stopped supporting it.
+ * Fulfillment methods a NEW order may choose. "delivery" is shipping with USPS
+ * through Shippo: priceOrder prices the items only, and placeOrder adds the
+ * server-quoted shipping amount (lib/shipping/quote.ts).
  */
-export const OFFERED_FULFILLMENT_METHODS: readonly FulfillmentMethod[] = ["pickup"];
+export const OFFERED_FULFILLMENT_METHODS: readonly FulfillmentMethod[] = ["pickup", "delivery"];
 
 function isOffered(method: string): method is FulfillmentMethod {
   return (OFFERED_FULFILLMENT_METHODS as readonly string[]).includes(method);
@@ -97,9 +93,9 @@ export async function priceOrder(
     priced.reduce((sum, i) => sum + i.unit_price * i.quantity, 0),
   );
 
-  // Always zero while pickup is the only offered method. The field stays on
-  // PricedOrder because product_orders.delivery_fee is NOT NULL and past
-  // orders carry real values in it.
+  // Always zero here: a shipping order's amount comes from the Shippo quote,
+  // added by placeOrder. The field stays on PricedOrder because
+  // product_orders.delivery_fee is NOT NULL.
   const deliveryFee = 0;
 
   return { items: priced, subtotal, deliveryFee, total: round2(subtotal + deliveryFee) };

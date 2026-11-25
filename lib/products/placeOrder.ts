@@ -2,7 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type Stripe from "stripe";
 import { ApiError } from "@/lib/http/apiError";
 import { priceOrder } from "./checkout";
-import type { CartItem } from "./cart";
+import { round2, type CartItem } from "./cart";
+import { UNAVAILABLE, type ShipAddress, type ShippingQuote } from "@/lib/shipping/quote";
 import { guardedUpdate, releaseStock } from "./staffActions";
 
 /** Stripe's minimum Checkout expiry is 30 minutes; one more for margin. */
@@ -15,6 +16,8 @@ export interface PlaceOrderDeps {
   now: Date;
   pickupHours: string | null;
   pickupNote: string | null;
+  /** The server-side shipping quote (lib/shipping/quote.ts); absent when Shippo isn't set up. */
+  quote?: (cart: CartItem[], address: ShipAddress) => Promise<ShippingQuote>;
   sendReserved: (args: {
     to: string;
     name: string;
@@ -35,6 +38,9 @@ export interface PlaceOrderInput {
   items: CartItem[];
   fulfillmentMethod: string;
   paymentMethod: string;
+  /** Shipping orders: where to ship, and the price the cart showed. */
+  address?: ShipAddress;
+  expectedShipping?: number;
 }
 
 const ref = (id: string) => id.slice(0, 8).toUpperCase();
@@ -53,7 +59,23 @@ export async function placeOrder(deps: PlaceOrderDeps, input: PlaceOrderInput): 
   // stock, so close it first or its own items look sold out.
   await releaseAbandonedCheckouts(deps, input.userId);
 
+  const shipping = input.fulfillmentMethod === "delivery";
+  if (shipping && method !== "card") throw new ApiError("Only for pickup orders.", 400);
+  if (shipping && !input.address) throw new ApiError("Enter the address to ship to", 400);
+  if (shipping && !deps.quote) throw new ApiError(UNAVAILABLE, 503);
+
   const priced = await priceOrder(db, input.items, input.fulfillmentMethod);
+
+  // Shipping: the server prices it again; the browser's number is only used to
+  // notice that the price moved since the customer saw it.
+  let quote: ShippingQuote | null = null;
+  if (shipping) {
+    quote = await deps.quote!(input.items, input.address!);
+    if (Math.round(Number(input.expectedShipping) * 100) !== Math.round(quote.amount * 100)) {
+      throw new ApiError(`Shipping price changed to $${quote.amount.toFixed(2)}. Check and pay again.`, 409, { amount: quote.amount });
+    }
+  }
+  const total = quote ? round2(priced.subtotal + quote.amount) : priced.total;
 
   if (method === "at_store") {
     const { data: open } = await db
@@ -73,14 +95,27 @@ export async function placeOrder(deps: PlaceOrderDeps, input: PlaceOrderInput): 
     }
   }
 
-  const { data: orderId, error } = await db.rpc("place_product_order", {
+  const base = {
     p_user_id: input.userId,
     p_payment_method: method,
     p_items: priced.items,
     p_subtotal: priced.subtotal,
-    p_total: priced.total,
+    p_total: total,
     p_phone: input.phone,
-  });
+  };
+  const { data: orderId, error } = await db.rpc(
+    "place_product_order",
+    quote
+      ? {
+          ...base,
+          p_fulfillment_method: "delivery",
+          p_delivery_fee: quote.amount,
+          p_delivery_address: quote.address,
+          p_shipping_service: quote.service,
+          p_shipping_rate_id: quote.rateId,
+        }
+      : base,
+  );
   if (error || !orderId) {
     const short = error?.message?.match(/insufficient_stock:(.+)$/);
     if (short) throw new ApiError(`Not enough stock for ${short[1].trim()}`, 400);
@@ -115,7 +150,20 @@ export async function placeOrder(deps: PlaceOrderDeps, input: PlaceOrderInput): 
           unit_amount: Math.round(i.unit_price * 100),
         },
         quantity: i.quantity,
-      })),
+      })).concat(
+        quote
+          ? [
+              {
+                price_data: {
+                  currency: "usd",
+                  product_data: { name: `Shipping (${quote.service})` },
+                  unit_amount: Math.round(quote.amount * 100),
+                },
+                quantity: 1,
+              },
+            ]
+          : [],
+      ),
       customer_email: input.email ?? undefined,
       // Staff call or text the customer when the order is ready to collect.
       phone_number_collection: { enabled: true },

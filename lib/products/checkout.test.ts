@@ -144,14 +144,16 @@ describe("priceOrder totals", () => {
     ]);
   });
 
-  it("rejects delivery while it is not an offered method", async () => {
+  it("prices a shipping order's items; the shipping amount is added by placeOrder", async () => {
     const { db } = fakeDb({ deliveryFee: 7.5 });
-    await expect(
-      priceOrder(db, [{ productId: "p2", quantity: 1 }], "delivery"),
-    ).rejects.toMatchObject({
-      status: 400,
-      message: expect.stringContaining("Delivery is not available"),
-    });
+    const priced = await priceOrder(db, [{ productId: "p2", quantity: 1 }], "delivery");
+    expect(priced.deliveryFee).toBe(0);
+    expect(priced.total).toBe(39.99);
+  });
+
+  it("refuses an unknown fulfilment method", async () => {
+    const { db } = fakeDb({ deliveryFee: 7.5 });
+    await expect(priceOrder(db, [{ productId: "p2", quantity: 1 }], "drone")).rejects.toMatchObject({ status: 400 });
   });
 
   it("never charges a delivery fee, even with one configured", async () => {
