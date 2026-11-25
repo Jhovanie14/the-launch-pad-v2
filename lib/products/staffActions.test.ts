@@ -61,7 +61,7 @@ const emails = () => ({
 });
 
 function deps(db: unknown, e = emails()) {
-  return { db: db as never, now: NOW, staffId: "staff-1", holdDays: 3, pickupHours: "Daily 9–6", emails: e };
+  return { db: db as never, now: NOW, staffId: "staff-1", holdDays: 3, pickupHours: "Daily 9–6", pickupNote: "Ask for Armando", emails: e };
 }
 
 describe("runStaffAction", () => {
@@ -72,7 +72,7 @@ describe("runStaffAction", () => {
     expect(state.updates[0].values).toMatchObject({ fulfilment_status: "ready", hold_until: "2026-11-27T05:59:59.999Z" });
     expect(state.updates[0].filters).toEqual({ id: ID, fulfilment_status: "placed", payment_status: "unpaid" });
     expect(e.ready).toHaveBeenCalledWith(
-      expect.objectContaining({ to: "dee@example.com", amountDue: 25.2, holdDate: "Thu, Nov 26", pickupHours: "Daily 9–6" }),
+      expect.objectContaining({ to: "dee@example.com", amountDue: 25.2, holdDate: "Thu, Nov 26", pickupHours: "Daily 9–6", pickupNote: "Ask for Armando" }),
     );
   });
 

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Clock, MapPin, Navigation } from "lucide-react";
+import { Clock, Info, MapPin, Navigation } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FOCUS_ON_NIGHT } from "@/components/booking/ui/focus";
 import {
@@ -28,11 +28,14 @@ const money = (n: number) => `$${Number(n).toFixed(2)}`;
 export function PickupPass({
   order,
   pickupHours,
+  pickupNote,
   action,
   headingLevel = "h2",
 }: {
   order: PassOrder;
   pickupHours: string | null;
+  /** The owner's pickup instructions (who to ask for, what to bring); null hides it. */
+  pickupNote: string | null;
   /** Extra quiet controls after "Get directions" (e.g. cancel reservation). */
   action?: ReactNode;
   headingLevel?: "h1" | "h2";
@@ -115,6 +118,12 @@ export function PickupPass({
           <p className="flex gap-2.5">
             <Clock aria-hidden className="mt-0.5 size-4 shrink-0" />
             <span>Pickup hours: {pickupHours}</span>
+          </p>
+        )}
+        {pickupNote && (
+          <p className="flex gap-2.5">
+            <Info aria-hidden className="mt-0.5 size-4 shrink-0" />
+            <span>{pickupNote}</span>
           </p>
         )}
         <p className="flex gap-2.5">

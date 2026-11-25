@@ -38,6 +38,7 @@ export default function ProductCartPage() {
 
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [pickupHours, setPickupHours] = useState<string | null>(null);
+  const [pickupNote, setPickupNote] = useState<string | null>(null);
   const [holdDays, setHoldDays] = useState(DEFAULT_HOLD_DAYS);
   const [loading, setLoading] = useState(true);
   const [payment, setPayment] = useState<PaymentChoice>("card");
@@ -57,6 +58,7 @@ export default function ProductCartPage() {
     ]);
     setProducts((productsRes.data ?? []) as ProductRow[]);
     setPickupHours(settings.pickupHours);
+    setPickupNote(settings.pickupNote);
     setHoldDays(settings.holdDays);
     setLoading(false);
   };
@@ -216,6 +218,7 @@ export default function ProductCartPage() {
           <div>
             <p className="font-semibold text-ink">{STORE_ADDRESS}</p>
             {pickupHours && <p className="text-ink-muted">Pickup hours: {pickupHours}</p>}
+            {pickupNote && <p className="text-ink-muted">{pickupNote}</p>}
             <p className="text-ink-muted">We&apos;ll email you when it&apos;s ready.</p>
           </div>
         </div>

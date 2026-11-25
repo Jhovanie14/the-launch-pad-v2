@@ -183,6 +183,7 @@ async function processProductOrder(session: Stripe.Checkout.Session) {
       .maybeSingle();
     if (!profile?.email) return;
 
+    const pickup = await getPickupSettings(supabase);
     await sendProductOrderConfirmationEmail({
       to: profile.email,
       name: profile.full_name ?? "there",
@@ -196,7 +197,8 @@ async function processProductOrder(session: Stripe.Checkout.Session) {
       deliveryFee: result.order.delivery_fee,
       total: result.order.total,
       fulfillmentMethod: result.order.fulfillment_method as "pickup" | "delivery",
-      pickupHours: (await getPickupSettings(supabase)).pickupHours,
+      pickupHours: pickup.pickupHours,
+      pickupNote: pickup.pickupNote,
     });
     console.log("Product order confirmation email sent");
   } catch (error) {

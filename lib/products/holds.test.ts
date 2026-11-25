@@ -65,9 +65,9 @@ describe("runHoldJob", () => {
   it("sends the reminder once, the day before the hold date", async () => {
     const { db } = fakeDb([reservation()]);
     const e = emails();
-    expect(await runHoldJob({ db, now: WED_9AM, pickupHours: null, emails: e })).toEqual({ reminded: 1, released: 0, restocked: 0 });
-    expect(e.reminder).toHaveBeenCalledWith(expect.objectContaining({ holdDate: "Thu, Nov 26", total: 25.2 }));
-    expect(await runHoldJob({ db, now: WED_9AM, pickupHours: null, emails: e })).toEqual({ reminded: 0, released: 0, restocked: 0 });
+    expect(await runHoldJob({ db, now: WED_9AM, pickupHours: "Daily 9–6", pickupNote: "Ask for Armando", emails: e })).toEqual({ reminded: 1, released: 0, restocked: 0 });
+    expect(e.reminder).toHaveBeenCalledWith(expect.objectContaining({ holdDate: "Thu, Nov 26", total: 25.2, pickupHours: "Daily 9–6", pickupNote: "Ask for Armando" }));
+    expect(await runHoldJob({ db, now: WED_9AM, pickupHours: null, pickupNote: null, emails: e })).toEqual({ reminded: 0, released: 0, restocked: 0 });
     expect(e.reminder).toHaveBeenCalledTimes(1);
   });
 
@@ -75,24 +75,24 @@ describe("runHoldJob", () => {
     const rows = [reservation({ reminder_sent_at: "2026-11-25T15:00:00Z" })];
     const { db, state } = fakeDb(rows);
     const e = emails();
-    expect(await runHoldJob({ db, now: FRI_9AM, pickupHours: null, emails: e })).toEqual({ reminded: 0, released: 1, restocked: 0 });
+    expect(await runHoldJob({ db, now: FRI_9AM, pickupHours: null, pickupNote: null, emails: e })).toEqual({ reminded: 0, released: 1, restocked: 0 });
     expect(rows[0].fulfilment_status).toBe("released");
     expect(state.rpc).toEqual(["release_product_order_stock"]);
     expect(e.released).toHaveBeenCalledWith(expect.objectContaining({ byCustomer: false }));
-    expect(await runHoldJob({ db, now: FRI_9AM, pickupHours: null, emails: e })).toEqual({ reminded: 0, released: 0, restocked: 0 });
+    expect(await runHoldJob({ db, now: FRI_9AM, pickupHours: null, pickupNote: null, emails: e })).toEqual({ reminded: 0, released: 0, restocked: 0 });
     expect(state.rpc).toHaveLength(1);
   });
 
   it("leaves an order alone before its reminder day", async () => {
     const { db, state } = fakeDb([reservation()]);
     const e = emails();
-    expect(await runHoldJob({ db, now: new Date("2026-11-24T15:00:00Z"), pickupHours: null, emails: e })).toEqual({ reminded: 0, released: 0, restocked: 0 });
+    expect(await runHoldJob({ db, now: new Date("2026-11-24T15:00:00Z"), pickupHours: null, pickupNote: null, emails: e })).toEqual({ reminded: 0, released: 0, restocked: 0 });
     expect(state.rpc).toEqual([]);
   });
 
   it("ignores reservations already paid", async () => {
     const { db } = fakeDb([reservation({ payment_status: "paid" })]);
-    expect(await runHoldJob({ db, now: FRI_9AM, pickupHours: null, emails: emails() })).toEqual({ reminded: 0, released: 0, restocked: 0 });
+    expect(await runHoldJob({ db, now: FRI_9AM, pickupHours: null, pickupNote: null, emails: emails() })).toEqual({ reminded: 0, released: 0, restocked: 0 });
   });
 });
 
@@ -103,7 +103,7 @@ describe("stock that never came back", () => {
       reservation({ id: "b", fulfilment_status: "released", stock_taken: true, stock_released_at: "2026-11-24T00:00:00Z" }),
       reservation({ id: "c", payment_method: "card", fulfilment_status: "cancelled", stock_taken: false, stock_released_at: null }),
     ]);
-    const out = await runHoldJob({ db, now: WED_9AM, pickupHours: null, emails: emails() });
+    const out = await runHoldJob({ db, now: WED_9AM, pickupHours: null, pickupNote: null, emails: emails() });
     expect(out.restocked).toBe(1);
     expect(state.rpc).toEqual(["release_product_order_stock"]);
   });

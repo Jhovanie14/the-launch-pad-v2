@@ -19,6 +19,7 @@ export interface StaffActionEmails {
     amountDue: number | null;
     holdDate: string | null;
     pickupHours: string | null;
+    pickupNote: string | null;
   }) => Promise<void>;
   collected: (args: { to: string; name: string; orderId: string; items: Item[]; total: number; paidVia: PaidVia }) => Promise<void>;
   released: (args: { to: string; name: string; orderId: string; byCustomer: boolean }) => Promise<void>;
@@ -79,6 +80,7 @@ export async function runStaffAction(
     staffId: string;
     holdDays: number;
     pickupHours: string | null;
+    pickupNote: string | null;
     emails: StaffActionEmails;
   },
   input: { orderId: string; action: StaffAction; paidVia?: PaidVia | string },
@@ -112,6 +114,7 @@ export async function runStaffAction(
         amountDue: isUnpaidReservation(order as FlowOrder) ? order.total : null,
         holdDate: patch.hold_until ? houstonDateLabel(patch.hold_until as string) : null,
         pickupHours: deps.pickupHours,
+        pickupNote: deps.pickupNote,
       });
       break;
     case "hand_over":

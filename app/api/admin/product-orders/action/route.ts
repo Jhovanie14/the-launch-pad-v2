@@ -32,6 +32,7 @@ export async function POST(req: Request) {
         staffId: staff.id,
         holdDays: settings.holdDays,
         pickupHours: settings.pickupHours,
+        pickupNote: settings.pickupNote,
         emails: {
           ready: sendProductOrderReadyForPickupEmail,
           collected: sendProductOrderCollectedEmail,

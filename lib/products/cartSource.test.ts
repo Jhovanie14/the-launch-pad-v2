@@ -20,6 +20,8 @@ describe("cart", () => {
   it("explains the hold with the owner's setting", () => {
     expect(read(CART)).toContain("holdDays");
     expect(read(CART)).toMatch(/pickupHours\s*&&/);
+    expect(read(CART)).toMatch(/pickupNote\s*&&/);
+    expect(read(CART)).toContain("setPickupNote(settings.pickupNote)");
   });
 
   it("names the counter methods the owner takes", () => {

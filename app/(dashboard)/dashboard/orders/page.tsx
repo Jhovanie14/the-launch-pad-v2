@@ -80,6 +80,7 @@ export default function OrdersPage() {
   const { user, isLoading: authLoading } = useAuth();
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
   const [pickupHours, setPickupHours] = useState<string | null>(null);
+  const [pickupNote, setPickupNote] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -104,6 +105,7 @@ export default function OrdersPage() {
       }
       setOrders((data as OrderWithItems[]) ?? []);
       setPickupHours(settings.pickupHours);
+      setPickupNote(settings.pickupNote);
       setLoading(false);
     }
     if (!authLoading) fetchOrders();
@@ -168,6 +170,7 @@ export default function OrdersPage() {
                     <PickupPass
                       order={{ ...(order as unknown as FlowOrder), id: order.id, items: order.product_order_items }}
                       pickupHours={pickupHours}
+                      pickupNote={pickupNote}
                       action={
                         customerCanCancel(order as unknown as FlowOrder) ? (
                           <CancelReservationButton

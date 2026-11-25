@@ -66,6 +66,13 @@ describe("pickup pass", () => {
     expect(read(PASS)).toMatch(/open && \(\s*<p[^>]*>Show this reference at the counter/);
   });
 
+  it("shows the owner's pickup note when set, wherever the pass is used", () => {
+    expect(read(PASS)).toMatch(/pickupNote\s*&&/);
+    expect(read(PASS)).toContain("pickupNote: string | null");
+    expect(read("app/(user)/products/success/page.tsx")).toContain("pickupNote={settings.pickupNote}");
+    expect(read("app/(dashboard)/dashboard/orders/page.tsx")).toContain("pickupNote={pickupNote}");
+  });
+
   it("only shows hours the owner has set", () => {
     expect(read(PASS)).toMatch(/pickupHours\s*&&/);
   });
