@@ -8,6 +8,14 @@ const RAW_PALETTE = /\b(?:bg|text|border|ring|fill|stroke)-(?:blue|gray|green|am
 const DRAWER = "components/admin/products/ProductDrawer.tsx";
 
 describe("product drawer", () => {
+  it("has a Shipping section with the packed weight", () => {
+    const s = read(DRAWER);
+    expect(s).toContain('<Section title="Shipping">');
+    expect(s).toContain("Shipping weight (oz)");
+    expect(s).toContain("Weight packed in its pouch");
+    expect(s).toContain('set("weight_oz"');
+  });
+
   it("uses the shared form rules and keeps slugs stable", () => {
     const s = read(DRAWER);
     for (const fn of ["buildProductPayload(", "isDirty(", "formFromProduct(", "uniqueSlug("]) expect(s, fn).toContain(fn);

@@ -58,6 +58,8 @@ const emails = () => ({
   collected: vi.fn(async () => {}),
   released: vi.fn(async () => {}),
   refunded: vi.fn(async () => {}),
+  shipped: vi.fn(async () => {}),
+  delivered: vi.fn(async () => {}),
 });
 
 function deps(db: unknown, e = emails()) {
@@ -183,5 +185,34 @@ describe("releaseStock", () => {
   it("returns true when the stock came back", async () => {
     const db = { rpc: async () => ({ data: null, error: null }) } as never;
     expect(await releaseStock(db, "order-9")).toBe(true);
+  });
+});
+
+describe("runStaffAction: shipping orders", () => {
+  const ADDRESS = { name: "Dee Jones", street1: "215 CLAYTON ST", city: "San Francisco", state: "CA", zip: "94117", phone: "4155550100" };
+  const SHIP = { ...CARD_PAID, fulfillment_method: "delivery", delivery_address: ADDRESS };
+
+  it("mark_shipped records the tracking number and emails tracking", async () => {
+    const { db, state } = fakeDb(SHIP);
+    const e = emails();
+    await runStaffAction(deps(db, e), { orderId: ID, action: "mark_shipped", trackingNumber: "9400111899" });
+    expect(state.updates[0].values).toMatchObject({ fulfilment_status: "out_for_delivery", tracking_number: "9400111899" });
+    expect(e.shipped).toHaveBeenCalledWith({
+      to: "dee@example.com",
+      name: "Dee",
+      orderId: ID,
+      trackingNumber: "9400111899",
+      trackingUrl: "https://tools.usps.com/go/TrackConfirmAction?tLabels=9400111899",
+      carrier: "USPS",
+      address: ADDRESS,
+    });
+  });
+
+  it("mark_delivered closes it and emails delivered", async () => {
+    const { db, state } = fakeDb({ ...SHIP, fulfilment_status: "out_for_delivery" });
+    const e = emails();
+    await runStaffAction(deps(db, e), { orderId: ID, action: "mark_delivered" });
+    expect(state.updates[0].values).toMatchObject({ fulfilment_status: "completed" });
+    expect(e.delivered).toHaveBeenCalledWith({ to: "dee@example.com", name: "Dee", orderId: ID });
   });
 });

@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ApiError } from "@/lib/http/apiError";
+import type { ShipAddress } from "@/lib/shipping/quote";
+import type { ShippedEmailArgs } from "@/lib/shipping/syncShipped";
 import {
   applyStaffAction,
   houstonDateLabel,
@@ -23,6 +25,8 @@ export interface StaffActionEmails {
   }) => Promise<void>;
   collected: (args: { to: string; name: string; orderId: string; items: Item[]; total: number; paidVia: PaidVia }) => Promise<void>;
   released: (args: { to: string; name: string; orderId: string; byCustomer: boolean }) => Promise<void>;
+  shipped: (args: ShippedEmailArgs) => Promise<void>;
+  delivered: (args: { to: string; name: string; orderId: string }) => Promise<void>;
 }
 
 /** Who the order belongs to, for its emails. Null when there is no email. */
@@ -83,7 +87,7 @@ export async function runStaffAction(
     pickupNote: string | null;
     emails: StaffActionEmails;
   },
-  input: { orderId: string; action: StaffAction; paidVia?: PaidVia | string },
+  input: { orderId: string; action: StaffAction; paidVia?: PaidVia | string; trackingNumber?: string },
 ): Promise<void> {
   const { db, now } = deps;
   const { data: order } = await db.from("product_orders").select("*").eq("id", input.orderId).maybeSingle();
@@ -94,6 +98,7 @@ export async function runStaffAction(
     holdDays: deps.holdDays,
     staffId: deps.staffId,
     paidVia: input.paidVia,
+    trackingNumber: input.trackingNumber,
   });
   const changed = await guardedUpdate(db, order, { ...patch, updated_at: now.toISOString() });
   if (!changed) throw new ApiError(ORDER_CHANGED, 409);
@@ -128,6 +133,18 @@ export async function runStaffAction(
       break;
     case "release":
       await deps.emails.released({ ...base, byCustomer: false });
+      break;
+    case "mark_shipped":
+      await deps.emails.shipped({
+        ...base,
+        trackingNumber: patch.tracking_number as string,
+        trackingUrl: (patch.tracking_url as string) ?? "",
+        carrier: (patch.carrier as string) ?? "USPS",
+        address: order.delivery_address as ShipAddress,
+      });
+      break;
+    case "mark_delivered":
+      await deps.emails.delivered(base);
       break;
   }
 }

@@ -21,6 +21,7 @@ import {
   PAID_VIA_LABEL,
   customerStatus,
   houstonDateLabel,
+  isShippingOrder,
   isUnpaidReservation,
   staffActionsFor,
   staffQueue,
@@ -30,20 +31,23 @@ import {
 } from "@/lib/products/orderFlow";
 import { DEFAULT_HOLD_DAYS, getPickupSettings } from "@/lib/products/storeSettings";
 import { matchesOrderSearch } from "@/lib/admin/orderSearch";
+import { ShippingActions } from "@/components/admin/orders/ShippingActions";
+import { ShippingSettingsPanel } from "@/components/admin/orders/ShippingSettingsPanel";
 import type { ProductOrderItemRow, ProductOrderRow } from "@/types/db";
 
 type OrderWithItems = ProductOrderRow & { product_order_items: ProductOrderItemRow[] };
 type Customer = { email: string | null; full_name: string | null };
-type Tab = "to_pack" | "ready" | "unpaid" | "completed" | "closed";
+type Tab = "to_pack" | "shipped" | "ready" | "unpaid" | "completed" | "closed";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "to_pack", label: "To pack" },
+  { key: "shipped", label: "Shipped" },
   { key: "ready", label: "Ready" },
   { key: "unpaid", label: "Unpaid" },
   { key: "completed", label: "Completed" },
   { key: "closed", label: "Closed" },
 ];
-const COUNTED: Tab[] = ["to_pack", "ready", "unpaid"];
+const COUNTED: Tab[] = ["to_pack", "shipped", "ready", "unpaid"];
 /** Orders load a page at a time, filtered in the database. */
 const PAGE_SIZE = 25;
 const SEARCH_LIMIT = 200;
@@ -67,8 +71,10 @@ function forTab(query: any, tab: Tab) {
   switch (tab) {
     case "to_pack":
       return query.eq("fulfilment_status", "placed").or("payment_status.eq.paid,payment_method.eq.at_store");
+    case "shipped":
+      return query.eq("fulfilment_status", "out_for_delivery");
     case "ready":
-      return query.in("fulfilment_status", ["ready", "out_for_delivery"]);
+      return query.eq("fulfilment_status", "ready");
     case "unpaid":
       return query.eq("payment_method", "at_store").eq("payment_status", "unpaid").in("fulfilment_status", ["placed", "ready"]);
     case "completed":
@@ -224,6 +230,37 @@ export default function OrdersView() {
       } satisfies Record<StaffAction, string>)[action],
     );
 
+  /** "Send to Shippo" and "Check Shippo" on a shipping order. */
+  async function shippo(o: OrderWithItems, action: "push" | "check") {
+    setBusyId(o.id);
+    try {
+      const res = await fetch("/api/admin/product-orders/shippo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order_id: o.id, action }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(data.error || "That didn't work");
+        return;
+      }
+      const message =
+        action === "push"
+          ? `${ref(o)} is in Shippo. Buy the label there.`
+          : data.result === "shipped"
+            ? `Label found. ${ref(o)} is shipped and the customer has been emailed.`
+            : data.result === "waiting"
+              ? "No label bought in Shippo yet."
+              : "Nothing to update.";
+      toast.success(message);
+      refresh();
+    } catch {
+      toast.error("That didn't work. Check your connection.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   return (
     <div className="lp-theme space-y-6 text-ink">
       <h1 className="text-3xl font-black tracking-tight">Store orders</h1>
@@ -296,6 +333,7 @@ export default function OrdersView() {
                 }}
                 onClosePanel={() => setPanel(null)}
                 onAction={(action, extra) => act(o, action, extra)}
+                onShippo={(action) => shippo(o, action)}
                 onRelease={() => setReleaseTarget(o)}
                 onRefund={() => setRefundTarget(o)}
               />
@@ -311,6 +349,7 @@ export default function OrdersView() {
       )}
 
       <PickupSettingsPanel />
+      <ShippingSettingsPanel />
 
       <AlertDialog open={!!releaseTarget} onOpenChange={(open) => !open && setReleaseTarget(null)}>
         <AlertDialogContent>
@@ -352,6 +391,9 @@ export default function OrdersView() {
                     ? "The items were already handed over, so stock stays as it is."
                     : "The items go back on the shelf."}{" "}
                   The customer is emailed.
+                  {isShippingOrder(flow(refundTarget)) && refundTarget.tracking_number && (
+                    <> Void the label in Shippo too.</>
+                  )}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -399,6 +441,7 @@ function OrderCard({
   onOpenPanel,
   onClosePanel,
   onAction,
+  onShippo,
   onRelease,
   onRefund,
 }: {
@@ -410,7 +453,8 @@ function OrderCard({
   onPaidVia: (v: PaidVia) => void;
   onOpenPanel: (action: "hand_over" | "take_payment") => void;
   onClosePanel: () => void;
-  onAction: (action: StaffAction, extra?: object) => void;
+  onAction: (action: StaffAction, extra?: object) => Promise<boolean> | void;
+  onShippo: (action: "push" | "check") => void;
   onRelease: () => void;
   onRefund: () => void;
 }) {
@@ -420,6 +464,8 @@ function OrderCard({
   const today = houstonDateLabel(new Date().toISOString());
   const holdLabel = order.hold_until ? houstonDateLabel(order.hold_until) : null;
   const status = customerStatus(f);
+  const shipping = isShippingOrder(f);
+  const shipTo = shipping ? (order.delivery_address as Record<string, string> | null) : null;
 
   return (
     <article aria-labelledby={`order-${order.id}`} className={cn(SURFACE, "p-4 sm:p-5")}>
@@ -453,13 +499,25 @@ function OrderCard({
         ) : (
           <Tag>{status.label}</Tag>
         )}
+        {shipping && <Tag>Ship · {order.shipping_service ?? "USPS"}</Tag>}
+        {shipping && order.payment_status === "paid" && order.fulfilment_status === "placed" && !order.shippo_order_id && (
+          <Tag tone="warn">Not in Shippo yet</Tag>
+        )}
+        {shipping && order.shipping_problem && <Tag tone="warn">{order.shipping_problem}</Tag>}
       </div>
 
       <p className="mt-3 text-sm">
         {order.product_order_items.map((i) => `${i.name} × ${i.quantity}`).join(" · ")}
       </p>
+      {shipTo && (
+        <p className="mt-2 text-sm">
+          <span className="font-semibold">Ship to:</span> {[shipTo.name, shipTo.street1, shipTo.street2].filter(Boolean).join(", ")},{" "}
+          {shipTo.city}, {shipTo.state} {shipTo.zip}
+        </p>
+      )}
       <p className="mt-1 text-xs text-ink-subtle">
         Placed {placedAt(order.created_at)} · {money(order.total)}
+        {shipping && Number(order.delivery_fee) > 0 && <> (shipping {money(order.delivery_fee)})</>}
       </p>
 
       {panel === "take_payment" && (
@@ -511,7 +569,9 @@ function OrderCard({
         </div>
       )}
 
-      {!panel && (actions.length > 0 || order.payment_status === "paid") && (
+      {shipping && <ShippingActions order={order} busy={busy} onAction={onAction} onShippo={onShippo} onRefund={onRefund} />}
+
+      {!shipping && !panel && (actions.length > 0 || order.payment_status === "paid") && (
         <div className="mt-4 flex flex-wrap items-center gap-2">
           {actions.includes("mark_ready") && (
             <button type="button" className={PRIMARY} disabled={busy} onClick={() => onAction("mark_ready")}>
