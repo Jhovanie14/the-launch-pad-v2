@@ -78,6 +78,35 @@ describe("handleShippoEvent: labels", () => {
     });
   });
 
+  it("a replacement label replaces the tracking and emails the new number", async () => {
+    const { deps, tables, emails } = setup(
+      { fulfilment_status: "out_for_delivery", tracking_number: "OLD111", tracking_url: "old", label_url: "old.pdf" },
+      { "/transactions/tx_2": TX({ object_id: "tx_2", tracking_number: "NEW222", tracking_url_provider: "new", label_url: "new.pdf" }) },
+    );
+    expect(await handleShippoEvent(deps, { event: "transaction_created", data: { object_id: "tx_2" } })).toBe("label replaced");
+    expect(tables.product_orders[0]).toMatchObject({
+      fulfilment_status: "out_for_delivery",
+      tracking_number: "NEW222",
+      tracking_url: "new",
+      label_url: "new.pdf",
+    });
+    expect(emails.shipped).toHaveBeenCalledWith(expect.objectContaining({ trackingNumber: "NEW222" }));
+    // The old label's refund arriving later no longer matches, so nothing reverts.
+    const { shippo } = deps as any;
+    shippo.mockImplementation(async () => TX({ object_id: "tx_1", tracking_number: "OLD111", status: "REFUNDED" }));
+    expect(await handleShippoEvent(deps, { event: "transaction_updated", data: { object_id: "tx_1" } })).toBe("skipped");
+    expect(tables.product_orders[0].fulfilment_status).toBe("out_for_delivery");
+  });
+
+  it("treats a pending label refund as voided", async () => {
+    const { deps, tables } = setup(
+      { fulfilment_status: "out_for_delivery", tracking_number: "9400111899" },
+      { "/transactions/tx_1": TX({ status: "REFUNDPENDING" }) },
+    );
+    expect(await handleShippoEvent(deps, { event: "transaction_updated", data: { object_id: "tx_1" } })).toBe("label voided");
+    expect(tables.product_orders[0].fulfilment_status).toBe("placed");
+  });
+
   it("ignores an event without an id", async () => {
     const { deps, shippo } = setup();
     expect(await handleShippoEvent(deps, { event: "transaction_created", data: {} })).toBe("ignored");

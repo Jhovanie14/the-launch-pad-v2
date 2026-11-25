@@ -31,10 +31,12 @@ export async function refundOrder(
     await deps.stripe.refunds.create({ payment_intent: order.stripe_payment_intent_id });
   }
 
-  const handedOver = order.fulfilment_status === "completed";
+  // Handed over at the counter, or shipped: the goods left the building, so
+  // the order keeps its status and stock stays as it is.
+  const handedOver = order.fulfilment_status === "completed" || order.fulfilment_status === "out_for_delivery";
   const changed = await guardedUpdate(db, order, {
     payment_status: "refunded",
-    fulfilment_status: handedOver ? "completed" : "cancelled",
+    fulfilment_status: handedOver ? order.fulfilment_status : "cancelled",
     updated_at: deps.now.toISOString(),
   });
   if (!changed) {

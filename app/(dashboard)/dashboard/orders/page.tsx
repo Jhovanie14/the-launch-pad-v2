@@ -32,7 +32,10 @@ const PRIMARY_ACTION = cn(
 const STORE_ADDRESS = "10410 S Main St";
 
 const ref = (o: OrderWithItems) => o.id.slice(0, 8).toUpperCase();
-const isOpen = (o: OrderWithItems) => o.fulfilment_status === "placed" || o.fulfilment_status === "ready";
+// Open: still to collect, or a parcel on its way (its pass carries the tracking).
+const isOpen = (o: OrderWithItems) =>
+  o.payment_status !== "refunded" &&
+  (o.fulfilment_status === "placed" || o.fulfilment_status === "ready" || o.fulfilment_status === "out_for_delivery");
 
 /** A card checkout that was never paid (abandoned or expired) is noise to the customer. */
 function isAbandonedCheckout(o: OrderWithItems): boolean {

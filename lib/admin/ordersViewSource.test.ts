@@ -54,6 +54,9 @@ describe("admin store orders counter screen", () => {
     expect(s).toContain("<ShippingSettingsPanel");
     expect(s).toContain("isShippingOrder(");
     expect(s).toContain("Void the label in Shippo too.");
+    // In Shippo but no label yet: Armando would still see it in his queue.
+    expect(s).toContain("Delete the order in Shippo too, so it isn't shipped.");
+    expect(s).toMatch(/refundTarget\.shippo_order_id/);
     expect(s).toContain("Not in Shippo yet");
     expect(s).toContain("Ship to:");
   });

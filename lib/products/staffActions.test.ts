@@ -161,6 +161,13 @@ describe("refundOrder", () => {
     expect(e.refunded).toHaveBeenCalledWith(expect.objectContaining({ where: "store" }));
   });
 
+  it("keeps stock out for a shipped parcel: it already left the building", async () => {
+    const { db, state } = fakeDb({ ...CARD_PAID, fulfillment_method: "delivery", fulfilment_status: "out_for_delivery" });
+    await refundOrder({ db, stripe: stripe() as never, now: NOW, emails: emails() }, ID);
+    expect(state.updates[0].values).toMatchObject({ payment_status: "refunded", fulfilment_status: "out_for_delivery" });
+    expect(state.rpc).toEqual([]);
+  });
+
   it("keeps stock out for an order already handed over", async () => {
     const { db, state } = fakeDb({ ...CARD_PAID, fulfilment_status: "completed" });
     await refundOrder({ db, stripe: stripe() as never, now: NOW, emails: emails() }, ID);

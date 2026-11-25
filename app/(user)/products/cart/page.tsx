@@ -26,7 +26,7 @@ type Method = "pickup" | "delivery";
 type Quote = { key: string; amount: number; service: string; days: number | null };
 type QuoteProblem = { message: string; messages: string[] };
 
-const money = (n: number) => `${n.toFixed(2)}`;
+const money = (n: number) => `$${n.toFixed(2)}`;
 const METHOD_CARD =
   "flex cursor-pointer gap-3 rounded-2xl bg-paper p-4 ring-1 ring-line transition-shadow has-[:checked]:ring-2 has-[:checked]:ring-brand-blue motion-reduce:transition-none";
 

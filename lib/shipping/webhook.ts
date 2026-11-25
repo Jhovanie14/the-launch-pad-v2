@@ -49,7 +49,8 @@ async function handleTransaction(deps: ShippoEventDeps, transactionId: string | 
   const { data: order } = await deps.db.from("product_orders").select("*").eq("shippo_order_id", tx.order).maybeSingle();
   if (!order || order.fulfillment_method !== "delivery") return "ignored";
 
-  if (tx.status === "REFUNDED" || tx.object_status === "REFUNDED") {
+  const voided = ["REFUNDED", "REFUNDPENDING"];
+  if (voided.includes(tx.status ?? "") || voided.includes(tx.object_status ?? "")) {
     if (order.fulfilment_status !== "out_for_delivery" || order.tracking_number !== tx.tracking_number) return "skipped";
     const { data: hit } = await deps.db
       .from("product_orders")
@@ -66,6 +67,47 @@ async function handleTransaction(deps: ShippoEventDeps, transactionId: string | 
       .eq("tracking_number", tx.tracking_number)
       .select("id");
     return hit && hit.length > 0 ? "label voided" : "skipped";
+  }
+
+  // A new label for a parcel already shipped (the first label was voided and
+  // replaced): switch to the new tracking, guarded on the old number, and
+  // email it. The old label's refund then no longer matches anything.
+  if (
+    order.fulfilment_status === "out_for_delivery" &&
+    tx.status === "SUCCESS" &&
+    tx.tracking_number &&
+    tx.tracking_number !== order.tracking_number &&
+    order.payment_status === "paid"
+  ) {
+    const now = (deps.now ?? new Date()).toISOString();
+    const patch = {
+      tracking_number: tx.tracking_number,
+      tracking_url: tx.tracking_url_provider ?? null,
+      label_url: tx.label_url ?? null,
+      shipping_problem: null,
+      shipped_at: now,
+      updated_at: now,
+    };
+    const { data: hit } = await deps.db
+      .from("product_orders")
+      .update(patch)
+      .eq("id", order.id)
+      .eq("fulfilment_status", "out_for_delivery")
+      .eq("tracking_number", order.tracking_number)
+      .select("id");
+    if (!hit || hit.length === 0) return "skipped";
+    const customer = await orderCustomer(deps.db, order.user_id);
+    if (customer) {
+      await deps.emails.shipped({
+        ...customer,
+        orderId: order.id,
+        trackingNumber: tx.tracking_number,
+        trackingUrl: patch.tracking_url ?? "",
+        carrier: "USPS",
+        address: order.delivery_address,
+      });
+    }
+    return "label replaced";
   }
 
   if (order.fulfilment_status !== "placed") return "skipped";

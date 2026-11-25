@@ -391,9 +391,12 @@ export default function OrdersView() {
                     ? "The items were already handed over, so stock stays as it is."
                     : "The items go back on the shelf."}{" "}
                   The customer is emailed.
-                  {isShippingOrder(flow(refundTarget)) && refundTarget.tracking_number && (
-                    <> Void the label in Shippo too.</>
-                  )}
+                  {isShippingOrder(flow(refundTarget)) &&
+                    (refundTarget.tracking_number ? (
+                      <> Void the label in Shippo too.</>
+                    ) : refundTarget.shippo_order_id ? (
+                      <> {"Delete the order in Shippo too, so it isn't shipped."}</>
+                    ) : null)}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

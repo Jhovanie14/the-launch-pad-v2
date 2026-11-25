@@ -74,6 +74,10 @@ describe("cart: ship to me", () => {
     expect(s).toContain("Shipping (USPS Ground Advantage)");
   });
 
+  it("prices carry the dollar sign", () => {
+    expect(read(CART)).toContain("const money = (n: number) => `$${n.toFixed(2)}`;");
+  });
+
   it("shipping orders are card only", () => {
     const s = read(CART);
     expect(s).toContain("Only for pickup orders.");
