@@ -5,6 +5,7 @@ import { createClient } from "@/utils/supabase/server";
 import { cn } from "@/lib/utils";
 import { FLAME_BUTTON, GHOST_BUTTON } from "@/components/booking/ui/focus";
 import { PickupPass, type PassOrder } from "@/components/products/PickupPass";
+import { ShippingPass, type ShippingPassOrder } from "@/components/products/ShippingPass";
 import { CancelReservationButton } from "@/components/products/CancelReservationButton";
 import { customerCanCancel, successHeading } from "@/lib/products/orderFlow";
 import { getPickupSettings } from "@/lib/products/storeSettings";
@@ -47,7 +48,7 @@ export default async function ProductSuccessPage({ searchParams }: ProductSucces
     supabase
       .from("product_orders")
       .select(
-        "id, total, payment_method, payment_status, fulfilment_status, fulfillment_method, hold_until, product_order_items (name, quantity, unit_price)",
+        "id, total, payment_method, payment_status, fulfilment_status, fulfillment_method, hold_until, delivery_fee, delivery_address, tracking_number, tracking_url, shipping_service, product_order_items (name, quantity, unit_price)",
       )
       .eq("id", orderId)
       .maybeSingle(),
@@ -76,6 +77,8 @@ export default async function ProductSuccessPage({ searchParams }: ProductSucces
         <div className="mt-6">
           {waitingForCard ? (
             <ConfirmingPayment />
+          ) : order.fulfillment_method === "delivery" ? (
+            <ShippingPass order={order as ShippingPassOrder} />
           ) : (
             <PickupPass
               order={order}

@@ -91,6 +91,21 @@ describe("processProductOrderCompleted", () => {
     expect(state.rpc).toEqual([]);
   });
 
+  it("keeps the shipping address we collected; Stripe's empty one never overwrites it", async () => {
+    const address = { name: "Dee Jones", street1: "215 CLAYTON ST", city: "San Francisco", state: "CA", zip: "94117", phone: "4155550100" };
+    const { db, state } = fakeDb({ order: { ...ORDER, fulfillment_method: "delivery", delivery_address: address }, items: ITEMS });
+    const result = await processProductOrderCompleted(db, { ...SESSION, collected_information: { shipping_details: null } } as any, NOW);
+    expect("delivery_address" in state.updates[0].values).toBe(false);
+    expect(result?.order.delivery_address).toEqual(address);
+  });
+
+  it("does not record Stripe's shipping over an address the order already has", async () => {
+    const address = { name: "Dee Jones", street1: "215 CLAYTON ST" };
+    const { db, state } = fakeDb({ order: { ...ORDER, delivery_address: address }, items: ITEMS });
+    await processProductOrderCompleted(db, { ...SESSION, shipping_details: { name: "Other" } } as any, NOW);
+    expect("delivery_address" in state.updates[0].values).toBe(false);
+  });
+
   it("takes the stock for a legacy order placed before held stock existed", async () => {
     const { db, state } = fakeDb({ order: { ...ORDER, stock_taken: false }, items: ITEMS });
     await processProductOrderCompleted(db, SESSION as any, NOW);

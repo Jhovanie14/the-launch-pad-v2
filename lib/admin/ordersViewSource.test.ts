@@ -47,6 +47,20 @@ describe("admin store orders counter screen", () => {
     expect(s).toContain("maxLength={200}");
   });
 
+  it("has a Shipped queue and hands shipping orders to the shipping actions", () => {
+    const s = read();
+    expect(s).toContain('{ key: "shipped", label: "Shipped" }');
+    expect(s).toContain("<ShippingActions");
+    expect(s).toContain("<ShippingSettingsPanel");
+    expect(s).toContain("isShippingOrder(");
+    expect(s).toContain("Void the label in Shippo too.");
+    // In Shippo but no label yet: Armando would still see it in his queue.
+    expect(s).toContain("Delete the order in Shippo too, so it isn't shipped.");
+    expect(s).toMatch(/refundTarget\.shippo_order_id/);
+    expect(s).toContain("Not in Shippo yet");
+    expect(s).toContain("Ship to:");
+  });
+
   it("posts to the new routes only", () => {
     const s = read();
     expect(s).toContain("/api/admin/product-orders/action");
@@ -58,5 +72,45 @@ describe("admin store orders counter screen", () => {
     const s = read();
     expect(s.match(RAW_PALETTE) ?? []).toEqual([]);
     expect(s).not.toContain('"Out for delivery"');
+  });
+});
+
+describe("shipping actions on the counter screen", () => {
+  const actions = () => readFileSync(join(process.cwd(), "components/admin/orders/ShippingActions.tsx"), "utf8");
+  const settings = () => readFileSync(join(process.cwd(), "components/admin/orders/ShippingSettingsPanel.tsx"), "utf8");
+
+  it("offers Shippo and the manual fallbacks with the agreed copy", () => {
+    const s = actions();
+    for (const copy of ["Open in Shippo to buy label", "Send to Shippo", "Check Shippo", "Mark shipped", "Mark delivered", "Tracking number"]) {
+      expect(s, copy).toContain(copy);
+    }
+    expect(s).toContain('href="https://apps.goshippo.com/orders"');
+    expect(s).toContain('rel="noreferrer"');
+    expect(read()).toContain("/api/admin/product-orders/shippo");
+    expect(s.match(RAW_PALETTE) ?? []).toEqual([]);
+  });
+
+  it("edits pouches and the states we don't ship to", () => {
+    const s = settings();
+    for (const copy of ["Shipping settings", "Pouches", "Don&apos;t ship to"]) expect(s, copy).toContain(copy);
+    expect(s).toContain("/api/admin/store-settings/shipping");
+    expect(s).toContain("getShippingSettings(");
+    expect(s.match(RAW_PALETTE) ?? []).toEqual([]);
+  });
+
+  it("the settings route is admin-only and sanitised", () => {
+    const s = readFileSync(join(process.cwd(), "app/api/admin/store-settings/shipping/route.ts"), "utf8");
+    expect(s).toContain("requireAdmin(");
+    expect(s).toContain("sanitizeShippingSettings(");
+    expect(s).toContain("shipping_excluded_states");
+  });
+
+  it("the action route accepts the shipping actions and a tracking number", () => {
+    const s = readFileSync(join(process.cwd(), "app/api/admin/product-orders/action/route.ts"), "utf8");
+    expect(s).toContain('"mark_shipped"');
+    expect(s).toContain('"mark_delivered"');
+    expect(s).toContain("trackingNumber: tracking_number");
+    expect(s).toContain("sendProductOrderShippedEmail");
+    expect(s).toContain("sendProductOrderDeliveredEmail");
   });
 });

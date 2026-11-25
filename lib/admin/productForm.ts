@@ -16,6 +16,8 @@ export interface ProductForm {
   video_url: string;
   gallery: string[];
   stock: string;
+  /** Shipping weight in ounces, packed in its pouch; "" = not set (can't ship). */
+  weight_oz: string;
   is_active: boolean;
   is_featured: boolean;
   sort_order: string;
@@ -32,6 +34,7 @@ export const EMPTY_FORM: ProductForm = {
   video_url: "",
   gallery: [],
   stock: "0",
+  weight_oz: "",
   is_active: true,
   is_featured: false,
   sort_order: "0",
@@ -50,6 +53,7 @@ export interface ProductPayload {
   video_url: string | null;
   gallery: string[];
   stock: number;
+  weight_oz: number | null;
   is_active: boolean;
   is_featured: boolean;
   sort_order: number;
@@ -68,6 +72,7 @@ export function formFromProduct(p: ProductRow): ProductForm {
     video_url: p.video_url ?? "",
     gallery: toGallery(p.gallery),
     stock: String(p.stock),
+    weight_oz: p.weight_oz == null ? "" : String(p.weight_oz),
     is_active: p.is_active,
     is_featured: p.is_featured,
     sort_order: String(p.sort_order),
@@ -98,6 +103,9 @@ export function buildProductPayload(
   const stock = Number(f.stock);
   if (f.stock.trim() === "" || !Number.isInteger(stock) || stock < 0) return fail("Stock must be a whole number");
 
+  const weight = f.weight_oz.trim() === "" ? null : Number(f.weight_oz);
+  if (weight !== null && (!Number.isFinite(weight) || weight <= 0)) return fail("Shipping weight must be more than 0");
+
   const sortOrder = Number(f.sort_order);
   if (f.sort_order.trim() === "" || !Number.isInteger(sortOrder)) return fail("Sort order must be a whole number");
 
@@ -114,6 +122,7 @@ export function buildProductPayload(
       video_url: f.video_url || null,
       gallery: f.gallery,
       stock,
+      weight_oz: weight,
       is_active: f.is_active,
       is_featured: f.is_featured,
       sort_order: sortOrder,

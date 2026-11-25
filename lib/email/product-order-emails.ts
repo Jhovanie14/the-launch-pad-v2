@@ -14,6 +14,7 @@ import {
   text,
 } from "./layout";
 import { PAID_VIA_LABEL, type PaidVia } from "@/lib/products/orderFlow";
+import type { ShipAddress } from "@/lib/shipping/quote";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -57,12 +58,21 @@ export function orderItemsRowsHtml(items: OrderEmailItem[]): string {
     .join("\n");
 }
 
+/** "215 Clayton St, Apt 4, San Francisco, CA 94117", escaped. */
+function formatAddress(a: Partial<ShipAddress> | null | undefined): string {
+  if (!a) return "";
+  const line = [a.street1, a.street2].filter(Boolean).join(", ");
+  return text(`${line}, ${a.city ?? ""}, ${a.state ?? ""} ${a.zip ?? ""}`.trim());
+}
+
 /** The order as a real data table: column headers, item rows, then totals. */
 function orderItemsTable(args: {
   items: OrderEmailItem[];
   subtotal: number;
   deliveryFee: number;
   total: number;
+  /** "Shipping" for a shipping order; the legacy label otherwise. */
+  feeLabel?: string;
 }): string {
   const th = `padding:0 0 8px;border-bottom:1px solid ${C.line};font-size:13px;font-weight:600;color:${C.inkMuted};`;
   const totalRow = (label: string, value: string, strong = false) => `<tr>
@@ -83,7 +93,7 @@ function orderItemsTable(args: {
   </tbody>
   <tfoot>
     ${totalRow("Subtotal", money(args.subtotal))}
-    ${args.deliveryFee > 0 ? totalRow("Delivery fee", money(args.deliveryFee)) : ""}
+    ${args.deliveryFee > 0 ? totalRow(args.feeLabel ?? "Delivery fee", money(args.deliveryFee)) : ""}
     ${totalRow("Total", money(args.total), true)}
   </tfoot>
 </table>`;
@@ -108,6 +118,8 @@ type ConfirmationArgs = {
   pickupHours?: string | null;
   /** store_settings.pickup_note; null means not set, so no note line. */
   pickupNote?: string | null;
+  /** Shipping orders: where it ships to. */
+  address?: Partial<ShipAddress> | null;
 };
 
 /**
@@ -125,7 +137,7 @@ export function buildProductOrderConfirmationEmail(args: ConfirmationArgs): Buil
   const isDelivery = args.fulfillmentMethod === "delivery";
   const ref = orderRef(args.orderId);
   const nextStep = isDelivery
-    ? paragraph(`We are preparing your order now and will email you again when it is <strong>out for delivery</strong> to the address you gave at checkout.`)
+    ? paragraph("We'll email you tracking when it ships.")
     : paragraph(`Paid. We are preparing your order now and will email you again when it is <strong>ready for pickup</strong> at ${text(STORE_ADDRESS)}.`);
   const body = [
     heading("Your order is confirmed"),
@@ -133,10 +145,14 @@ export function buildProductOrderConfirmationEmail(args: ConfirmationArgs): Buil
     paragraph("Thank you for your order. The details are below."),
     details([
       ["Order", text(ref)],
-      ["Fulfillment", isDelivery ? "Local delivery" : "Pickup at the store"],
-      ...(isDelivery ? [] : pickupRows(args.pickupHours, args.pickupNote)),
+      ["Fulfillment", isDelivery ? "Ship with USPS" : "Pickup at the store"],
+      ...(isDelivery
+        ? args.address
+          ? ([["Ship to", formatAddress(args.address)]] as [string, string][])
+          : []
+        : pickupRows(args.pickupHours, args.pickupNote)),
     ]),
-    orderItemsTable(args),
+    orderItemsTable({ ...args, feeLabel: isDelivery ? "Shipping" : undefined }),
     nextStep,
     button(ORDERS_URL, "Track your order"),
     signoff(),
@@ -219,6 +235,56 @@ export function buildProductOrderOutForDeliveryEmail(args: StatusArgs): BuiltEma
       body,
       footerNote: FOOTER_NOTE,
     }),
+  };
+}
+
+type ShippedArgs = StatusArgs & {
+  trackingNumber: string;
+  trackingUrl: string;
+  carrier: string;
+  address: Partial<ShipAddress> | null;
+};
+
+/** The label was bought: tracking and where it's going. */
+export function buildProductOrderShippedEmail(args: ShippedArgs): BuiltEmail {
+  const ref = orderRef(args.orderId);
+  const body = [
+    heading("Your order is on its way"),
+    salutation(args.name),
+    paragraph(`Order <strong>${text(ref)}</strong> shipped with ${text(args.carrier)}.`),
+    details([
+      ["Order", text(ref)],
+      ["Tracking", text(args.trackingNumber)],
+      ...(args.address ? ([["Ship to", formatAddress(args.address)]] as [string, string][]) : []),
+    ]),
+    button(args.trackingUrl || ORDERS_URL, "Track package"),
+    paragraph(`You can also see your order any time in <a href="${ORDERS_URL}">your dashboard</a>.`, { muted: true, small: true }),
+    signoff(),
+  ].join("\n");
+  return {
+    subject: `Your Launch Pad order ${ref} has shipped`,
+    html: emailLayout({
+      title: "Your order is on its way",
+      preheader: `Order ${ref} shipped with ${args.carrier}. Tracking ${args.trackingNumber}.`,
+      body,
+      footerNote: FOOTER_NOTE,
+    }),
+  };
+}
+
+/** USPS marked it delivered. */
+export function buildProductOrderDeliveredEmail(args: StatusArgs): BuiltEmail {
+  const ref = orderRef(args.orderId);
+  const body = [
+    heading("Your order was delivered"),
+    salutation(args.name),
+    paragraph(`Order <strong>${text(ref)}</strong> was delivered. Thank you for shopping with The Launch Pad.`),
+    button(ORDERS_URL, "View your orders"),
+    signoff(),
+  ].join("\n");
+  return {
+    subject: `Your Launch Pad order ${ref} was delivered`,
+    html: emailLayout({ title: "Your order was delivered", preheader: `Order ${ref} was delivered.`, body, footerNote: FOOTER_NOTE }),
   };
 }
 
@@ -405,6 +471,14 @@ export async function sendProductOrderReadyForPickupEmail(args: ReadyArgs) {
 
 export async function sendProductOrderOutForDeliveryEmail(args: StatusArgs) {
   await send(args.to, buildProductOrderOutForDeliveryEmail(args), "out for delivery");
+}
+
+export async function sendProductOrderShippedEmail(args: ShippedArgs) {
+  await send(args.to, buildProductOrderShippedEmail(args), "order shipped");
+}
+
+export async function sendProductOrderDeliveredEmail(args: StatusArgs) {
+  await send(args.to, buildProductOrderDeliveredEmail(args), "order delivered");
 }
 
 export async function sendProductOrderRefundedEmail(args: RefundArgs) {

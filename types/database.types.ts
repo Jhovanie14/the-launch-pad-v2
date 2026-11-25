@@ -567,6 +567,17 @@ export type Database = {
       }
       product_orders: {
         Row: {
+          shipping_service: string | null
+          shipping_rate_id: string | null
+          shippo_order_id: string | null
+          tracking_number: string | null
+          tracking_url: string | null
+          carrier: string | null
+          label_url: string | null
+          shipped_at: string | null
+          delivered_at: string | null
+          shipping_problem: string | null
+          shippo_push_error: string | null
           completed_at: string | null
           completed_by: string | null
           fulfilment_status: string
@@ -596,6 +607,17 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          shipping_service?: string | null
+          shipping_rate_id?: string | null
+          shippo_order_id?: string | null
+          tracking_number?: string | null
+          tracking_url?: string | null
+          carrier?: string | null
+          label_url?: string | null
+          shipped_at?: string | null
+          delivered_at?: string | null
+          shipping_problem?: string | null
+          shippo_push_error?: string | null
           completed_at?: string | null
           completed_by?: string | null
           fulfilment_status?: string
@@ -624,6 +646,17 @@ export type Database = {
           user_id: string
         }
         Update: {
+          shipping_service?: string | null
+          shipping_rate_id?: string | null
+          shippo_order_id?: string | null
+          tracking_number?: string | null
+          tracking_url?: string | null
+          carrier?: string | null
+          label_url?: string | null
+          shipped_at?: string | null
+          delivered_at?: string | null
+          shipping_problem?: string | null
+          shippo_push_error?: string | null
           completed_at?: string | null
           completed_by?: string | null
           fulfilment_status?: string
@@ -655,6 +688,7 @@ export type Database = {
       }
       products: {
         Row: {
+          weight_oz: number | null
           display_name: string | null
           category: string
           created_at: string
@@ -674,6 +708,7 @@ export type Database = {
           video_url: string | null
         }
         Insert: {
+          weight_oz?: number | null
           display_name?: string | null
           category: string
           created_at?: string
@@ -693,6 +728,7 @@ export type Database = {
           video_url?: string | null
         }
         Update: {
+          weight_oz?: number | null
           display_name?: string | null
           category?: string
           created_at?: string
@@ -1123,6 +1159,9 @@ export type Database = {
       }
       store_settings: {
         Row: {
+          pickup_note: string | null
+          shipping_pouches: Json | null
+          shipping_excluded_states: string[]
           hold_days: number
           pickup_hours: string | null
           delivery_fee: number
@@ -1135,6 +1174,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          pickup_note?: string | null
+          shipping_pouches?: Json | null
+          shipping_excluded_states?: string[]
           hold_days?: number
           pickup_hours?: string | null
           delivery_fee?: number
@@ -1147,6 +1189,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          pickup_note?: string | null
+          shipping_pouches?: Json | null
+          shipping_excluded_states?: string[]
           hold_days?: number
           pickup_hours?: string | null
           delivery_fee?: number
@@ -1381,17 +1426,34 @@ export type Database = {
         Returns: undefined
       }
       is_admin: { Args: never; Returns: boolean }
-      place_product_order: {
-        Args: {
-          p_items: Json
-          p_payment_method: string
-          p_phone: string | null
-          p_subtotal: number
-          p_total: number
-          p_user_id: string
-        }
-        Returns: string
-      }
+      place_product_order:
+        | {
+            Args: {
+              p_items: Json
+              p_payment_method: string
+              p_phone: string | null
+              p_subtotal: number
+              p_total: number
+              p_user_id: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_delivery_address: Json | null
+              p_delivery_fee: number
+              p_fulfillment_method: string
+              p_items: Json
+              p_payment_method: string
+              p_phone: string | null
+              p_shipping_rate_id: string | null
+              p_shipping_service: string | null
+              p_subtotal: number
+              p_total: number
+              p_user_id: string
+            }
+            Returns: string
+          }
       release_product_order_stock: {
         Args: { p_order_id: string }
         Returns: undefined

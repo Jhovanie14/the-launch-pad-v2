@@ -305,6 +305,23 @@ export function ProductDrawer({
               </Field>
             </Section>
 
+            <Section title="Shipping">
+              <Field
+                id="weight_oz"
+                label="Shipping weight (oz)"
+                help="Weight packed in its pouch. Leave empty and this product can only be picked up."
+              >
+                <input
+                  id="weight_oz"
+                  inputMode="decimal"
+                  value={form.weight_oz}
+                  onChange={(e) => set("weight_oz", e.target.value)}
+                  placeholder="For example: 16"
+                  className={FIELD}
+                />
+              </Field>
+            </Section>
+
             <Section title="Photos and video">
               <Field id="image" label="Main photo" help="Shown on the card and first on the product page.">
                 <div className="flex items-center gap-3">

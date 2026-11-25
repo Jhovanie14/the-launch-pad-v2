@@ -8,11 +8,13 @@ import { getPickupSettings } from "@/lib/products/storeSettings";
 import type { StaffAction } from "@/lib/products/orderFlow";
 import {
   sendProductOrderCollectedEmail,
+  sendProductOrderDeliveredEmail,
   sendProductOrderReadyForPickupEmail,
   sendProductOrderReleasedEmail,
+  sendProductOrderShippedEmail,
 } from "@/lib/email/product-order-emails";
 
-const ACTIONS: StaffAction[] = ["mark_ready", "hand_over", "take_payment", "release"];
+const ACTIONS: StaffAction[] = ["mark_ready", "hand_over", "take_payment", "release", "mark_shipped", "mark_delivered"];
 
 /** Counter actions from admin › Store orders. Rules: lib/products/orderFlow.ts. */
 export async function POST(req: Request) {
@@ -21,7 +23,7 @@ export async function POST(req: Request) {
     const admin = createAdminClient();
     const staff = await requireAdmin(supabase, admin);
 
-    const { order_id, action, paid_via } = await req.json();
+    const { order_id, action, paid_via, tracking_number } = await req.json();
     if (!order_id || !ACTIONS.includes(action)) throw new ApiError("Invalid order action", 400);
 
     const settings = await getPickupSettings(admin);
@@ -37,9 +39,11 @@ export async function POST(req: Request) {
           ready: sendProductOrderReadyForPickupEmail,
           collected: sendProductOrderCollectedEmail,
           released: sendProductOrderReleasedEmail,
+          shipped: sendProductOrderShippedEmail,
+          delivered: sendProductOrderDeliveredEmail,
         },
       },
-      { orderId: order_id, action, paidVia: paid_via },
+      { orderId: order_id, action, paidVia: paid_via, trackingNumber: tracking_number },
     );
 
     return NextResponse.json({ ok: true });

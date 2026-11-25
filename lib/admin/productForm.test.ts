@@ -37,6 +37,7 @@ describe("buildProductPayload", () => {
         video_url: null,
         gallery: ["a.png", "b.png"],
         stock: 2000,
+        weight_oz: null,
         is_active: true,
         is_featured: false,
         sort_order: 0,
@@ -101,10 +102,12 @@ describe("formFromProduct and isDirty", () => {
       video_url: "",
       gallery: ["x.png"],
       stock: "4",
+      weight_oz: "",
       is_active: true,
       is_featured: false,
       sort_order: "2",
     });
+    expect(formFromProduct({ ...product, weight_oz: 8.5 } as ProductRow).weight_oz).toBe("8.5");
   });
 
   it("knows when something changed", () => {
@@ -123,5 +126,21 @@ describe("stockWrite (saving never overwrites a newer count)", () => {
   });
   it("when edited, writes only if the count is still the one the drawer opened with", () => {
     expect(stockWrite({ ...initial, stock: "8" }, initial)).toEqual({ include: true, expected: 5 });
+  });
+});
+
+describe("shipping weight", () => {
+  const base = { ...EMPTY_FORM, name: "Towel", category: "Care", price: "5" };
+  it("saves ounces, or nothing when empty", () => {
+    const r = buildProductPayload({ ...base, weight_oz: "8.5" }, new Date());
+    expect(r.ok && r.payload.weight_oz).toBe(8.5);
+    const empty = buildProductPayload({ ...base, weight_oz: " " }, new Date());
+    expect(empty.ok && empty.payload.weight_oz).toBeNull();
+  });
+  it("refuses zero, negatives and words", () => {
+    for (const weight_oz of ["0", "-1", "heavy"]) {
+      const r = buildProductPayload({ ...base, weight_oz }, new Date());
+      expect(r, weight_oz).toEqual({ ok: false, error: "Shipping weight must be more than 0" });
+    }
   });
 });

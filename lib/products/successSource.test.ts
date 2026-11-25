@@ -84,3 +84,21 @@ describe("pickup pass", () => {
     expect(s).toContain("The items go back on the shelf");
   });
 });
+
+describe("shipping pass", () => {
+  const SHIP = "components/products/ShippingPass.tsx";
+  it("shows where it ships and how tracking arrives", () => {
+    const s = read(SHIP);
+    expect(s).toContain("We'll email tracking when it ships.");
+    expect(s).toContain("Track package");
+    expect(s).toContain("Shipping");
+    expect(s).not.toContain("Get directions");
+  });
+  it("is used for shipping orders on the success page and in My orders", () => {
+    for (const p of ["app/(user)/products/success/page.tsx", "app/(dashboard)/dashboard/orders/page.tsx"]) {
+      const s = read(p);
+      expect(s, p).toContain("<ShippingPass");
+      expect(s, p).toMatch(/fulfillment_method === "delivery"/);
+    }
+  });
+});
