@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   buildProductOrderCollectedEmail,
   buildProductOrderConfirmationEmail,
+  buildProductOrderDeliveredEmail,
+  buildProductOrderShippedEmail,
   buildProductOrderHoldReminderEmail,
   buildProductOrderOutForDeliveryEmail,
   buildProductOrderReadyForPickupEmail,
@@ -51,6 +53,17 @@ const builders = {
     }),
   readyForPickup: () => buildProductOrderReadyForPickupEmail({ to: "x@example.com", name: EVIL, orderId }),
   outForDelivery: () => buildProductOrderOutForDeliveryEmail({ to: "x@example.com", name: EVIL, orderId }),
+  shipped: () =>
+    buildProductOrderShippedEmail({
+      to: "x@example.com",
+      name: EVIL,
+      orderId,
+      trackingNumber: "9400111899",
+      trackingUrl: "https://tools.usps.com/go/TrackConfirmAction?tLabels=9400111899",
+      carrier: "USPS",
+      address: { name: EVIL, street1: "215 Clayton St", street2: "Apt 4", city: "San Francisco", state: "CA", zip: "94117", phone: "4155550100" },
+    }),
+  delivered: () => buildProductOrderDeliveredEmail({ to: "x@example.com", name: EVIL, orderId }),
   refunded: () => buildProductOrderRefundedEmail({ to: "x@example.com", name: EVIL, orderId, total: 44.98 }),
   reserved: () =>
     buildProductOrderReservedEmail({ to: "x@example.com", name: EVIL, orderId, items: [{ name: EVIL, quantity: 1, unit_price: 25.2 }], subtotal: 25.2, total: 25.2, pickupHours: null }),
@@ -89,8 +102,27 @@ describe("confirmation email order table", () => {
   it("is a data table with column headers and totals", () => {
     const { html } = builders.confirmation();
     expect(html.match(/<th scope="col"/g)).toHaveLength(3);
-    expect(html).toContain("Delivery fee");
+    expect(html).toContain("Shipping");
+    expect(html).not.toContain("Delivery fee");
     expect(html).toContain("$44.98");
+  });
+
+  it("tells a shipping customer about tracking and where it goes", () => {
+    const { html } = buildProductOrderConfirmationEmail({
+      to: "x@example.com",
+      name: "Dee",
+      orderId,
+      items: [{ name: "Wax", quantity: 1, unit_price: 10 }],
+      subtotal: 10,
+      deliveryFee: 8.08,
+      total: 18.08,
+      fulfillmentMethod: "delivery",
+      address: { name: "Dee Jones", street1: "215 Clayton St", city: "San Francisco", state: "CA", zip: "94117", phone: "4155550100" },
+    });
+    expect(html).toContain("Ship with USPS");
+    expect(html).toContain("We'll email you tracking when it ships.");
+    expect(html).toContain("215 Clayton St, San Francisco, CA 94117");
+    expect(html).not.toContain("Local delivery");
   });
 
   it("omits the delivery fee row for pickup", () => {
@@ -189,5 +221,25 @@ describe("pickup instructions", () => {
     const { html } = buildProductOrderReadyForPickupEmail({ to: "x@example.com", name: "Sam", orderId: id, pickupHours: null, pickupNote: "<b>Bring ID</b> & receipt" });
     expect(html).toContain("&lt;b&gt;Bring ID&lt;/b&gt; &amp; receipt");
     expect(html).not.toContain("<b>Bring ID</b>");
+  });
+});
+
+describe("shipping emails", () => {
+  it("shipped: tracking number, where it's going, and a Track package button to the carrier", () => {
+    const { subject, html } = builders.shipped();
+    expect(subject).toBe("Your Launch Pad order 1A2B3C4D has shipped");
+    expect(html).toContain("Your order is on its way");
+    expect(html).toContain("shipped with USPS");
+    expect(html).toContain("9400111899");
+    expect(html).toContain("215 Clayton St, Apt 4, San Francisco, CA 94117");
+    expect(html).toContain('href="https://tools.usps.com/go/TrackConfirmAction?tLabels=9400111899"');
+    expect(html).toContain("Track package");
+  });
+
+  it("delivered: short, with a link to My orders", () => {
+    const { subject, html } = builders.delivered();
+    expect(subject).toBe("Your Launch Pad order 1A2B3C4D was delivered");
+    expect(html).toContain("Your order was delivered");
+    expect(html).toContain("/dashboard/orders");
   });
 });
