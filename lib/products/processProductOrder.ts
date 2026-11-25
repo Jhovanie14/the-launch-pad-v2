@@ -77,10 +77,12 @@ export async function processProductOrderCompleted(
     session.collected_information?.shipping_details ??
     session.shipping_details ??
     null;
+  // Shipping orders carry the address we collected and USPS confirmed; Stripe
+  // collects none, so its (empty) shipping details must never overwrite it.
   const updates = {
     ...paid,
     phone: session.customer_details?.phone ?? order.phone ?? null,
-    delivery_address: shipping,
+    ...(shipping && !order.delivery_address ? { delivery_address: shipping } : {}),
   };
   const { error: updateError } = await db
     .from("product_orders")

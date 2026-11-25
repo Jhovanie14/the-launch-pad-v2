@@ -36,3 +36,31 @@ describe("checkout route", () => {
     expect(s).toMatch(/fulfillment_method === "delivery" && shippoConfigured\(\)/);
   });
 });
+
+describe("after payment", () => {
+  const WEBHOOK = "app/api/webhook/route.ts";
+  const CRON = "app/api/cron/product-holds/route.ts";
+  const ADMIN = "app/api/admin/product-orders/shippo/route.ts";
+
+  it("the Stripe webhook sends paid shipping orders to Shippo, after the email, never failing the webhook", () => {
+    const s = read(WEBHOOK);
+    expect(s).toContain("pushOrderToShippo(");
+    expect(s).toMatch(/fulfillment_method === "delivery" && shippoConfigured\(\)/);
+    expect(s).toContain("address: result.order.delivery_address");
+  });
+
+  it("the daily job retries pushes and checks Shippo for bought labels", () => {
+    const s = read(CRON);
+    expect(s).toContain("pushOrderToShippo(");
+    expect(s).toContain("syncShippedFromShippo(");
+    expect(s).toContain("shippoConfigured()");
+  });
+
+  it("staff can send to Shippo or check Shippo from the admin", () => {
+    const s = read(ADMIN);
+    expect(s).toContain("requireAdmin(");
+    expect(s).toContain('"push"');
+    expect(s).toContain('"check"');
+    expect(s).toContain("sendProductOrderShippedEmail");
+  });
+});

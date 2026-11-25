@@ -7,6 +7,8 @@ import {
 } from "@/lib/email/subscription-emails";
 import { sendProductOrderConfirmationEmail } from "@/lib/email/product-order-emails";
 import { getPickupSettings } from "@/lib/products/storeSettings";
+import { pushOrderToShippo } from "@/lib/shipping/pushOrder";
+import { shippoConfigured, shippoFromEnv } from "@/lib/shipping/shippo";
 import {
   processProductOrderCompleted,
   processProductOrderExpired,
@@ -199,10 +201,22 @@ async function processProductOrder(session: Stripe.Checkout.Session) {
       fulfillmentMethod: result.order.fulfillment_method as "pickup" | "delivery",
       pickupHours: pickup.pickupHours,
       pickupNote: pickup.pickupNote,
+      address: result.order.delivery_address as Record<string, string> | null,
     });
     console.log("Product order confirmation email sent");
   } catch (error) {
     console.error("Product order confirmation email failed:", error);
+  }
+
+  // Shipping orders go onto Shippo's Orders page for staff to buy the label.
+  // Never fails the webhook: a failed push is stored on the order and retried
+  // by the daily job or the admin's "Send to Shippo".
+  if (result.order.fulfillment_method === "delivery" && shippoConfigured()) {
+    try {
+      await pushOrderToShippo({ db: supabase, shippo: shippoFromEnv() }, result.order.id);
+    } catch (error) {
+      console.error("[shipping] push to Shippo failed:", error);
+    }
   }
 }
 
