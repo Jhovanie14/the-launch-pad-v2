@@ -15,6 +15,12 @@ describe("apiError", () => {
     expect(await res.json()).toEqual({ error: "Bad input" });
   });
 
+  it("passes ApiError details through for the client", async () => {
+    const res = apiError(new ApiError("Shipping price changed", 409, { amount: 8.08 }));
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: "Shipping price changed", details: { amount: 8.08 } });
+  });
+
   it("hides internal error detail behind a generic 500 message", async () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     const res = apiError(new Error("DB password leaked in message"));
