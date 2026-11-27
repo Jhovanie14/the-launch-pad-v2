@@ -1,11 +1,11 @@
 // Where parcels ship from, as a Shippo address.
-// TODO(owner): confirm the ship-from address. The owner said 3535 O'Meara Dr,
-// Houston, TX; we still need the ZIP, any suite, and the phone for labels.
-// Until then this is the carwash, which only matters with the test key.
+// The owner confirmed 3535 O'Meara Dr, Houston, TX 77025 (2026-11-27); USPS
+// validates it as "3535 Omeara Dr", a business address. Armando drops parcels
+// off at USPS, so no carrier pickup is scheduled.
 export const SHIP_FROM = {
   name: "The Launch Pad",
   company: "The Launch Pad",
-  street1: "10410 S Main St",
+  street1: "3535 Omeara Dr",
   city: "Houston",
   state: "TX",
   zip: "77025",
